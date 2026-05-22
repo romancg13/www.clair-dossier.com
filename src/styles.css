@@ -278,7 +278,8 @@ main { flex: 1; }
 .card-grid, .grid-two, .dashboard-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.2rem; }
 .split-section { display: grid; grid-template-columns: 1fr 0.9fr; gap: 2.5rem; align-items: start; }
 .page-hero { padding: 4rem 0 1.5rem; }
-.centered { text-align: center; justify-content: center; }
+.section-block.compact { padding: 1rem 0; }
+.centered { text-align: center; justify-content: center; display: flex; flex-wrap: wrap; gap: 0.85rem; }
 
 /* ─── Notices ─── */
 .notice {

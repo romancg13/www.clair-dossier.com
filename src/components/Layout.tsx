@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { footerBadges, legalLinks, productLinks, publicNav, resourceLinks, site, warnings } from '../data/site';
+import { supabase } from '../lib/supabase';
 
 function linkClass({ isActive }: { isActive: boolean }) {
   return isActive ? 'nav-link active' : 'nav-link';
@@ -12,7 +13,9 @@ export function Layout() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [showCookies, setShowCookies] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [authUser, setAuthUser] = useState<{ email: string; role: string } | null>(null);
   const location = useLocation();
+  const showCabinetAccess = authUser && ['admin', 'lawyer', 'cabinet_admin'].includes(authUser.role);
 
   useEffect(() => { setMenuOpen(false); }, [location.pathname]);
 
@@ -39,6 +42,44 @@ export function Layout() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
+  const loadAuthUser = useCallback(async (user: { id: string; email?: string }) => {
+    let role = 'client';
+    try {
+      const { data, error } = supabase
+        ? await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle()
+        : { data: null, error: null };
+      if (error) console.warn('Profil Supabase indisponible', error);
+      role = data?.role || role;
+    } catch (error) {
+      console.warn('Impossible de charger le profil utilisateur', error);
+    }
+    setAuthUser({ email: user.email || 'Compte ClairDossier', role });
+  }, []);
+
+  useEffect(() => {
+    if (!supabase) return;
+    let mounted = true;
+    supabase.auth.getSession().then(({ data }) => {
+      if (!mounted) return;
+      if (data.session?.user) {
+        void loadAuthUser(data.session.user);
+      } else {
+        setAuthUser(null);
+      }
+    });
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        void loadAuthUser(session.user);
+      } else {
+        setAuthUser(null);
+      }
+    });
+    return () => {
+      mounted = false;
+      listener.subscription.unsubscribe();
+    };
+  }, [loadAuthUser]);
+
   const acceptCookies = useCallback(() => {
     try { localStorage.setItem(COOKIE_KEY, 'accepted'); } catch { /* noop */ }
     setShowCookies(false);
@@ -51,6 +92,16 @@ export function Layout() {
 
   const scrollToTop = useCallback(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
+  const signOut = useCallback(async () => {
+    if (!supabase) return;
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error('Erreur déconnexion Supabase', error);
+      return;
+    }
+    setAuthUser(null);
   }, []);
 
   return (
@@ -73,7 +124,15 @@ export function Layout() {
         </nav>
 
         <div className="header-actions">
-          <Link className="ghost-button" to="/connexion">Connexion</Link>
+          {authUser ? (
+            <>
+              <Link className="ghost-button" to="/dashboard">Espace client</Link>
+              {showCabinetAccess && <Link className="ghost-button" to="/cabinet/dashboard">Espace cabinet</Link>}
+              <button className="ghost-button" type="button" onClick={signOut}>Déconnexion</button>
+            </>
+          ) : (
+            <Link className="ghost-button" to="/connexion">Connexion</Link>
+          )}
           <Link className="primary-button" to="/creer-dossier">Créer un dossier</Link>
         </div>
 
@@ -97,7 +156,15 @@ export function Layout() {
             <NavLink key={item.path} to={item.path} className={linkClass}>{item.label}</NavLink>
           ))}
           <div className="drawer-actions">
-            <Link className="ghost-button full" to="/connexion">Connexion</Link>
+            {authUser ? (
+              <>
+                <Link className="ghost-button full" to="/dashboard">Espace client</Link>
+                {showCabinetAccess && <Link className="ghost-button full" to="/cabinet/dashboard">Espace cabinet</Link>}
+                <button className="ghost-button full" type="button" onClick={signOut}>Déconnexion</button>
+              </>
+            ) : (
+              <Link className="ghost-button full" to="/connexion">Connexion</Link>
+            )}
             <Link className="primary-button full" to="/creer-dossier">Créer un dossier</Link>
           </div>
         </nav>

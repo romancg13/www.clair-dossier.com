@@ -62,6 +62,12 @@ supabase db push
 
 La migration crée les tables demandées : `profiles`, `contact_requests`, `newsletter_subscribers`, `demo_requests`, `cases`, `case_intake_answers`, `payments`, `subscriptions`, `blog_posts`, `blog_categories`, `audit_logs`, ainsi que `documents` et `messages` pour les espaces privés.
 
+La migration complémentaire `20260522190000_auth_profiles_and_indexes.sql` ajoute :
+
+- création automatique d'un profil `client` à chaque inscription Supabase Auth ;
+- index utiles pour les dossiers, documents, messages, paiements et abonnements ;
+- rattachement plus fiable des abonnements Stripe à l'utilisateur connecté.
+
 ## Stripe
 
 Les boutons de tarifs appellent `create-checkout-session`. Le paiement réel nécessite :
@@ -73,6 +79,17 @@ Les boutons de tarifs appellent `create-checkout-session`. Le paiement réel né
 5. webhook Stripe pointant vers `stripe-webhook`.
 
 Sans cette configuration, le frontend affiche clairement que le paiement est bientôt disponible.
+
+Les formules gratuites ou sur devis ne déclenchent pas de faux paiement : la formule Découverte renvoie vers l'inscription, et Cabinet Premium renvoie vers le contact. Les formules payantes demandent une session utilisateur afin que le webhook puisse relier l'abonnement au compte.
+
+## État fonctionnel et limites production
+
+- Les pages publiques, légales, blog, contact, démo, création de dossier, connexion et inscription sont routées.
+- Les formulaires publics écrivent dans Supabase si `VITE_SUPABASE_URL` et `VITE_SUPABASE_ANON_KEY` sont configurées.
+- Les espaces privés sont protégés par session lorsque Supabase Auth est configuré ; sans Supabase, ils affichent un avertissement de configuration.
+- Le blog est statique côté frontend, avec schéma SQL prêt pour une gestion back-office future.
+- Le paiement Stripe nécessite les clés test/production, Price IDs, fonctions Edge déployées et webhook Stripe.
+- Les textes légaux sont prudents mais doivent être validés et complétés par l'éditeur avant exploitation commerciale.
 
 ## Avertissement LegalTech
 

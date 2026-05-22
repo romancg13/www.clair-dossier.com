@@ -1,6 +1,6 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { Layout } from './components/Layout';
-import { AuthPage, BlogCategoryPage, BlogIndexPage, BlogPostPage, ContactPage, CreateCasePage, DemoPage, HomePage, InfoPage, LegalPage, NotFoundPage, PaymentStatusPage, PricingPage, WorkspacePage } from './pages';
+import { AuthPage, BlogCategoryPage, BlogIndexPage, BlogPostPage, ContactPage, CreateCasePage, DemoPage, HomePage, InfoPage, LegalPage, NotFoundPage, PaymentStatusPage, PricingPage, PrivateWorkspacePage } from './pages';
 
 export default function App() {
   return (
@@ -26,21 +26,21 @@ export default function App() {
           <Route path="connexion" element={<AuthPage mode="connexion" />} />
           <Route path="inscription" element={<AuthPage mode="inscription" />} />
           <Route path="creer-dossier" element={<CreateCasePage />} />
-          <Route path="dashboard" element={<WorkspacePage title="Tableau de bord client" audience="client" />} />
-          <Route path="mes-dossiers" element={<WorkspacePage title="Mes dossiers" audience="client" />} />
-          <Route path="dossier/:id" element={<WorkspacePage title="Dossier" audience="client" />} />
-          <Route path="documents" element={<WorkspacePage title="Documents" audience="client" />} />
-          <Route path="messages" element={<WorkspacePage title="Messages" audience="client" />} />
-          <Route path="paiements" element={<WorkspacePage title="Paiements" audience="client" />} />
-          <Route path="abonnement" element={<WorkspacePage title="Abonnement" audience="client" />} />
-          <Route path="parametres" element={<WorkspacePage title="Paramètres" audience="client" />} />
-          <Route path="cabinet/dashboard" element={<WorkspacePage title="Dashboard cabinet" audience="cabinet" />} />
-          <Route path="cabinet/dossiers" element={<WorkspacePage title="Dossiers cabinet" audience="cabinet" />} />
-          <Route path="cabinet/clients" element={<WorkspacePage title="Clients cabinet" audience="cabinet" />} />
-          <Route path="cabinet/messages" element={<WorkspacePage title="Messages cabinet" audience="cabinet" />} />
-          <Route path="cabinet/taches" element={<WorkspacePage title="Tâches cabinet" audience="cabinet" />} />
-          <Route path="cabinet/facturation" element={<WorkspacePage title="Facturation cabinet" audience="cabinet" />} />
-          <Route path="cabinet/parametres" element={<WorkspacePage title="Paramètres cabinet" audience="cabinet" />} />
+          <Route path="dashboard" element={<PrivateWorkspacePage title="Tableau de bord client" audience="client" />} />
+          <Route path="mes-dossiers" element={<PrivateWorkspacePage title="Mes dossiers" audience="client" />} />
+          <Route path="dossier/:id" element={<PrivateWorkspacePage title="Dossier" audience="client" />} />
+          <Route path="documents" element={<PrivateWorkspacePage title="Documents" audience="client" />} />
+          <Route path="messages" element={<PrivateWorkspacePage title="Messages" audience="client" />} />
+          <Route path="paiements" element={<PrivateWorkspacePage title="Paiements" audience="client" />} />
+          <Route path="abonnement" element={<PrivateWorkspacePage title="Abonnement" audience="client" />} />
+          <Route path="parametres" element={<PrivateWorkspacePage title="Paramètres" audience="client" />} />
+          <Route path="cabinet/dashboard" element={<PrivateWorkspacePage title="Dashboard cabinet" audience="cabinet" />} />
+          <Route path="cabinet/dossiers" element={<PrivateWorkspacePage title="Dossiers cabinet" audience="cabinet" />} />
+          <Route path="cabinet/clients" element={<PrivateWorkspacePage title="Clients cabinet" audience="cabinet" />} />
+          <Route path="cabinet/messages" element={<PrivateWorkspacePage title="Messages cabinet" audience="cabinet" />} />
+          <Route path="cabinet/taches" element={<PrivateWorkspacePage title="Tâches cabinet" audience="cabinet" />} />
+          <Route path="cabinet/facturation" element={<PrivateWorkspacePage title="Facturation cabinet" audience="cabinet" />} />
+          <Route path="cabinet/parametres" element={<PrivateWorkspacePage title="Paramètres cabinet" audience="cabinet" />} />
           <Route path="success" element={<PaymentStatusPage status="success" />} />
           <Route path="cancel" element={<PaymentStatusPage status="cancel" />} />
           <Route path="*" element={<NotFoundPage />} />

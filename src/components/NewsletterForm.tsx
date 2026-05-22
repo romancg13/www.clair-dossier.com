@@ -1,7 +1,7 @@
 import { FormEvent, useState } from 'react';
 import { insertPublicRecord } from '../lib/supabase';
 
-type FormState = { type: 'idle' | 'success' | 'error'; message: string };
+type FormState = { type: 'idle' | 'loading' | 'success' | 'error'; message: string };
 
 export function NewsletterForm() {
   const [state, setState] = useState<FormState>({ type: 'idle', message: '' });
@@ -18,6 +18,7 @@ export function NewsletterForm() {
       return;
     }
 
+    setState({ type: 'loading', message: '' });
     const result = await insertPublicRecord('newsletter_subscribers', {
       email,
       consent_given: consent,
@@ -37,8 +38,10 @@ export function NewsletterForm() {
         <input name="consent" type="checkbox" required />
         <span>J’accepte de recevoir les actualités ClairDossier et comprends pouvoir me désinscrire.</span>
       </label>
-      <button className="primary-button" type="submit">S’inscrire</button>
-      {state.message && <p className={`form-message ${state.type}`}>{state.message}</p>}
+      <button className="primary-button" type="submit" disabled={state.type === 'loading'}>
+        {state.type === 'loading' ? 'Inscription...' : 'S’inscrire'}
+      </button>
+      {state.message && <p className={`form-message ${state.type === 'success' ? 'success' : 'error'}`}>{state.message}</p>}
     </form>
   );
 }

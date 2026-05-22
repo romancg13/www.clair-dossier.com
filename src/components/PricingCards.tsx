@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { plans } from '../data/site';
 import { isStripeConfigured, redirectToCheckout } from '../lib/stripe';
 
@@ -7,9 +8,19 @@ const POPULAR_PLAN = 'business';
 export function PricingCards() {
   const [message, setMessage] = useState<string>('');
   const [loadingPlan, setLoadingPlan] = useState<string>('');
+  const navigate = useNavigate();
 
   async function choosePlan(planId: string) {
     setMessage('');
+    const plan = plans.find((candidate) => candidate.id === planId);
+    if (plan?.price === '0 €') {
+      navigate('/inscription');
+      return;
+    }
+    if (plan?.price === 'Sur devis') {
+      navigate('/contact');
+      return;
+    }
     setLoadingPlan(planId);
     try {
       await redirectToCheckout(planId);

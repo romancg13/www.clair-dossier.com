@@ -1,10 +1,11 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { NewsletterForm } from './components/NewsletterForm';
 import { PricingCards } from './components/PricingCards';
 import { Seo } from './components/Seo';
 import { blogPosts, categories, caseStatuses, featureCards, infoPages, legalPages, plans, site, warnings } from './data/site';
 import { insertPublicRecord, supabase } from './lib/supabase';
+import { isStripeConfigured, redirectToCustomerPortal } from './lib/stripe';
 
 type FormState = { type: 'idle' | 'loading' | 'success' | 'error'; message: string };
 
@@ -206,8 +207,10 @@ export function CreateCasePage() {
     setState({ type: 'loading', message: '' });
 
     const caseId = crypto.randomUUID();
+    const { data: sessionData } = supabase ? await supabase.auth.getSession() : { data: { session: null } };
     const caseResult = await insertPublicRecord('cases', {
       id: caseId,
+      created_by: sessionData.session?.user.id || null,
       title: `Dossier ${String(data.get('legal_domain'))}`,
       client_type: data.get('client_type'),
       legal_domain: data.get('legal_domain'),
@@ -421,12 +424,78 @@ export function AuthPage({ mode }: { mode: 'connexion' | 'inscription' }) {
   );
 }
 
-export function WorkspacePage({ title, audience }: { title: string; audience: 'client' | 'cabinet' }) {
+type WorkspaceProps = {
+  title: string;
+  audience: 'client' | 'cabinet';
+  authNotice?: string;
+};
+
+export function PrivateWorkspacePage(props: WorkspaceProps) {
+  const [access, setAccess] = useState<'checking' | 'allowed' | 'denied' | 'unconfigured'>(supabase ? 'checking' : 'unconfigured');
+
+  useEffect(() => {
+    if (!supabase) return;
+    let mounted = true;
+    supabase.auth.getSession().then(({ data, error }) => {
+      if (!mounted) return;
+      if (error) {
+        console.error('Erreur session Supabase', error);
+        setAccess('denied');
+        return;
+      }
+      setAccess(data.session ? 'allowed' : 'denied');
+    });
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setAccess(session ? 'allowed' : 'denied');
+    });
+    return () => {
+      mounted = false;
+      listener.subscription.unsubscribe();
+    };
+  }, []);
+
+  if (access === 'unconfigured') {
+    return (
+      <WorkspacePage
+        {...props}
+        authNotice="Authentification Supabase à connecter : ces pages privées restent en mode structure tant que VITE_SUPABASE_URL et VITE_SUPABASE_ANON_KEY ne sont pas configurées."
+      />
+    );
+  }
+
+  if (access === 'checking') {
+    return (
+      <>
+        <Seo title={props.title} description="Vérification de session ClairDossier." />
+        <PageHero title={props.title} description="Vérification de votre session sécurisée..." />
+      </>
+    );
+  }
+
+  if (access === 'denied') {
+    return (
+      <>
+        <Seo title="Connexion requise" description="Connexion requise pour accéder à cet espace ClairDossier." />
+        <PageHero title="Connexion requise" description="Cet espace contient des données privées. Connectez-vous pour y accéder." />
+        <section className="section-block centered">
+          <Link className="primary-button" to="/connexion">Me connecter</Link>
+          <Link className="secondary-button" to="/inscription">Créer un compte</Link>
+        </section>
+      </>
+    );
+  }
+
+  return <WorkspacePage {...props} />;
+}
+
+export function WorkspacePage({ title, audience, authNotice }: WorkspaceProps) {
   const isClient = audience === 'client';
+  const showBilling = title === 'Abonnement' || title === 'Paiements' || title === 'Facturation cabinet';
   return (
     <>
       <Seo title={title} description={`Espace ${audience} ClairDossier prêt à connecter à Supabase Auth et RLS.`} />
       <PageHero title={title} description={`Page privée ${audience}. Les données réelles doivent être protégées par Supabase Auth et RLS avant production.`} />
+      {authNotice && <section className="section-block compact"><p className="notice">{authNotice}</p></section>}
 
       <section className="stat-row" style={{ width: 'min(1180px, calc(100% - 2rem))', margin: '0 auto' }}>
         {isClient ? (
@@ -471,8 +540,41 @@ export function WorkspacePage({ title, audience }: { title: string; audience: 'c
             <li>Activer les notifications</li>
           </ul>
         </article>
+        {showBilling && <StripeBillingPanel />}
       </section>
     </>
+  );
+}
+
+function StripeBillingPanel() {
+  const [state, setState] = useState<FormState>({ type: 'idle', message: '' });
+
+  async function openPortal() {
+    setState({ type: 'loading', message: '' });
+    try {
+      await redirectToCustomerPortal();
+    } catch (error) {
+      console.error('Portail Stripe indisponible', error);
+      setState({
+        type: 'error',
+        message: error instanceof Error ? error.message : "Le portail client Stripe n'est pas encore disponible.",
+      });
+    }
+  }
+
+  return (
+    <article className="feature-card">
+      <h2>Portail client Stripe</h2>
+      <p>
+        Les factures, moyens de paiement et résiliations seront gérés dans le portail client Stripe dès que les fonctions
+        serveur et le webhook seront déployés.
+      </p>
+      {!isStripeConfigured && <p className="notice mini">Paiement bientôt disponible : variables Stripe et Supabase Functions à configurer.</p>}
+      <button className="primary-button full" type="button" onClick={openPortal} disabled={state.type === 'loading'}>
+        {state.type === 'loading' ? 'Ouverture...' : 'Gérer mon abonnement'}
+      </button>
+      {state.message && <p className={`form-message ${state.type === 'success' ? 'success' : 'error'}`}>{state.message}</p>}
+    </article>
   );
 }
 
@@ -515,7 +617,11 @@ function FormPage({ title, description, table, fields, consentLabel }: { title: 
       return;
     }
     setState({ type: 'loading', message: '' });
-    const payload = Object.fromEntries(fields.map((field) => [field.name, data.get(field.name)]));
+    const payload = Object.fromEntries(fields.map((field) => {
+      const value = data.get(field.name);
+      if (field.type === 'number') return [field.name, value ? Number(value) : null];
+      return [field.name, value];
+    }));
     const result = await insertPublicRecord(table, { ...payload, consent_given: consent });
     setState({ type: result.ok ? 'success' : 'error', message: result.message });
     if (result.ok) form.reset();
