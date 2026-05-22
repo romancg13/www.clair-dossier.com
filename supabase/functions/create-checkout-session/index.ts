@@ -40,7 +40,7 @@ Deno.serve(async (request) => {
       subscription_data: planId === 'discovery' ? undefined : { metadata: { plan_id: planId || 'unknown', user_id: userId || '' } },
     });
 
-    return jsonResponse({ id: session.id });
+    return jsonResponse({ id: session.id, url: session.url });
   } catch (error) {
     console.error('create-checkout-session error', error);
     return jsonResponse({ error: 'Unable to create checkout session' }, 500);
