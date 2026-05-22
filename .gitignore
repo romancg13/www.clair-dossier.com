@@ -6,3 +6,6 @@ dist
 .DS_Store
 *.log
 .supabase
+*.tsbuildinfo
+vite.config.d.ts
+vite.config.js
