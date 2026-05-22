@@ -223,6 +223,7 @@ main { flex: 1; }
   margin-bottom: 0.3rem;
 }
 .hero-actions, .metrics-row, .badge-row, .keyword-row { display: flex; flex-wrap: wrap; gap: 0.8rem; align-items: center; }
+.action-row { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; margin-top: 1rem; }
 .metrics-row { margin-top: 1.8rem; color: #475569; }
 .metrics-row span {
   background: var(--white);
@@ -437,6 +438,7 @@ summary:hover { color: var(--gold); }
 
 /* ─── Dashboard ─── */
 .dashboard-grid { gap: 1.2rem; }
+.grid-wide { grid-column: 1 / -1; }
 .dashboard-grid .feature-card h2 { font-size: 1.15rem; margin-top: 0; }
 .dashboard-header { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
 .dashboard-header h1 { flex: 1; }

@@ -5,12 +5,10 @@ const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
 const siteUrl = Deno.env.get('SITE_URL') || 'https://clair-dossier.com';
 
 const priceEnvByPlan: Record<string, string> = {
-  discovery: 'STRIPE_PRICE_DISCOVERY',
   'client-essential': 'STRIPE_PRICE_CLIENT_ESSENTIAL',
   business: 'STRIPE_PRICE_BUSINESS',
   'cabinet-solo': 'STRIPE_PRICE_CABINET_SOLO',
   'cabinet-pro': 'STRIPE_PRICE_CABINET_PRO',
-  'cabinet-premium': 'STRIPE_PRICE_CABINET_PREMIUM',
 };
 
 Deno.serve(async (request) => {
@@ -21,6 +19,12 @@ Deno.serve(async (request) => {
   try {
     const { planId, successUrl, cancelUrl, customerEmail, userId } = await request.json();
     const envName = priceEnvByPlan[String(planId || '')];
+    if (!envName) {
+      return jsonResponse({ error: 'This plan is not available for Stripe Checkout' }, 400);
+    }
+    if (!customerEmail || !userId) {
+      return jsonResponse({ error: 'Authenticated user is required for subscriptions' }, 401);
+    }
     const price = envName ? Deno.env.get(envName) : undefined;
     if (!price) {
       return jsonResponse({ error: 'Stripe price is not configured for this plan' }, 400);
@@ -28,7 +32,7 @@ Deno.serve(async (request) => {
 
     const stripe = new Stripe(stripeSecretKey, { apiVersion: '2024-12-18.acacia' });
     const session = await stripe.checkout.sessions.create({
-      mode: planId === 'discovery' ? 'payment' : 'subscription',
+      mode: 'subscription',
       customer_email: customerEmail,
       client_reference_id: userId,
       line_items: [{ price, quantity: 1 }],
@@ -37,7 +41,7 @@ Deno.serve(async (request) => {
       allow_promotion_codes: true,
       billing_address_collection: 'auto',
       metadata: { plan_id: planId || 'unknown', user_id: userId || '' },
-      subscription_data: planId === 'discovery' ? undefined : { metadata: { plan_id: planId || 'unknown', user_id: userId || '' } },
+      subscription_data: { metadata: { plan_id: planId || 'unknown', user_id: userId || '' } },
     });
 
     return jsonResponse({ id: session.id, url: session.url });

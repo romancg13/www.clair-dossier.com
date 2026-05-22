@@ -405,7 +405,7 @@ export const infoPages = {
     sections: [
       { title: 'Créer un dossier', text: 'Choisissez le domaine juridique, décrivez les faits, indiquez l’urgence et listez les documents disponibles.' },
       { title: 'Suivre un dossier', text: 'Consultez le statut, les demandes de pièces, les messages et les prochaines actions.' },
-      { title: 'Configurer Stripe et Supabase', text: 'Déployez les migrations Supabase, configurez les variables serveur puis activez les fonctions Edge.' },
+      { title: 'Configurer Stripe et Supabase', text: 'Déployez les migrations Supabase, configurez les variables serveur, activez les fonctions Edge puis testez les webhooks Stripe en mode test.' },
     ],
   },
   aide: {
@@ -414,7 +414,7 @@ export const infoPages = {
     sections: [
       { title: 'ClairDossier remplace-t-il un avocat ?', text: "Non. ClairDossier structure l’information. L’IA ne remplace pas l’avocat et toute analyse doit être validée." },
       { title: 'Où sont hébergées les données ?', text: "L’architecture est prévue pour un hébergement dans l’Union européenne via Supabase ou un fournisseur équivalent." },
-      { title: 'Le paiement est-il actif ?', text: 'Le code Stripe est prêt. Le checkout devient actif après configuration des clés et des price IDs Stripe.' },
+      { title: 'Le paiement est-il actif ?', text: 'Le code Stripe est prêt pour les abonnements payants. Le checkout devient actif après connexion utilisateur, configuration des clés, des Price IDs et des fonctions Edge.' },
     ],
   },
 };

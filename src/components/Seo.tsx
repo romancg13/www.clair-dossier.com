@@ -6,6 +6,7 @@ type SeoProps = {
   description: string;
   path?: string;
   type?: 'website' | 'article';
+  imagePath?: string;
   jsonLd?: Record<string, unknown> | Record<string, unknown>[];
 };
 
@@ -19,18 +20,21 @@ function upsertMeta(selector: string, attribute: 'name' | 'property', key: strin
   element.content = content;
 }
 
-export function Seo({ title, description, path = '/', type = 'website', jsonLd }: SeoProps) {
+export function Seo({ title, description, path = '/', type = 'website', imagePath = '/icon.svg', jsonLd }: SeoProps) {
   useEffect(() => {
     const absoluteTitle = title.includes(site.name) ? title : `${title} | ${site.name}`;
     const url = `${site.url}${path}`;
+    const imageUrl = `${site.url}${imagePath}`;
     document.title = absoluteTitle;
     upsertMeta('meta[name="description"]', 'name', 'description', description);
     upsertMeta('meta[property="og:title"]', 'property', 'og:title', absoluteTitle);
     upsertMeta('meta[property="og:description"]', 'property', 'og:description', description);
     upsertMeta('meta[property="og:url"]', 'property', 'og:url', url);
     upsertMeta('meta[property="og:type"]', 'property', 'og:type', type);
+    upsertMeta('meta[property="og:image"]', 'property', 'og:image', imageUrl);
     upsertMeta('meta[name="twitter:title"]', 'name', 'twitter:title', absoluteTitle);
     upsertMeta('meta[name="twitter:description"]', 'name', 'twitter:description', description);
+    upsertMeta('meta[name="twitter:image"]', 'name', 'twitter:image', imageUrl);
 
     let canonical = document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]');
     if (!canonical) {
@@ -48,7 +52,7 @@ export function Seo({ title, description, path = '/', type = 'website', jsonLd }
       script.textContent = JSON.stringify(jsonLd);
       document.head.appendChild(script);
     }
-  }, [title, description, path, type, jsonLd]);
+  }, [title, description, path, type, imagePath, jsonLd]);
 
   return null;
 }

@@ -1,10 +1,12 @@
-import { FormEvent, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { FormEvent, useEffect, useState } from 'react';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useAuth } from './components/AuthProvider';
 import { NewsletterForm } from './components/NewsletterForm';
 import { PricingCards } from './components/PricingCards';
 import { Seo } from './components/Seo';
 import { blogPosts, categories, caseStatuses, featureCards, infoPages, legalPages, plans, site, warnings } from './data/site';
 import { insertPublicRecord, supabase } from './lib/supabase';
+import { openCustomerPortal } from './lib/stripe';
 
 type FormState = { type: 'idle' | 'loading' | 'success' | 'error'; message: string };
 
@@ -15,6 +17,16 @@ type FieldDef = {
   options?: string[];
   required?: boolean;
   placeholder?: string;
+};
+
+type WorkspaceSnapshot = {
+  cases: number;
+  documents: number;
+  unreadMessages: number;
+  payments: number;
+  subscriptionStatus: string;
+  stripeCustomerId: string | null;
+  error: string;
 };
 
 export function HomePage() {
@@ -190,6 +202,7 @@ export function DemoPage() {
 
 export function CreateCasePage() {
   const [state, setState] = useState<FormState>({ type: 'idle', message: '' });
+  const { user } = useAuth();
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -208,6 +221,7 @@ export function CreateCasePage() {
     const caseId = crypto.randomUUID();
     const caseResult = await insertPublicRecord('cases', {
       id: caseId,
+      created_by: user?.id ?? null,
       title: `Dossier ${String(data.get('legal_domain'))}`,
       client_type: data.get('client_type'),
       legal_domain: data.get('legal_domain'),
@@ -354,6 +368,11 @@ export function AuthPage({ mode }: { mode: 'connexion' | 'inscription' }) {
   const [state, setState] = useState<FormState>({ type: 'idle', message: '' });
   const [showPassword, setShowPassword] = useState(false);
   const isSignup = mode === 'inscription';
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { dashboardPath } = useAuth();
+  const from = (location.state as { from?: string } | null)?.from;
+  const redirectPath = from && !from.startsWith('/connexion') && !from.startsWith('/inscription') ? from : dashboardPath;
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -361,8 +380,14 @@ export function AuthPage({ mode }: { mode: 'connexion' | 'inscription' }) {
     const data = new FormData(form);
     const email = String(data.get('email') || '').trim();
     const password = String(data.get('password') || '').trim();
+    const fullName = String(data.get('full_name') || '').trim();
+    const termsAccepted = data.get('terms_accepted') === 'on';
     if (!email || !password) {
       setState({ type: 'error', message: 'Email et mot de passe sont obligatoires.' });
+      return;
+    }
+    if (isSignup && (!fullName || !termsAccepted)) {
+      setState({ type: 'error', message: "Indiquez votre nom et acceptez les conditions d'utilisation." });
       return;
     }
     if (password.length < 8) {
@@ -375,7 +400,7 @@ export function AuthPage({ mode }: { mode: 'connexion' | 'inscription' }) {
     }
     setState({ type: 'loading', message: '' });
     const response = isSignup
-      ? await supabase.auth.signUp({ email, password })
+      ? await supabase.auth.signUp({ email, password, options: { data: { full_name: fullName } } })
       : await supabase.auth.signInWithPassword({ email, password });
     if (response.error) {
       console.error('Erreur auth Supabase', response.error);
@@ -383,6 +408,9 @@ export function AuthPage({ mode }: { mode: 'connexion' | 'inscription' }) {
       return;
     }
     setState({ type: 'success', message: isSignup ? 'Compte créé. Vérifiez votre email si la confirmation est activée.' : 'Connexion réussie.' });
+    if (!isSignup || response.data.session) {
+      window.setTimeout(() => navigate(redirectPath), 250);
+    }
   }
 
   return (
@@ -391,6 +419,7 @@ export function AuthPage({ mode }: { mode: 'connexion' | 'inscription' }) {
       <PageHero title={isSignup ? 'Créer un compte' : 'Connexion'} description="Authentification Supabase prête à connecter pour session persistante et déconnexion." />
       <section className="form-shell single">
         <form className="stacked-form" onSubmit={onSubmit} noValidate>
+          {isSignup && <label><span>Nom complet</span><input name="full_name" type="text" required placeholder="Votre nom complet" /></label>}
           <label><span>Email</span><input name="email" type="email" required placeholder="vous@exemple.fr" /></label>
           <label>
             <span>Mot de passe</span>
@@ -410,6 +439,12 @@ export function AuthPage({ mode }: { mode: 'connexion' | 'inscription' }) {
               </button>
             </div>
           </label>
+          {isSignup && (
+            <label className="checkbox-line">
+              <input name="terms_accepted" type="checkbox" required />
+              <span>J'accepte les <Link to="/conditions-utilisation">conditions d'utilisation</Link> et la <Link to="/politique-confidentialite">politique de confidentialité</Link>.</span>
+            </label>
+          )}
           <button className="primary-button" type="submit" disabled={state.type === 'loading'}>
             {state.type === 'loading' ? 'Chargement…' : isSignup ? 'Créer mon compte' : 'Me connecter'}
           </button>
@@ -423,30 +458,108 @@ export function AuthPage({ mode }: { mode: 'connexion' | 'inscription' }) {
 
 export function WorkspacePage({ title, audience }: { title: string; audience: 'client' | 'cabinet' }) {
   const isClient = audience === 'client';
+  const location = useLocation();
+  const { profile, user } = useAuth();
+  const [snapshot, setSnapshot] = useState<WorkspaceSnapshot>({
+    cases: 0,
+    documents: 0,
+    unreadMessages: 0,
+    payments: 0,
+    subscriptionStatus: 'non actif',
+    stripeCustomerId: null,
+    error: '',
+  });
+  const [portalState, setPortalState] = useState<FormState>({ type: 'idle', message: '' });
+
+  useEffect(() => {
+    if (!supabase || !user) return;
+
+    let mounted = true;
+
+    async function loadWorkspaceSnapshot() {
+      const [casesResult, documentsResult, messagesResult, paymentsResult, subscriptionResult] = await Promise.all([
+        supabase!.from('cases').select('id', { count: 'exact', head: true }),
+        supabase!.from('documents').select('id', { count: 'exact', head: true }),
+        supabase!.from('messages').select('id', { count: 'exact', head: true }).eq('recipient_id', user!.id).is('read_at', null),
+        supabase!.from('payments').select('id', { count: 'exact', head: true }),
+        supabase!.from('subscriptions').select('status,stripe_customer_id').order('updated_at', { ascending: false }).limit(1).maybeSingle(),
+      ]);
+
+      if (!mounted) return;
+
+      const firstError = casesResult.error || documentsResult.error || messagesResult.error || paymentsResult.error || subscriptionResult.error;
+      if (firstError) console.error('Erreur chargement espace privé', firstError);
+
+      setSnapshot({
+        cases: casesResult.count ?? 0,
+        documents: documentsResult.count ?? 0,
+        unreadMessages: messagesResult.count ?? 0,
+        payments: paymentsResult.count ?? 0,
+        subscriptionStatus: subscriptionResult.data?.status ?? 'non actif',
+        stripeCustomerId: subscriptionResult.data?.stripe_customer_id ?? null,
+        error: firstError ? 'Certaines données privées ne peuvent pas être chargées. Vérifiez Supabase, RLS et votre rôle.' : '',
+      });
+    }
+
+    loadWorkspaceSnapshot();
+
+    return () => {
+      mounted = false;
+    };
+  }, [user]);
+
+  async function openBillingPortal() {
+    setPortalState({ type: 'idle', message: '' });
+    if (!snapshot.stripeCustomerId) {
+      setPortalState({ type: 'error', message: "Aucun client Stripe n'est encore associé à ce compte." });
+      return;
+    }
+
+    setPortalState({ type: 'loading', message: '' });
+    try {
+      await openCustomerPortal(snapshot.stripeCustomerId);
+    } catch (error) {
+      console.error('Portail Stripe indisponible', error);
+      setPortalState({ type: 'error', message: 'Portail de facturation bientôt disponible après configuration Stripe serveur.' });
+    }
+  }
+
+  const routeHelp = getWorkspaceHelp(location.pathname, isClient);
+
   return (
     <>
       <Seo title={title} description={`Espace ${audience} ClairDossier prêt à connecter à Supabase Auth et RLS.`} />
-      <PageHero title={title} description={`Page privée ${audience}. Les données réelles doivent être protégées par Supabase Auth et RLS avant production.`} />
+      <PageHero title={title} description={`Espace privé ${audience} protégé par Supabase Auth. Les données affichées dépendent des règles RLS et de la configuration du compte.`} />
 
       <section className="stat-row" style={{ width: 'min(1180px, calc(100% - 2rem))', margin: '0 auto' }}>
         {isClient ? (
           <>
-            <div className="stat-card"><span className="stat-value">0</span><span className="stat-label">Dossiers actifs</span></div>
-            <div className="stat-card"><span className="stat-value">0</span><span className="stat-label">Documents</span></div>
-            <div className="stat-card"><span className="stat-value">0</span><span className="stat-label">Messages non lus</span></div>
-            <div className="stat-card"><span className="stat-value">—</span><span className="stat-label">Abonnement</span></div>
+            <div className="stat-card"><span className="stat-value">{snapshot.cases}</span><span className="stat-label">Dossiers visibles</span></div>
+            <div className="stat-card"><span className="stat-value">{snapshot.documents}</span><span className="stat-label">Documents</span></div>
+            <div className="stat-card"><span className="stat-value">{snapshot.unreadMessages}</span><span className="stat-label">Messages non lus</span></div>
+            <div className="stat-card"><span className="stat-value">{snapshot.subscriptionStatus}</span><span className="stat-label">Abonnement</span></div>
           </>
         ) : (
           <>
-            <div className="stat-card"><span className="stat-value">0</span><span className="stat-label">Dossiers reçus</span></div>
-            <div className="stat-card"><span className="stat-value">0</span><span className="stat-label">Clients</span></div>
-            <div className="stat-card"><span className="stat-value">0</span><span className="stat-label">Tâches en cours</span></div>
-            <div className="stat-card"><span className="stat-value">0</span><span className="stat-label">Messages</span></div>
+            <div className="stat-card"><span className="stat-value">{snapshot.cases}</span><span className="stat-label">Dossiers accessibles</span></div>
+            <div className="stat-card"><span className="stat-value">{profile?.role ?? '—'}</span><span className="stat-label">Rôle</span></div>
+            <div className="stat-card"><span className="stat-value">{snapshot.documents}</span><span className="stat-label">Documents</span></div>
+            <div className="stat-card"><span className="stat-value">{snapshot.unreadMessages}</span><span className="stat-label">Messages non lus</span></div>
           </>
         )}
       </section>
 
       <section className="dashboard-grid">
+        {snapshot.error && <p className="form-message error grid-wide">{snapshot.error}</p>}
+        <article className="feature-card">
+          <h2>{routeHelp.title}</h2>
+          <p>{routeHelp.text}</p>
+          {routeHelp.links.length > 0 && (
+            <div className="action-row">
+              {routeHelp.links.map((link) => <Link key={link.path} className={link.primary ? 'primary-button' : 'ghost-button'} to={link.path}>{link.label}</Link>)}
+            </div>
+          )}
+        </article>
         <article className="feature-card">
           <h2>Statuts dossier</h2>
           <ul>{caseStatuses.map((status) => <li key={status}>{status}</li>)}</ul>
@@ -458,6 +571,23 @@ export function WorkspacePage({ title, audience }: { title: string; audience: 'c
             : 'Dossiers, clients, messages, tâches, validations et facturation sont structurés dans les routes et le schéma SQL.'
           }</p>
         </article>
+        {location.pathname === '/abonnement' && (
+          <article className="feature-card">
+            <h2>Portail client Stripe</h2>
+            <p>Le portail permet de gérer les moyens de paiement, factures et résiliations lorsque Stripe est configuré et qu'un client Stripe existe.</p>
+            <button className="primary-button" type="button" onClick={openBillingPortal} disabled={portalState.type === 'loading'}>
+              {portalState.type === 'loading' ? 'Ouverture…' : 'Ouvrir le portail de facturation'}
+            </button>
+            {portalState.message && <p className={`form-message ${portalState.type === 'success' ? 'success' : 'error'}`}>{portalState.message}</p>}
+          </article>
+        )}
+        {location.pathname === '/paiements' && (
+          <article className="feature-card">
+            <h2>Paiements et factures</h2>
+            <p>{snapshot.payments} paiement(s) visible(s) via les règles RLS. Les factures détaillées sont disponibles dans Stripe dès que le portail client est actif.</p>
+            <Link className="text-link" to="/tarifs">Voir les formules</Link>
+          </article>
+        )}
         <article className="feature-card">
           <h2>Sécurité</h2>
           <p>Ne pas exposer de données sensibles sans session active, règles RLS et vérification du rôle utilisateur.</p>
@@ -476,6 +606,46 @@ export function WorkspacePage({ title, audience }: { title: string; audience: 'c
   );
 }
 
+function getWorkspaceHelp(pathname: string, isClient: boolean) {
+  if (pathname === '/documents') {
+    return {
+      title: 'Gestion documentaire',
+      text: "L'upload, le statut, la confidentialité et le rattachement au dossier sont prévus dans le schéma. Connectez Supabase Storage avant de recevoir des documents réels.",
+      links: [{ label: 'Créer un dossier', path: '/creer-dossier', primary: true }],
+    };
+  }
+
+  if (pathname === '/messages' || pathname === '/cabinet/messages') {
+    return {
+      title: 'Messagerie dossier',
+      text: 'Les messages sont rattachés aux dossiers avec historique et statut lu/non lu. Les données visibles restent limitées par les règles RLS.',
+      links: [],
+    };
+  }
+
+  if (pathname === '/abonnement' || pathname === '/paiements' || pathname === '/cabinet/facturation') {
+    return {
+      title: 'Paiement et abonnement',
+      text: 'Stripe Checkout, le webhook et le portail client sont préparés. Le paiement devient réel uniquement après configuration des clés, Price IDs et fonctions Edge.',
+      links: [{ label: 'Voir les tarifs', path: '/tarifs', primary: true }],
+    };
+  }
+
+  if (pathname.startsWith('/cabinet')) {
+    return {
+      title: 'Espace cabinet',
+      text: 'Vue cabinet pour dossiers reçus, clients, validations, tâches, messages et facturation. Les rôles lawyer, cabinet_admin et admin peuvent être gérés dans profiles.',
+      links: [{ label: 'Dossiers cabinet', path: '/cabinet/dossiers', primary: true }, { label: 'Messages', path: '/cabinet/messages' }],
+    };
+  }
+
+  return {
+    title: isClient ? 'Espace client' : 'Espace privé',
+    text: 'Consultez vos dossiers, documents, messages, paiements et paramètres dès que les données sont créées dans Supabase.',
+    links: [{ label: 'Créer un dossier', path: '/creer-dossier', primary: true }, { label: 'Mes dossiers', path: '/mes-dossiers' }],
+  };
+}
+
 export function PaymentStatusPage({ status }: { status: 'success' | 'cancel' }) {
   const success = status === 'success';
   return (
@@ -483,6 +653,27 @@ export function PaymentStatusPage({ status }: { status: 'success' | 'cancel' }) 
       <Seo title={success ? 'Paiement confirmé' : 'Paiement annulé'} description="Retour Stripe Checkout ClairDossier." path={success ? '/success' : '/cancel'} />
       <PageHero title={success ? 'Paiement confirmé' : 'Paiement annulé'} description={success ? "Stripe a redirigé vers la page de succès. Le webhook doit maintenant synchroniser l'abonnement." : "Le paiement a été annulé ou interrompu. Aucun abonnement n'a été activé."} />
       <section className="section-block centered"><Link className="primary-button" to={success ? '/abonnement' : '/tarifs'}>{success ? 'Voir mon abonnement' : 'Retour aux tarifs'}</Link></section>
+    </>
+  );
+}
+
+export function LoadingPage() {
+  return (
+    <>
+      <Seo title="Chargement" description="Chargement de votre espace ClairDossier." />
+      <PageHero title="Chargement de votre espace" description="Nous vérifions votre session sécurisée." />
+    </>
+  );
+}
+
+export function AuthConfigurationPage() {
+  return (
+    <>
+      <Seo title="Espace privé à connecter" description="Supabase Auth doit être configuré pour accéder aux pages privées ClairDossier." />
+      <PageHero title="Espace privé à connecter" description="Les pages privées nécessitent VITE_SUPABASE_URL et VITE_SUPABASE_ANON_KEY. Aucune donnée sensible n'est affichée sans authentification." />
+      <section className="section-block centered">
+        <Link className="primary-button" to="/contact">Contacter ClairDossier</Link>
+      </section>
     </>
   );
 }

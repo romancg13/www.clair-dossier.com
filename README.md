@@ -8,8 +8,8 @@ Slogan : **Votre dossier juridique, clair, structuré et suivi.**
 
 - React + Vite + TypeScript
 - React Router
-- Supabase client côté frontend, schéma SQL/RLS dans `supabase/migrations`
-- Fonctions Supabase Edge pour Stripe Checkout, webhook Stripe, portail client et assistant IA blog
+- Supabase client côté frontend, Supabase Auth, schéma SQL/RLS dans `supabase/migrations`
+- Fonctions Supabase Edge pour Stripe Checkout, webhook Stripe, portail client vérifié par RLS et assistant IA blog
 - SEO statique : `index.html`, `robots.txt`, `sitemap.xml`, Open Graph, JSON-LD Article/FAQ
 
 ## Lancer en local
@@ -41,14 +41,14 @@ Variables serveur uniquement, à configurer dans Supabase Edge Functions ou l'en
 - `STRIPE_SECRET_KEY`
 - `STRIPE_WEBHOOK_SECRET`
 - `AI_API_KEY`
+- `AI_PROVIDER_URL` (optionnel)
 - `SUPABASE_SERVICE_ROLE_KEY`
+- `SUPABASE_ANON_KEY` (fonctions Edge)
 - `SITE_URL`
-- `STRIPE_PRICE_DISCOVERY`
 - `STRIPE_PRICE_CLIENT_ESSENTIAL`
 - `STRIPE_PRICE_BUSINESS`
 - `STRIPE_PRICE_CABINET_SOLO`
 - `STRIPE_PRICE_CABINET_PRO`
-- `STRIPE_PRICE_CABINET_PREMIUM`
 
 Ne jamais exposer les clés secrètes Stripe, service role Supabase ou IA dans le frontend.
 
@@ -60,17 +60,18 @@ Appliquez la migration :
 supabase db push
 ```
 
-La migration crée les tables demandées : `profiles`, `contact_requests`, `newsletter_subscribers`, `demo_requests`, `cases`, `case_intake_answers`, `payments`, `subscriptions`, `blog_posts`, `blog_categories`, `audit_logs`, ainsi que `documents` et `messages` pour les espaces privés.
+Les migrations créent les tables demandées : `profiles`, `contact_requests`, `newsletter_subscribers`, `demo_requests`, `cases`, `case_intake_answers`, `payments`, `subscriptions`, `blog_posts`, `blog_categories`, `audit_logs`, ainsi que `documents` et `messages` pour les espaces privés. Elles activent aussi les règles RLS, les insertions publiques consenties et la création automatique d'un profil client après inscription Supabase Auth.
 
 ## Stripe
 
-Les boutons de tarifs appellent `create-checkout-session`. Le paiement réel nécessite :
+Les boutons des formules payantes appellent `create-checkout-session` après connexion utilisateur. La formule Découverte redirige vers la création de dossier et Cabinet Premium vers le contact commercial. Le paiement réel nécessite :
 
 1. clés Stripe test ;
 2. produits/prices Stripe ;
-3. variables `STRIPE_PRICE_*` ;
+3. variables `STRIPE_PRICE_*` pour les formules payantes ;
 4. déploiement des Edge Functions ;
-5. webhook Stripe pointant vers `stripe-webhook`.
+5. webhook Stripe pointant vers `stripe-webhook` ;
+6. portail client Stripe configuré pour la gestion d'abonnement.
 
 Sans cette configuration, le frontend affiche clairement que le paiement est bientôt disponible.
 
