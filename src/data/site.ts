@@ -22,13 +22,13 @@ export const productLinks = [
 
 export const resourceLinks = [
   { label: 'Documentation', path: '/documentation' },
-  { label: "Centre d'aide", path: '/aide' },
+  { label: "Centre d’aide", path: '/aide' },
   { label: 'Blog juridique', path: '/blog' },
   { label: 'Contact', path: '/contact' },
 ];
 
 export const legalLinks = [
-  { label: "Conditions d'utilisation", path: '/conditions-utilisation' },
+  { label: "Conditions d’utilisation", path: '/conditions-utilisation' },
   { label: 'Politique de confidentialité', path: '/politique-confidentialite' },
   { label: 'Mentions légales', path: '/mentions-legales' },
   { label: 'Cookies', path: '/cookies' },
@@ -51,7 +51,7 @@ export const featureCards = [
   },
   {
     title: 'IA encadrée',
-    text: "Les analyses IA sont soumises à validation humaine. L'IA ne remplace pas l'avocat et n'émet pas de conseil personnalisé autonome.",
+    text: "Les analyses IA sont soumises à validation humaine. L’IA ne remplace pas l’avocat et n’émet pas de conseil personnalisé autonome.",
   },
   {
     title: 'Base RGPD et sécurité',
@@ -107,9 +107,9 @@ export const plans = [
 export const caseStatuses = ['reçu', 'incomplet', 'en analyse', 'en attente de pièces', 'en attente validation avocat', 'clôturé'];
 
 export const warnings = [
-  "L'IA ne remplace pas l'avocat.",
+  "L’IA ne remplace pas l’avocat.",
   'Toute analyse doit être validée par un professionnel habilité.',
-  "Aucun conseil juridique personnalisé n'est transmis sans validation.",
+  "Aucun conseil juridique personnalisé n’est transmis sans validation.",
 ];
 
 export const categories = [
@@ -160,11 +160,11 @@ export const blogPosts: BlogPost[] = [
     content: [
       'Un dossier juridique exploitable commence par une chronologie courte : qui a fait quoi, quand, et avec quelles preuves. Cette étape réduit les incompréhensions et limite les échanges inutiles.',
       'Ajoutez ensuite les documents disponibles : contrats, emails, mises en demeure, factures, captures, courriers, décisions ou attestations. Chaque pièce doit être rattachée à un fait précis.',
-      "ClairDossier aide à structurer cette préparation, mais l'analyse juridique personnalisée doit rester validée par un avocat ou un professionnel habilité.",
+      "ClairDossier aide à structurer cette préparation, mais l’analyse juridique personnalisée doit rester validée par un avocat ou un professionnel habilité.",
     ],
     faq: [
       { question: 'Faut-il tout envoyer à son avocat ?', answer: 'Il vaut mieux transmettre les pièces utiles et signaler les éléments incertains. Le professionnel décidera ensuite ce qui est juridiquement pertinent.' },
-      { question: 'Une IA peut-elle qualifier juridiquement mon dossier ?', answer: "Une IA peut aider à organiser l'information, mais elle ne remplace pas l'avocat et ne doit pas délivrer seule un conseil personnalisé." },
+      { question: 'Une IA peut-elle qualifier juridiquement mon dossier ?', answer: "Une IA peut aider à organiser l’information, mais elle ne remplace pas l’avocat et ne doit pas délivrer seule un conseil personnalisé." },
     ],
     internalLinks: [
       { label: 'Créer un dossier', path: '/creer-dossier' },
@@ -175,25 +175,25 @@ export const blogPosts: BlogPost[] = [
     title: "IA juridique : pourquoi la validation humaine reste indispensable",
     slug: 'ia-et-avocat-validation-humaine',
     metaTitle: 'IA juridique et validation avocat | ClairDossier',
-    metaDescription: "Comprendre le rôle d'une IA LegalTech et les limites nécessaires pour protéger le client.",
-    summary: "L'IA peut accélérer le tri et la synthèse, mais la décision et le conseil doivent être validés humainement.",
+    metaDescription: "Comprendre le rôle d’une IA LegalTech et les limites nécessaires pour protéger le client.",
+    summary: "L’IA peut accélérer le tri et la synthèse, mais la décision et le conseil doivent être validés humainement.",
     category: 'IA et droit',
     author: 'Équipe ClairDossier',
     date: '2026-05-22',
     keywords: ['IA juridique', 'avocat', 'validation humaine', 'LegalTech'],
     status: 'publié',
     takeaways: [
-      "L'IA peut assister la préparation, pas remplacer le professionnel.",
+      "L’IA peut assister la préparation, pas remplacer le professionnel.",
       'Les sorties IA doivent être relues et validées.',
       'Les utilisateurs doivent être informés des limites du système.',
     ],
     content: [
-      "Dans une LegalTech prudente, l'IA sert d'assistant : elle aide à classer, résumer, identifier les informations manquantes et proposer des questions de suivi.",
+      "Dans une LegalTech prudente, l’IA sert d’assistant : elle aide à classer, résumer, identifier les informations manquantes et proposer des questions de suivi.",
       "Elle ne doit pas être présentée comme un avocat automatique. Les analyses IA sont soumises à validation humaine et aucun conseil personnalisé ne doit être transmis sans contrôle professionnel.",
       'Cette approche réduit les risques de mauvaise qualification, protège le secret professionnel et maintient une chaîne de responsabilité claire.',
     ],
     faq: [
-      { question: "L'IA de ClairDossier donne-t-elle un conseil juridique ?", answer: "Non. Les contenus et analyses sont informatifs ou préparatoires tant qu'un professionnel habilité ne les a pas validés." },
+      { question: "L’IA de ClairDossier donne-t-elle un conseil juridique ?", answer: "Non. Les contenus et analyses sont informatifs ou préparatoires tant qu’un professionnel habilité ne les a pas validés." },
       { question: 'Pourquoi afficher des avertissements IA ?', answer: 'Ils rappellent les limites du service et évitent de créer une confiance excessive dans une réponse automatisée.' },
     ],
     internalLinks: [
@@ -231,6 +231,161 @@ export const blogPosts: BlogPost[] = [
       { label: 'Page RGPD', path: '/rgpd' },
     ],
   },
+  {
+    title: 'Licenciement abusif : quels documents réunir pour se défendre ?',
+    slug: 'licenciement-abusif-documents-defense',
+    metaTitle: 'Documents pour contester un licenciement abusif | ClairDossier',
+    metaDescription: 'Liste des pièces à rassembler pour préparer un dossier prud’homal solide en cas de licenciement contesté.',
+    summary: 'Face à un licenciement contesté, la qualité du dossier dépend des preuves réunies dès les premiers jours.',
+    category: 'Droit du travail',
+    author: 'Équipe ClairDossier',
+    date: '2026-05-20',
+    keywords: ['licenciement abusif', 'prud\u2019hommes', 'droit du travail', 'documents'],
+    status: 'publié',
+    takeaways: [
+      'Conservez la lettre de licenciement, le contrat et les avenants.',
+      'Réunissez les bulletins de paie et les entretiens annuels.',
+      'Archivez les emails et SMS liés aux faits reprochés.',
+    ],
+    content: [
+      'En cas de licenciement contesté, le salarié doit prouver l’absence de cause réelle et sérieuse ou démontrer des irrégularités de procédure. La constitution rapide du dossier est essentielle.',
+      'Les pièces prioritaires sont : le contrat de travail et ses avenants, la lettre de convocation à l’entretien préalable, le compte-rendu de l’entretien, la lettre de licenciement, les bulletins de paie sur toute la période, les courriers de contestation et les attestations de collègues.',
+      'Classez ces documents par date dans un dossier structuré. Indiquez clairement les délais de recours. Le Conseil de prud’hommes doit être saisi dans les délais légaux applicables.',
+      'ClairDossier peut vous aider à structurer cette préparation. L’analyse juridique doit ensuite être validée par un avocat en droit du travail.',
+    ],
+    faq: [
+      { question: 'Quel est le délai pour contester un licenciement ?', answer: 'Le délai de prescription est généralement de 12 mois à compter de la notification du licenciement pour les licenciements pour motif personnel. Ce délai peut varier selon les situations.' },
+      { question: 'Peut-on contester un licenciement sans avocat ?', answer: 'Oui, la représentation par un avocat n’est pas obligatoire devant le Conseil de prud’hommes, mais elle est fortement recommandée pour des raisons de complexité technique.' },
+    ],
+    internalLinks: [
+      { label: 'Créer un dossier', path: '/creer-dossier' },
+      { label: 'Blog droit du travail', path: '/blog/categorie/droit-du-travail' },
+    ],
+  },
+  {
+    title: 'Recouvrement de créances : étapes et bonnes pratiques',
+    slug: 'recouvrement-creances-etapes-bonnes-pratiques',
+    metaTitle: 'Recouvrement de créances : guide pratique | ClairDossier',
+    metaDescription: 'Étapes du recouvrement amiable et judiciaire, documents nécessaires et erreurs à éviter.',
+    summary: 'Le recouvrement d’une créance impayée suit un parcours précis : relance, mise en demeure, puis procédure judiciaire si nécessaire.',
+    category: 'Recouvrement',
+    author: 'Équipe ClairDossier',
+    date: '2026-05-18',
+    keywords: ['recouvrement', 'créances', 'impayés', 'mise en demeure'],
+    status: 'publié',
+    takeaways: [
+      'Commencez toujours par une relance amiable écrite.',
+      'Envoyez une mise en demeure par courrier recommandé avec accusé de réception.',
+      'Conservez toutes les preuves de la créance et des relances.',
+    ],
+    content: [
+      'Le recouvrement amiable est la première étape : relance téléphonique, email de rappel, puis courrier recommandé de mise en demeure avec un délai raisonnable de paiement.',
+      'Si le débiteur ne répond pas ou refuse de payer, la phase judiciaire peut être envisagée : injonction de payer, assignation au tribunal, ou recours à un huissier de justice pour les créances établies.',
+      'Les documents essentiels sont : le contrat ou bon de commande, les factures impayées, les preuves de livraison ou de prestation, les relances envoyées et la mise en demeure.',
+      'La prescription des créances commerciales est généralement de 5 ans. Ne tardez pas à constituer votre dossier et à consulter un professionnel.',
+    ],
+    faq: [
+      { question: 'Combien de temps faut-il attendre avant une mise en demeure ?', answer: 'Il n’y a pas de délai légal minimum, mais une relance amiable préalable est recommandée. La mise en demeure intervient généralement après 15 à 30 jours sans paiement.' },
+      { question: 'L’injonction de payer est-elle coûteuse ?', answer: 'La requête en injonction de payer est une procédure simplifiée avec des frais limités. Le coût dépend du montant de la créance et du tribunal compétent.' },
+    ],
+    internalLinks: [
+      { label: 'Créer un dossier recouvrement', path: '/creer-dossier' },
+      { label: 'Tarifs ClairDossier', path: '/tarifs' },
+    ],
+  },
+  {
+    title: 'Bail commercial : les points clés à vérifier avant de signer',
+    slug: 'bail-commercial-points-cles-verification',
+    metaTitle: 'Bail commercial : vérifications avant signature | ClairDossier',
+    metaDescription: 'Les clauses essentielles à vérifier dans un bail commercial avant de s’engager.',
+    summary: 'Un bail commercial engage sur plusieurs années. La vérification attentive des clauses essentielles évite des litiges coûteux.',
+    category: 'Bail et immobilier',
+    author: 'Équipe ClairDossier',
+    date: '2026-05-16',
+    keywords: ['bail commercial', 'immobilier', 'loyer', 'clauses'],
+    status: 'publié',
+    takeaways: [
+      'Vérifiez la durée, le loyer, les charges et les conditions de révision.',
+      'Examinez les clauses de destination, sous-location et cession.',
+      'Faites relire le bail par un professionnel avant signature.',
+    ],
+    content: [
+      'Le bail commercial (bail 3-6-9) est régi par le statut des baux commerciaux. Il engage le preneur pour une durée minimale de 9 ans, avec possibilité de résiliation triennale sous conditions.',
+      'Les points essentiels à vérifier sont : le montant du loyer et les modalités de révision, la répartition des charges et travaux, la destination des lieux (activités autorisées), les conditions de cession du bail et la clause de solidarité.',
+      'Attention aux charges récupérables : depuis la loi Pinel, le bailleur doit fournir un état récapitulatif annuel des charges. Vérifiez aussi les travaux prévus et leur répartition.',
+      'Un bail mal négocié peut avoir des conséquences financières importantes. Faites relire le projet de bail par un avocat spécialisé avant toute signature.',
+    ],
+    faq: [
+      { question: 'Peut-on négocier un bail commercial ?', answer: 'Oui, le bail commercial est un contrat négociable. Le loyer, la durée, les charges et les travaux peuvent faire l’objet de discussions avant signature.' },
+      { question: 'Qu’est-ce que le droit au renouvellement ?', answer: 'Le locataire d’un bail commercial bénéficie d’un droit au renouvellement après 3 ans d’exploitation. Le refus du bailleur peut donner lieu à une indemnité d’éviction.' },
+    ],
+    internalLinks: [
+      { label: 'Créer un dossier immobilier', path: '/creer-dossier' },
+      { label: 'Sécurité des documents', path: '/securite' },
+    ],
+  },
+  {
+    title: 'Rédiger un contrat commercial solide : les clauses indispensables',
+    slug: 'contrat-commercial-clauses-indispensables',
+    metaTitle: 'Clauses indispensables d’un contrat commercial | ClairDossier',
+    metaDescription: 'Guide des clauses essentielles à intégrer dans un contrat commercial pour protéger votre entreprise.',
+    summary: 'Un contrat commercial bien rédigé protège les deux parties et prévient les litiges.',
+    category: 'Contrats',
+    author: 'Équipe ClairDossier',
+    date: '2026-05-14',
+    keywords: ['contrat commercial', 'clauses', 'entreprise', 'litige'],
+    status: 'publié',
+    takeaways: [
+      'Définissez précisément l’objet, le prix et les délais.',
+      'Incluez des clauses de responsabilité, résiliation et force majeure.',
+      'Prévoyez un mode de résolution des litiges.',
+    ],
+    content: [
+      'Un contrat commercial doit contenir au minimum : l’identification des parties, l’objet précis du contrat, le prix et les modalités de paiement, les délais d’exécution, les obligations de chaque partie et les conditions de résiliation.',
+      'Les clauses protectrices essentielles sont : la clause de responsabilité (limitation et exclusion), la clause de force majeure, la clause pénale (pénalités de retard), la clause de confidentialité et la clause compromissoire ou attributive de juridiction.',
+      'Pour les contrats de prestation, précisez les critères d’acceptation, les modalités de recette et les garanties après livraison. Pour les contrats de vente, détaillez les conditions de livraison, de garantie et de retour.',
+      'La rédaction d’un contrat commercial engage la responsabilité de l’entreprise. Faites-le relire par un juriste ou un avocat pour sécuriser vos engagements.',
+    ],
+    faq: [
+      { question: 'Un contrat verbal est-il valable ?', answer: 'En droit commercial, un contrat verbal peut être valable. Cependant, en cas de litige, la preuve est beaucoup plus difficile à apporter sans écrit.' },
+      { question: 'Faut-il obligatoirement un avocat pour rédiger un contrat ?', answer: 'Non, mais c’est fortement recommandé pour les contrats à enjeux importants. Un contrat mal rédigé peut coûter beaucoup plus cher qu’un conseil juridique.' },
+    ],
+    internalLinks: [
+      { label: 'Créer un dossier contrat', path: '/creer-dossier' },
+      { label: 'Formules pour entreprises', path: '/tarifs' },
+    ],
+  },
+  {
+    title: 'Créer sa société : les étapes juridiques essentielles',
+    slug: 'creer-societe-etapes-juridiques',
+    metaTitle: 'Création de société : étapes juridiques | ClairDossier',
+    metaDescription: 'Guide des formalités juridiques pour créer une société en France : statuts, immatriculation, obligations.',
+    summary: 'La création d’une société implique des étapes juridiques précises, du choix de la forme sociale à l’immatriculation.',
+    category: 'Droit des sociétés',
+    author: 'Équipe ClairDossier',
+    date: '2026-05-12',
+    keywords: ['création société', 'statuts', 'immatriculation', 'droit des sociétés'],
+    status: 'publié',
+    takeaways: [
+      'Choisissez la forme sociale adaptée à votre projet (SARL, SAS, etc.).',
+      'Rédigez des statuts complets et conformes.',
+      'Respectez les formalités de publication et d’immatriculation.',
+    ],
+    content: [
+      'Le choix de la forme sociale dépend du nombre d’associés, du capital prévu, du régime fiscal souhaité et du mode de gouvernance. Les formes les plus courantes sont la SARL, la SAS, l’EURL et la SASU.',
+      'Les étapes de création sont : la rédaction des statuts, le dépôt du capital social, la publication d’une annonce légale, le dépôt du dossier au guichet unique (INPI) et l’obtention du Kbis.',
+      'Les statuts doivent obligatoirement préciser : la forme sociale, la dénomination, le siège social, l’objet social, le capital, la durée, les apports et les modalités de fonctionnement.',
+      'Des erreurs dans les statuts ou les formalités peuvent entraîner des blocages ou des surcoûts. Un accompagnement juridique est recommandé pour sécuriser la création.',
+    ],
+    faq: [
+      { question: 'Quel est le capital minimum pour créer une SAS ?', answer: 'Le capital minimum d’une SAS est de 1 euro. Cependant, un capital trop faible peut poser des difficultés de crédibilité auprès des partenaires et des banques.' },
+      { question: 'Combien de temps faut-il pour créer une société ?', answer: 'Avec un dossier complet, l’immatriculation peut être obtenue en quelques jours à quelques semaines selon les greffes et la complexité du dossier.' },
+    ],
+    internalLinks: [
+      { label: 'Créer un dossier société', path: '/creer-dossier' },
+      { label: 'Documentation', path: '/documentation' },
+    ],
+  },
 ];
 
 export const infoPages = {
@@ -254,11 +409,11 @@ export const infoPages = {
     ],
   },
   aide: {
-    title: "Centre d'aide",
+    title: "Centre d’aide",
     description: 'Réponses courtes aux questions fréquentes sur ClairDossier.',
     sections: [
-      { title: 'ClairDossier remplace-t-il un avocat ?', text: "Non. ClairDossier structure l'information. L'IA ne remplace pas l'avocat et toute analyse doit être validée." },
-      { title: 'Où sont hébergées les données ?', text: "L'architecture est prévue pour un hébergement dans l'Union européenne via Supabase ou un fournisseur équivalent." },
+      { title: 'ClairDossier remplace-t-il un avocat ?', text: "Non. ClairDossier structure l’information. L’IA ne remplace pas l’avocat et toute analyse doit être validée." },
+      { title: 'Où sont hébergées les données ?', text: "L’architecture est prévue pour un hébergement dans l’Union européenne via Supabase ou un fournisseur équivalent." },
       { title: 'Le paiement est-il actif ?', text: 'Le code Stripe est prêt. Le checkout devient actif après configuration des clés et des price IDs Stripe.' },
     ],
   },
@@ -266,12 +421,12 @@ export const infoPages = {
 
 export const legalPages = {
   'conditions-utilisation': {
-    title: "Conditions d'utilisation",
+    title: "Conditions d’utilisation",
     description: 'Cadre prudent d’utilisation de ClairDossier.',
     sections: [
       { title: 'Objet du service', text: 'ClairDossier propose des outils de structuration, suivi et préparation de dossiers juridiques pour clients, PME, avocats et cabinets.' },
-      { title: 'Rôle de ClairDossier', text: "ClairDossier agit comme outil logiciel. Le service n'est pas un cabinet d'avocats et ne remplace pas l'intervention d'un professionnel habilité." },
-      { title: 'Absence de remplacement de l’avocat', text: "L'IA ne remplace pas l'avocat. Aucun conseil juridique personnalisé n'est transmis sans validation par un professionnel habilité." },
+      { title: 'Rôle de ClairDossier', text: "ClairDossier agit comme outil logiciel. Le service n’est pas un cabinet d’avocats et ne remplace pas l’intervention d’un professionnel habilité." },
+      { title: 'Absence de remplacement de l’avocat', text: "L’IA ne remplace pas l’avocat. Aucun conseil juridique personnalisé n’est transmis sans validation par un professionnel habilité." },
       { title: 'Règles d’utilisation', text: 'L’utilisateur s’engage à fournir des informations exactes, à ne pas déposer de contenu illicite et à respecter les droits des tiers.' },
       { title: 'Responsabilité', text: 'La responsabilité de ClairDossier est limitée aux fonctionnalités logicielles fournies, sous réserve du droit applicable et des obligations impératives.' },
       { title: 'Abonnements et paiement', text: 'Les abonnements sont gérés via Stripe lorsque la configuration est activée. Les conditions tarifaires applicables sont affichées avant paiement.' },

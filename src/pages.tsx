@@ -6,7 +6,7 @@ import { Seo } from './components/Seo';
 import { blogPosts, categories, caseStatuses, featureCards, infoPages, legalPages, plans, site, warnings } from './data/site';
 import { insertPublicRecord, supabase } from './lib/supabase';
 
-type FormState = { type: 'idle' | 'success' | 'error'; message: string };
+type FormState = { type: 'idle' | 'loading' | 'success' | 'error'; message: string };
 
 type FieldDef = {
   name: string;
@@ -14,6 +14,7 @@ type FieldDef = {
   type?: 'text' | 'email' | 'tel' | 'textarea' | 'select' | 'number' | 'datetime-local';
   options?: string[];
   required?: boolean;
+  placeholder?: string;
 };
 
 export function HomePage() {
@@ -37,7 +38,7 @@ export function HomePage() {
         </div>
         <div className="hero-panel" aria-label="Aperçu dossier ClairDossier">
           <span className="status-pill">En attente validation avocat</span>
-          <h2>Dossier prud’homal - synthèse</h2>
+          <h2>Dossier prud'homal - synthèse</h2>
           <ul className="timeline-list">
             <li>Chronologie client complétée</li>
             <li>4 documents à vérifier</li>
@@ -55,6 +56,20 @@ export function HomePage() {
             <article className="feature-card" key={feature.title}>
               <h3>{feature.title}</h3>
               <p>{feature.text}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="section-block">
+        <p className="eyebrow">Tarifs</p>
+        <h2>Des formules pour chaque profil</h2>
+        <div className="card-grid">
+          {plans.slice(0, 4).map((plan) => (
+            <article className="feature-card" key={plan.id}>
+              <h3>{plan.name} — {plan.price}</h3>
+              <p>{plan.audience}</p>
+              <Link className="text-link" to="/tarifs">Voir les détails</Link>
             </article>
           ))}
         </div>
@@ -108,7 +123,10 @@ export function LegalPage({ pageKey }: { pageKey: keyof typeof legalPages }) {
           </article>
         ))}
         {pageKey === 'cookies' && (
-          <button className="secondary-button" type="button" onClick={() => window.alert('Module de gestion des préférences à connecter avant activation de cookies non nécessaires.')}>
+          <button className="secondary-button" type="button" onClick={() => {
+            try { localStorage.removeItem('cd_cookie_consent'); } catch { /* noop */ }
+            window.alert('Préférence cookies réinitialisée. Rechargez la page pour voir la bannière de consentement.');
+          }}>
             Gérer mes préférences cookies
           </button>
         )}
@@ -120,8 +138,8 @@ export function LegalPage({ pageKey }: { pageKey: keyof typeof legalPages }) {
 export function PricingPage() {
   return (
     <>
-      <Seo title="Tarifs" description="Formules ClairDossier pour particuliers, PME et cabinets d’avocats avec Stripe Checkout prêt à connecter." path="/tarifs" />
-      <PageHero title="Tarifs" description="Choisissez une formule adaptée. Le paiement Stripe devient actif dès que les clés et Price IDs sont configurés côté serveur." />
+      <Seo title="Tarifs" description="Formules ClairDossier pour particuliers, PME et cabinets d'avocats avec Stripe Checkout prêt à connecter." path="/tarifs" />
+      <PageHero title="Tarifs" description="Choisissez une formule adaptée à votre profil. Le paiement Stripe devient actif dès que les clés et Price IDs sont configurés côté serveur." />
       <PricingCards />
     </>
   );
@@ -136,13 +154,13 @@ export function ContactPage() {
         description="Votre demande sera enregistrée dans la table contact_requests lorsque Supabase est configuré."
         table="contact_requests"
         fields={[
-          { name: 'name', label: 'Nom', required: true },
-          { name: 'email', label: 'Email', type: 'email', required: true },
-          { name: 'phone', label: 'Téléphone', type: 'tel' },
+          { name: 'name', label: 'Nom', required: true, placeholder: 'Votre nom complet' },
+          { name: 'email', label: 'Email', type: 'email', required: true, placeholder: 'vous@exemple.fr' },
+          { name: 'phone', label: 'Téléphone', type: 'tel', placeholder: '+33 6 00 00 00 00' },
           { name: 'request_type', label: 'Type de demande', type: 'select', required: true, options: ['Particulier', 'PME', 'Avocat', 'Cabinet', 'Partenariat', 'Support'] },
-          { name: 'message', label: 'Message', type: 'textarea', required: true },
+          { name: 'message', label: 'Message', type: 'textarea', required: true, placeholder: 'Décrivez votre demande...' },
         ]}
-        consentLabel="J’accepte que ClairDossier traite ma demande conformément à la politique de confidentialité."
+        consentLabel="J'accepte que ClairDossier traite ma demande conformément à la politique de confidentialité."
       />
     </>
   );
@@ -157,14 +175,14 @@ export function DemoPage() {
         description="Présentez votre structure et le créneau souhaité."
         table="demo_requests"
         fields={[
-          { name: 'name', label: 'Nom', required: true },
-          { name: 'email', label: 'Email', type: 'email', required: true },
-          { name: 'organization', label: 'Cabinet ou entreprise', required: true },
-          { name: 'users_count', label: 'Nombre d’utilisateurs', type: 'number', required: true },
+          { name: 'name', label: 'Nom', required: true, placeholder: 'Votre nom complet' },
+          { name: 'email', label: 'Email', type: 'email', required: true, placeholder: 'vous@exemple.fr' },
+          { name: 'organization', label: 'Cabinet ou entreprise', required: true, placeholder: 'Nom de votre structure' },
+          { name: 'users_count', label: "Nombre d'utilisateurs", type: 'number', required: true, placeholder: '5' },
           { name: 'preferred_slot', label: 'Créneau souhaité', type: 'datetime-local', required: true },
-          { name: 'message', label: 'Message', type: 'textarea' },
+          { name: 'message', label: 'Message', type: 'textarea', placeholder: 'Questions ou précisions...' },
         ]}
-        consentLabel="J’accepte d’être recontacté au sujet de la démo."
+        consentLabel="J'accepte d'être recontacté au sujet de la démo."
       />
     </>
   );
@@ -184,6 +202,8 @@ export function CreateCasePage() {
       setState({ type: 'error', message: 'Complétez les champs obligatoires et acceptez les conditions.' });
       return;
     }
+
+    setState({ type: 'loading', message: '' });
 
     const caseId = crypto.randomUUID();
     const caseResult = await insertPublicRecord('cases', {
@@ -225,12 +245,12 @@ export function CreateCasePage() {
         <form className="stacked-form" onSubmit={onSubmit} noValidate>
           <SelectField name="client_type" label="Type de client" options={['Particulier', 'PME', 'Association', 'Cabinet']} required />
           <SelectField name="legal_domain" label="Domaine juridique" options={['Droit du travail', 'Recouvrement', 'Bail et immobilier', 'Contrats', 'Droit des sociétés', 'RGPD', 'Autre']} required />
-          <label><span>Description du problème</span><textarea name="problem_description" required rows={6} /></label>
+          <label><span>Description du problème *</span><textarea name="problem_description" required rows={6} placeholder="Décrivez les faits, le contexte et les documents disponibles..." /></label>
           <SelectField name="urgency" label="Urgence" options={['Faible', 'Normale', 'Élevée', 'Délai judiciaire proche']} required />
           <label><span>Documents disponibles</span><textarea name="documents_available" rows={4} placeholder="Contrat, emails, facture, courrier..." /></label>
-          <label className="checkbox-line"><input name="terms_accepted" type="checkbox" required /><span>J’accepte les conditions d’utilisation et comprends que l’IA ne remplace pas l’avocat.</span></label>
-          <button className="primary-button" type="submit">Créer le dossier</button>
-          {state.message && <p className={`form-message ${state.type}`}>{state.message}</p>}
+          <label className="checkbox-line"><input name="terms_accepted" type="checkbox" required /><span>J'accepte les <Link to="/conditions-utilisation">conditions d'utilisation</Link> et comprends que l'IA ne remplace pas l'avocat.</span></label>
+          <button className="primary-button" type="submit" disabled={state.type === 'loading'}>{state.type === 'loading' ? 'Envoi en cours…' : 'Créer le dossier'}</button>
+          {state.message && <p className={`form-message ${state.type === 'success' ? 'success' : 'error'}`}>{state.message}</p>}
         </form>
         <StatusPanel />
       </section>
@@ -290,7 +310,7 @@ export function BlogPostPage() {
     <>
       <Seo title={post.metaTitle} description={post.metaDescription} path={`/blog/${post.slug}`} type="article" jsonLd={jsonLd} />
       <article className="article-page">
-        <Link className="text-link" to="/blog">Retour au blog</Link>
+        <Link className="text-link" to="/blog">← Retour au blog</Link>
         <p className="eyebrow">{post.category} · {new Date(post.date).toLocaleDateString('fr-FR')}</p>
         <h1>{post.title}</h1>
         <p className="lead">{post.summary}</p>
@@ -318,13 +338,21 @@ export function BlogCategoryPage() {
     <>
       <Seo title={`Blog ${category.name}`} description={`Articles ClairDossier sur ${category.name}.`} path={`/blog/categorie/${category.slug}`} />
       <PageHero title={category.name} description="Articles informatifs avec définitions, FAQ et maillage interne." />
-      <section className="blog-grid">{posts.map((post) => <BlogCard key={post.slug} post={post} />)}</section>
+      {posts.length > 0 ? (
+        <section className="blog-grid">{posts.map((post) => <BlogCard key={post.slug} post={post} />)}</section>
+      ) : (
+        <section className="section-block centered">
+          <p>Aucun article publié dans cette catégorie pour le moment.</p>
+          <Link className="text-link" to="/blog">Voir tous les articles</Link>
+        </section>
+      )}
     </>
   );
 }
 
 export function AuthPage({ mode }: { mode: 'connexion' | 'inscription' }) {
   const [state, setState] = useState<FormState>({ type: 'idle', message: '' });
+  const [showPassword, setShowPassword] = useState(false);
   const isSignup = mode === 'inscription';
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
@@ -337,16 +365,21 @@ export function AuthPage({ mode }: { mode: 'connexion' | 'inscription' }) {
       setState({ type: 'error', message: 'Email et mot de passe sont obligatoires.' });
       return;
     }
+    if (password.length < 8) {
+      setState({ type: 'error', message: 'Le mot de passe doit contenir au moins 8 caractères.' });
+      return;
+    }
     if (!supabase) {
       setState({ type: 'error', message: 'Authentification à connecter : renseignez VITE_SUPABASE_URL et VITE_SUPABASE_ANON_KEY.' });
       return;
     }
+    setState({ type: 'loading', message: '' });
     const response = isSignup
       ? await supabase.auth.signUp({ email, password })
       : await supabase.auth.signInWithPassword({ email, password });
     if (response.error) {
       console.error('Erreur auth Supabase', response.error);
-      setState({ type: 'error', message: 'Impossible de finaliser l’authentification. Vérifiez vos informations.' });
+      setState({ type: 'error', message: "Impossible de finaliser l'authentification. Vérifiez vos informations." });
       return;
     }
     setState({ type: 'success', message: isSignup ? 'Compte créé. Vérifiez votre email si la confirmation est activée.' : 'Connexion réussie.' });
@@ -358,11 +391,30 @@ export function AuthPage({ mode }: { mode: 'connexion' | 'inscription' }) {
       <PageHero title={isSignup ? 'Créer un compte' : 'Connexion'} description="Authentification Supabase prête à connecter pour session persistante et déconnexion." />
       <section className="form-shell single">
         <form className="stacked-form" onSubmit={onSubmit} noValidate>
-          <label><span>Email</span><input name="email" type="email" required /></label>
-          <label><span>Mot de passe</span><input name="password" type="password" minLength={8} required /></label>
-          <button className="primary-button" type="submit">{isSignup ? 'Créer mon compte' : 'Me connecter'}</button>
-          {state.message && <p className={`form-message ${state.type}`}>{state.message}</p>}
-          <Link className="text-link" to={isSignup ? '/connexion' : '/inscription'}>{isSignup ? 'J’ai déjà un compte' : 'Créer un compte'}</Link>
+          <label><span>Email</span><input name="email" type="email" required placeholder="vous@exemple.fr" /></label>
+          <label>
+            <span>Mot de passe</span>
+            <div className="password-wrapper">
+              <input name="password" type={showPassword ? 'text' : 'password'} minLength={8} required placeholder="Minimum 8 caractères" />
+              <button
+                className="password-toggle"
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+              >
+                {showPassword ? (
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" /><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" /><line x1="1" y1="1" x2="23" y2="23" /></svg>
+                ) : (
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+                )}
+              </button>
+            </div>
+          </label>
+          <button className="primary-button" type="submit" disabled={state.type === 'loading'}>
+            {state.type === 'loading' ? 'Chargement…' : isSignup ? 'Créer mon compte' : 'Me connecter'}
+          </button>
+          {state.message && <p className={`form-message ${state.type === 'success' ? 'success' : 'error'}`}>{state.message}</p>}
+          <Link className="text-link" to={isSignup ? '/connexion' : '/inscription'}>{isSignup ? "J'ai déjà un compte" : 'Créer un compte'}</Link>
         </form>
       </section>
     </>
@@ -370,14 +422,55 @@ export function AuthPage({ mode }: { mode: 'connexion' | 'inscription' }) {
 }
 
 export function WorkspacePage({ title, audience }: { title: string; audience: 'client' | 'cabinet' }) {
+  const isClient = audience === 'client';
   return (
     <>
       <Seo title={title} description={`Espace ${audience} ClairDossier prêt à connecter à Supabase Auth et RLS.`} />
       <PageHero title={title} description={`Page privée ${audience}. Les données réelles doivent être protégées par Supabase Auth et RLS avant production.`} />
+
+      <section className="stat-row" style={{ width: 'min(1180px, calc(100% - 2rem))', margin: '0 auto' }}>
+        {isClient ? (
+          <>
+            <div className="stat-card"><span className="stat-value">0</span><span className="stat-label">Dossiers actifs</span></div>
+            <div className="stat-card"><span className="stat-value">0</span><span className="stat-label">Documents</span></div>
+            <div className="stat-card"><span className="stat-value">0</span><span className="stat-label">Messages non lus</span></div>
+            <div className="stat-card"><span className="stat-value">—</span><span className="stat-label">Abonnement</span></div>
+          </>
+        ) : (
+          <>
+            <div className="stat-card"><span className="stat-value">0</span><span className="stat-label">Dossiers reçus</span></div>
+            <div className="stat-card"><span className="stat-value">0</span><span className="stat-label">Clients</span></div>
+            <div className="stat-card"><span className="stat-value">0</span><span className="stat-label">Tâches en cours</span></div>
+            <div className="stat-card"><span className="stat-value">0</span><span className="stat-label">Messages</span></div>
+          </>
+        )}
+      </section>
+
       <section className="dashboard-grid">
-        <article className="feature-card"><h2>Statuts dossier</h2><ul>{caseStatuses.map((status) => <li key={status}>{status}</li>)}</ul></article>
-        <article className="feature-card"><h2>Modules prévus</h2><p>Documents, messages, paiements, abonnement, tâches et validations sont structurés dans les routes et le schéma SQL.</p></article>
-        <article className="feature-card"><h2>Sécurité</h2><p>Ne pas exposer de données sensibles sans session active, règles RLS et vérification du rôle utilisateur.</p></article>
+        <article className="feature-card">
+          <h2>Statuts dossier</h2>
+          <ul>{caseStatuses.map((status) => <li key={status}>{status}</li>)}</ul>
+        </article>
+        <article className="feature-card">
+          <h2>Modules prévus</h2>
+          <p>{isClient
+            ? 'Documents, messages, paiements, abonnement et paramètres sont structurés dans les routes et le schéma SQL.'
+            : 'Dossiers, clients, messages, tâches, validations et facturation sont structurés dans les routes et le schéma SQL.'
+          }</p>
+        </article>
+        <article className="feature-card">
+          <h2>Sécurité</h2>
+          <p>Ne pas exposer de données sensibles sans session active, règles RLS et vérification du rôle utilisateur.</p>
+        </article>
+        <article className="feature-card">
+          <h2>Prochaines étapes</h2>
+          <ul>
+            <li>Configurer Supabase Auth</li>
+            <li>Activer les règles RLS par rôle</li>
+            <li>Connecter les données en temps réel</li>
+            <li>Activer les notifications</li>
+          </ul>
+        </article>
       </section>
     </>
   );
@@ -388,7 +481,7 @@ export function PaymentStatusPage({ status }: { status: 'success' | 'cancel' }) 
   return (
     <>
       <Seo title={success ? 'Paiement confirmé' : 'Paiement annulé'} description="Retour Stripe Checkout ClairDossier." path={success ? '/success' : '/cancel'} />
-      <PageHero title={success ? 'Paiement confirmé' : 'Paiement annulé'} description={success ? 'Stripe a redirigé vers la page de succès. Le webhook doit maintenant synchroniser l’abonnement.' : 'Le paiement a été annulé ou interrompu. Aucun abonnement n’a été activé.'} />
+      <PageHero title={success ? 'Paiement confirmé' : 'Paiement annulé'} description={success ? "Stripe a redirigé vers la page de succès. Le webhook doit maintenant synchroniser l'abonnement." : "Le paiement a été annulé ou interrompu. Aucun abonnement n'a été activé."} />
       <section className="section-block centered"><Link className="primary-button" to={success ? '/abonnement' : '/tarifs'}>{success ? 'Voir mon abonnement' : 'Retour aux tarifs'}</Link></section>
     </>
   );
@@ -397,12 +490,16 @@ export function PaymentStatusPage({ status }: { status: 'success' | 'cancel' }) 
 export function NotFoundPage() {
   return (
     <>
-      <Seo title="Page introuvable" description="La page demandée n’existe pas." />
-      <PageHero title="Page introuvable" description="Cette route n’existe pas encore ou l’URL est incorrecte." />
-      <section className="section-block centered"><Link className="primary-button" to="/">Retour à l’accueil</Link></section>
+      <Seo title="Page introuvable" description="La page demandée n'existe pas." />
+      <PageHero title="Page introuvable" description="Cette route n'existe pas encore ou l'URL est incorrecte." />
+      <section className="section-block centered">
+        <Link className="primary-button" to="/">Retour à l'accueil</Link>
+      </section>
     </>
   );
 }
+
+/* ─── Internal components ─── */
 
 function FormPage({ title, description, table, fields, consentLabel }: { title: string; description: string; table: string; fields: FieldDef[]; consentLabel: string }) {
   const [state, setState] = useState<FormState>({ type: 'idle', message: '' });
@@ -417,6 +514,7 @@ function FormPage({ title, description, table, fields, consentLabel }: { title: 
       setState({ type: 'error', message: 'Complétez les champs obligatoires et cochez le consentement RGPD.' });
       return;
     }
+    setState({ type: 'loading', message: '' });
     const payload = Object.fromEntries(fields.map((field) => [field.name, data.get(field.name)]));
     const result = await insertPublicRecord(table, { ...payload, consent_given: consent });
     setState({ type: result.ok ? 'success' : 'error', message: result.message });
@@ -430,8 +528,10 @@ function FormPage({ title, description, table, fields, consentLabel }: { title: 
         <form className="stacked-form" onSubmit={onSubmit} noValidate>
           {fields.map((field) => <RenderField key={field.name} field={field} />)}
           <label className="checkbox-line"><input name="consent" type="checkbox" required /><span>{consentLabel}</span></label>
-          <button className="primary-button" type="submit">Envoyer</button>
-          {state.message && <p className={`form-message ${state.type}`}>{state.message}</p>}
+          <button className="primary-button" type="submit" disabled={state.type === 'loading'}>
+            {state.type === 'loading' ? 'Envoi en cours…' : 'Envoyer'}
+          </button>
+          {state.message && <p className={`form-message ${state.type === 'success' ? 'success' : 'error'}`}>{state.message}</p>}
         </form>
       </section>
     </>
@@ -439,15 +539,15 @@ function FormPage({ title, description, table, fields, consentLabel }: { title: 
 }
 
 function RenderField({ field }: { field: FieldDef }) {
-  if (field.type === 'textarea') return <label><span>{field.label}</span><textarea name={field.name} required={field.required} rows={5} /></label>;
+  if (field.type === 'textarea') return <label><span>{field.label}{field.required ? ' *' : ''}</span><textarea name={field.name} required={field.required} rows={5} placeholder={field.placeholder} /></label>;
   if (field.type === 'select') return <SelectField name={field.name} label={field.label} options={field.options || []} required={field.required} />;
-  return <label><span>{field.label}</span><input name={field.name} type={field.type || 'text'} required={field.required} /></label>;
+  return <label><span>{field.label}{field.required ? ' *' : ''}</span><input name={field.name} type={field.type || 'text'} required={field.required} placeholder={field.placeholder} /></label>;
 }
 
 function SelectField({ name, label, options, required }: { name: string; label: string; options: string[]; required?: boolean }) {
   return (
     <label>
-      <span>{label}</span>
+      <span>{label}{required ? ' *' : ''}</span>
       <select name={name} required={required} defaultValue="">
         <option value="" disabled>Choisir</option>
         {options.map((option) => <option key={option} value={option}>{option}</option>)}
@@ -478,7 +578,7 @@ function BlogCard({ post }: { post: (typeof blogPosts)[number] }) {
       <h2>{post.title}</h2>
       <p>{post.summary}</p>
       <div className="keyword-row">{post.keywords.map((keyword) => <span key={keyword}>{keyword}</span>)}</div>
-      <Link className="text-link" to={`/blog/${post.slug}`}>Lire l’article</Link>
+      <Link className="text-link" to={`/blog/${post.slug}`}>Lire l'article</Link>
     </article>
   );
 }
