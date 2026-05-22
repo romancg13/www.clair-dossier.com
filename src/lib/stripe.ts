@@ -11,8 +11,8 @@ export async function redirectToCheckout(planId: string): Promise<void> {
   }
 
   const { supabase } = await import('./supabase');
-  const { data } = supabase ? await supabase.auth.getSession() : { data: { session: null } };
-  const session = data.session;
+  const { data: authData } = supabase ? await supabase.auth.getSession() : { data: { session: null } };
+  const session = authData.session;
   if (!session?.user) {
     throw new Error('Connectez-vous ou créez un compte pour activer un abonnement Stripe.');
   }
@@ -37,12 +37,12 @@ export async function redirectToCheckout(planId: string): Promise<void> {
     throw new Error("Le paiement n'est pas encore disponible. Vérifiez la configuration Stripe serveur.");
   }
 
-  const data = (await response.json()) as { url?: string };
-  if (!data.url) {
+  const checkoutData = (await response.json()) as { url?: string };
+  if (!checkoutData.url) {
     throw new Error('Session Stripe invalide.');
   }
 
-  window.location.assign(data.url);
+  window.location.assign(checkoutData.url);
 }
 
 export async function openCustomerPortal(customerId: string): Promise<void> {
@@ -51,8 +51,8 @@ export async function openCustomerPortal(customerId: string): Promise<void> {
   }
 
   const { supabase } = await import('./supabase');
-  const { data } = supabase ? await supabase.auth.getSession() : { data: { session: null } };
-  const token = data.session?.access_token || anonKey;
+  const { data: authData } = supabase ? await supabase.auth.getSession() : { data: { session: null } };
+  const token = authData.session?.access_token || anonKey;
 
   const response = await fetch(`${functionsUrl}/customer-portal`, {
     method: 'POST',
