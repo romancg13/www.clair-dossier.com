@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://clair-dossier.com/</loc><priority>1.0</priority></url>
+  <url><loc>https://clair-dossier.com/fonctionnalites</loc><priority>0.9</priority></url>
+  <url><loc>https://clair-dossier.com/tarifs</loc><priority>0.9</priority></url>
+  <url><loc>https://clair-dossier.com/securite</loc><priority>0.8</priority></url>
+  <url><loc>https://clair-dossier.com/rgpd</loc><priority>0.8</priority></url>
+  <url><loc>https://clair-dossier.com/documentation</loc><priority>0.7</priority></url>
+  <url><loc>https://clair-dossier.com/aide</loc><priority>0.7</priority></url>
+  <url><loc>https://clair-dossier.com/blog</loc><priority>0.9</priority></url>
+  <url><loc>https://clair-dossier.com/contact</loc><priority>0.8</priority></url>
+  <url><loc>https://clair-dossier.com/demo</loc><priority>0.8</priority></url>
+  <url><loc>https://clair-dossier.com/creer-dossier</loc><priority>0.8</priority></url>
+  <url><loc>https://clair-dossier.com/conditions-utilisation</loc><priority>0.5</priority></url>
+  <url><loc>https://clair-dossier.com/politique-confidentialite</loc><priority>0.5</priority></url>
+  <url><loc>https://clair-dossier.com/mentions-legales</loc><priority>0.5</priority></url>
+  <url><loc>https://clair-dossier.com/cookies</loc><priority>0.5</priority></url>
+  <url><loc>https://clair-dossier.com/blog/preparer-dossier-juridique-clair</loc><priority>0.8</priority></url>
+  <url><loc>https://clair-dossier.com/blog/ia-et-avocat-validation-humaine</loc><priority>0.8</priority></url>
+  <url><loc>https://clair-dossier.com/blog/rgpd-donnees-dossier-juridique</loc><priority>0.8</priority></url>
+</urlset>
