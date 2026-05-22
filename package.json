@@ -4,9 +4,9 @@
   "description": "Application LegalTech ClairDossier - dossiers juridiques clairs, structures et suivis.",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -p tsconfig.json && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc -b --pretty"
+    "typecheck": "tsc -p tsconfig.json --pretty"
   },
   "repository": {
     "type": "git",
