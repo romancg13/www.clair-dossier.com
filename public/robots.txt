@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /mes-dossiers
+Disallow: /dossier/
+Disallow: /documents
+Disallow: /messages
+Disallow: /paiements
+Disallow: /abonnement
+Disallow: /parametres
+Disallow: /cabinet/
+
+Sitemap: https://clair-dossier.com/sitemap.xml

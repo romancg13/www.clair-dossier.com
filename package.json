@@ -1,0 +1,43 @@
+{
+  "name": "clairdossier-legaltech",
+  "version": "0.1.0",
+  "description": "Application LegalTech ClairDossier - dossiers juridiques clairs, structures et suivis.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -b --pretty"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/romancg13/www.clair-dossier.com.git"
+  },
+  "keywords": [
+    "legaltech",
+    "react",
+    "vite",
+    "supabase",
+    "stripe",
+    "rgpd"
+  ],
+  "author": "",
+  "license": "UNLICENSED",
+  "bugs": {
+    "url": "https://github.com/romancg13/www.clair-dossier.com/issues"
+  },
+  "homepage": "https://clair-dossier.com",
+  "dependencies": {
+    "@stripe/stripe-js": "^9.6.0",
+    "@supabase/supabase-js": "^2.106.1",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "react-router-dom": "^7.15.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^6.0.2",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.14"
+  },
+  "private": true,
+  "type": "module"
+}
