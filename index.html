@@ -14,6 +14,17 @@
     <link rel="canonical" href="https://clair-dossier.com/" />
     <link rel="manifest" href="/manifest.json" />
     <title>ClairDossier - Votre dossier juridique, clair, structuré et suivi.</title>
+    <!-- SPA redirect handler for GitHub Pages -->
+    <script>
+      (function(l) {
+        if (l.search[1] === '/') {
+          var decoded = l.search.slice(1).split('&').map(function(s) {
+            return s.replace(/~and~/g, '&')
+          }).join('?');
+          window.history.replaceState(null, null, l.pathname.slice(0, -1) + decoded + l.hash);
+        }
+      }(window.location))
+    </script>
   </head>
   <body>
     <div id="root"></div>

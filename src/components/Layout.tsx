@@ -1,13 +1,62 @@
-import { Link, NavLink, Outlet } from 'react-router-dom';
+import { useCallback, useEffect, useState } from 'react';
+import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { footerBadges, legalLinks, productLinks, publicNav, resourceLinks, site, warnings } from '../data/site';
 
 function linkClass({ isActive }: { isActive: boolean }) {
   return isActive ? 'nav-link active' : 'nav-link';
 }
 
+const COOKIE_KEY = 'cd_cookie_consent';
+
 export function Layout() {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [showCookies, setShowCookies] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  const location = useLocation();
+
+  useEffect(() => { setMenuOpen(false); }, [location.pathname]);
+
+  useEffect(() => {
+    if (menuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [menuOpen]);
+
+  useEffect(() => {
+    try {
+      if (!localStorage.getItem(COOKIE_KEY)) setShowCookies(true);
+    } catch {
+      /* localStorage unavailable */
+    }
+  }, []);
+
+  useEffect(() => {
+    function onScroll() { setShowScrollTop(window.scrollY > 400); }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  const acceptCookies = useCallback(() => {
+    try { localStorage.setItem(COOKIE_KEY, 'accepted'); } catch { /* noop */ }
+    setShowCookies(false);
+  }, []);
+
+  const refuseCookies = useCallback(() => {
+    try { localStorage.setItem(COOKIE_KEY, 'refused'); } catch { /* noop */ }
+    setShowCookies(false);
+  }, []);
+
+  const scrollToTop = useCallback(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
   return (
     <div className="app-shell">
+      <a className="skip-nav" href="#main-content">Aller au contenu principal</a>
+
       <header className="site-header">
         <Link className="brand" to="/" aria-label="Accueil ClairDossier">
           <span className="brand-mark">CD</span>
@@ -16,20 +65,45 @@ export function Layout() {
             <small>{site.slogan}</small>
           </span>
         </Link>
+
         <nav className="main-nav" aria-label="Navigation principale">
           {publicNav.map((item) => (
-            <NavLink key={item.path} to={item.path} className={linkClass}>
-              {item.label}
-            </NavLink>
+            <NavLink key={item.path} to={item.path} className={linkClass}>{item.label}</NavLink>
           ))}
         </nav>
+
         <div className="header-actions">
           <Link className="ghost-button" to="/connexion">Connexion</Link>
           <Link className="primary-button" to="/creer-dossier">Créer un dossier</Link>
         </div>
+
+        <button
+          className="menu-toggle"
+          type="button"
+          aria-label={menuOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
+          aria-expanded={menuOpen}
+          onClick={() => setMenuOpen(!menuOpen)}
+        >
+          <svg className="menu-open" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" /></svg>
+          <svg className="menu-close" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+        </button>
       </header>
 
-      <main>
+      {/* Mobile drawer */}
+      <div className={`mobile-drawer${menuOpen ? ' open' : ''}`} aria-hidden={!menuOpen}>
+        <div className="drawer-backdrop" onClick={() => setMenuOpen(false)} />
+        <nav className="drawer-panel" aria-label="Navigation mobile">
+          {publicNav.map((item) => (
+            <NavLink key={item.path} to={item.path} className={linkClass}>{item.label}</NavLink>
+          ))}
+          <div className="drawer-actions">
+            <Link className="ghost-button full" to="/connexion">Connexion</Link>
+            <Link className="primary-button full" to="/creer-dossier">Créer un dossier</Link>
+          </div>
+        </nav>
+      </div>
+
+      <main id="main-content">
         <Outlet />
       </main>
 
@@ -57,10 +131,35 @@ export function Layout() {
         <FooterColumn title="Ressources" links={resourceLinks} />
         <FooterColumn title="Légal" links={legalLinks} />
         <div className="footer-bottom">
-          <span>© 2026 ClairDossier. Informations juridiques prudentes, à faire valider avant mise en production.</span>
+          <span>© {new Date().getFullYear()} ClairDossier. Informations juridiques prudentes, à faire valider avant mise en production.</span>
           <Link to="/contact">Nous contacter</Link>
         </div>
       </footer>
+
+      {/* Scroll to top */}
+      <button
+        className={`scroll-top${showScrollTop ? ' visible' : ''}`}
+        type="button"
+        onClick={scrollToTop}
+        aria-label="Retour en haut de page"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15" /></svg>
+      </button>
+
+      {/* Cookie consent banner */}
+      {showCookies && (
+        <div className="cookie-banner" role="dialog" aria-label="Consentement cookies">
+          <p>
+            ClairDossier utilise des cookies nécessaires au fonctionnement du site.
+            Aucun cookie analytique ou marketing n'est activé sans votre consentement.{' '}
+            <Link to="/cookies">En savoir plus</Link>
+          </p>
+          <div className="cookie-actions">
+            <button className="ghost-button" type="button" onClick={refuseCookies}>Refuser</button>
+            <button className="primary-button" type="button" onClick={acceptCookies}>Accepter</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
