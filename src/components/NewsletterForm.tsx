@@ -18,13 +18,18 @@ export function NewsletterForm() {
       return;
     }
 
-    const result = await insertPublicRecord('newsletter_subscribers', {
-      email,
-      consent_given: consent,
-      source: 'site_public',
-    });
-    setState({ type: result.ok ? 'success' : 'error', message: result.message });
-    if (result.ok) form.reset();
+    try {
+      const result = await insertPublicRecord('newsletter_subscribers', {
+        email,
+        consent_given: consent,
+        source: 'site_public',
+      });
+      setState({ type: result.ok ? 'success' : 'error', message: result.message });
+      if (result.ok) form.reset();
+    } catch (error) {
+      console.error('Erreur inscription newsletter', error);
+      setState({ type: 'error', message: "Nous n'avons pas pu enregistrer votre inscription. Réessayez plus tard." });
+    }
   }
 
   return (

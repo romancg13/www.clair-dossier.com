@@ -23,6 +23,25 @@ create table if not exists public.profiles (
   updated_at timestamptz not null default now()
 );
 
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  insert into public.profiles (id, email, full_name)
+  values (new.id, new.email, coalesce(new.raw_user_meta_data->>'full_name', ''))
+  on conflict (id) do nothing;
+  return new;
+end;
+$$;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute function public.handle_new_user();
+
 create table if not exists public.contact_requests (
   id uuid primary key default gen_random_uuid(),
   name text not null,
@@ -59,7 +78,7 @@ create table if not exists public.demo_requests (
 
 create table if not exists public.cases (
   id uuid primary key default gen_random_uuid(),
-  created_by uuid references auth.users(id) on delete set null,
+  created_by uuid default auth.uid() references auth.users(id) on delete set null,
   assigned_lawyer_id uuid references auth.users(id) on delete set null,
   cabinet_id uuid,
   title text not null,
@@ -187,6 +206,7 @@ create policy "admin_update_contact_requests" on public.contact_requests for upd
 
 create policy "public_insert_newsletter" on public.newsletter_subscribers for insert to anon, authenticated with check (consent_given = true);
 create policy "admin_select_newsletter" on public.newsletter_subscribers for select to authenticated using (public.is_admin());
+create policy "admin_update_newsletter" on public.newsletter_subscribers for update to authenticated using (public.is_admin()) with check (public.is_admin());
 
 create policy "public_insert_demo_requests" on public.demo_requests for insert to anon, authenticated with check (consent_given = true);
 create policy "admin_select_demo_requests" on public.demo_requests for select to authenticated using (public.is_admin());

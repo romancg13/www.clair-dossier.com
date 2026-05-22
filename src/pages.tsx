@@ -1,12 +1,22 @@
-import { FormEvent, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { FormEvent, useEffect, useState } from 'react';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { NewsletterForm } from './components/NewsletterForm';
 import { PricingCards } from './components/PricingCards';
 import { Seo } from './components/Seo';
 import { blogPosts, categories, caseStatuses, featureCards, infoPages, legalPages, plans, site, warnings } from './data/site';
+import { useAuth } from './lib/auth';
 import { insertPublicRecord, supabase } from './lib/supabase';
+import { redirectToCustomerPortal } from './lib/stripe';
 
 type FormState = { type: 'idle' | 'success' | 'error'; message: string };
+type WorkspacePageId = 'dashboard' | 'cases' | 'case-detail' | 'documents' | 'messages' | 'payments' | 'subscription' | 'settings' | 'clients' | 'tasks' | 'billing';
+type SubscriptionSummary = {
+  plan_id: string;
+  status: string;
+  stripe_customer_id: string | null;
+  current_period_end: string | null;
+  cancel_at_period_end: boolean;
+};
 
 type FieldDef = {
   name: string;
@@ -172,6 +182,7 @@ export function DemoPage() {
 
 export function CreateCasePage() {
   const [state, setState] = useState<FormState>({ type: 'idle', message: '' });
+  const { user } = useAuth();
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -185,36 +196,42 @@ export function CreateCasePage() {
       return;
     }
 
-    const caseId = crypto.randomUUID();
-    const caseResult = await insertPublicRecord('cases', {
-      id: caseId,
-      title: `Dossier ${String(data.get('legal_domain'))}`,
-      client_type: data.get('client_type'),
-      legal_domain: data.get('legal_domain'),
-      description: data.get('problem_description'),
-      urgency: data.get('urgency'),
-      status: 'reçu',
-      terms_accepted: accepted,
-    });
-
-    if (!caseResult.ok) {
-      setState({ type: 'error', message: caseResult.message });
-      return;
-    }
-
-    const answerResult = await insertPublicRecord('case_intake_answers', {
-      case_id: caseId,
-      answers: {
+    try {
+      const caseId = crypto.randomUUID();
+      const caseResult = await insertPublicRecord('cases', {
+        id: caseId,
+        created_by: user?.id ?? null,
+        title: `Dossier ${String(data.get('legal_domain'))}`,
         client_type: data.get('client_type'),
         legal_domain: data.get('legal_domain'),
-        problem_description: data.get('problem_description'),
+        description: data.get('problem_description'),
         urgency: data.get('urgency'),
-        documents_available: data.get('documents_available'),
-      },
-      consent_given: accepted,
-    });
-    setState({ type: answerResult.ok ? 'success' : 'error', message: answerResult.ok ? 'Votre dossier a été créé avec le statut reçu.' : answerResult.message });
-    if (answerResult.ok) form.reset();
+        status: 'reçu',
+        terms_accepted: accepted,
+      });
+
+      if (!caseResult.ok) {
+        setState({ type: 'error', message: caseResult.message });
+        return;
+      }
+
+      const answerResult = await insertPublicRecord('case_intake_answers', {
+        case_id: caseId,
+        answers: {
+          client_type: data.get('client_type'),
+          legal_domain: data.get('legal_domain'),
+          problem_description: data.get('problem_description'),
+          urgency: data.get('urgency'),
+          documents_available: data.get('documents_available'),
+        },
+        consent_given: accepted,
+      });
+      setState({ type: answerResult.ok ? 'success' : 'error', message: answerResult.ok ? 'Votre dossier a été créé avec le statut reçu.' : answerResult.message });
+      if (answerResult.ok) form.reset();
+    } catch (error) {
+      console.error('Erreur création dossier', error);
+      setState({ type: 'error', message: "Nous n'avons pas pu créer le dossier. Réessayez ou contactez-nous." });
+    }
   }
 
   return (
@@ -325,7 +342,15 @@ export function BlogCategoryPage() {
 
 export function AuthPage({ mode }: { mode: 'connexion' | 'inscription' }) {
   const [state, setState] = useState<FormState>({ type: 'idle', message: '' });
+  const { configured, user } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
   const isSignup = mode === 'inscription';
+  const from = ((location.state as { from?: { pathname?: string } } | null)?.from?.pathname) || '/dashboard';
+
+  useEffect(() => {
+    if (user && !isSignup) navigate(from, { replace: true });
+  }, [from, isSignup, navigate, user]);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -333,16 +358,22 @@ export function AuthPage({ mode }: { mode: 'connexion' | 'inscription' }) {
     const data = new FormData(form);
     const email = String(data.get('email') || '').trim();
     const password = String(data.get('password') || '').trim();
+    const fullName = String(data.get('full_name') || '').trim();
+    const termsAccepted = data.get('terms_accepted') === 'on';
     if (!email || !password) {
       setState({ type: 'error', message: 'Email et mot de passe sont obligatoires.' });
       return;
     }
-    if (!supabase) {
+    if (isSignup && (!fullName || !termsAccepted)) {
+      setState({ type: 'error', message: 'Indiquez votre nom et acceptez les conditions pour créer un compte.' });
+      return;
+    }
+    if (!configured || !supabase) {
       setState({ type: 'error', message: 'Authentification à connecter : renseignez VITE_SUPABASE_URL et VITE_SUPABASE_ANON_KEY.' });
       return;
     }
     const response = isSignup
-      ? await supabase.auth.signUp({ email, password })
+      ? await supabase.auth.signUp({ email, password, options: { data: { full_name: fullName } } })
       : await supabase.auth.signInWithPassword({ email, password });
     if (response.error) {
       console.error('Erreur auth Supabase', response.error);
@@ -350,6 +381,7 @@ export function AuthPage({ mode }: { mode: 'connexion' | 'inscription' }) {
       return;
     }
     setState({ type: 'success', message: isSignup ? 'Compte créé. Vérifiez votre email si la confirmation est activée.' : 'Connexion réussie.' });
+    if (!isSignup) navigate(from, { replace: true });
   }
 
   return (
@@ -358,8 +390,15 @@ export function AuthPage({ mode }: { mode: 'connexion' | 'inscription' }) {
       <PageHero title={isSignup ? 'Créer un compte' : 'Connexion'} description="Authentification Supabase prête à connecter pour session persistante et déconnexion." />
       <section className="form-shell single">
         <form className="stacked-form" onSubmit={onSubmit} noValidate>
+          {isSignup && <label><span>Nom complet</span><input name="full_name" type="text" required /></label>}
           <label><span>Email</span><input name="email" type="email" required /></label>
           <label><span>Mot de passe</span><input name="password" type="password" minLength={8} required /></label>
+          {isSignup && (
+            <label className="checkbox-line">
+              <input name="terms_accepted" type="checkbox" required />
+              <span>J’accepte les <Link className="text-link" to="/conditions-utilisation">conditions d’utilisation</Link> et la <Link className="text-link" to="/politique-confidentialite">politique de confidentialité</Link>.</span>
+            </label>
+          )}
           <button className="primary-button" type="submit">{isSignup ? 'Créer mon compte' : 'Me connecter'}</button>
           {state.message && <p className={`form-message ${state.type}`}>{state.message}</p>}
           <Link className="text-link" to={isSignup ? '/connexion' : '/inscription'}>{isSignup ? 'J’ai déjà un compte' : 'Créer un compte'}</Link>
@@ -369,15 +408,84 @@ export function AuthPage({ mode }: { mode: 'connexion' | 'inscription' }) {
   );
 }
 
-export function WorkspacePage({ title, audience }: { title: string; audience: 'client' | 'cabinet' }) {
+export function WorkspacePage({ title, audience, page = 'dashboard' }: { title: string; audience: 'client' | 'cabinet'; page?: WorkspacePageId }) {
+  const { session, user } = useAuth();
+  const [subscription, setSubscription] = useState<SubscriptionSummary | null>(null);
+  const [portalState, setPortalState] = useState<FormState>({ type: 'idle', message: '' });
+  const privateLinks = audience === 'client'
+    ? [
+        { label: 'Dashboard', path: '/dashboard' },
+        { label: 'Dossiers', path: '/mes-dossiers' },
+        { label: 'Documents', path: '/documents' },
+        { label: 'Messages', path: '/messages' },
+        { label: 'Paiements', path: '/paiements' },
+        { label: 'Abonnement', path: '/abonnement' },
+      ]
+    : [
+        { label: 'Dashboard', path: '/cabinet/dashboard' },
+        { label: 'Dossiers', path: '/cabinet/dossiers' },
+        { label: 'Clients', path: '/cabinet/clients' },
+        { label: 'Messages', path: '/cabinet/messages' },
+        { label: 'Tâches', path: '/cabinet/taches' },
+        { label: 'Facturation', path: '/cabinet/facturation' },
+      ];
+
+  useEffect(() => {
+    if (page !== 'subscription' || !supabase || !user) return;
+    supabase
+      .from('subscriptions')
+      .select('plan_id,status,stripe_customer_id,current_period_end,cancel_at_period_end')
+      .eq('user_id', user.id)
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (error) {
+          console.error('Erreur lecture abonnement', error);
+          setPortalState({ type: 'error', message: "Impossible de charger l'abonnement pour le moment." });
+          return;
+        }
+        setSubscription(data);
+      });
+  }, [page, user]);
+
+  async function openCustomerPortal() {
+    if (!subscription?.stripe_customer_id) {
+      setPortalState({ type: 'error', message: 'Aucun client Stripe actif trouvé. Souscrivez une formule ou contactez le support.' });
+      return;
+    }
+    setPortalState({ type: 'idle', message: '' });
+    try {
+      await redirectToCustomerPortal(subscription.stripe_customer_id, session?.access_token);
+    } catch (error) {
+      console.error('Erreur portail Stripe', error);
+      setPortalState({ type: 'error', message: error instanceof Error ? error.message : 'Portail Stripe bientôt disponible.' });
+    }
+  }
+
   return (
     <>
       <Seo title={title} description={`Espace ${audience} ClairDossier prêt à connecter à Supabase Auth et RLS.`} />
-      <PageHero title={title} description={`Page privée ${audience}. Les données réelles doivent être protégées par Supabase Auth et RLS avant production.`} />
+      <PageHero title={title} description={`Page privée ${audience}. Session active pour ${user?.email || 'utilisateur connecté'} ; les données réelles restent protégées par Supabase Auth et RLS.`} />
+      <section className="category-row" aria-label={`Navigation espace ${audience}`}>
+        {privateLinks.map((link) => <Link key={link.path} to={link.path}>{link.label}</Link>)}
+      </section>
       <section className="dashboard-grid">
         <article className="feature-card"><h2>Statuts dossier</h2><ul>{caseStatuses.map((status) => <li key={status}>{status}</li>)}</ul></article>
-        <article className="feature-card"><h2>Modules prévus</h2><p>Documents, messages, paiements, abonnement, tâches et validations sont structurés dans les routes et le schéma SQL.</p></article>
+        <article className="feature-card"><h2>{workspaceModuleTitle(page)}</h2><p>{workspaceModuleDescription(page, audience)}</p></article>
         <article className="feature-card"><h2>Sécurité</h2><p>Ne pas exposer de données sensibles sans session active, règles RLS et vérification du rôle utilisateur.</p></article>
+        {page === 'subscription' && (
+          <article className="feature-card">
+            <h2>Portail client Stripe</h2>
+            {subscription ? (
+              <p>Formule : {subscription.plan_id}. Statut : {subscription.status}. Fin de période : {subscription.current_period_end ? new Date(subscription.current_period_end).toLocaleDateString('fr-FR') : 'à synchroniser'}.</p>
+            ) : (
+              <p>Aucun abonnement synchronisé pour ce compte. Le webhook Stripe doit alimenter la table subscriptions après checkout.</p>
+            )}
+            <button className="primary-button" type="button" onClick={openCustomerPortal}>Gérer mon abonnement</button>
+            {portalState.message && <p className={`form-message ${portalState.type}`}>{portalState.message}</p>}
+          </article>
+        )}
       </section>
     </>
   );
@@ -418,9 +526,14 @@ function FormPage({ title, description, table, fields, consentLabel }: { title: 
       return;
     }
     const payload = Object.fromEntries(fields.map((field) => [field.name, data.get(field.name)]));
-    const result = await insertPublicRecord(table, { ...payload, consent_given: consent });
-    setState({ type: result.ok ? 'success' : 'error', message: result.message });
-    if (result.ok) form.reset();
+    try {
+      const result = await insertPublicRecord(table, { ...payload, consent_given: consent });
+      setState({ type: result.ok ? 'success' : 'error', message: result.message });
+      if (result.ok) form.reset();
+    } catch (error) {
+      console.error(`Erreur formulaire ${table}`, error);
+      setState({ type: 'error', message: "Nous n'avons pas pu enregistrer votre demande. Réessayez ou contactez-nous par email." });
+    }
   }
 
   return (
@@ -458,6 +571,40 @@ function SelectField({ name, label, options, required }: { name: string; label: 
 
 function PageHero({ title, description }: { title: string; description: string }) {
   return <section className="page-hero"><p className="eyebrow">ClairDossier</p><h1>{title}</h1><p>{description}</p></section>;
+}
+
+function workspaceModuleTitle(page: WorkspacePageId) {
+  const titles: Record<WorkspacePageId, string> = {
+    dashboard: 'Vue opérationnelle',
+    cases: 'Gestion des dossiers',
+    'case-detail': 'Dossier détaillé',
+    documents: 'Gestion documentaire',
+    messages: 'Messagerie',
+    payments: 'Paiements',
+    subscription: 'Abonnement',
+    settings: 'Paramètres',
+    clients: 'Clients cabinet',
+    tasks: 'Tâches et validations',
+    billing: 'Facturation cabinet',
+  };
+  return titles[page];
+}
+
+function workspaceModuleDescription(page: WorkspacePageId, audience: 'client' | 'cabinet') {
+  const descriptions: Record<WorkspacePageId, string> = {
+    dashboard: audience === 'client' ? 'Vue synthétique des dossiers, messages, documents attendus et paiements.' : 'Vue cabinet des dossiers reçus, clients, tâches, validations et facturation.',
+    cases: 'Les listes de dossiers seront lues depuis Supabase avec RLS : reçu, incomplet, en analyse, attente de pièces, validation avocat et clôturé.',
+    'case-detail': 'Le détail dossier doit regrouper faits, pièces, messages, statuts et validations sans conseil automatisé non contrôlé.',
+    documents: 'Upload, liste, statut, confidentialité et rattachement au dossier sont prévus par le schéma documents et les futurs buckets Storage.',
+    messages: 'Les échanges client-avocat seront historisés, rattachés au dossier et marqués lu/non lu via la table messages.',
+    payments: 'Les paiements Stripe sont synchronisés dans payments par webhook ; les factures restent consultables via Stripe.',
+    subscription: 'Les abonnements sont synchronisés par webhook dans subscriptions et gérés via le portail client Stripe.',
+    settings: 'Paramètres de compte, consentements, rôle et préférences doivent respecter les droits RGPD et la séparation des accès.',
+    clients: 'Les cabinets pourront suivre les clients rattachés à leurs dossiers avec contrôle de rôle cabinet_admin/lawyer.',
+    tasks: 'Les tâches cadrent les demandes de pièces, validations avocat et échéances internes.',
+    billing: 'La facturation cabinet s’appuie sur Stripe Checkout, le portail client et la table subscriptions.',
+  };
+  return descriptions[page];
 }
 
 function StatusPanel() {

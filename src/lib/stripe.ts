@@ -7,7 +7,13 @@ const functionsUrl = import.meta.env.VITE_SUPABASE_FUNCTIONS_URL || (supabaseUrl
 
 export const isStripeConfigured = Boolean(stripePublicKey && functionsUrl && anonKey);
 
-export async function redirectToCheckout(planId: string): Promise<void> {
+type CheckoutOptions = {
+  customerEmail?: string | null;
+  userId?: string | null;
+  accessToken?: string;
+};
+
+export async function redirectToCheckout(planId: string, options: CheckoutOptions = {}): Promise<void> {
   if (!isStripeConfigured || !stripePublicKey || !functionsUrl || !anonKey) {
     throw new Error('Paiement bientôt disponible : configurez Stripe et les fonctions serveur pour activer le checkout.');
   }
@@ -16,12 +22,14 @@ export async function redirectToCheckout(planId: string): Promise<void> {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${anonKey}`,
+      Authorization: `Bearer ${options.accessToken || anonKey}`,
     },
     body: JSON.stringify({
       planId,
       successUrl: `${window.location.origin}/success`,
       cancelUrl: `${window.location.origin}/cancel`,
+      customerEmail: options.customerEmail || undefined,
+      userId: options.userId || undefined,
     }),
   });
 
@@ -45,4 +53,34 @@ export async function redirectToCheckout(planId: string): Promise<void> {
     console.error('Erreur redirectToCheckout', error);
     throw new Error('Impossible de rediriger vers le paiement Stripe.');
   }
+}
+
+export async function redirectToCustomerPortal(customerId: string, accessToken?: string): Promise<void> {
+  if (!isStripeConfigured || !functionsUrl || !anonKey) {
+    throw new Error('Portail Stripe bientôt disponible : configurez Stripe et les fonctions serveur.');
+  }
+
+  const response = await fetch(`${functionsUrl}/customer-portal`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken || anonKey}`,
+    },
+    body: JSON.stringify({
+      customerId,
+      returnUrl: `${window.location.origin}/abonnement`,
+    }),
+  });
+
+  if (!response.ok) {
+    console.error('Erreur customer-portal', await response.text());
+    throw new Error("Le portail client Stripe n'est pas encore disponible.");
+  }
+
+  const data = (await response.json()) as { url?: string };
+  if (!data.url) {
+    throw new Error('URL de portail Stripe invalide.');
+  }
+
+  window.location.assign(data.url);
 }

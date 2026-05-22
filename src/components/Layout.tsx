@@ -1,11 +1,22 @@
 import { Link, NavLink, Outlet } from 'react-router-dom';
 import { footerBadges, legalLinks, productLinks, publicNav, resourceLinks, site, warnings } from '../data/site';
+import { useAuth } from '../lib/auth';
 
 function linkClass({ isActive }: { isActive: boolean }) {
   return isActive ? 'nav-link active' : 'nav-link';
 }
 
 export function Layout() {
+  const { configured, user, signOut } = useAuth();
+
+  async function handleSignOut() {
+    try {
+      await signOut();
+    } catch {
+      window.alert('La déconnexion a échoué. Réessayez dans un instant.');
+    }
+  }
+
   return (
     <div className="app-shell">
       <header className="site-header">
@@ -22,10 +33,25 @@ export function Layout() {
               {item.label}
             </NavLink>
           ))}
+          {user && (
+            <>
+              <NavLink to="/dashboard" className={linkClass}>Espace client</NavLink>
+              <NavLink to="/cabinet/dashboard" className={linkClass}>Cabinet</NavLink>
+            </>
+          )}
         </nav>
         <div className="header-actions">
-          <Link className="ghost-button" to="/connexion">Connexion</Link>
-          <Link className="primary-button" to="/creer-dossier">Créer un dossier</Link>
+          {user ? (
+            <>
+              <Link className="ghost-button" to="/dashboard">{user.email || 'Mon compte'}</Link>
+              <button className="secondary-button" type="button" onClick={handleSignOut}>Déconnexion</button>
+            </>
+          ) : (
+            <>
+              <Link className="ghost-button" to="/connexion">{configured ? 'Connexion' : 'Connexion à configurer'}</Link>
+              <Link className="primary-button" to="/creer-dossier">Créer un dossier</Link>
+            </>
+          )}
         </div>
       </header>
 

@@ -41,14 +41,13 @@ Variables serveur uniquement, à configurer dans Supabase Edge Functions ou l'en
 - `STRIPE_SECRET_KEY`
 - `STRIPE_WEBHOOK_SECRET`
 - `AI_API_KEY`
+- `AI_PROVIDER_URL`
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `SITE_URL`
-- `STRIPE_PRICE_DISCOVERY`
 - `STRIPE_PRICE_CLIENT_ESSENTIAL`
 - `STRIPE_PRICE_BUSINESS`
 - `STRIPE_PRICE_CABINET_SOLO`
 - `STRIPE_PRICE_CABINET_PRO`
-- `STRIPE_PRICE_CABINET_PREMIUM`
 
 Ne jamais exposer les clés secrètes Stripe, service role Supabase ou IA dans le frontend.
 
@@ -64,15 +63,20 @@ La migration crée les tables demandées : `profiles`, `contact_requests`, `news
 
 ## Stripe
 
-Les boutons de tarifs appellent `create-checkout-session`. Le paiement réel nécessite :
+Les formules payantes appellent `create-checkout-session`. La formule Découverte démarre sans paiement et Cabinet Premium passe par une demande de démo/devis. Le paiement réel nécessite :
 
 1. clés Stripe test ;
 2. produits/prices Stripe ;
 3. variables `STRIPE_PRICE_*` ;
 4. déploiement des Edge Functions ;
 5. webhook Stripe pointant vers `stripe-webhook`.
+6. portail client Stripe activé si vous souhaitez permettre la gestion autonome des abonnements.
 
 Sans cette configuration, le frontend affiche clairement que le paiement est bientôt disponible.
+
+## Espaces privés
+
+Les routes `/dashboard`, `/mes-dossiers`, `/documents`, `/messages`, `/paiements`, `/abonnement`, `/parametres` et `/cabinet/*` sont protégées par Supabase Auth côté interface. Les données sensibles doivent rester protégées par les politiques RLS de la migration et par des contrôles de rôle côté fonctions serveur.
 
 ## Avertissement LegalTech
 
