@@ -23,6 +23,7 @@ export function Layout() {
 
   useEffect(() => {
     if (!supabase) return undefined;
+    const supabaseClient = supabase;
     let active = true;
 
     async function applySession(session: Session | null) {
@@ -33,7 +34,7 @@ export function Layout() {
         return;
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from('profiles')
         .select('role')
         .eq('id', session.user.id)
@@ -45,14 +46,14 @@ export function Layout() {
       if (active) setUserRole((data?.role as UserRole | undefined) || 'client');
     }
 
-    supabase.auth.getSession()
+    supabaseClient.auth.getSession()
       .then(({ data, error }) => {
         if (error) console.error('Impossible de récupérer la session Supabase', error);
         void applySession(data.session);
       })
       .catch((error: unknown) => console.error('Erreur session Supabase', error));
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: listener } = supabaseClient.auth.onAuthStateChange((_event, session) => {
       void applySession(session);
     });
 
