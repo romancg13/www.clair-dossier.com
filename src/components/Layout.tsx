@@ -1,20 +1,66 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
-import { footerBadges, legalLinks, productLinks, publicNav, resourceLinks, site, warnings } from '../data/site';
+import type { Session } from '@supabase/supabase-js';
+import { cabinetNav, clientNav, footerBadges, legalLinks, productLinks, publicNav, resourceLinks, site, warnings } from '../data/site';
+import { supabase } from '../lib/supabase';
 
 function linkClass({ isActive }: { isActive: boolean }) {
   return isActive ? 'nav-link active' : 'nav-link';
 }
 
 const COOKIE_KEY = 'cd_cookie_consent';
+type UserRole = 'client' | 'lawyer' | 'cabinet_admin' | 'admin';
 
 export function Layout() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [showCookies, setShowCookies] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [currentUserEmail, setCurrentUserEmail] = useState('');
+  const [userRole, setUserRole] = useState<UserRole>('client');
   const location = useLocation();
 
   useEffect(() => { setMenuOpen(false); }, [location.pathname]);
+
+  useEffect(() => {
+    if (!supabase) return undefined;
+    let active = true;
+
+    async function applySession(session: Session | null) {
+      if (!active) return;
+      setCurrentUserEmail(session?.user.email || '');
+      if (!session) {
+        setUserRole('client');
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', session.user.id)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Impossible de récupérer le rôle utilisateur', error);
+      }
+      if (active) setUserRole((data?.role as UserRole | undefined) || 'client');
+    }
+
+    supabase.auth.getSession()
+      .then(({ data, error }) => {
+        if (error) console.error('Impossible de récupérer la session Supabase', error);
+        void applySession(data.session);
+      })
+      .catch((error: unknown) => console.error('Erreur session Supabase', error));
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      void applySession(session);
+    });
+
+    return () => {
+      active = false;
+      listener.subscription.unsubscribe();
+    };
+  }, []);
 
   useEffect(() => {
     if (menuOpen) {
@@ -53,9 +99,27 @@ export function Layout() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
+  const skipToContent = useCallback(() => {
+    document.getElementById('main-content')?.focus();
+  }, []);
+
+  const signOut = useCallback(async () => {
+    if (!supabase) return;
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error('Erreur déconnexion Supabase', error);
+      window.alert("La déconnexion n'a pas pu être finalisée. Réessayez dans quelques instants.");
+      return;
+    }
+    setCurrentUserEmail('');
+    setUserRole('client');
+  }, []);
+
+  const workspaceNav = userRole === 'lawyer' || userRole === 'cabinet_admin' || userRole === 'admin' ? cabinetNav : clientNav;
+
   return (
     <div className="app-shell">
-      <a className="skip-nav" href="#main-content">Aller au contenu principal</a>
+      <button className="skip-nav" type="button" onClick={skipToContent}>Aller au contenu principal</button>
 
       <header className="site-header">
         <Link className="brand" to="/" aria-label="Accueil ClairDossier">
@@ -70,10 +134,23 @@ export function Layout() {
           {publicNav.map((item) => (
             <NavLink key={item.path} to={item.path} className={linkClass}>{item.label}</NavLink>
           ))}
+          {currentUserEmail && workspaceNav.slice(0, 3).map((item) => (
+            <NavLink key={item.path} to={item.path} className={linkClass}>{item.label}</NavLink>
+          ))}
         </nav>
 
         <div className="header-actions">
-          <Link className="ghost-button" to="/connexion">Connexion</Link>
+          {currentUserEmail ? (
+            <>
+              <Link className="ghost-button" to={workspaceNav[0].path}>Mon espace</Link>
+              <button className="ghost-button" type="button" onClick={signOut}>Déconnexion</button>
+            </>
+          ) : (
+            <>
+              <Link className="ghost-button" to="/connexion">Connexion</Link>
+              <Link className="secondary-button" to="/inscription">Inscription</Link>
+            </>
+          )}
           <Link className="primary-button" to="/creer-dossier">Créer un dossier</Link>
         </div>
 
@@ -96,14 +173,29 @@ export function Layout() {
           {publicNav.map((item) => (
             <NavLink key={item.path} to={item.path} className={linkClass}>{item.label}</NavLink>
           ))}
+          {currentUserEmail && (
+            <div className="drawer-section">
+              <span className="drawer-label">Espace connecté</span>
+              {workspaceNav.map((item) => (
+                <NavLink key={item.path} to={item.path} className={linkClass}>{item.label}</NavLink>
+              ))}
+            </div>
+          )}
           <div className="drawer-actions">
-            <Link className="ghost-button full" to="/connexion">Connexion</Link>
+            {currentUserEmail ? (
+              <button className="ghost-button full" type="button" onClick={signOut}>Déconnexion</button>
+            ) : (
+              <>
+                <Link className="ghost-button full" to="/connexion">Connexion</Link>
+                <Link className="secondary-button full" to="/inscription">Inscription</Link>
+              </>
+            )}
             <Link className="primary-button full" to="/creer-dossier">Créer un dossier</Link>
           </div>
         </nav>
       </div>
 
-      <main id="main-content">
+      <main id="main-content" tabIndex={-1}>
         <Outlet />
       </main>
 

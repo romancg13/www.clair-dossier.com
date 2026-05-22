@@ -1,3 +1,5 @@
+import { supabase } from './supabase';
+
 const stripePublicKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -10,14 +12,22 @@ export async function redirectToCheckout(planId: string): Promise<void> {
     throw new Error('Paiement bientôt disponible : configurez Stripe et les fonctions serveur pour activer le checkout.');
   }
 
+  const { data: sessionData, error: sessionError } = supabase
+    ? await supabase.auth.getSession()
+    : { data: { session: null }, error: null };
+  if (sessionError) console.error('Impossible de lire la session avant paiement', sessionError);
+  const accessToken = sessionData.session?.access_token || anonKey;
+
   const response = await fetch(`${functionsUrl}/create-checkout-session`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${anonKey}`,
+      apikey: anonKey,
+      Authorization: `Bearer ${accessToken}`,
     },
     body: JSON.stringify({
       planId,
+      customerEmail: sessionData.session?.user.email,
       successUrl: `${window.location.origin}/success`,
       cancelUrl: `${window.location.origin}/cancel`,
     }),

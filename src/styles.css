@@ -42,12 +42,15 @@ img { max-width: 100%; display: block; }
   z-index: 100;
   padding: 0.75rem 1.25rem;
   background: var(--navy);
+  border: 0;
   color: var(--white);
+  cursor: pointer;
   border-radius: var(--radius-sm);
   font-weight: 700;
   transition: top var(--transition-fast);
 }
 .skip-nav:focus { top: 1rem; }
+main:focus { outline: none; }
 
 /* ─── App Shell ─── */
 .app-shell { min-height: 100vh; display: flex; flex-direction: column; }
@@ -151,6 +154,20 @@ img { max-width: 100%; display: block; }
   margin-top: 1rem;
   padding-top: 1rem;
   border-top: 1px solid var(--line);
+}
+.drawer-section {
+  border-top: 1px solid var(--line);
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+}
+.drawer-label {
+  color: var(--muted);
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  margin: 0 0 0.4rem 1rem;
+  text-transform: uppercase;
 }
 
 /* ─── Buttons ─── */

@@ -205,9 +205,17 @@ export function CreateCasePage() {
 
     setState({ type: 'loading', message: '' });
 
+    let createdBy: string | null = null;
+    if (supabase) {
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+      if (authError) console.error('Impossible de rattacher le dossier à la session', authError);
+      createdBy = authData.user?.id || null;
+    }
+
     const caseId = crypto.randomUUID();
     const caseResult = await insertPublicRecord('cases', {
       id: caseId,
+      created_by: createdBy,
       title: `Dossier ${String(data.get('legal_domain'))}`,
       client_type: data.get('client_type'),
       legal_domain: data.get('legal_domain'),
@@ -509,13 +517,22 @@ function FormPage({ title, description, table, fields, consentLabel }: { title: 
     const form = event.currentTarget;
     const data = new FormData(form);
     const missing = fields.some((field) => field.required && !String(data.get(field.name) || '').trim());
+    const invalidNumber = fields.some((field) => {
+      if (field.type !== 'number') return false;
+      const value = String(data.get(field.name) || '').trim();
+      return Boolean(value) && Number.isNaN(Number(value));
+    });
     const consent = data.get('consent') === 'on';
     if (missing || !consent) {
       setState({ type: 'error', message: 'Complétez les champs obligatoires et cochez le consentement RGPD.' });
       return;
     }
+    if (invalidNumber) {
+      setState({ type: 'error', message: 'Vérifiez les champs numériques avant envoi.' });
+      return;
+    }
     setState({ type: 'loading', message: '' });
-    const payload = Object.fromEntries(fields.map((field) => [field.name, data.get(field.name)]));
+    const payload = buildFormPayload(fields, data);
     const result = await insertPublicRecord(table, { ...payload, consent_given: consent });
     setState({ type: result.ok ? 'success' : 'error', message: result.message });
     if (result.ok) form.reset();
@@ -542,6 +559,17 @@ function RenderField({ field }: { field: FieldDef }) {
   if (field.type === 'textarea') return <label><span>{field.label}{field.required ? ' *' : ''}</span><textarea name={field.name} required={field.required} rows={5} placeholder={field.placeholder} /></label>;
   if (field.type === 'select') return <SelectField name={field.name} label={field.label} options={field.options || []} required={field.required} />;
   return <label><span>{field.label}{field.required ? ' *' : ''}</span><input name={field.name} type={field.type || 'text'} required={field.required} placeholder={field.placeholder} /></label>;
+}
+
+function buildFormPayload(fields: FieldDef[], data: FormData) {
+  return Object.fromEntries(fields.map((field) => {
+    const rawValue = data.get(field.name);
+    const value = typeof rawValue === 'string' ? rawValue.trim() : rawValue;
+    if (value === null) return [field.name, null];
+    if (value === '') return [field.name, null];
+    if (field.type === 'number') return [field.name, Number(value)];
+    return [field.name, value];
+  }));
 }
 
 function SelectField({ name, label, options, required }: { name: string; label: string; options: string[]; required?: boolean }) {

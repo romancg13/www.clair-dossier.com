@@ -13,6 +13,22 @@ export const publicNav = [
   { label: 'Contact', path: '/contact' },
 ];
 
+export const clientNav = [
+  { label: 'Tableau de bord', path: '/dashboard' },
+  { label: 'Mes dossiers', path: '/mes-dossiers' },
+  { label: 'Documents', path: '/documents' },
+  { label: 'Messages', path: '/messages' },
+  { label: 'Abonnement', path: '/abonnement' },
+];
+
+export const cabinetNav = [
+  { label: 'Cabinet', path: '/cabinet/dashboard' },
+  { label: 'Dossiers', path: '/cabinet/dossiers' },
+  { label: 'Clients', path: '/cabinet/clients' },
+  { label: 'Tâches', path: '/cabinet/taches' },
+  { label: 'Facturation', path: '/cabinet/facturation' },
+];
+
 export const productLinks = [
   { label: 'Fonctionnalités', path: '/fonctionnalites' },
   { label: 'Tarifs', path: '/tarifs' },

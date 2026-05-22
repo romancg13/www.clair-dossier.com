@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { plans } from '../data/site';
 import { isStripeConfigured, redirectToCheckout } from '../lib/stripe';
 
@@ -40,14 +41,20 @@ export function PricingCards() {
             <ul>
               {plan.features.map((feature) => <li key={feature}>{feature}</li>)}
             </ul>
-            <button
-              className="primary-button full"
-              type="button"
-              onClick={() => choosePlan(plan.id)}
-              disabled={loadingPlan === plan.id}
-            >
-              {loadingPlan === plan.id ? 'Préparation…' : plan.price === '0 €' ? 'Commencer gratuitement' : plan.price === 'Sur devis' ? 'Nous contacter' : 'Choisir cette formule'}
-            </button>
+            {plan.price === '0 €' ? (
+              <Link className="primary-button full" to="/inscription">Commencer gratuitement</Link>
+            ) : plan.price === 'Sur devis' ? (
+              <Link className="primary-button full" to="/contact">Nous contacter</Link>
+            ) : (
+              <button
+                className="primary-button full"
+                type="button"
+                onClick={() => choosePlan(plan.id)}
+                disabled={loadingPlan === plan.id}
+              >
+                {loadingPlan === plan.id ? 'Préparation…' : 'Choisir cette formule'}
+              </button>
+            )}
           </article>
         ))}
       </div>
