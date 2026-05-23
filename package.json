@@ -4,6 +4,7 @@
   "description": "Application LegalTech ClairDossier - dossiers juridiques clairs, structures et suivis.",
   "scripts": {
     "dev": "vite",
+    "dev:payments": "node payments.js",
     "build": "tsc -p tsconfig.json && vite build",
     "preview": "vite preview",
     "typecheck": "tsc -p tsconfig.json --pretty"
@@ -28,11 +29,17 @@
   "homepage": "https://clair-dossier.com",
   "dependencies": {
     "@supabase/supabase-js": "^2.106.1",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
-    "react-router-dom": "^7.15.1"
+    "react-router-dom": "^7.15.1",
+    "stripe": "^22.1.1"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
     "@types/node": "^25.9.1",
     "@types/react": "^19.2.15",
     "@types/react-dom": "^19.2.3",

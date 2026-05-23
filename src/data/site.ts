@@ -5,6 +5,8 @@ export const site = {
   email: 'contact@clair-dossier.com',
 };
 
+export const annualDiscountPercent = 10;
+
 export const publicNav = [
   { label: 'Fonctionnalités', path: '/fonctionnalites' },
   { label: 'Tarifs', path: '/tarifs' },
