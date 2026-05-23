@@ -5,7 +5,7 @@ import type { BillingPeriod } from '../lib/stripe';
 import { isPlanCheckoutAvailable, redirectToCheckout } from '../lib/stripe';
 
 const POPULAR_PLAN = 'business';
-const yearlyDiscountPercent = 15;
+const yearlyDiscountPercent = 10;
 
 function formatEuro(amount: number) {
   return new Intl.NumberFormat('fr-FR', {
@@ -55,10 +55,10 @@ export function PricingCards() {
       <div className="billing-toggle" aria-label="Choix de périodicité">
         <button className={billingPeriod === 'monthly' ? 'active' : ''} type="button" onClick={() => setBillingPeriod('monthly')}>Mensuel</button>
         <button className={billingPeriod === 'yearly' ? 'active' : ''} type="button" onClick={() => setBillingPeriod('yearly')}>
-          Annuel <span>Économisez 15 %</span>
+          Annuel <span>Économisez 10 %</span>
         </button>
       </div>
-      {billingPeriod === 'yearly' && <p className="notice centered">Vous bénéficiez de 15 % de réduction avec le paiement annuel.</p>}
+      {billingPeriod === 'yearly' && <p className="notice centered">Vous bénéficiez de 10 % de réduction avec le paiement annuel.</p>}
       {message && <p className="form-message error centered">{message}</p>}
       <div className="pricing-grid">
         {plans.map((plan) => {
@@ -73,7 +73,7 @@ export function PricingCards() {
               <p>{plan.description}</p>
               <p className="price">{price.main}</p>
               {price.detail && <p className="price-detail">{price.detail}</p>}
-              {billingPeriod === 'yearly' && plan.monthlyPrice !== null && plan.monthlyPrice > 0 && <span className="discount-badge">Économisez 15 %</span>}
+              {billingPeriod === 'yearly' && plan.monthlyPrice !== null && plan.monthlyPrice > 0 && <span className="discount-badge">Économisez 10 %</span>}
               <ul>
                 {plan.features.map((feature) => <li key={feature}>{feature}</li>)}
               </ul>
