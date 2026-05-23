@@ -4,7 +4,8 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const functionsUrl = import.meta.env.VITE_SUPABASE_FUNCTIONS_URL || (supabaseUrl ? `${supabaseUrl}/functions/v1` : undefined);
 const paymentsApiUrl = import.meta.env.VITE_PAYMENTS_API_URL?.replace(/\/$/, '') || '';
-const nodeCheckoutEndpoint = paymentsApiUrl ? `${paymentsApiUrl}/api/create-checkout-session` : '';
+const localNodeCheckoutEndpoint = import.meta.env.DEV ? '/api/create-checkout-session' : '';
+const nodeCheckoutEndpoint = paymentsApiUrl ? `${paymentsApiUrl}/api/create-checkout-session` : localNodeCheckoutEndpoint;
 
 export type BillingPeriod = 'monthly' | 'yearly';
 
