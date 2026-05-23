@@ -77,6 +77,13 @@ export function PricingCards() {
               <ul>
                 {plan.features.map((feature) => <li key={feature}>{feature}</li>)}
               </ul>
+              {isPaidPlan && (
+                <div className="payment-methods" aria-label="Moyens de paiement acceptés">
+                  <span>Carte</span>
+                  <span>Apple Pay</span>
+                  <span>PayPal</span>
+                </div>
+              )}
               {isPaidPlan && !checkoutAvailable && <p className="payment-note">Le paiement sera activé dès que Stripe sera configuré.</p>}
               <button className="primary-button full" type="button" onClick={() => choosePlan(plan.id)} disabled={loadingPlan === plan.id || (isPaidPlan && !checkoutAvailable)}>
                 {loadingPlan === plan.id ? 'Préparation…' : plan.id === 'discovery' ? 'Commencer gratuitement' : 'Choisir cette formule'}

@@ -47,6 +47,7 @@ Deno.serve(async (request) => {
     const metadata = { plan_id: planId || 'unknown', billing_period: period, user_id: userId || '' };
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
+      automatic_payment_methods: { enabled: true },
       customer_email: customerEmail,
       client_reference_id: userId,
       line_items: [{ price, quantity: 1 }],
