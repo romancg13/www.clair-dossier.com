@@ -1,5 +1,6 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { Layout } from './components/Layout';
+import { ProtectedRoute } from './components/ProtectedRoute';
 import { AuthPage, BlogCategoryPage, BlogIndexPage, BlogPostPage, ContactPage, CreateCasePage, DemoPage, HomePage, InfoPage, LegalPage, NotFoundPage, PaymentStatusPage, PricingPage, WorkspacePage } from './pages';
 
 export default function App() {
@@ -25,7 +26,7 @@ export default function App() {
           <Route path="cookies" element={<LegalPage pageKey="cookies" />} />
           <Route path="connexion" element={<AuthPage mode="connexion" />} />
           <Route path="inscription" element={<AuthPage mode="inscription" />} />
-          <Route path="creer-dossier" element={<CreateCasePage />} />
+          <Route path="creer-dossier" element={<ProtectedRoute><CreateCasePage /></ProtectedRoute>} />
           <Route path="dashboard" element={<WorkspacePage title="Tableau de bord client" audience="client" />} />
           <Route path="mes-dossiers" element={<WorkspacePage title="Mes dossiers" audience="client" />} />
           <Route path="dossier/:id" element={<WorkspacePage title="Dossier" audience="client" />} />
