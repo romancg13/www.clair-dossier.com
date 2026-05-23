@@ -30,10 +30,11 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
       setAuthCheck({ isCheckingSession: false, isAuthenticated: false, isAuthorized: false });
       return;
     }
+    const client = supabase;
 
     let isMounted = true;
     async function checkSession() {
-      const { data } = await supabase.auth.getSession();
+      const { data } = await client.auth.getSession();
       if (!isMounted) return;
 
       if (!data.session) {
@@ -46,7 +47,7 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
         return;
       }
 
-      const { data: profile, error } = await supabase
+      const { data: profile, error } = await client
         .from('profiles')
         .select('role')
         .eq('id', data.session.user.id)
@@ -66,7 +67,7 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
 
     void checkSession();
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: listener } = client.auth.onAuthStateChange((_event, session) => {
       if (!session) {
         setAuthCheck({ isCheckingSession: false, isAuthenticated: false, isAuthorized: false });
         return;
