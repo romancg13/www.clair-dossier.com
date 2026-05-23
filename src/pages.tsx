@@ -1,20 +1,28 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { NewsletterForm } from './components/NewsletterForm';
 import { PricingCards } from './components/PricingCards';
 import { Seo } from './components/Seo';
 import { blogPosts, categories, caseStatuses, featureCards, infoPages, legalPages, plans, site, warnings } from './data/site';
 import { insertPublicRecord, supabase } from './lib/supabase';
+import { createDocumentSignedUrl, uploadCaseDocument } from './lib/documents';
+import { redirectToCustomerPortal } from './lib/stripe';
 import { getSafeRedirect, isHoneypotFilled, isValidEmail, sanitizeText, validatePassword } from './lib/security';
 import type { PublicFormTable } from './lib/security';
 
 type FormState = { type: 'idle' | 'loading' | 'success' | 'error'; message: string };
+type SelectOption = string | { label: string; value: string };
+type CaseRow = { id: string; title: string; status: string; legal_domain: string | null; urgency: string | null; created_at: string };
+type DocumentRow = { id: string; case_id: string | null; file_name: string; file_path: string; confidentiality: string; status: string; created_at: string };
+type MessageRow = { id: string; case_id: string | null; sender_id: string | null; recipient_id: string | null; body: string; read_at: string | null; created_at: string };
+type PaymentRow = { id: string; plan_id: string | null; amount_total: number | null; currency: string | null; status: string; created_at: string };
+type SubscriptionRow = { id: string; plan_id: string; status: string; billing_period: string | null; current_period_end: string | null; cancel_at_period_end: boolean };
 
 type FieldDef = {
   name: string;
   label: string;
   type?: 'text' | 'email' | 'tel' | 'textarea' | 'select' | 'number' | 'datetime-local';
-  options?: string[];
+  options?: SelectOption[];
   required?: boolean;
   placeholder?: string;
 };
@@ -487,7 +495,11 @@ export function AuthPage({ mode }: { mode: 'connexion' | 'inscription' }) {
             </div>
           </label>
           {isSignup && <label><span>Confirmation du mot de passe</span><input name="password_confirm" type="password" autoComplete="new-password" minLength={12} required placeholder="Répétez le mot de passe" /></label>}
-          {isSignup && <SelectField name="account_type" label="Type de compte" options={['client_particulier', 'client_entreprise', 'cabinet']} required />}
+          {isSignup && <SelectField name="account_type" label="Type de compte" options={[
+            { label: 'Particulier', value: 'client_particulier' },
+            { label: 'PME / entreprise', value: 'client_entreprise' },
+            { label: "Cabinet d'avocats", value: 'cabinet' },
+          ]} required />}
           {isSignup && <label className="checkbox-line"><input name="terms_accepted" type="checkbox" required /><span>J'accepte les <Link to="/conditions-utilisation">conditions d'utilisation</Link> et la <Link to="/politique-confidentialite">politique de confidentialité</Link>.</span></label>}
           <button className="primary-button" type="submit" disabled={state.type === 'loading'}>
             {state.type === 'loading' ? 'Chargement…' : isSignup ? 'Créer mon compte' : 'Me connecter'}
@@ -502,6 +514,11 @@ export function AuthPage({ mode }: { mode: 'connexion' | 'inscription' }) {
 
 export function WorkspacePage({ title, audience }: { title: string; audience: 'client' | 'cabinet' }) {
   const isClient = audience === 'client';
+  const location = useLocation();
+  const isDocuments = location.pathname === '/documents';
+  const isMessages = location.pathname.endsWith('/messages');
+  const isBilling = location.pathname === '/paiements' || location.pathname === '/abonnement' || location.pathname === '/cabinet/facturation';
+  const isCases = location.pathname === '/dashboard' || location.pathname === '/mes-dossiers' || location.pathname === '/cabinet/dashboard' || location.pathname === '/cabinet/dossiers';
   return (
     <>
       <Seo title={title} description={`Espace ${audience} ClairDossier prêt à connecter à Supabase Auth et RLS.`} />
@@ -524,6 +541,11 @@ export function WorkspacePage({ title, audience }: { title: string; audience: 'c
           </>
         )}
       </section>
+
+      {isCases && <CasesModule audience={audience} />}
+      {isDocuments && <DocumentsModule />}
+      {isMessages && <MessagesModule />}
+      {isBilling && <BillingModule />}
 
       <section className="dashboard-grid">
         <article className="feature-card">
@@ -607,8 +629,18 @@ function FormPage({ title, description, table, fields, consentLabel }: { title: 
     setState({ type: 'loading', message: '' });
     const payload = Object.fromEntries(fields.map((field) => {
       const maxLength = field.type === 'textarea' ? 2000 : 254;
-      const value = field.name === 'email' ? email : sanitizeText(data.get(field.name), maxLength);
-      return [field.name, value];
+      const rawValue = sanitizeText(data.get(field.name), maxLength);
+      if (field.name === 'email') return [field.name, email];
+      if (!rawValue && !field.required) return [field.name, null];
+      if (field.type === 'number') {
+        const parsed = Number(rawValue);
+        return [field.name, Number.isFinite(parsed) ? parsed : null];
+      }
+      if (field.type === 'datetime-local') {
+        const date = new Date(rawValue);
+        return [field.name, Number.isNaN(date.getTime()) ? null : date.toISOString()];
+      }
+      return [field.name, rawValue];
     }));
     const result = await insertPublicRecord(table, { ...payload, consent_given: consent });
     setState({ type: result.ok ? 'success' : 'error', message: result.message });
@@ -642,13 +674,21 @@ function RenderField({ field }: { field: FieldDef }) {
   return <label><span>{field.label}{field.required ? ' *' : ''}</span><input name={field.name} type={field.type || 'text'} required={field.required} maxLength={field.type === 'email' ? 254 : 160} placeholder={field.placeholder} /></label>;
 }
 
-function SelectField({ name, label, options, required }: { name: string; label: string; options: string[]; required?: boolean }) {
+function getOptionValue(option: SelectOption) {
+  return typeof option === 'string' ? option : option.value;
+}
+
+function getOptionLabel(option: SelectOption) {
+  return typeof option === 'string' ? option : option.label;
+}
+
+function SelectField({ name, label, options, required }: { name: string; label: string; options: SelectOption[]; required?: boolean }) {
   return (
     <label>
       <span>{label}{required ? ' *' : ''}</span>
       <select name={name} required={required} defaultValue="">
         <option value="" disabled>Choisir</option>
-        {options.map((option) => <option key={option} value={option}>{option}</option>)}
+        {options.map((option) => <option key={getOptionValue(option)} value={getOptionValue(option)}>{getOptionLabel(option)}</option>)}
       </select>
     </label>
   );
@@ -671,6 +711,321 @@ function StatusPanel() {
       <h3>Avertissements IA</h3>
       {warnings.map((warning) => <p key={warning} className="notice mini">{warning}</p>)}
     </aside>
+  );
+}
+
+function formatDate(value: string | null | undefined) {
+  if (!value) return '—';
+  return new Date(value).toLocaleDateString('fr-FR');
+}
+
+function CasesModule({ audience }: { audience: 'client' | 'cabinet' }) {
+  const [cases, setCases] = useState<CaseRow[]>([]);
+  const [state, setState] = useState<FormState>({ type: 'idle', message: '' });
+
+  useEffect(() => {
+    async function loadCases() {
+      if (!supabase) {
+        setState({ type: 'error', message: 'Connectez Supabase pour afficher les dossiers.' });
+        return;
+      }
+      const { data, error } = await supabase
+        .from('cases')
+        .select('id,title,status,legal_domain,urgency,created_at')
+        .order('created_at', { ascending: false })
+        .limit(12);
+      if (error) {
+        console.error('Erreur chargement dossiers', error);
+        setState({ type: 'error', message: 'Impossible de charger les dossiers pour le moment.' });
+        return;
+      }
+      setCases((data || []) as CaseRow[]);
+      setState({ type: 'success', message: '' });
+    }
+    void loadCases();
+  }, []);
+
+  return (
+    <section className="module-panel">
+      <div className="module-header">
+        <div>
+          <p className="eyebrow">{audience === 'client' ? 'Espace client' : 'Espace cabinet'}</p>
+          <h2>Dossiers suivis</h2>
+        </div>
+        {audience === 'client' && <Link className="primary-button" to="/creer-dossier">Créer un dossier</Link>}
+      </div>
+      {state.message && <p className={`form-message ${state.type === 'success' ? 'success' : 'error'}`}>{state.message}</p>}
+      {cases.length > 0 ? (
+        <div className="table-card" role="table" aria-label="Dossiers">
+          <div role="row"><strong role="columnheader">Dossier</strong><strong role="columnheader">Domaine</strong><strong role="columnheader">Statut</strong><strong role="columnheader">Créé le</strong><strong role="columnheader">Action</strong></div>
+          {cases.map((caseRow) => (
+            <div key={caseRow.id} role="row">
+              <span role="cell">{caseRow.title}</span>
+              <span role="cell">{caseRow.legal_domain || '—'}</span>
+              <span role="cell" className="status-pill compact">{caseRow.status}</span>
+              <span role="cell">{formatDate(caseRow.created_at)}</span>
+              <Link role="cell" className="text-link" to={`/dossier/${caseRow.id}`}>Ouvrir</Link>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="notice">Aucun dossier visible avec la session actuelle. Les règles RLS limitent l’affichage aux dossiers autorisés.</p>
+      )}
+    </section>
+  );
+}
+
+function DocumentsModule() {
+  const [documents, setDocuments] = useState<DocumentRow[]>([]);
+  const [caseId, setCaseId] = useState('');
+  const [file, setFile] = useState<File | null>(null);
+  const [state, setState] = useState<FormState>({ type: 'idle', message: '' });
+
+  async function loadDocuments() {
+    if (!supabase) {
+      setState({ type: 'error', message: 'Connectez Supabase pour afficher les documents.' });
+      return;
+    }
+    const { data, error } = await supabase
+      .from('documents')
+      .select('id,case_id,file_name,file_path,confidentiality,status,created_at')
+      .order('created_at', { ascending: false })
+      .limit(20);
+    if (error) {
+      console.error('Erreur chargement documents', error);
+      setState({ type: 'error', message: 'Impossible de charger les documents pour le moment.' });
+      return;
+    }
+    setDocuments((data || []) as DocumentRow[]);
+  }
+
+  useEffect(() => { void loadDocuments(); }, []);
+
+  async function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const safeCaseId = sanitizeText(caseId, 80);
+    if (!safeCaseId || !file) {
+      setState({ type: 'error', message: 'Indiquez le dossier et choisissez un fichier.' });
+      return;
+    }
+    setState({ type: 'loading', message: '' });
+    const result = await uploadCaseDocument(safeCaseId, file);
+    setState({ type: result.ok ? 'success' : 'error', message: result.message });
+    if (result.ok) {
+      setFile(null);
+      setCaseId('');
+      event.currentTarget.reset();
+      await loadDocuments();
+    }
+  }
+
+  async function openDocument(filePath: string) {
+    const result = await createDocumentSignedUrl(filePath);
+    if (!result.ok || !result.url) {
+      setState({ type: 'error', message: result.message });
+      return;
+    }
+    window.open(result.url, '_blank', 'noopener,noreferrer');
+  }
+
+  return (
+    <section className="module-panel">
+      <div className="module-header">
+        <div>
+          <p className="eyebrow">Documents confidentiels</p>
+          <h2>Upload et liste des pièces</h2>
+        </div>
+      </div>
+      <form className="stacked-form compact-form" onSubmit={onSubmit} noValidate>
+        <label><span>ID du dossier *</span><input value={caseId} onChange={(event) => setCaseId(event.target.value)} maxLength={80} placeholder="UUID du dossier" required /></label>
+        <label><span>Fichier *</span><input type="file" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,application/pdf,image/png,image/jpeg,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" onChange={(event) => setFile(event.target.files?.[0] || null)} required /></label>
+        <p className="notice mini">Formats autorisés : PDF, PNG, JPG, JPEG, DOC, DOCX. Taille maximale : 10 Mo. Stockage privé Supabase requis.</p>
+        <button className="primary-button" type="submit" disabled={state.type === 'loading'}>{state.type === 'loading' ? 'Envoi…' : 'Envoyer le document'}</button>
+      </form>
+      {state.message && <p className={`form-message ${state.type === 'success' ? 'success' : 'error'}`}>{state.message}</p>}
+      {documents.length > 0 ? (
+        <div className="table-card" role="table" aria-label="Documents">
+          <div role="row"><strong role="columnheader">Nom</strong><strong role="columnheader">Statut</strong><strong role="columnheader">Confidentialité</strong><strong role="columnheader">Créé le</strong><strong role="columnheader">Action</strong></div>
+          {documents.map((documentRow) => (
+            <div key={documentRow.id} role="row">
+              <span role="cell">{documentRow.file_name}</span>
+              <span role="cell">{documentRow.status}</span>
+              <span role="cell">{documentRow.confidentiality}</span>
+              <span role="cell">{formatDate(documentRow.created_at)}</span>
+              <button role="cell" className="text-link link-button" type="button" onClick={() => openDocument(documentRow.file_path)}>Ouvrir</button>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="notice">Aucun document visible. Les documents privés ne sont listés que pour les participants autorisés au dossier.</p>
+      )}
+    </section>
+  );
+}
+
+function MessagesModule() {
+  const [messages, setMessages] = useState<MessageRow[]>([]);
+  const [state, setState] = useState<FormState>({ type: 'idle', message: '' });
+
+  async function loadMessages() {
+    if (!supabase) {
+      setState({ type: 'error', message: 'Connectez Supabase pour afficher les messages.' });
+      return;
+    }
+    const { data, error } = await supabase
+      .from('messages')
+      .select('id,case_id,sender_id,recipient_id,body,read_at,created_at')
+      .order('created_at', { ascending: false })
+      .limit(20);
+    if (error) {
+      console.error('Erreur chargement messages', error);
+      setState({ type: 'error', message: 'Impossible de charger les messages pour le moment.' });
+      return;
+    }
+    setMessages((data || []) as MessageRow[]);
+  }
+
+  useEffect(() => { void loadMessages(); }, []);
+
+  async function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!supabase) return;
+    const form = event.currentTarget;
+    const data = new FormData(form);
+    const caseId = sanitizeText(data.get('case_id'), 80);
+    const recipientId = sanitizeText(data.get('recipient_id'), 80);
+    const body = sanitizeText(data.get('body'), 5000);
+    if (!caseId || !recipientId || body.length < 2) {
+      setState({ type: 'error', message: 'Indiquez un dossier, un destinataire et un message.' });
+      return;
+    }
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError || !userData.user) {
+      console.error('Session absente pour message', userError);
+      setState({ type: 'error', message: 'Connectez-vous pour envoyer un message.' });
+      return;
+    }
+    setState({ type: 'loading', message: '' });
+    const { error } = await supabase.from('messages').insert({
+      case_id: caseId,
+      sender_id: userData.user.id,
+      recipient_id: recipientId,
+      body,
+    });
+    if (error) {
+      console.error('Erreur envoi message', error);
+      setState({ type: 'error', message: 'Impossible d’envoyer le message pour le moment.' });
+      return;
+    }
+    setState({ type: 'success', message: 'Message envoyé.' });
+    form.reset();
+    await loadMessages();
+  }
+
+  return (
+    <section className="module-panel">
+      <div className="module-header">
+        <div>
+          <p className="eyebrow">Messagerie dossier</p>
+          <h2>Échanges client ↔ avocat</h2>
+        </div>
+      </div>
+      <form className="stacked-form compact-form" onSubmit={onSubmit} noValidate>
+        <label><span>ID du dossier *</span><input name="case_id" maxLength={80} required placeholder="UUID du dossier" /></label>
+        <label><span>ID du destinataire *</span><input name="recipient_id" maxLength={80} required placeholder="UUID Supabase du client ou avocat" /></label>
+        <label><span>Message *</span><textarea name="body" rows={4} maxLength={5000} required placeholder="Votre message..." /></label>
+        <p className="notice mini">En production, le destinataire doit être sélectionné depuis les participants du dossier afin de conserver le secret professionnel.</p>
+        <button className="primary-button" type="submit" disabled={state.type === 'loading'}>{state.type === 'loading' ? 'Envoi…' : 'Envoyer'}</button>
+      </form>
+      {state.message && <p className={`form-message ${state.type === 'success' ? 'success' : 'error'}`}>{state.message}</p>}
+      {messages.length > 0 ? (
+        <div className="message-list">
+          {messages.map((message) => (
+            <article className="feature-card" key={message.id}>
+              <p className="eyebrow">{formatDate(message.created_at)} · dossier {message.case_id || '—'}</p>
+              <p>{message.body}</p>
+              <p className="notice mini">{message.read_at ? 'Lu' : 'Non lu'} · expéditeur et destinataire protégés par RLS.</p>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <p className="notice">Aucun message visible avec la session actuelle.</p>
+      )}
+    </section>
+  );
+}
+
+function BillingModule() {
+  const [payments, setPayments] = useState<PaymentRow[]>([]);
+  const [subscriptions, setSubscriptions] = useState<SubscriptionRow[]>([]);
+  const [state, setState] = useState<FormState>({ type: 'idle', message: '' });
+
+  useEffect(() => {
+    async function loadBilling() {
+      if (!supabase) {
+        setState({ type: 'error', message: 'Connectez Supabase pour afficher la facturation.' });
+        return;
+      }
+      const [paymentsResponse, subscriptionsResponse] = await Promise.all([
+        supabase.from('payments').select('id,plan_id,amount_total,currency,status,created_at').order('created_at', { ascending: false }).limit(12),
+        supabase.from('subscriptions').select('id,plan_id,status,billing_period,current_period_end,cancel_at_period_end').order('updated_at', { ascending: false }).limit(6),
+      ]);
+      if (paymentsResponse.error) {
+        console.error('Erreur chargement paiements', paymentsResponse.error);
+        setState({ type: 'error', message: 'Impossible de charger les paiements pour le moment.' });
+        return;
+      }
+      if (subscriptionsResponse.error) {
+        console.error('Erreur chargement abonnements', subscriptionsResponse.error);
+        setState({ type: 'error', message: 'Impossible de charger les abonnements pour le moment.' });
+        return;
+      }
+      setPayments((paymentsResponse.data || []) as PaymentRow[]);
+      setSubscriptions((subscriptionsResponse.data || []) as SubscriptionRow[]);
+    }
+    void loadBilling();
+  }, []);
+
+  async function openPortal() {
+    setState({ type: 'loading', message: '' });
+    try {
+      await redirectToCustomerPortal();
+    } catch (error) {
+      console.error('Portail Stripe indisponible', error);
+      setState({ type: 'error', message: error instanceof Error ? error.message : 'Portail client disponible après configuration Stripe.' });
+    }
+  }
+
+  return (
+    <section className="module-panel">
+      <div className="module-header">
+        <div>
+          <p className="eyebrow">Stripe</p>
+          <h2>Paiements et abonnements</h2>
+        </div>
+        <button className="primary-button" type="button" onClick={openPortal} disabled={state.type === 'loading'}>{state.type === 'loading' ? 'Ouverture…' : 'Gérer via le portail Stripe'}</button>
+      </div>
+      {state.message && <p className={`form-message ${state.type === 'success' ? 'success' : 'error'}`}>{state.message}</p>}
+      <div className="dashboard-grid compact-dashboard">
+        <article className="feature-card">
+          <h3>Abonnements</h3>
+          {subscriptions.length > 0 ? (
+            <ul>{subscriptions.map((subscription) => <li key={subscription.id}>{subscription.plan_id} · {subscription.status} · {subscription.billing_period || 'mensuel'} · fin {formatDate(subscription.current_period_end)}</li>)}</ul>
+          ) : (
+            <p>Aucun abonnement confirmé par webhook Stripe pour cette session.</p>
+          )}
+        </article>
+        <article className="feature-card">
+          <h3>Paiements</h3>
+          {payments.length > 0 ? (
+            <ul>{payments.map((payment) => <li key={payment.id}>{payment.plan_id || 'plan'} · {payment.status} · {payment.amount_total ? `${(payment.amount_total / 100).toLocaleString('fr-FR', { style: 'currency', currency: (payment.currency || 'eur').toUpperCase() })}` : 'montant en attente'} · {formatDate(payment.created_at)}</li>)}</ul>
+          ) : (
+            <p>Aucun paiement enregistré. La table est mise à jour uniquement après retour fiable du webhook Stripe.</p>
+          )}
+        </article>
+      </div>
+      <p className="notice mini">Ne considérez jamais `/success` comme preuve de paiement : seul le webhook Stripe met à jour l’abonnement actif, annulé ou expiré.</p>
+    </section>
   );
 }
 

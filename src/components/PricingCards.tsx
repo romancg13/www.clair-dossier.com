@@ -45,7 +45,7 @@ export function PricingCards() {
       await redirectToCheckout(planId, billingPeriod);
     } catch (error) {
       console.error('Paiement Stripe indisponible', error);
-      setMessage(error instanceof Error ? error.message : 'Paiement disponible après configuration Stripe.');
+      setMessage(error instanceof Error ? error.message : 'Paiement bientôt disponible après configuration Stripe.');
     } finally {
       setLoadingPlan('');
     }
@@ -85,9 +85,9 @@ export function PricingCards() {
               <ul>
                 {plan.features.map((feature) => <li key={feature}>{feature}</li>)}
               </ul>
-              {isPaidPlan && !checkoutAvailable && <p className="payment-note">Paiement disponible après configuration Stripe.</p>}
+              {isPaidPlan && !checkoutAvailable && <p className="payment-note">Paiement bientôt disponible : configurez Stripe et les Price IDs pour activer le checkout réel.</p>}
               <button className="primary-button full" type="button" onClick={() => choosePlan(plan.id)} disabled={loadingPlan === plan.id || (isPaidPlan && !checkoutAvailable)}>
-                {loadingPlan === plan.id ? 'Préparation…' : plan.id === 'discovery' ? 'Commencer gratuitement' : 'Choisir cette formule'}
+                {loadingPlan === plan.id ? 'Préparation…' : plan.id === 'discovery' ? 'Commencer gratuitement' : !checkoutAvailable ? 'Paiement bientôt disponible' : 'Choisir cette formule'}
               </button>
             </article>
           );

@@ -43,7 +43,7 @@ export function isPlanCheckoutAvailable(planId: string, billingPeriod: BillingPe
 
 export async function redirectToCheckout(planId: string, billingPeriod: BillingPeriod): Promise<void> {
   if (!isStripeBaseConfigured || !functionsUrl || !anonKey || !getStripePriceId(planId, billingPeriod)) {
-    throw new Error('Paiement disponible après configuration Stripe.');
+    throw new Error('Paiement bientôt disponible après configuration Stripe.');
   }
   if (!supabase) {
     throw new Error('Créez votre compte pour choisir cette formule.');
@@ -76,8 +76,45 @@ export async function redirectToCheckout(planId: string, billingPeriod: BillingP
 
   const checkoutData = (await response.json()) as { url?: string };
   if (!checkoutData.url) {
-    throw new Error('Paiement disponible après configuration Stripe.');
+    throw new Error('Paiement bientôt disponible après configuration Stripe.');
   }
 
   window.location.assign(checkoutData.url);
+}
+
+export async function redirectToCustomerPortal(): Promise<void> {
+  if (!isStripeBaseConfigured || !functionsUrl || !anonKey) {
+    throw new Error('Portail client disponible après configuration Stripe.');
+  }
+  if (!supabase) {
+    throw new Error('Connectez-vous pour gérer votre abonnement.');
+  }
+
+  const [{ data: sessionData }, { data: userData, error: userError }] = await Promise.all([
+    supabase.auth.getSession(),
+    supabase.auth.getUser(),
+  ]);
+  if (!sessionData.session || userError || !userData.user) {
+    throw new Error('Connectez-vous pour gérer votre abonnement.');
+  }
+
+  const response = await fetch(`${functionsUrl}/customer-portal`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${sessionData.session.access_token}`,
+    },
+  });
+
+  if (!response.ok) {
+    console.error('Erreur customer-portal', await response.text());
+    throw new Error('Portail client indisponible temporairement.');
+  }
+
+  const portalData = (await response.json()) as { url?: string };
+  if (!portalData.url) {
+    throw new Error('Portail client disponible après configuration Stripe.');
+  }
+
+  window.location.assign(portalData.url);
 }

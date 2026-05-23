@@ -508,6 +508,55 @@ summary:hover { color: var(--gold); }
 .dashboard-grid .feature-card h2 { font-size: 1.15rem; margin-top: 0; }
 .dashboard-header { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
 .dashboard-header h1 { flex: 1; }
+.module-panel {
+  width: min(1180px, calc(100% - 2rem));
+  margin: 2rem auto 0;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: clamp(1.25rem, 3vw, 2rem);
+  box-shadow: var(--shadow-md);
+}
+.module-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+}
+.module-header h2 { color: var(--navy); margin: 0.2rem 0 0; }
+.compact-form {
+  box-shadow: none;
+  border-radius: var(--radius-md);
+  margin-bottom: 1rem;
+}
+.compact-dashboard { width: 100%; margin: 1rem 0 0; padding: 0; }
+.table-card {
+  display: grid;
+  gap: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.table-card [role="row"] {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.5fr) repeat(3, minmax(120px, 1fr)) minmax(90px, 0.7fr);
+  gap: 1rem;
+  align-items: center;
+  padding: 0.9rem 1rem;
+  border-bottom: 1px solid var(--line);
+}
+.table-card [role="row"]:last-child { border-bottom: 0; }
+.table-card [role="row"]:first-child { background: #eef4fb; color: var(--navy); }
+.status-pill.compact { width: fit-content; padding: 0.35rem 0.6rem; }
+.link-button {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+}
+.message-list { display: grid; gap: 1rem; }
 .stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.8rem; margin-bottom: 1.5rem; }
 .stat-card {
   background: var(--white);
@@ -647,6 +696,7 @@ summary:hover { color: var(--gold); }
   .site-footer { grid-template-columns: 1fr; }
   .footer-bottom { flex-direction: column; }
   .info-table div { grid-template-columns: 1fr; }
+  .table-card [role="row"] { grid-template-columns: 1fr; gap: 0.35rem; }
   .cookie-banner { flex-direction: column; text-align: center; }
   .cookie-actions { width: 100%; justify-content: center; }
 }

@@ -5,7 +5,7 @@ import { AuthPage, BlogCategoryPage, BlogIndexPage, BlogPostPage, ContactPage, C
 import type { UserRole } from './lib/security';
 
 const clientRoles: UserRole[] = ['client_particulier', 'client_entreprise'];
-const cabinetRoles: UserRole[] = ['avocat', 'collaborateur', 'admin_cabinet'];
+const cabinetRoles: UserRole[] = ['avocat', 'collaborateur', 'admin_cabinet', 'super_admin'];
 
 export default function App() {
   return (
