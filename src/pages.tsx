@@ -1,5 +1,5 @@
 import { FormEvent, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { NewsletterForm } from './components/NewsletterForm';
 import { PricingCards } from './components/PricingCards';
 import { Seo } from './components/Seo';
@@ -16,6 +16,12 @@ type FieldDef = {
   required?: boolean;
   placeholder?: string;
 };
+
+function formatPlanPreviewPrice(monthlyPrice: number | null) {
+  if (monthlyPrice === null) return 'Sur devis';
+  if (monthlyPrice === 0) return '0 €';
+  return `${monthlyPrice} € / mois`;
+}
 
 export function HomePage() {
   return (
@@ -67,7 +73,7 @@ export function HomePage() {
         <div className="card-grid">
           {plans.slice(0, 4).map((plan) => (
             <article className="feature-card" key={plan.id}>
-              <h3>{plan.name} — {plan.price}</h3>
+              <h3>{plan.name} — {formatPlanPreviewPrice(plan.monthlyPrice)}</h3>
               <p>{plan.audience}</p>
               <Link className="text-link" to="/tarifs">Voir les détails</Link>
             </article>
@@ -202,12 +208,24 @@ export function CreateCasePage() {
       setState({ type: 'error', message: 'Complétez les champs obligatoires et acceptez les conditions.' });
       return;
     }
+    if (!supabase) {
+      setState({ type: 'error', message: 'Créez votre compte pour commencer votre dossier.' });
+      return;
+    }
+
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError || !userData.user) {
+      console.error('Session Supabase absente pour création dossier', userError);
+      setState({ type: 'error', message: 'Créez votre compte pour commencer votre dossier.' });
+      return;
+    }
 
     setState({ type: 'loading', message: '' });
 
     const caseId = crypto.randomUUID();
-    const caseResult = await insertPublicRecord('cases', {
+    const { error: caseError } = await supabase.from('cases').insert({
       id: caseId,
+      created_by: userData.user.id,
       title: `Dossier ${String(data.get('legal_domain'))}`,
       client_type: data.get('client_type'),
       legal_domain: data.get('legal_domain'),
@@ -217,12 +235,13 @@ export function CreateCasePage() {
       terms_accepted: accepted,
     });
 
-    if (!caseResult.ok) {
-      setState({ type: 'error', message: caseResult.message });
+    if (caseError) {
+      console.error('Erreur Supabase (cases)', caseError);
+      setState({ type: 'error', message: getCasePersistenceMessage(caseError) });
       return;
     }
 
-    const answerResult = await insertPublicRecord('case_intake_answers', {
+    const { error: answerError } = await supabase.from('case_intake_answers').insert({
       case_id: caseId,
       answers: {
         client_type: data.get('client_type'),
@@ -233,8 +252,14 @@ export function CreateCasePage() {
       },
       consent_given: accepted,
     });
-    setState({ type: answerResult.ok ? 'success' : 'error', message: answerResult.ok ? 'Votre dossier a été créé avec le statut reçu.' : answerResult.message });
-    if (answerResult.ok) form.reset();
+    if (answerError) {
+      console.error('Erreur Supabase (case_intake_answers)', answerError);
+      setState({ type: 'error', message: getCasePersistenceMessage(answerError) });
+      return;
+    }
+
+    setState({ type: 'success', message: 'Votre dossier a été créé. Vous pouvez maintenant suivre son avancement.' });
+    form.reset();
   }
 
   return (
@@ -248,6 +273,7 @@ export function CreateCasePage() {
           <label><span>Description du problème *</span><textarea name="problem_description" required rows={6} placeholder="Décrivez les faits, le contexte et les documents disponibles..." /></label>
           <SelectField name="urgency" label="Urgence" options={['Faible', 'Normale', 'Élevée', 'Délai judiciaire proche']} required />
           <label><span>Documents disponibles</span><textarea name="documents_available" rows={4} placeholder="Contrat, emails, facture, courrier..." /></label>
+          <p className="notice mini">Les informations transmises servent à préparer votre dossier. Aucun conseil juridique personnalisé n’est fourni sans validation par un professionnel habilité.</p>
           <label className="checkbox-line"><input name="terms_accepted" type="checkbox" required /><span>J'accepte les <Link to="/conditions-utilisation">conditions d'utilisation</Link> et comprends que l'IA ne remplace pas l'avocat.</span></label>
           <button className="primary-button" type="submit" disabled={state.type === 'loading'}>{state.type === 'loading' ? 'Envoi en cours…' : 'Créer le dossier'}</button>
           {state.message && <p className={`form-message ${state.type === 'success' ? 'success' : 'error'}`}>{state.message}</p>}
@@ -351,9 +377,14 @@ export function BlogCategoryPage() {
 }
 
 export function AuthPage({ mode }: { mode: 'connexion' | 'inscription' }) {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [state, setState] = useState<FormState>({ type: 'idle', message: '' });
   const [showPassword, setShowPassword] = useState(false);
   const isSignup = mode === 'inscription';
+  const rawRedirect = new URLSearchParams(location.search).get('redirect');
+  const redirectTo = rawRedirect?.startsWith('/') && !rawRedirect.startsWith('//') ? rawRedirect : '/dashboard';
+  const redirectQuery = rawRedirect ? `?redirect=${encodeURIComponent(redirectTo)}` : '';
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -361,6 +392,7 @@ export function AuthPage({ mode }: { mode: 'connexion' | 'inscription' }) {
     const data = new FormData(form);
     const email = String(data.get('email') || '').trim();
     const password = String(data.get('password') || '').trim();
+    const passwordConfirm = String(data.get('password_confirm') || '').trim();
     if (!email || !password) {
       setState({ type: 'error', message: 'Email et mot de passe sont obligatoires.' });
       return;
@@ -369,28 +401,59 @@ export function AuthPage({ mode }: { mode: 'connexion' | 'inscription' }) {
       setState({ type: 'error', message: 'Le mot de passe doit contenir au moins 8 caractères.' });
       return;
     }
-    if (!supabase) {
-      setState({ type: 'error', message: 'Authentification à connecter : renseignez VITE_SUPABASE_URL et VITE_SUPABASE_ANON_KEY.' });
+    if (isSignup && password !== passwordConfirm) {
+      setState({ type: 'error', message: 'Les mots de passe ne correspondent pas.' });
       return;
     }
+    if (isSignup && data.get('terms_accepted') !== 'on') {
+      setState({ type: 'error', message: 'Vous devez accepter les conditions pour créer un compte.' });
+      return;
+    }
+    const fullName = String(data.get('full_name') || '').trim();
+    const accountType = String(data.get('account_type') || '').trim();
+    if (isSignup && (!fullName || !accountType)) {
+      setState({ type: 'error', message: 'Complétez les informations de compte obligatoires.' });
+      return;
+    }
+    if (!supabase) {
+      setState({ type: 'error', message: 'Impossible de créer le compte pour le moment. Veuillez réessayer.' });
+      return;
+    }
+    const role = accountType === 'cabinet' ? 'cabinet_admin' : 'client';
     setState({ type: 'loading', message: '' });
     const response = isSignup
-      ? await supabase.auth.signUp({ email, password })
+      ? await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+            account_type: accountType,
+            role,
+          },
+        },
+      })
       : await supabase.auth.signInWithPassword({ email, password });
     if (response.error) {
       console.error('Erreur auth Supabase', response.error);
-      setState({ type: 'error', message: "Impossible de finaliser l'authentification. Vérifiez vos informations." });
+      setState({ type: 'error', message: isSignup ? 'Impossible de créer le compte pour le moment. Veuillez réessayer.' : 'Impossible de vous connecter. Vérifiez vos informations.' });
       return;
     }
-    setState({ type: 'success', message: isSignup ? 'Compte créé. Vérifiez votre email si la confirmation est activée.' : 'Connexion réussie.' });
+    if (response.data.session) {
+      setState({ type: 'success', message: isSignup ? 'Votre compte a été créé avec succès.' : 'Connexion réussie.' });
+      navigate(redirectTo, { replace: true });
+      return;
+    }
+    setState({ type: 'success', message: 'Votre compte a été créé avec succès. Confirmez votre email pour continuer.' });
   }
 
   return (
     <>
       <Seo title={isSignup ? 'Inscription' : 'Connexion'} description="Accéder à votre espace ClairDossier." path={`/${mode}`} />
-      <PageHero title={isSignup ? 'Créer un compte' : 'Connexion'} description="Authentification Supabase prête à connecter pour session persistante et déconnexion." />
+      <PageHero title={isSignup ? 'Créer un compte' : 'Connexion'} description={rawRedirect === '/creer-dossier' ? 'Créez votre compte pour commencer votre dossier.' : 'Authentification Supabase prête à connecter pour session persistante et déconnexion.'} />
       <section className="form-shell single">
         <form className="stacked-form" onSubmit={onSubmit} noValidate>
+          {isSignup && <label><span>Nom complet</span><input name="full_name" type="text" autoComplete="name" required placeholder="Votre nom complet" /></label>}
           <label><span>Email</span><input name="email" type="email" required placeholder="vous@exemple.fr" /></label>
           <label>
             <span>Mot de passe</span>
@@ -410,11 +473,14 @@ export function AuthPage({ mode }: { mode: 'connexion' | 'inscription' }) {
               </button>
             </div>
           </label>
+          {isSignup && <label><span>Confirmation du mot de passe</span><input name="password_confirm" type="password" minLength={8} required placeholder="Répétez le mot de passe" /></label>}
+          {isSignup && <SelectField name="account_type" label="Type de compte" options={['client', 'entreprise', 'cabinet']} required />}
+          {isSignup && <label className="checkbox-line"><input name="terms_accepted" type="checkbox" required /><span>J'accepte les conditions d'utilisation et la politique de confidentialité.</span></label>}
           <button className="primary-button" type="submit" disabled={state.type === 'loading'}>
             {state.type === 'loading' ? 'Chargement…' : isSignup ? 'Créer mon compte' : 'Me connecter'}
           </button>
           {state.message && <p className={`form-message ${state.type === 'success' ? 'success' : 'error'}`}>{state.message}</p>}
-          <Link className="text-link" to={isSignup ? '/connexion' : '/inscription'}>{isSignup ? "J'ai déjà un compte" : 'Créer un compte'}</Link>
+          <Link className="text-link" to={`${isSignup ? '/connexion' : '/inscription'}${redirectQuery}`}>{isSignup ? "J'ai déjà un compte" : 'Créer un compte'}</Link>
         </form>
       </section>
     </>
@@ -554,6 +620,13 @@ function SelectField({ name, label, options, required }: { name: string; label: 
       </select>
     </label>
   );
+}
+
+function getCasePersistenceMessage(error: { code?: string; message?: string }) {
+  if (error.code === '42P01' || error.message?.toLowerCase().includes('does not exist')) {
+    return 'Migration Supabase requise : créez les tables cases et case_intake_answers avant d’enregistrer un dossier.';
+  }
+  return "Nous n'avons pas pu créer votre dossier. Réessayez ou contactez-nous par email.";
 }
 
 function PageHero({ title, description }: { title: string; description: string }) {
