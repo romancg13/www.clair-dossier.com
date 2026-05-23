@@ -35,6 +35,16 @@ Variables publiques frontend :
 - `VITE_SUPABASE_ANON_KEY`
 - `VITE_STRIPE_PUBLIC_KEY`
 - `VITE_SUPABASE_FUNCTIONS_URL`
+- `VITE_STRIPE_CLIENT_ESSENTIEL_MONTHLY_PRICE_ID`
+- `VITE_STRIPE_CLIENT_ESSENTIEL_YEARLY_PRICE_ID`
+- `VITE_STRIPE_BUSINESS_MONTHLY_PRICE_ID`
+- `VITE_STRIPE_BUSINESS_YEARLY_PRICE_ID`
+- `VITE_STRIPE_CABINET_SOLO_MONTHLY_PRICE_ID`
+- `VITE_STRIPE_CABINET_SOLO_YEARLY_PRICE_ID`
+- `VITE_STRIPE_CABINET_PRO_MONTHLY_PRICE_ID`
+- `VITE_STRIPE_CABINET_PRO_YEARLY_PRICE_ID`
+- `VITE_STRIPE_CABINET_PREMIUM_MONTHLY_PRICE_ID`
+- `VITE_STRIPE_CABINET_PREMIUM_YEARLY_PRICE_ID`
 
 Variables serveur uniquement, à configurer dans Supabase Edge Functions ou l'environnement backend :
 
@@ -43,12 +53,13 @@ Variables serveur uniquement, à configurer dans Supabase Edge Functions ou l'en
 - `AI_API_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `SITE_URL`
-- `STRIPE_PRICE_DISCOVERY`
-- `STRIPE_PRICE_CLIENT_ESSENTIAL`
-- `STRIPE_PRICE_BUSINESS`
-- `STRIPE_PRICE_CABINET_SOLO`
-- `STRIPE_PRICE_CABINET_PRO`
-- `STRIPE_PRICE_CABINET_PREMIUM`
+- les mêmes `VITE_STRIPE_*_PRICE_ID` que le frontend, ajoutés comme secrets Supabase Edge Functions
+
+Variables GitHub Actions pour déployer Supabase :
+
+- `SUPABASE_ACCESS_TOKEN`
+- `SUPABASE_PROJECT_REF`
+- `SUPABASE_DB_PASSWORD`
 
 Ne jamais exposer les clés secrètes Stripe, service role Supabase ou IA dans le frontend.
 
@@ -66,11 +77,13 @@ La migration crée les tables demandées : `profiles`, `contact_requests`, `news
 
 Les boutons de tarifs appellent `create-checkout-session`. Le paiement réel nécessite :
 
-1. clés Stripe test ;
-2. produits/prices Stripe ;
-3. variables `STRIPE_PRICE_*` ;
-4. déploiement des Edge Functions ;
-5. webhook Stripe pointant vers `stripe-webhook`.
+1. créer les produits Stripe et les Prices mensuels/annuels ;
+2. ajouter les Price IDs dans les secrets GitHub `VITE_STRIPE_*_PRICE_ID` ;
+3. ajouter `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_SUPABASE_FUNCTIONS_URL` et `VITE_STRIPE_PUBLIC_KEY` dans les secrets GitHub ;
+4. ajouter dans Supabase Edge Functions `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `SITE_URL`, `SUPABASE_SERVICE_ROLE_KEY` et les mêmes `VITE_STRIPE_*_PRICE_ID` ;
+5. lancer le workflow manuel `Deploy Supabase Stripe Functions` ;
+6. redéployer GitHub Pages depuis `main` ;
+7. créer le webhook Stripe vers `https://<project-ref>.functions.supabase.co/stripe-webhook`.
 
 Sans cette configuration, le frontend affiche clairement que le paiement est bientôt disponible.
 
