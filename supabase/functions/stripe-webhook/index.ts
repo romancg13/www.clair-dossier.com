@@ -6,6 +6,11 @@ const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
 const supabaseUrl = Deno.env.get('SUPABASE_URL');
 const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
+function normalizeSubscriptionStatus(status: Stripe.Subscription.Status) {
+  if (status === 'active' || status === 'canceled' || status === 'incomplete' || status === 'past_due') return status;
+  return 'incomplete';
+}
+
 Deno.serve(async (request) => {
   if (request.method !== 'POST') return new Response('Method not allowed', { status: 405 });
   if (!stripeSecretKey || !webhookSecret || !supabaseUrl || !serviceRoleKey) {
@@ -37,6 +42,8 @@ Deno.serve(async (request) => {
         amount_total: session.amount_total,
         currency: session.currency || 'eur',
         status: session.payment_status || 'paid',
+        plan_id: session.metadata?.plan_id || null,
+        billing_period: session.metadata?.billing_period || null,
         metadata: session.metadata || {},
       });
     }
@@ -46,9 +53,11 @@ Deno.serve(async (request) => {
       await supabase.from('subscriptions').upsert({
         user_id: subscription.metadata?.user_id || null,
         plan_id: subscription.metadata?.plan_id || 'unknown',
+        billing_period: subscription.metadata?.billing_period || 'monthly',
         stripe_customer_id: typeof subscription.customer === 'string' ? subscription.customer : null,
         stripe_subscription_id: subscription.id,
-        status: subscription.status,
+        status: normalizeSubscriptionStatus(subscription.status),
+        current_period_start: subscription.current_period_start ? new Date(subscription.current_period_start * 1000).toISOString() : null,
         current_period_end: subscription.current_period_end ? new Date(subscription.current_period_end * 1000).toISOString() : null,
         cancel_at_period_end: subscription.cancel_at_period_end,
         updated_at: new Date().toISOString(),

@@ -63,46 +63,52 @@ export const plans = [
   {
     id: 'discovery',
     name: 'Découverte',
-    price: '0 €',
+    description: 'Pour cadrer un premier dossier sans paiement.',
+    monthlyPrice: 0,
     audience: 'Particuliers qui veulent cadrer un premier dossier',
     features: ['1 dossier de test', 'Check-list documentaire', 'Accès blog et ressources', 'Paiement non requis'],
   },
   {
     id: 'client-essential',
     name: 'Client Essentiel',
-    price: '19 € / mois',
+    description: 'Pour les clients particuliers avec suivi régulier.',
+    monthlyPrice: 19,
     audience: 'Clients particuliers avec suivi régulier',
     features: ['3 dossiers actifs', 'Messagerie dossier', 'Upload documents', 'Notifications de statut'],
   },
   {
     id: 'business',
     name: 'Business / PME',
-    price: '79 € / mois',
+    description: 'Pour dirigeants, équipes internes et PME.',
+    monthlyPrice: 79,
     audience: 'Dirigeants et PME',
     features: ['Dossiers illimités PME', 'Contrats et recouvrement', 'Tableau de bord priorités', 'Accès multi-utilisateurs'],
   },
   {
     id: 'cabinet-solo',
     name: 'Cabinet Solo',
-    price: '99 € / mois',
+    description: 'Pour les avocats indépendants qui structurent les demandes entrantes.',
+    monthlyPrice: 99,
     audience: 'Avocats indépendants',
     features: ['Pipeline dossiers', 'Demandes clients entrantes', 'Validation avocat', 'Facturation Stripe préparée'],
   },
   {
     id: 'cabinet-pro',
     name: 'Cabinet Pro',
-    price: '249 € / mois',
+    description: 'Pour les cabinets en croissance avec rôles et reporting.',
+    monthlyPrice: 249,
     audience: 'Cabinets en croissance',
     features: ['Gestion clients', 'Tâches cabinet', 'Rôles équipe', 'Audit logs et reporting'],
   },
   {
     id: 'cabinet-premium',
     name: 'Cabinet Premium',
-    price: 'Sur devis',
+    description: 'Pour les structures avec exigences avancées.',
+    monthlyPrice: null,
     audience: 'Structures avec exigences avancées',
     features: ['Onboarding dédié', 'Paramétrage sécurité', 'Support prioritaire', 'Intégrations sur demande'],
   },
-];
+] as const;
 
 export const caseStatuses = ['reçu', 'incomplet', 'en analyse', 'en attente de pièces', 'en attente validation avocat', 'clôturé'];
 
