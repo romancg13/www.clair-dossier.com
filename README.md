@@ -51,6 +51,8 @@ Variables serveur uniquement, à configurer dans Supabase Edge Functions ou l'en
 - `STRIPE_SECRET_KEY`
 - `STRIPE_WEBHOOK_SECRET`
 - `AI_API_KEY`
+- `AI_PROVIDER_URL` (optionnel si fournisseur IA compatible OpenAI différent)
+- `SUPABASE_URL` (fourni automatiquement par Supabase Edge Functions en production)
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `SITE_URL`
 - les mêmes `VITE_STRIPE_*_PRICE_ID` que le frontend, ajoutés comme secrets Supabase Edge Functions

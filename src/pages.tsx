@@ -1,10 +1,11 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { NewsletterForm } from './components/NewsletterForm';
 import { PricingCards } from './components/PricingCards';
 import { Seo } from './components/Seo';
 import { blogPosts, categories, caseStatuses, featureCards, infoPages, legalPages, plans, site, warnings } from './data/site';
 import { insertPublicRecord, supabase } from './lib/supabase';
+import { openCustomerPortal } from './lib/stripe';
 
 type FormState = { type: 'idle' | 'loading' | 'success' | 'error'; message: string };
 
@@ -21,6 +22,46 @@ function formatPlanPreviewPrice(monthlyPrice: number | null) {
   if (monthlyPrice === null) return 'Sur devis';
   if (monthlyPrice === 0) return '0 €';
   return `${monthlyPrice} € / mois`;
+}
+
+function formatMoneyFromCents(amount: number | null, currency = 'eur') {
+  if (amount === null) return '—';
+  return new Intl.NumberFormat('fr-FR', {
+    style: 'currency',
+    currency: currency.toUpperCase(),
+  }).format(amount / 100);
+}
+
+function formatDate(value: string | null) {
+  if (!value) return '—';
+  return new Date(value).toLocaleDateString('fr-FR');
+}
+
+function formatBillingPeriod(value: string | null) {
+  if (value === 'yearly') return 'Annuel';
+  if (value === 'monthly') return 'Mensuel';
+  return '—';
+}
+
+function formatSubscriptionStatus(value: string | null) {
+  const labels: Record<string, string> = {
+    active: 'Actif',
+    canceled: 'Annulé',
+    incomplete: 'Incomplet',
+    past_due: 'Paiement en retard',
+    expired: 'Expiré',
+  };
+  return value ? labels[value] || value : '—';
+}
+
+function isValidEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+function getNormalizedFieldValue(field: FieldDef, data: FormData) {
+  const value = String(data.get(field.name) || '').trim();
+  if (field.type === 'number') return value ? Number(value) : null;
+  return value;
 }
 
 export function HomePage() {
@@ -303,6 +344,13 @@ export function BlogIndexPage() {
       <section className="blog-grid">
         {published.map((post) => <BlogCard key={post.slug} post={post} />)}
       </section>
+      <section className="section-block">
+        <div className="newsletter-card">
+          <h2>Recevoir les nouveaux guides juridiques</h2>
+          <p>Inscription avec consentement RGPD, enregistrée dans newsletter_subscribers lorsque Supabase est configuré.</p>
+          <NewsletterForm />
+        </div>
+      </section>
     </>
   );
 }
@@ -372,6 +420,13 @@ export function BlogCategoryPage() {
           <Link className="text-link" to="/blog">Voir tous les articles</Link>
         </section>
       )}
+      <section className="section-block">
+        <div className="newsletter-card">
+          <h2>Suivre cette thématique</h2>
+          <p>Recevez les contenus ClairDossier utiles aux clients, PME, avocats et cabinets.</p>
+          <NewsletterForm />
+        </div>
+      </section>
     </>
   );
 }
@@ -542,6 +597,210 @@ export function WorkspacePage({ title, audience }: { title: string; audience: 'c
   );
 }
 
+type PaymentRecord = {
+  id: string;
+  amount_total: number | null;
+  currency: string | null;
+  status: string | null;
+  plan_id: string | null;
+  billing_period: string | null;
+  created_at: string;
+};
+
+type SubscriptionRecord = {
+  id: string;
+  plan_id: string | null;
+  billing_period: string | null;
+  stripe_customer_id: string | null;
+  status: string | null;
+  current_period_start: string | null;
+  current_period_end: string | null;
+  cancel_at_period_end: boolean | null;
+  updated_at: string | null;
+};
+
+export function PaiementsPage() {
+  const [state, setState] = useState<FormState>({ type: 'loading', message: '' });
+  const [payments, setPayments] = useState<PaymentRecord[]>([]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadPayments() {
+      if (!supabase) {
+        setState({ type: 'error', message: 'Connectez Supabase pour consulter vos paiements.' });
+        return;
+      }
+
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError || !userData.user) {
+        console.error('Session Supabase absente pour paiements', userError);
+        if (mounted) setState({ type: 'error', message: 'Connectez-vous pour consulter vos paiements.' });
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('payments')
+        .select('id, amount_total, currency, status, plan_id, billing_period, created_at')
+        .eq('user_id', userData.user.id)
+        .order('created_at', { ascending: false });
+
+      if (!mounted) return;
+      if (error) {
+        console.error('Erreur Supabase (payments)', error);
+        setState({ type: 'error', message: "Impossible de charger vos paiements pour le moment." });
+        return;
+      }
+
+      setPayments((data || []) as PaymentRecord[]);
+      setState({ type: 'idle', message: '' });
+    }
+
+    void loadPayments();
+    return () => { mounted = false; };
+  }, []);
+
+  return (
+    <>
+      <Seo title="Paiements" description="Historique des paiements Stripe enregistrés pour votre compte ClairDossier." path="/paiements" />
+      <PageHero title="Paiements" description="Consultez les paiements synchronisés par le webhook Stripe. Aucun paiement n’est simulé dans cette interface." />
+      <section className="section-block">
+        {state.type === 'loading' && <p className="notice">Chargement des paiements...</p>}
+        {state.message && <p className={`form-message ${state.type === 'success' ? 'success' : 'error'}`}>{state.message}</p>}
+        {state.type !== 'loading' && payments.length === 0 && (
+          <article className="feature-card">
+            <h2>Aucun paiement enregistré</h2>
+            <p>Les paiements apparaîtront ici après un passage réussi par Stripe Checkout et réception du webhook.</p>
+            <Link className="primary-button" to="/tarifs">Voir les formules</Link>
+          </article>
+        )}
+        {payments.length > 0 && (
+          <div className="responsive-table" role="table" aria-label="Historique des paiements">
+            <div role="row">
+              <strong role="columnheader">Date</strong>
+              <strong role="columnheader">Formule</strong>
+              <strong role="columnheader">Période</strong>
+              <strong role="columnheader">Montant</strong>
+              <strong role="columnheader">Statut</strong>
+            </div>
+            {payments.map((payment) => (
+              <div role="row" key={payment.id}>
+                <span role="cell">{formatDate(payment.created_at)}</span>
+                <span role="cell">{plans.find((plan) => plan.id === payment.plan_id)?.name || payment.plan_id || '—'}</span>
+                <span role="cell">{formatBillingPeriod(payment.billing_period)}</span>
+                <span role="cell">{formatMoneyFromCents(payment.amount_total, payment.currency || 'eur')}</span>
+                <span role="cell">{payment.status || '—'}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+    </>
+  );
+}
+
+export function AbonnementPage() {
+  const [state, setState] = useState<FormState>({ type: 'loading', message: '' });
+  const [portalState, setPortalState] = useState<FormState>({ type: 'idle', message: '' });
+  const [subscription, setSubscription] = useState<SubscriptionRecord | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadSubscription() {
+      if (!supabase) {
+        setState({ type: 'error', message: 'Connectez Supabase pour consulter votre abonnement.' });
+        return;
+      }
+
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError || !userData.user) {
+        console.error('Session Supabase absente pour abonnement', userError);
+        if (mounted) setState({ type: 'error', message: 'Connectez-vous pour consulter votre abonnement.' });
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .select('id, plan_id, billing_period, stripe_customer_id, status, current_period_start, current_period_end, cancel_at_period_end, updated_at')
+        .eq('user_id', userData.user.id)
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (!mounted) return;
+      if (error) {
+        console.error('Erreur Supabase (subscriptions)', error);
+        setState({ type: 'error', message: "Impossible de charger votre abonnement pour le moment." });
+        return;
+      }
+
+      setSubscription((data as SubscriptionRecord | null) || null);
+      setState({ type: 'idle', message: '' });
+    }
+
+    void loadSubscription();
+    return () => { mounted = false; };
+  }, []);
+
+  async function onOpenPortal() {
+    setPortalState({ type: 'loading', message: '' });
+    try {
+      await openCustomerPortal();
+    } catch (error) {
+      console.error('Portail Stripe indisponible', error);
+      setPortalState({ type: 'error', message: error instanceof Error ? error.message : "Le portail Stripe n'est pas disponible." });
+    }
+  }
+
+  const currentPlan = plans.find((plan) => plan.id === subscription?.plan_id);
+
+  return (
+    <>
+      <Seo title="Abonnement" description="Gestion de l'abonnement ClairDossier synchronisé avec Stripe." path="/abonnement" />
+      <PageHero title="Abonnement" description="Votre abonnement est mis à jour par Stripe via webhook. Le portail Stripe s’ouvre uniquement lorsqu’un client Stripe existe." />
+      <section className="section-block">
+        {state.type === 'loading' && <p className="notice">Chargement de votre abonnement...</p>}
+        {state.message && <p className={`form-message ${state.type === 'success' ? 'success' : 'error'}`}>{state.message}</p>}
+        {state.type !== 'loading' && !subscription && (
+          <article className="feature-card">
+            <h2>Aucun abonnement actif enregistré</h2>
+            <p>Choisissez une formule lorsque Stripe est configuré. Aucun abonnement n’est créé sans paiement confirmé.</p>
+            <Link className="primary-button" to="/tarifs">Choisir une formule</Link>
+          </article>
+        )}
+        {subscription && (
+          <div className="subscription-grid">
+            <article className="feature-card">
+              <h2>{currentPlan?.name || subscription.plan_id || 'Formule'}</h2>
+              <p>{currentPlan?.description || 'Formule synchronisée depuis Stripe.'}</p>
+              <div className="info-table" role="table" aria-label="Détails abonnement">
+                <div role="row"><strong role="cell">Statut</strong><span role="cell">{formatSubscriptionStatus(subscription.status)}</span></div>
+                <div role="row"><strong role="cell">Période</strong><span role="cell">{formatBillingPeriod(subscription.billing_period)}</span></div>
+                <div role="row"><strong role="cell">Début</strong><span role="cell">{formatDate(subscription.current_period_start)}</span></div>
+                <div role="row"><strong role="cell">Fin de période</strong><span role="cell">{formatDate(subscription.current_period_end)}</span></div>
+                <div role="row"><strong role="cell">Annulation programmée</strong><span role="cell">{subscription.cancel_at_period_end ? 'Oui' : 'Non'}</span></div>
+              </div>
+              <button className="primary-button" type="button" onClick={onOpenPortal} disabled={portalState.type === 'loading' || !subscription.stripe_customer_id}>
+                {portalState.type === 'loading' ? 'Ouverture…' : 'Gérer dans le portail Stripe'}
+              </button>
+              {!subscription.stripe_customer_id && <p className="payment-note">Le portail sera disponible après synchronisation du client Stripe.</p>}
+              {portalState.message && <p className={`form-message ${portalState.type === 'success' ? 'success' : 'error'}`}>{portalState.message}</p>}
+            </article>
+            <article className="feature-card">
+              <h2>Accès selon formule</h2>
+              <ul>
+                {(currentPlan?.features || ['Restrictions à définir selon la formule configurée']).map((feature) => <li key={feature}>{feature}</li>)}
+              </ul>
+              <p className="notice mini">Les restrictions applicatives doivent être contrôlées côté serveur et par les règles RLS avant production.</p>
+            </article>
+          </div>
+        )}
+      </section>
+    </>
+  );
+}
+
 export function PaymentStatusPage({ status }: { status: 'success' | 'cancel' }) {
   const success = status === 'success';
   return (
@@ -575,13 +834,14 @@ function FormPage({ title, description, table, fields, consentLabel }: { title: 
     const form = event.currentTarget;
     const data = new FormData(form);
     const missing = fields.some((field) => field.required && !String(data.get(field.name) || '').trim());
+    const invalidEmail = fields.some((field) => field.type === 'email' && !isValidEmail(String(data.get(field.name) || '').trim()));
     const consent = data.get('consent') === 'on';
-    if (missing || !consent) {
+    if (missing || invalidEmail || !consent) {
       setState({ type: 'error', message: 'Complétez les champs obligatoires et cochez le consentement RGPD.' });
       return;
     }
     setState({ type: 'loading', message: '' });
-    const payload = Object.fromEntries(fields.map((field) => [field.name, data.get(field.name)]));
+    const payload = Object.fromEntries(fields.map((field) => [field.name, getNormalizedFieldValue(field, data)]));
     const result = await insertPublicRecord(table, { ...payload, consent_given: consent });
     setState({ type: result.ok ? 'success' : 'error', message: result.message });
     if (result.ok) form.reset();

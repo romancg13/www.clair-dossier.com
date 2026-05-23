@@ -1,6 +1,8 @@
+import type { Session } from '@supabase/supabase-js';
 import { useCallback, useEffect, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { footerBadges, legalLinks, productLinks, publicNav, resourceLinks, site, warnings } from '../data/site';
+import { supabase } from '../lib/supabase';
 
 function linkClass({ isActive }: { isActive: boolean }) {
   return isActive ? 'nav-link active' : 'nav-link';
@@ -8,10 +10,52 @@ function linkClass({ isActive }: { isActive: boolean }) {
 
 const COOKIE_KEY = 'cd_cookie_consent';
 
+type SessionProfile = {
+  email?: string;
+  fullName?: string;
+  role: 'client' | 'lawyer' | 'cabinet_admin' | 'admin';
+};
+
+const clientWorkspaceLinks = [
+  { label: 'Tableau de bord', path: '/dashboard' },
+  { label: 'Mes dossiers', path: '/mes-dossiers' },
+  { label: 'Documents', path: '/documents' },
+  { label: 'Messages', path: '/messages' },
+  { label: 'Paiements', path: '/paiements' },
+  { label: 'Abonnement', path: '/abonnement' },
+];
+
+const cabinetWorkspaceLinks = [
+  { label: 'Dashboard cabinet', path: '/cabinet/dashboard' },
+  { label: 'Dossiers', path: '/cabinet/dossiers' },
+  { label: 'Clients', path: '/cabinet/clients' },
+  { label: 'Messages', path: '/cabinet/messages' },
+  { label: 'Tâches', path: '/cabinet/taches' },
+  { label: 'Facturation', path: '/cabinet/facturation' },
+];
+
+function isCabinetRole(role: SessionProfile['role']) {
+  return role === 'lawyer' || role === 'cabinet_admin' || role === 'admin';
+}
+
+function getWorkspaceHome(role: SessionProfile['role']) {
+  return isCabinetRole(role) ? '/cabinet/dashboard' : '/dashboard';
+}
+
+function getWorkspaceLinks(role: SessionProfile['role']) {
+  return isCabinetRole(role) ? cabinetWorkspaceLinks : clientWorkspaceLinks;
+}
+
+function normalizeRole(value: unknown): SessionProfile['role'] {
+  if (value === 'lawyer' || value === 'cabinet_admin' || value === 'admin') return value;
+  return 'client';
+}
+
 export function Layout() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [showCookies, setShowCookies] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [sessionProfile, setSessionProfile] = useState<SessionProfile | null>(null);
   const location = useLocation();
 
   useEffect(() => { setMenuOpen(false); }, [location.pathname]);
@@ -39,6 +83,53 @@ export function Layout() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
+  useEffect(() => {
+    if (!supabase) return undefined;
+    let mounted = true;
+
+    async function resolveSessionProfile(session: Session | null) {
+      if (!session) {
+        if (mounted) setSessionProfile(null);
+        return;
+      }
+
+      const metadata = session.user.user_metadata || {};
+      let nextProfile: SessionProfile = {
+        email: session.user.email,
+        fullName: typeof metadata.full_name === 'string' ? metadata.full_name : undefined,
+        role: normalizeRole(metadata.role),
+      };
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('role, full_name')
+        .eq('id', session.user.id)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Impossible de charger le profil utilisateur', error);
+      } else if (data) {
+        nextProfile = {
+          ...nextProfile,
+          fullName: data.full_name || nextProfile.fullName,
+          role: normalizeRole(data.role),
+        };
+      }
+
+      if (mounted) setSessionProfile(nextProfile);
+    }
+
+    supabase.auth.getSession().then(({ data }) => resolveSessionProfile(data.session));
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      void resolveSessionProfile(session);
+    });
+
+    return () => {
+      mounted = false;
+      listener.subscription.unsubscribe();
+    };
+  }, []);
+
   const acceptCookies = useCallback(() => {
     try { localStorage.setItem(COOKIE_KEY, 'accepted'); } catch { /* noop */ }
     setShowCookies(false);
@@ -52,6 +143,17 @@ export function Layout() {
   const scrollToTop = useCallback(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
+
+  const signOut = useCallback(async () => {
+    if (!supabase) return;
+    const { error } = await supabase.auth.signOut();
+    if (error) console.error('Erreur de déconnexion Supabase', error);
+    setSessionProfile(null);
+  }, []);
+
+  const workspaceLinks = sessionProfile ? getWorkspaceLinks(sessionProfile.role) : [];
+  const workspaceHome = sessionProfile ? getWorkspaceHome(sessionProfile.role) : '/dashboard';
+  const workspaceLabel = sessionProfile && isCabinetRole(sessionProfile.role) ? 'Espace cabinet' : 'Espace client';
 
   return (
     <div className="app-shell">
@@ -70,11 +172,21 @@ export function Layout() {
           {publicNav.map((item) => (
             <NavLink key={item.path} to={item.path} className={linkClass}>{item.label}</NavLink>
           ))}
+          {sessionProfile && <NavLink to={workspaceHome} className={linkClass}>{workspaceLabel}</NavLink>}
         </nav>
 
         <div className="header-actions">
-          <Link className="ghost-button" to="/connexion">Connexion</Link>
-          <Link className="primary-button" to="/creer-dossier">Créer un dossier</Link>
+          {sessionProfile ? (
+            <>
+              <Link className="ghost-button" to={workspaceHome}>{sessionProfile.fullName || sessionProfile.email || 'Mon espace'}</Link>
+              <button className="primary-button" type="button" onClick={signOut}>Déconnexion</button>
+            </>
+          ) : (
+            <>
+              <Link className="ghost-button" to="/connexion">Connexion</Link>
+              <Link className="primary-button" to="/creer-dossier">Créer un dossier</Link>
+            </>
+          )}
         </div>
 
         <button
@@ -96,9 +208,26 @@ export function Layout() {
           {publicNav.map((item) => (
             <NavLink key={item.path} to={item.path} className={linkClass}>{item.label}</NavLink>
           ))}
+          {sessionProfile && (
+            <div className="drawer-section">
+              <span className="drawer-section-title">{workspaceLabel}</span>
+              {workspaceLinks.map((item) => (
+                <NavLink key={item.path} to={item.path} className={linkClass}>{item.label}</NavLink>
+              ))}
+            </div>
+          )}
           <div className="drawer-actions">
-            <Link className="ghost-button full" to="/connexion">Connexion</Link>
-            <Link className="primary-button full" to="/creer-dossier">Créer un dossier</Link>
+            {sessionProfile ? (
+              <>
+                <Link className="ghost-button full" to={workspaceHome}>Ouvrir mon espace</Link>
+                <button className="primary-button full" type="button" onClick={signOut}>Déconnexion</button>
+              </>
+            ) : (
+              <>
+                <Link className="ghost-button full" to="/connexion">Connexion</Link>
+                <Link className="primary-button full" to="/creer-dossier">Créer un dossier</Link>
+              </>
+            )}
           </div>
         </nav>
       </div>

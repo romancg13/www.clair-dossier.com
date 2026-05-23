@@ -3,6 +3,10 @@ import { insertPublicRecord } from '../lib/supabase';
 
 type FormState = { type: 'idle' | 'success' | 'error'; message: string };
 
+function isValidEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
 export function NewsletterForm() {
   const [state, setState] = useState<FormState>({ type: 'idle', message: '' });
 
@@ -13,8 +17,8 @@ export function NewsletterForm() {
     const email = String(data.get('email') || '').trim();
     const consent = data.get('consent') === 'on';
 
-    if (!email || !consent) {
-      setState({ type: 'error', message: 'Indiquez votre email et acceptez le consentement RGPD.' });
+    if (!email || !isValidEmail(email) || !consent) {
+      setState({ type: 'error', message: 'Indiquez un email valide et acceptez le consentement RGPD.' });
       return;
     }
 

@@ -8,6 +8,9 @@ const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
 function normalizeSubscriptionStatus(status: Stripe.Subscription.Status) {
   if (status === 'active' || status === 'canceled' || status === 'incomplete' || status === 'past_due') return status;
+  if (status === 'incomplete_expired') return 'expired';
+  if (status === 'trialing') return 'active';
+  if (status === 'unpaid') return 'past_due';
   return 'incomplete';
 }
 
