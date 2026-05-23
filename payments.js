@@ -125,7 +125,15 @@ app.get('/api/stripe-health', (_request, response) => {
     connected: Boolean(stripe),
     mode: stripe ? stripeMode : 'not_configured',
     annualDiscountPercent: ANNUAL_DISCOUNT_PERCENT,
-    plans: Object.keys(plans),
+    plans: Object.fromEntries(Object.entries(plans).map(([planId, plan]) => [
+      planId,
+      {
+        name: plan.name,
+        currency: DEFAULT_CURRENCY,
+        monthlyAmount: getCheckoutAmount(plan, 'monthly'),
+        yearlyAmount: getCheckoutAmount(plan, 'yearly'),
+      },
+    ])),
   });
 });
 
