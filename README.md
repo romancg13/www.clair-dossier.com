@@ -81,7 +81,8 @@ La migration crée les tables demandées : `profiles`, `contact_requests`, `news
 
 Le fichier backend Node `payments.js` expose :
 
-- `GET /api/stripe-health` pour vérifier que Stripe est connecté et détecter le mode `test` ou `live` depuis `STRIPE_SECRET_KEY` ;
+- `GET /api/stripe-health` pour vérifier la configuration Stripe et détecter le mode `test` ou `live` depuis `STRIPE_SECRET_KEY` ;
+- `GET /api/stripe-health?verify=true` pour appeler réellement l'API Stripe et confirmer la connexion avec la clé serveur ;
 - `POST /api/create-checkout-session` pour créer une session Stripe Checkout en mode `subscription`.
 
 Le frontend appelle ce backend via `/api/create-checkout-session` en local grâce au proxy Vite. En production, renseignez `VITE_PAYMENTS_API_URL` si le backend est hébergé sur un domaine différent du site.

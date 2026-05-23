@@ -120,9 +120,23 @@ function getCustomerEmail(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : undefined;
 }
 
-app.get('/api/stripe-health', (_request, response) => {
+app.get('/api/stripe-health', async (request, response) => {
+  let verified = false;
+  let verificationError = '';
+  if (request.query.verify === 'true' && stripe) {
+    try {
+      await stripe.balance.retrieve();
+      verified = true;
+    } catch (error) {
+      verificationError = error instanceof Error ? error.message : 'Stripe verification failed.';
+    }
+  }
+
   response.json({
-    connected: Boolean(stripe),
+    connected: request.query.verify === 'true' ? verified : Boolean(stripe),
+    configured: Boolean(stripe),
+    verified,
+    verificationError,
     mode: stripe ? stripeMode : 'not_configured',
     annualDiscountPercent: ANNUAL_DISCOUNT_PERCENT,
     plans: Object.fromEntries(Object.entries(plans).map(([planId, plan]) => [
