@@ -86,6 +86,7 @@ export function Layout() {
   useEffect(() => {
     const supabaseClient = supabase;
     if (!supabaseClient) return undefined;
+    const authClient = supabaseClient as NonNullable<typeof supabase>;
     let mounted = true;
 
     async function resolveSessionProfile(session: Session | null) {
@@ -101,7 +102,7 @@ export function Layout() {
         role: normalizeRole(metadata.role),
       };
 
-      const { data, error } = await supabaseClient
+      const { data, error } = await authClient
         .from('profiles')
         .select('role, full_name')
         .eq('id', session.user.id)
@@ -120,8 +121,8 @@ export function Layout() {
       if (mounted) setSessionProfile(nextProfile);
     }
 
-    supabaseClient.auth.getSession().then(({ data }) => resolveSessionProfile(data.session));
-    const { data: listener } = supabaseClient.auth.onAuthStateChange((_event, session) => {
+    authClient.auth.getSession().then(({ data }) => resolveSessionProfile(data.session));
+    const { data: listener } = authClient.auth.onAuthStateChange((_event, session) => {
       void resolveSessionProfile(session);
     });
 
