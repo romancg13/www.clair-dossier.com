@@ -822,7 +822,7 @@ function DocumentsModule() {
   async function openDocument(filePath: string) {
     const result = await createDocumentSignedUrl(filePath);
     if (!result.ok || !result.url) {
-      setState({ type: 'error', message: result.message });
+      setState({ type: 'error', message: result.message || 'Impossible d’ouvrir le document pour le moment.' });
       return;
     }
     window.open(result.url, '_blank', 'noopener,noreferrer');
