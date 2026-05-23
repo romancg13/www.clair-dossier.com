@@ -49,8 +49,8 @@ export async function redirectToCheckout(planId: string, billingPeriod: BillingP
     throw new Error('Créez votre compte pour choisir cette formule.');
   }
 
-  const { data } = await supabase.auth.getSession();
-  if (!data.session) {
+  const { data: sessionData } = await supabase.auth.getSession();
+  if (!sessionData.session) {
     throw new Error('Créez votre compte pour choisir cette formule.');
   }
 
@@ -58,13 +58,13 @@ export async function redirectToCheckout(planId: string, billingPeriod: BillingP
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${data.session.access_token}`,
+      Authorization: `Bearer ${sessionData.session.access_token}`,
     },
     body: JSON.stringify({
       planId,
       billingPeriod,
-      customerEmail: data.session.user.email,
-      userId: data.session.user.id,
+      customerEmail: sessionData.session.user.email,
+      userId: sessionData.session.user.id,
       successUrl: `${window.location.origin}/success`,
       cancelUrl: `${window.location.origin}/cancel`,
     }),
@@ -75,10 +75,10 @@ export async function redirectToCheckout(planId: string, billingPeriod: BillingP
     throw new Error("Le paiement n'est pas encore disponible. Vérifiez la configuration Stripe serveur.");
   }
 
-  const data = (await response.json()) as { url?: string };
-  if (!data.url) {
+  const checkoutData = (await response.json()) as { url?: string };
+  if (!checkoutData.url) {
     throw new Error('Session Stripe invalide.');
   }
 
-  window.location.assign(data.url);
+  window.location.assign(checkoutData.url);
 }
