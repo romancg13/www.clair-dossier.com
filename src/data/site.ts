@@ -38,7 +38,7 @@ export const legalLinks = [
 
 export const footerBadges = [
   { label: 'Conçu pour respecter le RGPD', path: '/rgpd' },
-  { label: 'Hébergement UE documenté', path: '/securite' },
+  { label: "Hébergement prévu dans l'UE", path: '/securite' },
   { label: 'Secret professionnel pris en compte', path: '/securite' },
 ];
 
@@ -57,7 +57,7 @@ export const featureCards = [
   },
   {
     title: 'Base RGPD et sécurité',
-    text: 'Consentements, RLS, audit logs, hébergement UE documenté et séparation des données sont intégrés dans le schéma Supabase.',
+    text: "Consentements, RLS, audit logs, hébergement prévu dans l’Union européenne et séparation des données sont intégrés dans le schéma Supabase.",
   },
 ];
 
@@ -464,12 +464,12 @@ export const legalPages = {
     title: 'Mentions légales',
     description: 'Informations éditoriales de ClairDossier.',
     sections: [
-      { title: 'Éditeur du site', text: 'ClairDossier, service édité pour la publication du site www.clair-dossier.com.' },
-      { title: 'Responsable de publication', text: 'Le responsable de publication est l’éditeur du site ClairDossier.' },
-      { title: 'Hébergeur', text: 'Site statique hébergé via GitHub Pages. Les données applicatives sont hébergées dans Supabase selon la région configurée.' },
+      { title: 'Éditeur du site', text: 'ClairDossier - [nom de l’entité éditrice à compléter], [forme sociale à compléter], [capital social à compléter].' },
+      { title: 'Responsable de publication', text: '[Nom du responsable de publication à compléter].' },
+      { title: 'Hébergeur', text: 'Site statique hébergé via GitHub Pages ou l’hébergeur de production retenu. Les données applicatives sont destinées à être hébergées dans Supabase selon une région configurée dans l’Union européenne.' },
       { title: 'Contact', text: 'contact@clair-dossier.com.' },
-      { title: 'SIRET', text: 'Information administrative à publier dès immatriculation ou rattachement à une entité éditrice.' },
-      { title: 'Adresse', text: 'Adresse de l’éditeur à publier dès validation administrative.' },
+      { title: 'SIRET', text: '[SIRET à compléter si disponible].' },
+      { title: 'Adresse', text: '[Adresse de l’éditeur à compléter si disponible].' },
     ],
   },
   cookies: {

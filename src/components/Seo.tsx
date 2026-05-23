@@ -29,6 +29,9 @@ export function Seo({ title, description, path = '/', type = 'website', jsonLd }
     upsertMeta('meta[property="og:description"]', 'property', 'og:description', description);
     upsertMeta('meta[property="og:url"]', 'property', 'og:url', url);
     upsertMeta('meta[property="og:type"]', 'property', 'og:type', type);
+    upsertMeta('meta[property="og:site_name"]', 'property', 'og:site_name', site.name);
+    upsertMeta('meta[property="og:locale"]', 'property', 'og:locale', 'fr_FR');
+    upsertMeta('meta[name="twitter:card"]', 'name', 'twitter:card', 'summary_large_image');
     upsertMeta('meta[name="twitter:title"]', 'name', 'twitter:title', absoluteTitle);
     upsertMeta('meta[name="twitter:description"]', 'name', 'twitter:description', description);
 

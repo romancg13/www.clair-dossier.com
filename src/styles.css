@@ -508,6 +508,38 @@ summary:hover { color: var(--gold); }
 .dashboard-grid .feature-card h2 { font-size: 1.15rem; margin-top: 0; }
 .dashboard-grid .feature-card li { margin-bottom: 0.65rem; }
 .list-meta { display: block; color: var(--muted); font-size: 0.85rem; line-height: 1.5; margin-top: 0.15rem; }
+.workspace-nav {
+  width: min(1180px, calc(100% - 2rem));
+  margin: 0 auto 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+.workspace-nav a {
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-full);
+  color: var(--navy);
+  font-size: 0.88rem;
+  font-weight: 850;
+  padding: 0.55rem 0.85rem;
+}
+.workspace-nav a:hover { border-color: var(--gold); background: #eef4fb; }
+.mini-form {
+  display: grid;
+  gap: 0.8rem;
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+.mini-form h3 { margin: 0; color: var(--navy); font-size: 1rem; }
+.message-preview {
+  display: block;
+  color: #334155;
+  line-height: 1.55;
+  max-height: 4.6rem;
+  overflow: hidden;
+}
 .dashboard-header { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
 .dashboard-header h1 { flex: 1; }
 .stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.8rem; margin-bottom: 1.5rem; }

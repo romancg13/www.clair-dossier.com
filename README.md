@@ -51,6 +51,7 @@ Variables serveur uniquement, à configurer dans Supabase Edge Functions ou l'en
 - `STRIPE_SECRET_KEY`
 - `STRIPE_WEBHOOK_SECRET`
 - `AI_API_KEY`
+- `AI_PROVIDER_URL` (optionnel, par défaut endpoint compatible OpenAI)
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `SUPABASE_URL`
 - `SUPABASE_ANON_KEY`
@@ -88,7 +89,7 @@ Les boutons de tarifs appellent `create-checkout-session`. Le paiement réel né
 6. créer le webhook Stripe vers `https://<project-ref>.functions.supabase.co/stripe-webhook` ;
 7. redéployer GitHub Pages depuis `main` sur le domaine `www.clair-dossier.com`.
 
-Le webhook doit être déployé avec `--no-verify-jwt` et vérifie la signature Stripe via `STRIPE_WEBHOOK_SECRET`. Un abonnement ne doit être considéré actif qu’après événement Stripe fiable, jamais uniquement après une redirection vers `/success`.
+Le webhook doit être déployé avec `--no-verify-jwt` et vérifie la signature Stripe via `STRIPE_WEBHOOK_SECRET`. Il persiste les sessions checkout, les abonnements et les factures Stripe dans `payments` / `subscriptions`. Un abonnement ne doit être considéré actif qu’après événement Stripe fiable, jamais uniquement après une redirection vers `/success`.
 
 ## Sécurité applicative
 

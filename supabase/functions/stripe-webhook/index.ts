@@ -11,6 +11,12 @@ function normalizeSubscriptionStatus(status: Stripe.Subscription.Status) {
   return 'incomplete';
 }
 
+function getSubscriptionIdFromInvoice(invoice: Stripe.Invoice) {
+  const subscription = invoice.subscription;
+  if (!subscription) return null;
+  return typeof subscription === 'string' ? subscription : subscription.id;
+}
+
 Deno.serve(async (request) => {
   if (request.method !== 'POST') return new Response('Method not allowed', { status: 405 });
   if (!stripeSecretKey || !webhookSecret || !supabaseUrl || !serviceRoleKey) {
@@ -39,6 +45,7 @@ Deno.serve(async (request) => {
         user_id: session.client_reference_id || null,
         stripe_customer_id: typeof session.customer === 'string' ? session.customer : null,
         stripe_checkout_session_id: session.id,
+        stripe_invoice_id: typeof session.invoice === 'string' ? session.invoice : null,
         amount_total: session.amount_total,
         currency: session.currency || 'eur',
         status: session.payment_status || 'paid',
@@ -64,6 +71,34 @@ Deno.serve(async (request) => {
         updated_at: new Date().toISOString(),
       }, { onConflict: 'stripe_subscription_id' });
       if (subscriptionError) throw subscriptionError;
+    }
+
+    if (event.type === 'invoice.paid' || event.type === 'invoice.payment_failed') {
+      const invoice = event.data.object as Stripe.Invoice;
+      const subscriptionId = getSubscriptionIdFromInvoice(invoice);
+      const metadata = invoice.subscription_details?.metadata || invoice.metadata || {};
+      const { error: invoiceError } = await supabase.from('payments').upsert({
+        user_id: metadata.user_id || null,
+        stripe_customer_id: typeof invoice.customer === 'string' ? invoice.customer : null,
+        stripe_invoice_id: invoice.id,
+        amount_total: invoice.amount_paid || invoice.amount_due || null,
+        currency: invoice.currency || 'eur',
+        status: event.type === 'invoice.paid' ? 'paid' : 'failed',
+        plan_id: metadata.plan_id || null,
+        billing_period: metadata.billing_period || null,
+        hosted_invoice_url: invoice.hosted_invoice_url || null,
+        invoice_pdf: invoice.invoice_pdf || null,
+        metadata,
+      }, { onConflict: 'stripe_invoice_id' });
+      if (invoiceError) throw invoiceError;
+
+      if (event.type === 'invoice.payment_failed' && subscriptionId) {
+        const { error: updateError } = await supabase
+          .from('subscriptions')
+          .update({ status: 'past_due', updated_at: new Date().toISOString() })
+          .eq('stripe_subscription_id', subscriptionId);
+        if (updateError) throw updateError;
+      }
     }
 
     return new Response(JSON.stringify({ received: true }), { headers: { 'Content-Type': 'application/json' } });

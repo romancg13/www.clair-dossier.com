@@ -50,7 +50,7 @@ export function isPlanCheckoutAvailable(planId: string, billingPeriod: BillingPe
 
 export async function redirectToCheckout(planId: string, billingPeriod: BillingPeriod): Promise<void> {
   if (!isStripeBaseConfigured || !functionsUrl || !anonKey || !getStripePriceId(planId, billingPeriod)) {
-    throw new Error('Paiement disponible après configuration Stripe.');
+    throw new Error('Paiement bientôt disponible. Configurez Stripe pour activer le checkout sécurisé.');
   }
   if (!supabase) {
     throw new CheckoutAuthRequiredError();
@@ -83,7 +83,7 @@ export async function redirectToCheckout(planId: string, billingPeriod: BillingP
 
   const checkoutData = (await response.json()) as { url?: string };
   if (!checkoutData.url) {
-    throw new Error('Paiement disponible après configuration Stripe.');
+    throw new Error('Paiement bientôt disponible. Configurez Stripe pour activer le checkout sécurisé.');
   }
 
   window.location.assign(checkoutData.url);

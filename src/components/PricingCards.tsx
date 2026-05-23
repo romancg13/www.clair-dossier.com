@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import { plans } from '../data/site';
 import type { BillingPeriod } from '../lib/stripe';
@@ -49,7 +50,7 @@ export function PricingCards() {
         navigate('/inscription?redirect=/tarifs');
         return;
       }
-      setMessage(error instanceof Error ? error.message : 'Paiement disponible après configuration Stripe.');
+      setMessage(error instanceof Error ? error.message : 'Paiement bientôt disponible. Configurez Stripe pour activer le checkout sécurisé.');
     } finally {
       setLoadingPlan('');
     }
@@ -80,19 +81,23 @@ export function PricingCards() {
               {price.detail && <p className="price-detail">{price.detail}</p>}
               {billingPeriod === 'yearly' && plan.monthlyPrice !== null && plan.monthlyPrice > 0 && <span className="discount-badge">Économisez 10 %</span>}
               {isPaidPlan && (
-                <div className="payment-methods" aria-label="Moyens de paiement acceptés">
+                <div className="payment-methods" aria-label="Moyens de paiement possibles via Stripe">
                   <span>Carte</span>
                   <span>Apple Pay</span>
-                  <span>PayPal</span>
+                  <span>PayPal si éligible</span>
                 </div>
               )}
               <ul>
                 {plan.features.map((feature) => <li key={feature}>{feature}</li>)}
               </ul>
-              {isPaidPlan && !checkoutAvailable && <p className="payment-note">Paiement disponible après configuration Stripe.</p>}
-              <button className="primary-button full" type="button" onClick={() => choosePlan(plan.id)} disabled={loadingPlan === plan.id || (isPaidPlan && !checkoutAvailable)}>
-                {loadingPlan === plan.id ? 'Préparation…' : plan.id === 'discovery' ? 'Commencer gratuitement' : 'Choisir cette formule'}
-              </button>
+              {isPaidPlan && !checkoutAvailable && <p className="payment-note">Paiement bientôt disponible : le checkout Stripe s'activera dès configuration des clés, Price IDs et webhooks.</p>}
+              {isPaidPlan && !checkoutAvailable ? (
+                <Link className="secondary-button full" to="/contact">Être recontacté</Link>
+              ) : (
+                <button className="primary-button full" type="button" onClick={() => choosePlan(plan.id)} disabled={loadingPlan === plan.id}>
+                  {loadingPlan === plan.id ? 'Préparation…' : plan.id === 'discovery' ? 'Commencer gratuitement' : 'Choisir cette formule'}
+                </button>
+              )}
             </article>
           );
         })}

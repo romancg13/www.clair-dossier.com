@@ -4,6 +4,7 @@ import { NewsletterForm } from './components/NewsletterForm';
 import { PricingCards } from './components/PricingCards';
 import { Seo } from './components/Seo';
 import { blogPosts, categories, caseStatuses, featureCards, infoPages, legalPages, plans, site, warnings } from './data/site';
+import { uploadCaseDocument } from './lib/documents';
 import { insertPublicRecord, supabase } from './lib/supabase';
 import { getSafeRedirect, isHoneypotFilled, isValidEmail, sanitizeText, validatePassword } from './lib/security';
 import { redirectToCustomerPortal } from './lib/stripe';
@@ -55,6 +56,16 @@ type PaymentRow = {
   created_at: string;
 };
 
+type MessageRow = {
+  id: string;
+  case_id: string | null;
+  body: string;
+  read_at: string | null;
+  created_at: string;
+  sender_id: string | null;
+  recipient_id: string | null;
+};
+
 function formatPlanPreviewPrice(monthlyPrice: number | null) {
   if (monthlyPrice === null) return 'Sur devis';
   if (monthlyPrice === 0) return '0 €';
@@ -77,7 +88,7 @@ export function HomePage() {
           <div className="metrics-row">
             <span><strong>6</strong> statuts dossier</span>
             <span><strong>3</strong> espaces dédiés</span>
-            <span><strong>100%</strong> liens footer actifs</span>
+            <span><strong>0</strong> lien vide</span>
           </div>
         </div>
         <div className="hero-panel" aria-label="Aperçu dossier ClairDossier">
@@ -556,25 +567,30 @@ export function WorkspacePage({ title, audience }: { title: string; audience: 'c
     documents: DocumentRow[];
     subscription: SubscriptionRow | null;
     payments: PaymentRow[];
-  }>({ loading: true, message: '', cases: [], documents: [], subscription: null, payments: [] });
+    messages: MessageRow[];
+  }>({ loading: true, message: '', cases: [], documents: [], subscription: null, payments: [], messages: [] });
   const [portalState, setPortalState] = useState<FormState>({ type: 'idle', message: '' });
+  const [documentState, setDocumentState] = useState<FormState>({ type: 'idle', message: '' });
+  const [messageState, setMessageState] = useState<FormState>({ type: 'idle', message: '' });
+  const [reloadToken, setReloadToken] = useState(0);
 
   useEffect(() => {
     let isMounted = true;
     async function loadPrivateData() {
       if (!supabase) {
-        setPrivateData({ loading: false, message: 'Configuration Supabase manquante.', cases: [], documents: [], subscription: null, payments: [] });
+        setPrivateData({ loading: false, message: 'Configuration Supabase manquante.', cases: [], documents: [], subscription: null, payments: [], messages: [] });
         return;
       }
 
-      const [casesResult, documentsResult, subscriptionResult, paymentsResult] = await Promise.all([
+      const [casesResult, documentsResult, subscriptionResult, paymentsResult, messagesResult] = await Promise.all([
         supabase.from('cases').select('id,title,status,legal_domain,urgency,created_at').order('created_at', { ascending: false }).limit(10),
         supabase.from('documents').select('id,file_name,status,created_at,case_id').order('created_at', { ascending: false }).limit(10),
         supabase.from('subscriptions').select('plan_id,billing_period,status,current_period_end,cancel_at_period_end,stripe_customer_id,updated_at').order('updated_at', { ascending: false }).limit(1).maybeSingle(),
         supabase.from('payments').select('id,amount_total,currency,status,created_at').order('created_at', { ascending: false }).limit(5),
+        supabase.from('messages').select('id,case_id,body,read_at,created_at,sender_id,recipient_id').order('created_at', { ascending: false }).limit(10),
       ]);
       if (!isMounted) return;
-      const errors = [casesResult.error, documentsResult.error, subscriptionResult.error, paymentsResult.error].filter(Boolean);
+      const errors = [casesResult.error, documentsResult.error, subscriptionResult.error, paymentsResult.error, messagesResult.error].filter(Boolean);
       errors.forEach((error) => console.error('Erreur chargement espace privé', error));
       setPrivateData({
         loading: false,
@@ -583,12 +599,13 @@ export function WorkspacePage({ title, audience }: { title: string; audience: 'c
         documents: (documentsResult.data || []) as DocumentRow[],
         subscription: (subscriptionResult.data || null) as SubscriptionRow | null,
         payments: (paymentsResult.data || []) as PaymentRow[],
+        messages: (messagesResult.data || []) as MessageRow[],
       });
     }
 
     void loadPrivateData();
     return () => { isMounted = false; };
-  }, [audience]);
+  }, [audience, reloadToken]);
 
   async function openCustomerPortal() {
     setPortalState({ type: 'loading', message: '' });
@@ -600,13 +617,93 @@ export function WorkspacePage({ title, audience }: { title: string; audience: 'c
     }
   }
 
+  async function onDocumentUpload(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (documentState.type === 'loading') return;
+    const form = event.currentTarget;
+    const data = new FormData(form);
+    const caseId = sanitizeText(data.get('case_id'), 80);
+    const file = data.get('document');
+    if (!caseId || !(file instanceof File) || !file.name) {
+      setDocumentState({ type: 'error', message: 'Sélectionnez un dossier et un document à envoyer.' });
+      return;
+    }
+    setDocumentState({ type: 'loading', message: '' });
+    const result = await uploadCaseDocument(caseId, file);
+    setDocumentState({ type: result.ok ? 'success' : 'error', message: result.message });
+    if (result.ok) {
+      form.reset();
+      setReloadToken((value) => value + 1);
+    }
+  }
+
+  async function onMessageSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (messageState.type === 'loading') return;
+    const form = event.currentTarget;
+    const data = new FormData(form);
+    const caseId = sanitizeText(data.get('case_id'), 80);
+    const body = sanitizeText(data.get('body'), 5000);
+    if (!caseId || body.length < 2) {
+      setMessageState({ type: 'error', message: 'Choisissez un dossier et rédigez un message.' });
+      return;
+    }
+    if (!supabase) {
+      setMessageState({ type: 'error', message: 'Configuration Supabase manquante.' });
+      return;
+    }
+
+    setMessageState({ type: 'loading', message: '' });
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError || !userData.user) {
+      if (userError) console.error('Erreur session messagerie', userError);
+      setMessageState({ type: 'error', message: 'Connectez-vous pour envoyer un message.' });
+      return;
+    }
+    const { error } = await supabase.from('messages').insert({
+      case_id: caseId,
+      sender_id: userData.user.id,
+      recipient_id: null,
+      body,
+    });
+    if (error) {
+      console.error('Erreur Supabase (messages)', error);
+      setMessageState({ type: 'error', message: 'Impossible d’envoyer le message pour le moment.' });
+      return;
+    }
+    setMessageState({ type: 'success', message: 'Message enregistré dans le dossier.' });
+    form.reset();
+    setReloadToken((value) => value + 1);
+  }
+
   const subscriptionLabel = privateData.subscription ? formatSubscriptionStatus(privateData.subscription.status) : 'Aucun';
   const activeCases = privateData.cases.filter((caseItem) => caseItem.status !== 'clôturé').length;
+  const workspaceLinks = isClient ? [
+    { label: 'Dashboard', path: '/dashboard' },
+    { label: 'Dossiers', path: '/mes-dossiers' },
+    { label: 'Documents', path: '/documents' },
+    { label: 'Messages', path: '/messages' },
+    { label: 'Paiements', path: '/paiements' },
+    { label: 'Abonnement', path: '/abonnement' },
+    { label: 'Paramètres', path: '/parametres' },
+  ] : [
+    { label: 'Dashboard', path: '/cabinet/dashboard' },
+    { label: 'Dossiers', path: '/cabinet/dossiers' },
+    { label: 'Clients', path: '/cabinet/clients' },
+    { label: 'Messages', path: '/cabinet/messages' },
+    { label: 'Tâches', path: '/cabinet/taches' },
+    { label: 'Facturation', path: '/cabinet/facturation' },
+    { label: 'Paramètres', path: '/cabinet/parametres' },
+  ];
 
   return (
     <>
       <Seo title={title} description={`Espace ${audience} ClairDossier connecté aux données privées Supabase protégées par RLS.`} />
       <PageHero title={title} description={`Page privée ${audience} alimentée par vos dossiers, documents, paiements et abonnements Supabase.`} />
+
+      <nav className="workspace-nav" aria-label={`Navigation espace ${audience}`}>
+        {workspaceLinks.map((link) => <Link key={link.path} to={link.path}>{link.label}</Link>)}
+      </nav>
 
       <section className="stat-row" style={{ width: 'min(1180px, calc(100% - 2rem))', margin: '0 auto' }}>
         {isClient ? (
@@ -660,6 +757,17 @@ export function WorkspacePage({ title, audience }: { title: string; audience: 'c
               <Link className="primary-button" to="/tarifs">Choisir une formule</Link>
             </>
           )}
+          <h3>Paiements récents</h3>
+          {privateData.payments.length > 0 ? (
+            <ul>{privateData.payments.map((payment) => (
+              <li key={payment.id}>
+                {formatPaymentAmount(payment.amount_total, payment.currency)}
+                <span className="list-meta">{payment.status} · {formatDate(payment.created_at)}</span>
+              </li>
+            ))}</ul>
+          ) : (
+            <p>Aucun paiement confirmé par Stripe pour ce compte.</p>
+          )}
         </article>
         <article className="feature-card">
           <h2>Documents récents</h2>
@@ -670,6 +778,34 @@ export function WorkspacePage({ title, audience }: { title: string; audience: 'c
           ) : (
             <p>Aucun document rattaché aux dossiers visibles.</p>
           )}
+          <form className="mini-form" onSubmit={onDocumentUpload}>
+            <h3>Ajouter un document</h3>
+            <SelectField name="case_id" label="Dossier" options={privateData.cases.map((caseItem) => `${caseItem.id}|${caseItem.title}`)} required />
+            <input name="document" type="file" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,application/pdf,image/png,image/jpeg,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" required />
+            <p className="notice mini">Formats acceptés : PDF, PNG, JPG, DOC, DOCX. Taille maximale : 10 Mo.</p>
+            <button className="secondary-button full" type="submit" disabled={documentState.type === 'loading' || privateData.cases.length === 0}>{documentState.type === 'loading' ? 'Envoi...' : 'Envoyer le document'}</button>
+            {documentState.message && <p className={`form-message ${documentState.type === 'success' ? 'success' : 'error'}`}>{documentState.message}</p>}
+          </form>
+        </article>
+        <article className="feature-card">
+          <h2>Messagerie dossier</h2>
+          {privateData.messages.length > 0 ? (
+            <ul>{privateData.messages.map((message) => (
+              <li key={message.id}>
+                <span className="message-preview">{message.body}</span>
+                <span className="list-meta">{message.read_at ? 'Lu' : 'Non lu'} · {formatDate(message.created_at)}</span>
+              </li>
+            ))}</ul>
+          ) : (
+            <p>Aucun message rattaché aux dossiers visibles.</p>
+          )}
+          <form className="mini-form" onSubmit={onMessageSubmit}>
+            <h3>Nouveau message</h3>
+            <SelectField name="case_id" label="Dossier" options={privateData.cases.map((caseItem) => `${caseItem.id}|${caseItem.title}`)} required />
+            <label><span>Message *</span><textarea name="body" required rows={4} maxLength={5000} placeholder="Écrivez une question ou une précision liée au dossier..." /></label>
+            <button className="secondary-button full" type="submit" disabled={messageState.type === 'loading' || privateData.cases.length === 0}>{messageState.type === 'loading' ? 'Envoi...' : 'Envoyer le message'}</button>
+            {messageState.message && <p className={`form-message ${messageState.type === 'success' ? 'success' : 'error'}`}>{messageState.message}</p>}
+          </form>
         </article>
         <article className="feature-card">
           <h2>Sécurité et statuts</h2>
@@ -774,7 +910,10 @@ function SelectField({ name, label, options, required }: { name: string; label: 
       <span>{label}{required ? ' *' : ''}</span>
       <select name={name} required={required} defaultValue="">
         <option value="" disabled>Choisir</option>
-        {options.map((option) => <option key={option} value={option}>{option}</option>)}
+        {options.map((option) => {
+          const [value, labelText] = option.includes('|') ? option.split('|', 2) : [option, option];
+          return <option key={option} value={value}>{labelText}</option>;
+        })}
       </select>
     </label>
   );
@@ -797,6 +936,14 @@ function formatSubscriptionStatus(status: string) {
     past_due: 'En retard',
   };
   return labels[status] || status;
+}
+
+function formatPaymentAmount(amount: number | null, currency: string | null) {
+  if (amount === null) return 'Montant non transmis';
+  return new Intl.NumberFormat('fr-FR', {
+    style: 'currency',
+    currency: (currency || 'eur').toUpperCase(),
+  }).format(amount / 100);
 }
 
 function formatDate(value: string) {
