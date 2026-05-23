@@ -1,11 +1,11 @@
-const allowedOrigins = (Deno.env.get('ALLOWED_ORIGINS') || Deno.env.get('SITE_URL') || 'https://clair-dossier.com,https://www.clair-dossier.com')
+const allowedOrigins = (Deno.env.get('ALLOWED_ORIGINS') || Deno.env.get('SITE_URL') || 'https://www.clair-dossier.com,https://clair-dossier.com')
   .split(',')
   .map((origin) => origin.trim())
   .filter(Boolean);
 
 export function corsHeaders(request: Request) {
   const origin = request.headers.get('origin') || '';
-  const allowedOrigin = allowedOrigins.includes(origin) ? origin : allowedOrigins[0] || 'https://clair-dossier.com';
+  const allowedOrigin = allowedOrigins.includes(origin) ? origin : allowedOrigins[0] || 'https://www.clair-dossier.com';
   return {
     'Access-Control-Allow-Origin': allowedOrigin,
     'Vary': 'Origin',

@@ -7,6 +7,13 @@ const functionsUrl = import.meta.env.VITE_SUPABASE_FUNCTIONS_URL || (supabaseUrl
 
 export type BillingPeriod = 'monthly' | 'yearly';
 
+export class CheckoutAuthRequiredError extends Error {
+  constructor() {
+    super('Créez votre compte pour choisir cette formule.');
+    this.name = 'CheckoutAuthRequiredError';
+  }
+}
+
 const stripePriceIds: Record<string, Record<BillingPeriod, string | undefined>> = {
   'client-essential': {
     monthly: import.meta.env.VITE_STRIPE_CLIENT_ESSENTIEL_MONTHLY_PRICE_ID,
@@ -46,7 +53,7 @@ export async function redirectToCheckout(planId: string, billingPeriod: BillingP
     throw new Error('Paiement disponible après configuration Stripe.');
   }
   if (!supabase) {
-    throw new Error('Créez votre compte pour choisir cette formule.');
+    throw new CheckoutAuthRequiredError();
   }
 
   const [{ data: sessionData }, { data: userData, error: userError }] = await Promise.all([
@@ -54,7 +61,7 @@ export async function redirectToCheckout(planId: string, billingPeriod: BillingP
     supabase.auth.getUser(),
   ]);
   if (!sessionData.session || userError || !userData.user) {
-    throw new Error('Créez votre compte pour choisir cette formule.');
+    throw new CheckoutAuthRequiredError();
   }
 
   const response = await fetch(`${functionsUrl}/create-checkout-session`, {
@@ -80,4 +87,41 @@ export async function redirectToCheckout(planId: string, billingPeriod: BillingP
   }
 
   window.location.assign(checkoutData.url);
+}
+
+export async function redirectToCustomerPortal(): Promise<void> {
+  if (!isStripeBaseConfigured || !functionsUrl || !anonKey) {
+    throw new Error('Portail client disponible après configuration Stripe.');
+  }
+  if (!supabase) {
+    throw new CheckoutAuthRequiredError();
+  }
+
+  const [{ data: sessionData }, { data: userData, error: userError }] = await Promise.all([
+    supabase.auth.getSession(),
+    supabase.auth.getUser(),
+  ]);
+  if (!sessionData.session || userError || !userData.user) {
+    throw new CheckoutAuthRequiredError();
+  }
+
+  const response = await fetch(`${functionsUrl}/customer-portal`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${sessionData.session.access_token}`,
+    },
+  });
+
+  if (!response.ok) {
+    console.error('Erreur customer-portal', await response.text());
+    throw new Error('Portail client indisponible temporairement.');
+  }
+
+  const portalData = (await response.json()) as { url?: string };
+  if (!portalData.url) {
+    throw new Error('Portail client disponible après configuration Stripe.');
+  }
+
+  window.location.assign(portalData.url);
 }

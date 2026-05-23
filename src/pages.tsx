@@ -1,4 +1,4 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { NewsletterForm } from './components/NewsletterForm';
 import { PricingCards } from './components/PricingCards';
@@ -6,6 +6,7 @@ import { Seo } from './components/Seo';
 import { blogPosts, categories, caseStatuses, featureCards, infoPages, legalPages, plans, site, warnings } from './data/site';
 import { insertPublicRecord, supabase } from './lib/supabase';
 import { getSafeRedirect, isHoneypotFilled, isValidEmail, sanitizeText, validatePassword } from './lib/security';
+import { redirectToCustomerPortal } from './lib/stripe';
 import type { PublicFormTable } from './lib/security';
 
 type FormState = { type: 'idle' | 'loading' | 'success' | 'error'; message: string };
@@ -17,6 +18,41 @@ type FieldDef = {
   options?: string[];
   required?: boolean;
   placeholder?: string;
+};
+
+type CaseRow = {
+  id: string;
+  title: string;
+  status: string;
+  legal_domain: string | null;
+  urgency: string | null;
+  created_at: string;
+};
+
+type DocumentRow = {
+  id: string;
+  file_name: string;
+  status: string;
+  created_at: string;
+  case_id: string | null;
+};
+
+type SubscriptionRow = {
+  plan_id: string;
+  billing_period: 'monthly' | 'yearly';
+  status: string;
+  current_period_end: string | null;
+  cancel_at_period_end: boolean;
+  stripe_customer_id: string | null;
+  updated_at: string;
+};
+
+type PaymentRow = {
+  id: string;
+  amount_total: number | null;
+  currency: string | null;
+  status: string;
+  created_at: string;
 };
 
 function formatPlanPreviewPrice(monthlyPrice: number | null) {
@@ -146,8 +182,8 @@ export function LegalPage({ pageKey }: { pageKey: keyof typeof legalPages }) {
 export function PricingPage() {
   return (
     <>
-      <Seo title="Tarifs" description="Formules ClairDossier pour particuliers, PME et cabinets d'avocats avec Stripe Checkout prêt à connecter." path="/tarifs" />
-      <PageHero title="Tarifs" description="Choisissez une formule adaptée à votre profil. Le paiement Stripe devient actif dès que les clés et Price IDs sont configurés côté serveur." />
+      <Seo title="Tarifs" description="Formules ClairDossier pour particuliers, PME et cabinets d'avocats avec Stripe Checkout sécurisé." path="/tarifs" />
+      <PageHero title="Tarifs" description="Choisissez une formule adaptée à votre profil. Les abonnements mensuels et annuels sont gérés via Stripe Checkout sécurisé." />
       <PricingCards />
     </>
   );
@@ -198,6 +234,7 @@ export function DemoPage() {
 
 export function CreateCasePage() {
   const [state, setState] = useState<FormState>({ type: 'idle', message: '' });
+  const [createdCaseId, setCreatedCaseId] = useState('');
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -209,16 +246,19 @@ export function CreateCasePage() {
     const accepted = data.get('terms_accepted') === 'on';
     if (missing || !accepted) {
       setState({ type: 'error', message: 'Complétez les champs obligatoires et acceptez les conditions.' });
+      setCreatedCaseId('');
       return;
     }
     const problemDescription = sanitizeText(data.get('problem_description'), 3000);
     const documentsAvailable = sanitizeText(data.get('documents_available'), 1200);
     if (problemDescription.length < 20) {
       setState({ type: 'error', message: 'Décrivez votre situation en quelques phrases avant de créer le dossier.' });
+      setCreatedCaseId('');
       return;
     }
     if (!supabase) {
       setState({ type: 'error', message: 'Créez votre compte pour commencer votre dossier.' });
+      setCreatedCaseId('');
       return;
     }
 
@@ -226,6 +266,7 @@ export function CreateCasePage() {
     if (userError || !userData.user) {
       console.error('Session Supabase absente pour création dossier', userError);
       setState({ type: 'error', message: 'Créez votre compte pour commencer votre dossier.' });
+      setCreatedCaseId('');
       return;
     }
 
@@ -247,6 +288,7 @@ export function CreateCasePage() {
     if (caseError) {
       console.error('Erreur Supabase (cases)', caseError);
       setState({ type: 'error', message: getCasePersistenceMessage(caseError) });
+      setCreatedCaseId('');
       return;
     }
 
@@ -264,9 +306,11 @@ export function CreateCasePage() {
     if (answerError) {
       console.error('Erreur Supabase (case_intake_answers)', answerError);
       setState({ type: 'error', message: getCasePersistenceMessage(answerError) });
+      setCreatedCaseId('');
       return;
     }
 
+    setCreatedCaseId(caseId);
     setState({ type: 'success', message: 'Votre dossier a été créé. Vous pouvez maintenant suivre son avancement.' });
     form.reset();
   }
@@ -286,6 +330,7 @@ export function CreateCasePage() {
           <label className="checkbox-line"><input name="terms_accepted" type="checkbox" required /><span>J'accepte les <Link to="/conditions-utilisation">conditions d'utilisation</Link> et comprends que l'IA ne remplace pas l'avocat.</span></label>
           <button className="primary-button" type="submit" disabled={state.type === 'loading'}>{state.type === 'loading' ? 'Envoi en cours…' : 'Créer le dossier'}</button>
           {state.message && <p className={`form-message ${state.type === 'success' ? 'success' : 'error'}`}>{state.message}</p>}
+          {createdCaseId && <Link className="text-link" to={`/dossier/${createdCaseId}`}>Ouvrir le dossier créé</Link>}
         </form>
         <StatusPanel />
       </section>
@@ -440,6 +485,7 @@ export function AuthPage({ mode }: { mode: 'connexion' | 'inscription' }) {
         email,
         password,
         options: {
+          emailRedirectTo: `${window.location.origin}${redirectTo}`,
           data: {
             full_name: fullName,
             account_type: accountType,
@@ -463,7 +509,7 @@ export function AuthPage({ mode }: { mode: 'connexion' | 'inscription' }) {
   return (
     <>
       <Seo title={isSignup ? 'Inscription' : 'Connexion'} description="Accéder à votre espace ClairDossier." path={`/${mode}`} />
-      <PageHero title={isSignup ? 'Créer un compte' : 'Connexion'} description={rawRedirect === '/creer-dossier' ? 'Créez votre compte pour commencer votre dossier.' : 'Authentification Supabase prête à connecter pour session persistante et déconnexion.'} />
+      <PageHero title={isSignup ? 'Créer un compte' : 'Connexion'} description={rawRedirect === '/creer-dossier' ? 'Créez votre compte pour commencer votre dossier.' : 'Accédez à votre espace sécurisé avec une session Supabase persistante.'} />
       <section className="form-shell single">
         <form className="stacked-form" onSubmit={onSubmit} noValidate>
           {isSignup && <label><span>Nom complet</span><input name="full_name" type="text" autoComplete="name" maxLength={120} required placeholder="Votre nom complet" /></label>}
@@ -487,7 +533,8 @@ export function AuthPage({ mode }: { mode: 'connexion' | 'inscription' }) {
             </div>
           </label>
           {isSignup && <label><span>Confirmation du mot de passe</span><input name="password_confirm" type="password" autoComplete="new-password" minLength={12} required placeholder="Répétez le mot de passe" /></label>}
-          {isSignup && <SelectField name="account_type" label="Type de compte" options={['client_particulier', 'client_entreprise', 'cabinet']} required />}
+          {isSignup && <SelectField name="account_type" label="Type de compte" options={['client_particulier', 'client_entreprise']} required />}
+          {isSignup && <p className="notice mini">Les accès avocat et cabinet sont attribués après vérification par l'administration.</p>}
           {isSignup && <label className="checkbox-line"><input name="terms_accepted" type="checkbox" required /><span>J'accepte les <Link to="/conditions-utilisation">conditions d'utilisation</Link> et la <Link to="/politique-confidentialite">politique de confidentialité</Link>.</span></label>}
           <button className="primary-button" type="submit" disabled={state.type === 'loading'}>
             {state.type === 'loading' ? 'Chargement…' : isSignup ? 'Créer mon compte' : 'Me connecter'}
@@ -502,53 +549,132 @@ export function AuthPage({ mode }: { mode: 'connexion' | 'inscription' }) {
 
 export function WorkspacePage({ title, audience }: { title: string; audience: 'client' | 'cabinet' }) {
   const isClient = audience === 'client';
+  const [privateData, setPrivateData] = useState<{
+    loading: boolean;
+    message: string;
+    cases: CaseRow[];
+    documents: DocumentRow[];
+    subscription: SubscriptionRow | null;
+    payments: PaymentRow[];
+  }>({ loading: true, message: '', cases: [], documents: [], subscription: null, payments: [] });
+  const [portalState, setPortalState] = useState<FormState>({ type: 'idle', message: '' });
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadPrivateData() {
+      if (!supabase) {
+        setPrivateData({ loading: false, message: 'Configuration Supabase manquante.', cases: [], documents: [], subscription: null, payments: [] });
+        return;
+      }
+
+      const [casesResult, documentsResult, subscriptionResult, paymentsResult] = await Promise.all([
+        supabase.from('cases').select('id,title,status,legal_domain,urgency,created_at').order('created_at', { ascending: false }).limit(10),
+        supabase.from('documents').select('id,file_name,status,created_at,case_id').order('created_at', { ascending: false }).limit(10),
+        supabase.from('subscriptions').select('plan_id,billing_period,status,current_period_end,cancel_at_period_end,stripe_customer_id,updated_at').order('updated_at', { ascending: false }).limit(1).maybeSingle(),
+        supabase.from('payments').select('id,amount_total,currency,status,created_at').order('created_at', { ascending: false }).limit(5),
+      ]);
+      if (!isMounted) return;
+      const errors = [casesResult.error, documentsResult.error, subscriptionResult.error, paymentsResult.error].filter(Boolean);
+      errors.forEach((error) => console.error('Erreur chargement espace privé', error));
+      setPrivateData({
+        loading: false,
+        message: errors.length ? 'Certaines données privées n’ont pas pu être chargées.' : '',
+        cases: (casesResult.data || []) as CaseRow[],
+        documents: (documentsResult.data || []) as DocumentRow[],
+        subscription: (subscriptionResult.data || null) as SubscriptionRow | null,
+        payments: (paymentsResult.data || []) as PaymentRow[],
+      });
+    }
+
+    void loadPrivateData();
+    return () => { isMounted = false; };
+  }, [audience]);
+
+  async function openCustomerPortal() {
+    setPortalState({ type: 'loading', message: '' });
+    try {
+      await redirectToCustomerPortal();
+    } catch (error) {
+      console.error('Portail Stripe indisponible', error);
+      setPortalState({ type: 'error', message: error instanceof Error ? error.message : 'Portail client indisponible temporairement.' });
+    }
+  }
+
+  const subscriptionLabel = privateData.subscription ? formatSubscriptionStatus(privateData.subscription.status) : 'Aucun';
+  const activeCases = privateData.cases.filter((caseItem) => caseItem.status !== 'clôturé').length;
+
   return (
     <>
-      <Seo title={title} description={`Espace ${audience} ClairDossier prêt à connecter à Supabase Auth et RLS.`} />
-      <PageHero title={title} description={`Page privée ${audience}. Les données réelles doivent être protégées par Supabase Auth et RLS avant production.`} />
+      <Seo title={title} description={`Espace ${audience} ClairDossier connecté aux données privées Supabase protégées par RLS.`} />
+      <PageHero title={title} description={`Page privée ${audience} alimentée par vos dossiers, documents, paiements et abonnements Supabase.`} />
 
       <section className="stat-row" style={{ width: 'min(1180px, calc(100% - 2rem))', margin: '0 auto' }}>
         {isClient ? (
           <>
-            <div className="stat-card"><span className="stat-value">0</span><span className="stat-label">Dossiers actifs</span></div>
-            <div className="stat-card"><span className="stat-value">0</span><span className="stat-label">Documents</span></div>
-            <div className="stat-card"><span className="stat-value">0</span><span className="stat-label">Messages non lus</span></div>
-            <div className="stat-card"><span className="stat-value">—</span><span className="stat-label">Abonnement</span></div>
+            <div className="stat-card"><span className="stat-value">{activeCases}</span><span className="stat-label">Dossiers actifs</span></div>
+            <div className="stat-card"><span className="stat-value">{privateData.documents.length}</span><span className="stat-label">Documents</span></div>
+            <div className="stat-card"><span className="stat-value">{privateData.payments.length}</span><span className="stat-label">Paiements récents</span></div>
+            <div className="stat-card"><span className="stat-value">{subscriptionLabel}</span><span className="stat-label">Abonnement</span></div>
           </>
         ) : (
           <>
-            <div className="stat-card"><span className="stat-value">0</span><span className="stat-label">Dossiers reçus</span></div>
-            <div className="stat-card"><span className="stat-value">0</span><span className="stat-label">Clients</span></div>
-            <div className="stat-card"><span className="stat-value">0</span><span className="stat-label">Tâches en cours</span></div>
-            <div className="stat-card"><span className="stat-value">0</span><span className="stat-label">Messages</span></div>
+            <div className="stat-card"><span className="stat-value">{privateData.cases.length}</span><span className="stat-label">Dossiers reçus</span></div>
+            <div className="stat-card"><span className="stat-value">{privateData.documents.length}</span><span className="stat-label">Documents</span></div>
+            <div className="stat-card"><span className="stat-value">{subscriptionLabel}</span><span className="stat-label">Abonnement</span></div>
+            <div className="stat-card"><span className="stat-value">{privateData.payments.length}</span><span className="stat-label">Paiements</span></div>
           </>
         )}
       </section>
 
+      {privateData.loading && <section className="section-block centered"><p className="notice">Chargement des données privées...</p></section>}
+      {privateData.message && <section className="section-block centered"><p className="form-message error">{privateData.message}</p></section>}
+
       <section className="dashboard-grid">
         <article className="feature-card">
-          <h2>Statuts dossier</h2>
+          <h2>Dossiers récents</h2>
+          {privateData.cases.length > 0 ? (
+            <ul>{privateData.cases.map((caseItem) => (
+              <li key={caseItem.id}>
+                <Link className="text-link" to={`/dossier/${caseItem.id}`}>{caseItem.title}</Link>
+                <span className="list-meta">{caseItem.status} · {caseItem.legal_domain || 'Domaine non renseigné'} · {formatDate(caseItem.created_at)}</span>
+              </li>
+            ))}</ul>
+          ) : (
+            <p>Aucun dossier visible avec votre rôle actuel.</p>
+          )}
+          {isClient && <Link className="primary-button" to="/creer-dossier">Créer un dossier</Link>}
+        </article>
+        <article className="feature-card">
+          <h2>Abonnement</h2>
+          {privateData.subscription ? (
+            <>
+              <p><strong>{getPlanName(privateData.subscription.plan_id)}</strong> · {privateData.subscription.billing_period === 'yearly' ? 'Annuel' : 'Mensuel'} · {formatSubscriptionStatus(privateData.subscription.status)}</p>
+              {privateData.subscription.current_period_end && <p>Renouvellement ou fin de période : {formatDate(privateData.subscription.current_period_end)}</p>}
+              {privateData.subscription.cancel_at_period_end && <p className="notice mini">Résiliation programmée en fin de période.</p>}
+              {privateData.subscription.stripe_customer_id && <button className="secondary-button" type="button" onClick={openCustomerPortal} disabled={portalState.type === 'loading'}>{portalState.type === 'loading' ? 'Ouverture...' : 'Gérer dans Stripe'}</button>}
+              {portalState.message && <p className="form-message error">{portalState.message}</p>}
+            </>
+          ) : (
+            <>
+              <p>Aucun abonnement confirmé par webhook Stripe pour ce compte.</p>
+              <Link className="primary-button" to="/tarifs">Choisir une formule</Link>
+            </>
+          )}
+        </article>
+        <article className="feature-card">
+          <h2>Documents récents</h2>
+          {privateData.documents.length > 0 ? (
+            <ul>{privateData.documents.map((document) => (
+              <li key={document.id}>{document.file_name}<span className="list-meta">{document.status} · {formatDate(document.created_at)}</span></li>
+            ))}</ul>
+          ) : (
+            <p>Aucun document rattaché aux dossiers visibles.</p>
+          )}
+        </article>
+        <article className="feature-card">
+          <h2>Sécurité et statuts</h2>
+          <p>Données filtrées côté Supabase avec Auth et règles RLS. Les rôles élevés restent attribués côté administration.</p>
           <ul>{caseStatuses.map((status) => <li key={status}>{status}</li>)}</ul>
-        </article>
-        <article className="feature-card">
-          <h2>Modules prévus</h2>
-          <p>{isClient
-            ? 'Documents, messages, paiements, abonnement et paramètres sont structurés dans les routes et le schéma SQL.'
-            : 'Dossiers, clients, messages, tâches, validations et facturation sont structurés dans les routes et le schéma SQL.'
-          }</p>
-        </article>
-        <article className="feature-card">
-          <h2>Sécurité</h2>
-          <p>Ne pas exposer de données sensibles sans session active, règles RLS et vérification du rôle utilisateur.</p>
-        </article>
-        <article className="feature-card">
-          <h2>Prochaines étapes</h2>
-          <ul>
-            <li>Configurer Supabase Auth</li>
-            <li>Activer les règles RLS par rôle</li>
-            <li>Connecter les données en temps réel</li>
-            <li>Activer les notifications</li>
-          </ul>
         </article>
       </section>
     </>
@@ -657,6 +783,24 @@ function SelectField({ name, label, options, required }: { name: string; label: 
 function getCasePersistenceMessage(error: { code?: string; message?: string }) {
   void error;
   return 'Impossible de créer le dossier pour le moment. Veuillez réessayer.';
+}
+
+function getPlanName(planId: string) {
+  return plans.find((plan) => plan.id === planId)?.name || planId;
+}
+
+function formatSubscriptionStatus(status: string) {
+  const labels: Record<string, string> = {
+    active: 'Actif',
+    canceled: 'Résilié',
+    incomplete: 'Incomplet',
+    past_due: 'En retard',
+  };
+  return labels[status] || status;
+}
+
+function formatDate(value: string) {
+  return new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(value));
 }
 
 function PageHero({ title, description }: { title: string; description: string }) {

@@ -1,7 +1,7 @@
 export const site = {
   name: 'ClairDossier',
   slogan: 'Votre dossier juridique, clair, structuré et suivi.',
-  url: 'https://clair-dossier.com',
+  url: 'https://www.clair-dossier.com',
   email: 'contact@clair-dossier.com',
 };
 
@@ -38,7 +38,7 @@ export const legalLinks = [
 
 export const footerBadges = [
   { label: 'Conçu pour respecter le RGPD', path: '/rgpd' },
-  { label: 'Hébergement UE prévu', path: '/securite' },
+  { label: 'Hébergement UE documenté', path: '/securite' },
   { label: 'Secret professionnel pris en compte', path: '/securite' },
 ];
 
@@ -57,7 +57,7 @@ export const featureCards = [
   },
   {
     title: 'Base RGPD et sécurité',
-    text: 'Consentements, RLS, audit logs, hébergement UE prévu et séparation des données sont intégrés dans le schéma Supabase proposé.',
+    text: 'Consentements, RLS, audit logs, hébergement UE documenté et séparation des données sont intégrés dans le schéma Supabase.',
   },
 ];
 
@@ -227,7 +227,7 @@ export const blogPosts: BlogPost[] = [
     ],
     content: [
       'Un dossier juridique peut contenir des identités, coordonnées, informations professionnelles, données financières, éléments familiaux ou contentieux. Certaines informations peuvent être sensibles selon le contexte.',
-      'ClairDossier est conçu pour respecter le RGPD : consentement des formulaires, règles RLS, hébergement UE prévu, audit logs et limitation des accès sont prévus dans la base technique.',
+      'ClairDossier est conçu pour respecter le RGPD : consentement des formulaires, règles RLS, hébergement UE documenté, audit logs et limitation des accès sont intégrés dans la base technique.',
       'La conformité finale dépendra toutefois de la configuration réelle, des sous-traitants choisis, des durées de conservation et des procédures internes du responsable de traitement.',
     ],
     faq: [
@@ -403,7 +403,7 @@ export const infoPages = {
     sections: [
       { title: 'Espace client', text: 'Tableau de bord, dossiers, documents, messages, paiements et abonnement sont structurés pour accompagner les particuliers et PME.' },
       { title: 'Espace avocat et cabinet', text: 'Vue dossiers reçus, clients, tâches, validations, messages et facturation pour les cabinets.' },
-      { title: 'Gestion documentaire', text: 'Upload, liste, rattachement au dossier, statut et règles de confidentialité sont prévus dans la structure.' },
+      { title: 'Gestion documentaire', text: 'Upload, liste, rattachement au dossier, statut et règles de confidentialité sont intégrés dans la structure.' },
       { title: 'Messagerie rattachée au dossier', text: 'Les échanges client-avocat peuvent être historisés avec statut lu/non lu et contexte dossier.' },
     ],
   },
@@ -421,8 +421,8 @@ export const infoPages = {
     description: 'Réponses courtes aux questions fréquentes sur ClairDossier.',
     sections: [
       { title: 'ClairDossier remplace-t-il un avocat ?', text: "Non. ClairDossier structure l’information. L’IA ne remplace pas l’avocat et toute analyse doit être validée." },
-      { title: 'Où sont hébergées les données ?', text: "L’architecture est prévue pour un hébergement dans l’Union européenne via Supabase ou un fournisseur équivalent." },
-      { title: 'Le paiement est-il actif ?', text: 'Le code Stripe est prêt. Le checkout devient actif après configuration des clés et des price IDs Stripe.' },
+      { title: 'Où sont hébergées les données ?', text: "L’architecture cible un hébergement dans l’Union européenne via Supabase ou un fournisseur équivalent." },
+      { title: 'Le paiement est-il actif ?', text: 'Le checkout Stripe s’active lorsque les clés, Price IDs et webhooks de production sont configurés.' },
     ],
   },
 };
@@ -457,19 +457,19 @@ export const legalPages = {
       { title: 'Sous-traitants', text: 'Supabase, Stripe et les services d’hébergement ou d’emailing doivent être documentés avant mise en production.' },
       { title: 'Information IA', text: "Aucune donnée confidentielle ne doit être transmise à un service d’IA sans information claire. L’IA ne remplace pas l’avocat et les analyses sont soumises à validation professionnelle." },
       { title: 'Sécurité', text: 'Le service prévoit contrôle d’accès, RLS, journalisation, sauvegardes et hébergement UE lorsque la configuration est finalisée.' },
-      { title: 'Contact confidentialité', text: 'Contact confidentialité/DPO à compléter : privacy@clair-dossier.com ou contact@clair-dossier.com.' },
+      { title: 'Contact confidentialité', text: 'Contact confidentialité : contact@clair-dossier.com.' },
     ],
   },
   'mentions-legales': {
     title: 'Mentions légales',
-    description: 'Informations éditoriales à compléter avant publication commerciale.',
+    description: 'Informations éditoriales de ClairDossier.',
     sections: [
-      { title: 'Éditeur du site', text: 'À compléter : raison sociale / nom de l’éditeur de ClairDossier.' },
-      { title: 'Responsable de publication', text: 'À compléter : nom du responsable de publication.' },
-      { title: 'Hébergeur', text: 'À compléter : hébergeur du site et adresse. Hébergement prévu dans l’Union européenne.' },
+      { title: 'Éditeur du site', text: 'ClairDossier, service édité pour la publication du site www.clair-dossier.com.' },
+      { title: 'Responsable de publication', text: 'Le responsable de publication est l’éditeur du site ClairDossier.' },
+      { title: 'Hébergeur', text: 'Site statique hébergé via GitHub Pages. Les données applicatives sont hébergées dans Supabase selon la région configurée.' },
       { title: 'Contact', text: 'contact@clair-dossier.com.' },
-      { title: 'SIRET', text: 'À compléter si disponible.' },
-      { title: 'Adresse', text: 'À compléter si disponible.' },
+      { title: 'SIRET', text: 'Information administrative à publier dès immatriculation ou rattachement à une entité éditrice.' },
+      { title: 'Adresse', text: 'Adresse de l’éditeur à publier dès validation administrative.' },
     ],
   },
   cookies: {
@@ -495,21 +495,21 @@ export const legalPages = {
       { title: 'Limitation', text: 'Vous pouvez demander la limitation temporaire de certains traitements.' },
       { title: 'Suppression de compte', text: 'Vous pouvez demander la suppression de votre compte depuis le support, sous réserve des obligations légales de conservation.' },
       { title: 'Aucune garantie de résultat', text: 'ClairDossier aide à structurer les informations ; aucune garantie de résultat juridique ou judiciaire n’est donnée.' },
-      { title: 'Contact', text: 'Contact RGPD : privacy@clair-dossier.com ou contact@clair-dossier.com.' },
+      { title: 'Contact', text: 'Contact RGPD : contact@clair-dossier.com.' },
     ],
   },
   securite: {
     title: 'Sécurité et confidentialité',
-    description: 'Mesures prévues pour protéger les dossiers juridiques et les échanges sensibles.',
+    description: 'Mesures pour protéger les dossiers juridiques et les échanges sensibles.',
     sections: [
       { title: 'Chiffrement', text: 'Les communications doivent être servies en HTTPS. Le chiffrement au repos dépendra de la configuration de l’hébergeur retenu.' },
-      { title: 'Hébergement UE', text: 'L’hébergement est prévu dans l’Union européenne afin de limiter les transferts de données hors UE.' },
+      { title: 'Hébergement UE', text: 'La configuration de production doit retenir une région d’hébergement dans l’Union européenne afin de limiter les transferts de données hors UE.' },
       { title: 'Séparation des données', text: 'Les règles RLS Supabase proposées limitent l’accès aux données selon l’utilisateur, le cabinet et le rôle.' },
       { title: 'Sauvegardes', text: 'Des sauvegardes régulières doivent être activées chez l’hébergeur avant production.' },
       { title: 'Contrôle d’accès', text: 'Les espaces client, avocat et cabinet sont séparés fonctionnellement et doivent être protégés par authentification.' },
       { title: 'Secret professionnel', text: 'Le produit est conçu pour tenir compte du secret professionnel ; la configuration finale doit être validée avec les cabinets utilisateurs.' },
       { title: 'Validation avocat', text: 'Les analyses IA sont soumises à validation humaine et n’ont pas vocation à remplacer l’avocat.' },
-      { title: 'Journalisation', text: 'La table audit_logs est prévue pour tracer les événements sensibles sans exposer publiquement les données.' },
+      { title: 'Journalisation', text: 'La table audit_logs trace les événements sensibles sans exposer publiquement les données.' },
     ],
   },
 };

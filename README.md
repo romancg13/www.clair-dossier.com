@@ -1,6 +1,6 @@
 # ClairDossier
 
-ClairDossier est une base d'application LegalTech React/Vite pour structurer les dossiers juridiques, préparer le suivi client-avocat, publier un blog SEO/GEO et connecter Supabase + Stripe.
+ClairDossier est une application LegalTech React/Vite pour structurer les dossiers juridiques, préparer le suivi client-avocat, publier un blog SEO/GEO et connecter Supabase + Stripe.
 
 Slogan : **Votre dossier juridique, clair, structuré et suivi.**
 
@@ -54,8 +54,8 @@ Variables serveur uniquement, à configurer dans Supabase Edge Functions ou l'en
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `SUPABASE_URL`
 - `SUPABASE_ANON_KEY`
-- `SITE_URL`
-- `ALLOWED_ORIGINS`
+- `SITE_URL` = `https://www.clair-dossier.com`
+- `ALLOWED_ORIGINS` = `https://www.clair-dossier.com,https://clair-dossier.com`
 - les `STRIPE_*_PRICE_ID` serveur, avec compatibilité temporaire pour les anciens `VITE_STRIPE_*_PRICE_ID` ajoutés comme secrets Supabase Edge Functions
 
 Variables GitHub Actions pour déployer Supabase :
@@ -81,12 +81,12 @@ La migration crée les tables demandées : `profiles`, `contact_requests`, `news
 Les boutons de tarifs appellent `create-checkout-session`. Le paiement réel nécessite :
 
 1. créer les produits Stripe et les Prices mensuels/annuels, avec les Prices annuels calculés sur une réduction de 10 % ;
-2. ajouter les Price IDs dans les secrets GitHub `VITE_STRIPE_*_PRICE_ID` ;
+2. ajouter les Price IDs publics dans les secrets GitHub `VITE_STRIPE_*_PRICE_ID` pour le build frontend ;
 3. ajouter `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_SUPABASE_FUNCTIONS_URL` et `VITE_STRIPE_PUBLIC_KEY` dans les secrets GitHub ;
-4. ajouter dans Supabase Edge Functions `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `SITE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `ALLOWED_ORIGINS` et les `STRIPE_*_PRICE_ID` serveur ;
-5. lancer le workflow manuel `Deploy Supabase Stripe Functions` ;
-6. redéployer GitHub Pages depuis `main` ;
-7. créer le webhook Stripe vers `https://<project-ref>.functions.supabase.co/stripe-webhook`.
+4. ajouter dans les secrets GitHub du workflow Supabase `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `SITE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `ALLOWED_ORIGINS` et les `STRIPE_*_PRICE_ID` serveur ;
+5. lancer le workflow manuel `Deploy Supabase Stripe Functions`, qui applique les migrations, configure les secrets Edge Functions et déploie les fonctions ;
+6. créer le webhook Stripe vers `https://<project-ref>.functions.supabase.co/stripe-webhook` ;
+7. redéployer GitHub Pages depuis `main` sur le domaine `www.clair-dossier.com`.
 
 Le webhook doit être déployé avec `--no-verify-jwt` et vérifie la signature Stripe via `STRIPE_WEBHOOK_SECRET`. Un abonnement ne doit être considéré actif qu’après événement Stripe fiable, jamais uniquement après une redirection vers `/success`.
 

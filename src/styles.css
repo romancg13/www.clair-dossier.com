@@ -506,6 +506,8 @@ summary:hover { color: var(--gold); }
 /* ─── Dashboard ─── */
 .dashboard-grid { gap: 1.2rem; }
 .dashboard-grid .feature-card h2 { font-size: 1.15rem; margin-top: 0; }
+.dashboard-grid .feature-card li { margin-bottom: 0.65rem; }
+.list-meta { display: block; color: var(--muted); font-size: 0.85rem; line-height: 1.5; margin-top: 0.15rem; }
 .dashboard-header { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
 .dashboard-header h1 { flex: 1; }
 .stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.8rem; margin-bottom: 1.5rem; }
