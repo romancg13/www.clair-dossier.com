@@ -1,11 +1,49 @@
-import { Link, NavLink, Outlet } from 'react-router-dom';
+import type { Session } from '@supabase/supabase-js';
+import { useEffect, useState } from 'react';
+import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { footerBadges, legalLinks, productLinks, publicNav, resourceLinks, site, warnings } from '../data/site';
+import { supabase } from '../lib/supabase';
 
 function linkClass({ isActive }: { isActive: boolean }) {
   return isActive ? 'nav-link active' : 'nav-link';
 }
 
 export function Layout() {
+  const navigate = useNavigate();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [accountType, setAccountType] = useState<string>('client');
+
+  useEffect(() => {
+    function applySession(session: Session | null) {
+      setIsAuthenticated(Boolean(session));
+      setAccountType(String(session?.user.user_metadata?.account_type || 'client'));
+    }
+
+    if (!supabase) {
+      applySession(null);
+      return;
+    }
+
+    let isMounted = true;
+    supabase.auth.getSession().then(({ data }) => {
+      if (isMounted) applySession(data.session);
+    });
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      applySession(session);
+    });
+
+    return () => {
+      isMounted = false;
+      listener.subscription.unsubscribe();
+    };
+  }, []);
+
+  async function signOut() {
+    if (supabase) await supabase.auth.signOut();
+    setIsAuthenticated(false);
+    navigate('/');
+  }
+
   return (
     <div className="app-shell">
       <header className="site-header">
@@ -22,10 +60,21 @@ export function Layout() {
               {item.label}
             </NavLink>
           ))}
+          {isAuthenticated && <NavLink to="/dashboard" className={linkClass}>Espace client</NavLink>}
+          {isAuthenticated && accountType === 'cabinet' && <NavLink to="/cabinet/dashboard" className={linkClass}>Cabinet</NavLink>}
         </nav>
         <div className="header-actions">
-          <Link className="ghost-button" to="/connexion">Connexion</Link>
-          <Link className="primary-button" to="/creer-dossier">Créer un dossier</Link>
+          {isAuthenticated ? (
+            <>
+              <Link className="ghost-button" to="/dashboard">Mon espace</Link>
+              <button className="secondary-button" type="button" onClick={signOut}>Déconnexion</button>
+            </>
+          ) : (
+            <>
+              <Link className="ghost-button" to="/connexion">Connexion</Link>
+              <Link className="primary-button" to="/creer-dossier">Créer un dossier</Link>
+            </>
+          )}
         </div>
       </header>
 

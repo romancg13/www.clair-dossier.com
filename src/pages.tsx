@@ -1,12 +1,21 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { NewsletterForm } from './components/NewsletterForm';
 import { PricingCards } from './components/PricingCards';
 import { Seo } from './components/Seo';
 import { blogPosts, categories, caseStatuses, featureCards, infoPages, legalPages, plans, site, warnings } from './data/site';
+import { redirectToCustomerPortal } from './lib/stripe';
 import { insertPublicRecord, supabase } from './lib/supabase';
 
 type FormState = { type: 'idle' | 'success' | 'error'; message: string };
+type WorkspaceModule = 'dashboard' | 'cases' | 'case-detail' | 'documents' | 'messages' | 'payments' | 'subscription' | 'settings' | 'clients' | 'tasks' | 'billing';
+type SubscriptionRecord = {
+  plan_id: string;
+  status: string;
+  billing_period: string | null;
+  stripe_customer_id: string | null;
+  current_period_end: string | null;
+};
 
 type FieldDef = {
   name: string;
@@ -277,6 +286,14 @@ export function BlogIndexPage() {
       <section className="blog-grid">
         {published.map((post) => <BlogCard key={post.slug} post={post} />)}
       </section>
+      <section className="split-section compact">
+        <div>
+          <p className="eyebrow">Newsletter juridique</p>
+          <h2>Recevoir les nouveaux articles et guides pratiques</h2>
+          <p>Inscription enregistrée dans Supabase lorsque la table `newsletter_subscribers` et les règles RLS sont déployées.</p>
+        </div>
+        <NewsletterForm />
+      </section>
     </>
   );
 }
@@ -429,16 +446,23 @@ export function AuthPage({ mode }: { mode: 'connexion' | 'inscription' }) {
   );
 }
 
-export function WorkspacePage({ title, audience }: { title: string; audience: 'client' | 'cabinet' }) {
+export function WorkspacePage({ title, audience, module }: { title: string; audience: 'client' | 'cabinet'; module: WorkspaceModule }) {
+  const cards = workspaceCards[module];
   return (
     <>
       <Seo title={title} description={`Espace ${audience} ClairDossier prêt à connecter à Supabase Auth et RLS.`} />
       <PageHero title={title} description={`Page privée ${audience}. Les données réelles doivent être protégées par Supabase Auth et RLS avant production.`} />
       <section className="dashboard-grid">
+        {cards.map((card) => (
+          <article className="feature-card" key={card.title}>
+            <h2>{card.title}</h2>
+            <p>{card.text}</p>
+          </article>
+        ))}
         <article className="feature-card"><h2>Statuts dossier</h2><ul>{caseStatuses.map((status) => <li key={status}>{status}</li>)}</ul></article>
-        <article className="feature-card"><h2>Modules prévus</h2><p>Documents, messages, paiements, abonnement, tâches et validations sont structurés dans les routes et le schéma SQL.</p></article>
         <article className="feature-card"><h2>Sécurité</h2><p>Ne pas exposer de données sensibles sans session active, règles RLS et vérification du rôle utilisateur.</p></article>
       </section>
+      {module === 'subscription' && <SubscriptionPanel />}
     </>
   );
 }
@@ -477,7 +501,7 @@ function FormPage({ title, description, table, fields, consentLabel }: { title: 
       setState({ type: 'error', message: 'Complétez les champs obligatoires et cochez le consentement RGPD.' });
       return;
     }
-    const payload = Object.fromEntries(fields.map((field) => [field.name, data.get(field.name)]));
+    const payload = Object.fromEntries(fields.map((field) => [field.name, getFieldPayloadValue(field, data)]));
     const result = await insertPublicRecord(table, { ...payload, consent_given: consent });
     setState({ type: result.ok ? 'success' : 'error', message: result.message });
     if (result.ok) form.reset();
@@ -496,6 +520,13 @@ function FormPage({ title, description, table, fields, consentLabel }: { title: 
       </section>
     </>
   );
+}
+
+function getFieldPayloadValue(field: FieldDef, data: FormData) {
+  const rawValue = String(data.get(field.name) || '').trim();
+  if (field.type === 'number') return rawValue ? Number(rawValue) : null;
+  if (field.type === 'datetime-local') return rawValue ? new Date(rawValue).toISOString() : null;
+  return rawValue;
 }
 
 function RenderField({ field }: { field: FieldDef }) {
@@ -535,6 +566,128 @@ function StatusPanel() {
       <h3>Avertissements IA</h3>
       {warnings.map((warning) => <p key={warning} className="notice mini">{warning}</p>)}
     </aside>
+  );
+}
+
+const workspaceCards: Record<WorkspaceModule, { title: string; text: string }[]> = {
+  dashboard: [
+    { title: 'Vue synthèse', text: 'Regroupez les dossiers ouverts, demandes de pièces, messages récents et échéances à suivre.' },
+    { title: 'Rôle utilisateur', text: 'La navigation différencie visiteurs, clients connectés et cabinets lorsque Supabase Auth est configuré.' },
+  ],
+  cases: [
+    { title: 'Liste des dossiers', text: 'Les dossiers sont rattachés à l’utilisateur ou au cabinet via les règles RLS Supabase.' },
+    { title: 'Priorités', text: 'Urgence, statut et prochaines actions doivent guider le traitement opérationnel.' },
+  ],
+  'case-detail': [
+    { title: 'Dossier détaillé', text: 'Faits, pièces, messages et validation avocat seront réunis autour de l’identifiant de dossier.' },
+    { title: 'Validation humaine', text: 'Toute synthèse ou analyse IA doit rester préparatoire tant qu’un professionnel habilité ne l’a pas validée.' },
+  ],
+  documents: [
+    { title: 'Gestion documentaire', text: 'Upload, rattachement au dossier, confidentialité et statut sont prévus par la table documents.' },
+    { title: 'Confidentialité', text: 'Les accès aux pièces doivent rester limités au propriétaire, au cabinet concerné et aux administrateurs habilités.' },
+  ],
+  messages: [
+    { title: 'Messagerie dossier', text: 'Les échanges client-avocat peuvent être historisés avec expéditeur, destinataire, dossier et statut lu/non lu.' },
+    { title: 'Traçabilité', text: 'Les conversations sensibles doivent être conservées avec un contexte dossier clair.' },
+  ],
+  payments: [
+    { title: 'Historique paiements', text: 'Les paiements Stripe sont enregistrés par webhook dans la table payments lorsque Stripe est configuré.' },
+    { title: 'Factures', text: 'Les factures et justificatifs doivent être récupérés depuis Stripe ou le portail client.' },
+  ],
+  subscription: [
+    { title: 'Abonnement actif', text: 'Le webhook Stripe synchronise le statut actif, annulé, incomplet ou en retard dans subscriptions.' },
+    { title: 'Portail client Stripe', text: 'Le portail s’ouvre uniquement avec un customer Stripe réel et la fonction Edge customer-portal configurée.' },
+  ],
+  settings: [
+    { title: 'Paramètres de compte', text: 'Profil, préférences, sécurité et demandes RGPD doivent être accessibles depuis cette page.' },
+    { title: 'Droits RGPD', text: 'Accès, rectification, suppression, opposition, portabilité et limitation sont documentés sur la page RGPD.' },
+  ],
+  clients: [
+    { title: 'Clients cabinet', text: 'Les cabinets pourront suivre les clients rattachés, leurs dossiers et les prochaines actions.' },
+    { title: 'Rôles équipe', text: 'Les droits doivent être affinés par cabinet et rôle avant ouverture multi-utilisateur.' },
+  ],
+  tasks: [
+    { title: 'Tâches et validations', text: 'Demandes de pièces, relances, revues avocat et validations peuvent être pilotées depuis ce module.' },
+    { title: 'Priorisation', text: 'Les tâches doivent tenir compte des urgences et des délais judiciaires signalés.' },
+  ],
+  billing: [
+    { title: 'Facturation cabinet', text: 'Stripe gère les abonnements et le portail client dès que les clés serveur, Price IDs et webhooks sont actifs.' },
+    { title: 'Restrictions formule', text: 'Les limites par formule doivent être appliquées côté serveur pour éviter tout contournement frontend.' },
+  ],
+};
+
+function SubscriptionPanel() {
+  const [subscription, setSubscription] = useState<SubscriptionRecord | null>(null);
+  const [state, setState] = useState<FormState>({ type: 'idle', message: '' });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadSubscription() {
+      if (!supabase) {
+        setState({ type: 'error', message: 'Supabase doit être configuré pour afficher votre abonnement.' });
+        setLoading(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .select('plan_id,status,billing_period,stripe_customer_id,current_period_end')
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (!isMounted) return;
+      if (error) {
+        console.error('Erreur lecture abonnement', error);
+        setState({ type: 'error', message: "Impossible de charger l'abonnement pour le moment." });
+      } else {
+        setSubscription(data as SubscriptionRecord | null);
+      }
+      setLoading(false);
+    }
+
+    loadSubscription();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  async function openPortal() {
+    if (!subscription?.stripe_customer_id) {
+      setState({ type: 'error', message: 'Aucun client Stripe actif. Choisissez une formule après configuration Stripe.' });
+      return;
+    }
+
+    try {
+      await redirectToCustomerPortal(subscription.stripe_customer_id);
+    } catch (error) {
+      console.error('Portail Stripe indisponible', error);
+      setState({ type: 'error', message: error instanceof Error ? error.message : "Le portail client n'est pas disponible." });
+    }
+  }
+
+  return (
+    <section className="section-block centered">
+      <article className="feature-card subscription-card">
+        <h2>Gestion de l’abonnement</h2>
+        {loading ? <p>Chargement de votre abonnement...</p> : subscription ? (
+          <>
+            <p><strong>Formule :</strong> {subscription.plan_id}</p>
+            <p><strong>Statut :</strong> {subscription.status}</p>
+            <p><strong>Période :</strong> {subscription.billing_period || 'mensuelle'}</p>
+            {subscription.current_period_end && <p><strong>Fin de période :</strong> {new Date(subscription.current_period_end).toLocaleDateString('fr-FR')}</p>}
+            <button className="primary-button" type="button" onClick={openPortal}>Ouvrir le portail Stripe</button>
+          </>
+        ) : (
+          <>
+            <p>Aucun abonnement Stripe synchronisé pour ce compte.</p>
+            <Link className="primary-button" to="/tarifs">Choisir une formule</Link>
+          </>
+        )}
+        {state.message && <p className={`form-message ${state.type}`}>{state.message}</p>}
+      </article>
+    </section>
   );
 }
 

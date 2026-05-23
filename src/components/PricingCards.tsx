@@ -37,6 +37,14 @@ export function PricingCards() {
       navigate('/creer-dossier');
       return;
     }
+    if (planId === 'cabinet-premium') {
+      navigate('/demo');
+      return;
+    }
+    if (!isPlanCheckoutAvailable(planId, billingPeriod)) {
+      setMessage('Paiement bientôt disponible : configurez Stripe côté serveur, les Price IDs et les webhooks avant d’activer le checkout.');
+      return;
+    }
     setLoadingPlan(planId);
     try {
       await redirectToCheckout(planId, billingPeriod);
@@ -74,9 +82,18 @@ export function PricingCards() {
               <ul>
                 {plan.features.map((feature) => <li key={feature}>{feature}</li>)}
               </ul>
-              {isPaidPlan && !checkoutAvailable && <p className="payment-note">Le paiement sera activé dès que Stripe sera configuré.</p>}
-              <button className="primary-button full" type="button" onClick={() => choosePlan(plan.id)} disabled={loadingPlan === plan.id || (isPaidPlan && !checkoutAvailable)}>
-                {loadingPlan === plan.id ? 'Préparation…' : plan.id === 'discovery' ? 'Commencer gratuitement' : 'Choisir cette formule'}
+              {isPaidPlan && !checkoutAvailable && plan.id !== 'cabinet-premium' && <p className="payment-note">Paiement bientôt disponible : Stripe doit être configuré avant checkout réel.</p>}
+              {plan.id === 'cabinet-premium' && <p className="payment-note">Formule sur devis : planifiez une démo pour cadrer les besoins du cabinet.</p>}
+              <button className="primary-button full" type="button" onClick={() => choosePlan(plan.id)} disabled={loadingPlan === plan.id}>
+                {loadingPlan === plan.id
+                  ? 'Préparation…'
+                  : plan.id === 'discovery'
+                    ? 'Commencer gratuitement'
+                    : checkoutAvailable
+                      ? 'Choisir cette formule'
+                      : plan.id === 'cabinet-premium'
+                        ? 'Demander une démo'
+                        : 'Paiement bientôt disponible'}
               </button>
             </article>
           );

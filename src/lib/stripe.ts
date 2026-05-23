@@ -41,30 +41,34 @@ export function isPlanCheckoutAvailable(planId: string, billingPeriod: BillingPe
   return Boolean(isStripeBaseConfigured && getStripePriceId(planId, billingPeriod));
 }
 
-export async function redirectToCheckout(planId: string, billingPeriod: BillingPeriod): Promise<void> {
-  if (!isStripeBaseConfigured || !functionsUrl || !anonKey || !getStripePriceId(planId, billingPeriod)) {
-    throw new Error('Le paiement sera disponible après configuration Stripe.');
-  }
+async function getAuthenticatedSession() {
   if (!supabase) {
     throw new Error('Créez votre compte pour choisir cette formule.');
   }
 
-  const { data } = await supabase.auth.getSession();
-  if (!data.session) {
+  const { data: sessionData } = await supabase.auth.getSession();
+  if (!sessionData.session) {
     throw new Error('Créez votre compte pour choisir cette formule.');
   }
+
+  return sessionData.session;
+}
+
+export async function redirectToCheckout(planId: string, billingPeriod: BillingPeriod): Promise<void> {
+  if (!isStripeBaseConfigured || !functionsUrl || !anonKey || !getStripePriceId(planId, billingPeriod)) {
+    throw new Error('Le paiement sera disponible après configuration Stripe.');
+  }
+  const session = await getAuthenticatedSession();
 
   const response = await fetch(`${functionsUrl}/create-checkout-session`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${data.session.access_token}`,
+      Authorization: `Bearer ${session.access_token}`,
     },
     body: JSON.stringify({
       planId,
       billingPeriod,
-      customerEmail: data.session.user.email,
-      userId: data.session.user.id,
       successUrl: `${window.location.origin}/success`,
       cancelUrl: `${window.location.origin}/cancel`,
     }),
@@ -75,10 +79,44 @@ export async function redirectToCheckout(planId: string, billingPeriod: BillingP
     throw new Error("Le paiement n'est pas encore disponible. Vérifiez la configuration Stripe serveur.");
   }
 
-  const data = (await response.json()) as { url?: string };
-  if (!data.url) {
+  const checkoutSession = (await response.json()) as { url?: string };
+  if (!checkoutSession.url) {
     throw new Error('Session Stripe invalide.');
   }
 
-  window.location.assign(data.url);
+  window.location.assign(checkoutSession.url);
+}
+
+export async function redirectToCustomerPortal(customerId: string): Promise<void> {
+  if (!functionsUrl || !anonKey) {
+    throw new Error('Le portail client Stripe sera disponible après configuration serveur.');
+  }
+  if (!customerId) {
+    throw new Error('Aucun client Stripe actif à administrer.');
+  }
+
+  const session = await getAuthenticatedSession();
+  const response = await fetch(`${functionsUrl}/customer-portal`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${session.access_token}`,
+    },
+    body: JSON.stringify({
+      customerId,
+      returnUrl: `${window.location.origin}/abonnement`,
+    }),
+  });
+
+  if (!response.ok) {
+    console.error('Erreur customer-portal', await response.text());
+    throw new Error("Le portail client n'est pas encore disponible. Vérifiez la configuration Stripe serveur.");
+  }
+
+  const portalSession = (await response.json()) as { url?: string };
+  if (!portalSession.url) {
+    throw new Error('Session portail Stripe invalide.');
+  }
+
+  window.location.assign(portalSession.url);
 }

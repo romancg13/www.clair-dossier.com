@@ -8,6 +8,14 @@
   <url><loc>https://clair-dossier.com/documentation</loc><priority>0.7</priority></url>
   <url><loc>https://clair-dossier.com/aide</loc><priority>0.7</priority></url>
   <url><loc>https://clair-dossier.com/blog</loc><priority>0.9</priority></url>
+  <url><loc>https://clair-dossier.com/blog/categorie/droit-du-travail</loc><priority>0.7</priority></url>
+  <url><loc>https://clair-dossier.com/blog/categorie/recouvrement</loc><priority>0.7</priority></url>
+  <url><loc>https://clair-dossier.com/blog/categorie/bail-et-immobilier</loc><priority>0.7</priority></url>
+  <url><loc>https://clair-dossier.com/blog/categorie/contrats</loc><priority>0.7</priority></url>
+  <url><loc>https://clair-dossier.com/blog/categorie/droit-des-societes</loc><priority>0.7</priority></url>
+  <url><loc>https://clair-dossier.com/blog/categorie/rgpd</loc><priority>0.7</priority></url>
+  <url><loc>https://clair-dossier.com/blog/categorie/ia-et-droit</loc><priority>0.7</priority></url>
+  <url><loc>https://clair-dossier.com/blog/categorie/conseils-pratiques</loc><priority>0.7</priority></url>
   <url><loc>https://clair-dossier.com/contact</loc><priority>0.8</priority></url>
   <url><loc>https://clair-dossier.com/demo</loc><priority>0.8</priority></url>
   <url><loc>https://clair-dossier.com/creer-dossier</loc><priority>0.8</priority></url>
