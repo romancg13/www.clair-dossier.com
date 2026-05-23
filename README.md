@@ -52,8 +52,11 @@ Variables serveur uniquement, à configurer dans Supabase Edge Functions ou l'en
 - `STRIPE_WEBHOOK_SECRET`
 - `AI_API_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
+- `SUPABASE_URL`
+- `SUPABASE_ANON_KEY`
 - `SITE_URL`
-- les mêmes `VITE_STRIPE_*_PRICE_ID` que le frontend, ajoutés comme secrets Supabase Edge Functions
+- `ALLOWED_ORIGINS`
+- les `STRIPE_*_PRICE_ID` serveur, avec compatibilité temporaire pour les anciens `VITE_STRIPE_*_PRICE_ID` ajoutés comme secrets Supabase Edge Functions
 
 Variables GitHub Actions pour déployer Supabase :
 
@@ -80,10 +83,20 @@ Les boutons de tarifs appellent `create-checkout-session`. Le paiement réel né
 1. créer les produits Stripe et les Prices mensuels/annuels, avec les Prices annuels calculés sur une réduction de 10 % ;
 2. ajouter les Price IDs dans les secrets GitHub `VITE_STRIPE_*_PRICE_ID` ;
 3. ajouter `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_SUPABASE_FUNCTIONS_URL` et `VITE_STRIPE_PUBLIC_KEY` dans les secrets GitHub ;
-4. ajouter dans Supabase Edge Functions `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `SITE_URL`, `SUPABASE_SERVICE_ROLE_KEY` et les mêmes `VITE_STRIPE_*_PRICE_ID` ;
+4. ajouter dans Supabase Edge Functions `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `SITE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `ALLOWED_ORIGINS` et les `STRIPE_*_PRICE_ID` serveur ;
 5. lancer le workflow manuel `Deploy Supabase Stripe Functions` ;
 6. redéployer GitHub Pages depuis `main` ;
 7. créer le webhook Stripe vers `https://<project-ref>.functions.supabase.co/stripe-webhook`.
+
+Le webhook doit être déployé avec `--no-verify-jwt` et vérifie la signature Stripe via `STRIPE_WEBHOOK_SECRET`. Un abonnement ne doit être considéré actif qu’après événement Stripe fiable, jamais uniquement après une redirection vers `/success`.
+
+## Sécurité applicative
+
+- Les routes privées sont protégées par `ProtectedRoute` et une vérification `supabase.auth.getUser()`.
+- Les rôles applicatifs sont `client_particulier`, `client_entreprise`, `avocat`, `collaborateur`, `admin_cabinet` et `super_admin`.
+- Les rôles élevés ne sont pas auto-attribués à l’inscription ; ils doivent être affectés côté administration ou workflow serveur.
+- Les documents doivent rester dans le bucket privé `case-documents` et être consultés via URLs signées temporaires.
+- Les formulaires publics incluent validation, honeypot et règles RLS d’insertion sans lecture publique.
 
 Stripe Checkout utilise les moyens de paiement automatiques. Les cartes, Apple Pay et PayPal peuvent apparaître au checkout si ces moyens sont activés et éligibles dans le Dashboard Stripe pour le pays, la devise, le navigateur et le type d'abonnement. Aucun moyen de paiement sensible ne doit être collecté dans le frontend.
 

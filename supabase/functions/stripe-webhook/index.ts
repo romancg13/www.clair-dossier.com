@@ -35,7 +35,7 @@ Deno.serve(async (request) => {
   try {
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object as Stripe.Checkout.Session;
-      await supabase.from('payments').insert({
+      const { error: paymentError } = await supabase.from('payments').upsert({
         user_id: session.client_reference_id || null,
         stripe_customer_id: typeof session.customer === 'string' ? session.customer : null,
         stripe_checkout_session_id: session.id,
@@ -45,12 +45,13 @@ Deno.serve(async (request) => {
         plan_id: session.metadata?.plan_id || null,
         billing_period: session.metadata?.billing_period || null,
         metadata: session.metadata || {},
-      });
+      }, { onConflict: 'stripe_checkout_session_id' });
+      if (paymentError) throw paymentError;
     }
 
     if (event.type === 'customer.subscription.created' || event.type === 'customer.subscription.updated' || event.type === 'customer.subscription.deleted') {
       const subscription = event.data.object as Stripe.Subscription;
-      await supabase.from('subscriptions').upsert({
+      const { error: subscriptionError } = await supabase.from('subscriptions').upsert({
         user_id: subscription.metadata?.user_id || null,
         plan_id: subscription.metadata?.plan_id || 'unknown',
         billing_period: subscription.metadata?.billing_period || 'monthly',
@@ -62,6 +63,7 @@ Deno.serve(async (request) => {
         cancel_at_period_end: subscription.cancel_at_period_end,
         updated_at: new Date().toISOString(),
       }, { onConflict: 'stripe_subscription_id' });
+      if (subscriptionError) throw subscriptionError;
     }
 
     return new Response(JSON.stringify({ received: true }), { headers: { 'Content-Type': 'application/json' } });

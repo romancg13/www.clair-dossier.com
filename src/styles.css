@@ -33,6 +33,17 @@ body { margin: 0; min-width: 320px; background: var(--light); -webkit-font-smoot
 a { color: inherit; text-decoration: none; }
 button, input, textarea, select { font: inherit; }
 img { max-width: 100%; display: block; }
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
 
 /* ─── Skip Nav ─── */
 .skip-nav {
@@ -180,7 +191,7 @@ img { max-width: 100%; display: block; }
 .secondary-button:hover { background: var(--navy-light); transform: translateY(-1px); }
 .ghost-button { color: var(--navy); background: #eef4fb; }
 .ghost-button:hover { background: #dce8f5; transform: translateY(-1px); }
-.primary-button:disabled, .secondary-button:disabled { opacity: 0.65; cursor: not-allowed; transform: none; box-shadow: none; }
+.primary-button:disabled, .secondary-button:disabled, .ghost-button:disabled { opacity: 0.65; cursor: not-allowed; transform: none; box-shadow: none; }
 .full { width: 100%; }
 .text-link {
   color: var(--navy);

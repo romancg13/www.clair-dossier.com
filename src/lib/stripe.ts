@@ -43,14 +43,17 @@ export function isPlanCheckoutAvailable(planId: string, billingPeriod: BillingPe
 
 export async function redirectToCheckout(planId: string, billingPeriod: BillingPeriod): Promise<void> {
   if (!isStripeBaseConfigured || !functionsUrl || !anonKey || !getStripePriceId(planId, billingPeriod)) {
-    throw new Error('Le paiement sera disponible après configuration Stripe.');
+    throw new Error('Paiement disponible après configuration Stripe.');
   }
   if (!supabase) {
     throw new Error('Créez votre compte pour choisir cette formule.');
   }
 
-  const { data: sessionData } = await supabase.auth.getSession();
-  if (!sessionData.session) {
+  const [{ data: sessionData }, { data: userData, error: userError }] = await Promise.all([
+    supabase.auth.getSession(),
+    supabase.auth.getUser(),
+  ]);
+  if (!sessionData.session || userError || !userData.user) {
     throw new Error('Créez votre compte pour choisir cette formule.');
   }
 
@@ -63,21 +66,17 @@ export async function redirectToCheckout(planId: string, billingPeriod: BillingP
     body: JSON.stringify({
       planId,
       billingPeriod,
-      customerEmail: sessionData.session.user.email,
-      userId: sessionData.session.user.id,
-      successUrl: `${window.location.origin}/success`,
-      cancelUrl: `${window.location.origin}/cancel`,
     }),
   });
 
   if (!response.ok) {
     console.error('Erreur create-checkout-session', await response.text());
-    throw new Error("Le paiement n'est pas encore disponible. Vérifiez la configuration Stripe serveur.");
+    throw new Error('Paiement indisponible temporairement.');
   }
 
   const checkoutData = (await response.json()) as { url?: string };
   if (!checkoutData.url) {
-    throw new Error('Session Stripe invalide.');
+    throw new Error('Paiement disponible après configuration Stripe.');
   }
 
   window.location.assign(checkoutData.url);

@@ -5,6 +5,8 @@ import { PricingCards } from './components/PricingCards';
 import { Seo } from './components/Seo';
 import { blogPosts, categories, caseStatuses, featureCards, infoPages, legalPages, plans, site, warnings } from './data/site';
 import { insertPublicRecord, supabase } from './lib/supabase';
+import { getSafeRedirect, isHoneypotFilled, isValidEmail, sanitizeText, validatePassword } from './lib/security';
+import type { PublicFormTable } from './lib/security';
 
 type FormState = { type: 'idle' | 'loading' | 'success' | 'error'; message: string };
 
@@ -157,7 +159,7 @@ export function ContactPage() {
       <Seo title="Contact" description="Contacter ClairDossier pour une question, un partenariat ou une demande LegalTech." path="/contact" />
       <FormPage
         title="Contacter ClairDossier"
-        description="Votre demande sera enregistrée dans la table contact_requests lorsque Supabase est configuré."
+        description="Votre demande sera transmise de façon sécurisée lorsque Supabase est configuré."
         table="contact_requests"
         fields={[
           { name: 'name', label: 'Nom', required: true, placeholder: 'Votre nom complet' },
@@ -199,13 +201,20 @@ export function CreateCasePage() {
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (state.type === 'loading') return;
     const form = event.currentTarget;
     const data = new FormData(form);
     const required = ['client_type', 'legal_domain', 'problem_description', 'urgency'];
-    const missing = required.some((key) => !String(data.get(key) || '').trim());
+    const missing = required.some((key) => !sanitizeText(data.get(key), 2000));
     const accepted = data.get('terms_accepted') === 'on';
     if (missing || !accepted) {
       setState({ type: 'error', message: 'Complétez les champs obligatoires et acceptez les conditions.' });
+      return;
+    }
+    const problemDescription = sanitizeText(data.get('problem_description'), 3000);
+    const documentsAvailable = sanitizeText(data.get('documents_available'), 1200);
+    if (problemDescription.length < 20) {
+      setState({ type: 'error', message: 'Décrivez votre situation en quelques phrases avant de créer le dossier.' });
       return;
     }
     if (!supabase) {
@@ -226,11 +235,11 @@ export function CreateCasePage() {
     const { error: caseError } = await supabase.from('cases').insert({
       id: caseId,
       created_by: userData.user.id,
-      title: `Dossier ${String(data.get('legal_domain'))}`,
-      client_type: data.get('client_type'),
-      legal_domain: data.get('legal_domain'),
-      description: data.get('problem_description'),
-      urgency: data.get('urgency'),
+      title: `Dossier ${sanitizeText(data.get('legal_domain'), 80)}`,
+      client_type: sanitizeText(data.get('client_type'), 80),
+      legal_domain: sanitizeText(data.get('legal_domain'), 80),
+      description: problemDescription,
+      urgency: sanitizeText(data.get('urgency'), 80),
       status: 'reçu',
       terms_accepted: accepted,
     });
@@ -244,11 +253,11 @@ export function CreateCasePage() {
     const { error: answerError } = await supabase.from('case_intake_answers').insert({
       case_id: caseId,
       answers: {
-        client_type: data.get('client_type'),
-        legal_domain: data.get('legal_domain'),
-        problem_description: data.get('problem_description'),
-        urgency: data.get('urgency'),
-        documents_available: data.get('documents_available'),
+        client_type: sanitizeText(data.get('client_type'), 80),
+        legal_domain: sanitizeText(data.get('legal_domain'), 80),
+        problem_description: problemDescription,
+        urgency: sanitizeText(data.get('urgency'), 80),
+        documents_available: documentsAvailable,
       },
       consent_given: accepted,
     });
@@ -270,9 +279,9 @@ export function CreateCasePage() {
         <form className="stacked-form" onSubmit={onSubmit} noValidate>
           <SelectField name="client_type" label="Type de client" options={['Particulier', 'PME', 'Association', 'Cabinet']} required />
           <SelectField name="legal_domain" label="Domaine juridique" options={['Droit du travail', 'Recouvrement', 'Bail et immobilier', 'Contrats', 'Droit des sociétés', 'RGPD', 'Autre']} required />
-          <label><span>Description du problème *</span><textarea name="problem_description" required rows={6} placeholder="Décrivez les faits, le contexte et les documents disponibles..." /></label>
+          <label><span>Description du problème *</span><textarea name="problem_description" required rows={6} maxLength={3000} placeholder="Décrivez les faits, le contexte et les documents disponibles..." /></label>
           <SelectField name="urgency" label="Urgence" options={['Faible', 'Normale', 'Élevée', 'Délai judiciaire proche']} required />
-          <label><span>Documents disponibles</span><textarea name="documents_available" rows={4} placeholder="Contrat, emails, facture, courrier..." /></label>
+          <label><span>Documents disponibles</span><textarea name="documents_available" rows={4} maxLength={1200} placeholder="Contrat, emails, facture, courrier..." /></label>
           <p className="notice mini">Les informations transmises servent à préparer votre dossier. Aucun conseil juridique personnalisé n’est fourni sans validation par un professionnel habilité.</p>
           <label className="checkbox-line"><input name="terms_accepted" type="checkbox" required /><span>J'accepte les <Link to="/conditions-utilisation">conditions d'utilisation</Link> et comprends que l'IA ne remplace pas l'avocat.</span></label>
           <button className="primary-button" type="submit" disabled={state.type === 'loading'}>{state.type === 'loading' ? 'Envoi en cours…' : 'Créer le dossier'}</button>
@@ -383,22 +392,28 @@ export function AuthPage({ mode }: { mode: 'connexion' | 'inscription' }) {
   const [showPassword, setShowPassword] = useState(false);
   const isSignup = mode === 'inscription';
   const rawRedirect = new URLSearchParams(location.search).get('redirect');
-  const redirectTo = rawRedirect?.startsWith('/') && !rawRedirect.startsWith('//') ? rawRedirect : '/dashboard';
+  const redirectTo = getSafeRedirect(rawRedirect, '/dashboard');
   const redirectQuery = rawRedirect ? `?redirect=${encodeURIComponent(redirectTo)}` : '';
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (state.type === 'loading') return;
     const form = event.currentTarget;
     const data = new FormData(form);
-    const email = String(data.get('email') || '').trim();
-    const password = String(data.get('password') || '').trim();
-    const passwordConfirm = String(data.get('password_confirm') || '').trim();
+    const email = sanitizeText(data.get('email'), 254).toLowerCase();
+    const password = String(data.get('password') || '');
+    const passwordConfirm = String(data.get('password_confirm') || '');
     if (!email || !password) {
       setState({ type: 'error', message: 'Email et mot de passe sont obligatoires.' });
       return;
     }
-    if (password.length < 8) {
-      setState({ type: 'error', message: 'Le mot de passe doit contenir au moins 8 caractères.' });
+    if (!isValidEmail(email)) {
+      setState({ type: 'error', message: 'Adresse email invalide.' });
+      return;
+    }
+    const passwordError = isSignup ? validatePassword(password) : '';
+    if (passwordError) {
+      setState({ type: 'error', message: passwordError });
       return;
     }
     if (isSignup && password !== passwordConfirm) {
@@ -409,8 +424,8 @@ export function AuthPage({ mode }: { mode: 'connexion' | 'inscription' }) {
       setState({ type: 'error', message: 'Vous devez accepter les conditions pour créer un compte.' });
       return;
     }
-    const fullName = String(data.get('full_name') || '').trim();
-    const accountType = String(data.get('account_type') || '').trim();
+    const fullName = sanitizeText(data.get('full_name'), 120);
+    const accountType = sanitizeText(data.get('account_type'), 40);
     if (isSignup && (!fullName || !accountType)) {
       setState({ type: 'error', message: 'Complétez les informations de compte obligatoires.' });
       return;
@@ -419,7 +434,6 @@ export function AuthPage({ mode }: { mode: 'connexion' | 'inscription' }) {
       setState({ type: 'error', message: 'Impossible de créer le compte pour le moment. Veuillez réessayer.' });
       return;
     }
-    const role = accountType === 'cabinet' ? 'cabinet_admin' : 'client';
     setState({ type: 'loading', message: '' });
     const response = isSignup
       ? await supabase.auth.signUp({
@@ -429,7 +443,6 @@ export function AuthPage({ mode }: { mode: 'connexion' | 'inscription' }) {
           data: {
             full_name: fullName,
             account_type: accountType,
-            role,
           },
         },
       })
@@ -453,12 +466,12 @@ export function AuthPage({ mode }: { mode: 'connexion' | 'inscription' }) {
       <PageHero title={isSignup ? 'Créer un compte' : 'Connexion'} description={rawRedirect === '/creer-dossier' ? 'Créez votre compte pour commencer votre dossier.' : 'Authentification Supabase prête à connecter pour session persistante et déconnexion.'} />
       <section className="form-shell single">
         <form className="stacked-form" onSubmit={onSubmit} noValidate>
-          {isSignup && <label><span>Nom complet</span><input name="full_name" type="text" autoComplete="name" required placeholder="Votre nom complet" /></label>}
-          <label><span>Email</span><input name="email" type="email" required placeholder="vous@exemple.fr" /></label>
+          {isSignup && <label><span>Nom complet</span><input name="full_name" type="text" autoComplete="name" maxLength={120} required placeholder="Votre nom complet" /></label>}
+          <label><span>Email</span><input name="email" type="email" autoComplete="email" maxLength={254} required placeholder="vous@exemple.fr" /></label>
           <label>
             <span>Mot de passe</span>
             <div className="password-wrapper">
-              <input name="password" type={showPassword ? 'text' : 'password'} minLength={8} required placeholder="Minimum 8 caractères" />
+              <input name="password" type={showPassword ? 'text' : 'password'} autoComplete={isSignup ? 'new-password' : 'current-password'} minLength={isSignup ? 12 : 1} required placeholder={isSignup ? 'Minimum 12 caractères' : 'Votre mot de passe'} />
               <button
                 className="password-toggle"
                 type="button"
@@ -473,9 +486,9 @@ export function AuthPage({ mode }: { mode: 'connexion' | 'inscription' }) {
               </button>
             </div>
           </label>
-          {isSignup && <label><span>Confirmation du mot de passe</span><input name="password_confirm" type="password" minLength={8} required placeholder="Répétez le mot de passe" /></label>}
-          {isSignup && <SelectField name="account_type" label="Type de compte" options={['client', 'entreprise', 'cabinet']} required />}
-          {isSignup && <label className="checkbox-line"><input name="terms_accepted" type="checkbox" required /><span>J'accepte les conditions d'utilisation et la politique de confidentialité.</span></label>}
+          {isSignup && <label><span>Confirmation du mot de passe</span><input name="password_confirm" type="password" autoComplete="new-password" minLength={12} required placeholder="Répétez le mot de passe" /></label>}
+          {isSignup && <SelectField name="account_type" label="Type de compte" options={['client_particulier', 'client_entreprise', 'cabinet']} required />}
+          {isSignup && <label className="checkbox-line"><input name="terms_accepted" type="checkbox" required /><span>J'accepte les <Link to="/conditions-utilisation">conditions d'utilisation</Link> et la <Link to="/politique-confidentialite">politique de confidentialité</Link>.</span></label>}
           <button className="primary-button" type="submit" disabled={state.type === 'loading'}>
             {state.type === 'loading' ? 'Chargement…' : isSignup ? 'Créer mon compte' : 'Me connecter'}
           </button>
@@ -546,8 +559,8 @@ export function PaymentStatusPage({ status }: { status: 'success' | 'cancel' }) 
   const success = status === 'success';
   return (
     <>
-      <Seo title={success ? 'Paiement confirmé' : 'Paiement annulé'} description="Retour Stripe Checkout ClairDossier." path={success ? '/success' : '/cancel'} />
-      <PageHero title={success ? 'Paiement confirmé' : 'Paiement annulé'} description={success ? "Stripe a redirigé vers la page de succès. Le webhook doit maintenant synchroniser l'abonnement." : "Le paiement a été annulé ou interrompu. Aucun abonnement n'a été activé."} />
+      <Seo title={success ? 'Paiement en cours de confirmation' : 'Paiement annulé'} description="Retour Stripe Checkout ClairDossier." path={success ? '/success' : '/cancel'} />
+      <PageHero title={success ? 'Paiement en cours de confirmation' : 'Paiement annulé'} description={success ? "Stripe a redirigé vers cette page. L'abonnement n'est validé qu'après confirmation fiable du webhook Stripe." : "Le paiement a été annulé ou interrompu. Aucun abonnement n'a été activé."} />
       <section className="section-block centered"><Link className="primary-button" to={success ? '/abonnement' : '/tarifs'}>{success ? 'Voir mon abonnement' : 'Retour aux tarifs'}</Link></section>
     </>
   );
@@ -567,21 +580,36 @@ export function NotFoundPage() {
 
 /* ─── Internal components ─── */
 
-function FormPage({ title, description, table, fields, consentLabel }: { title: string; description: string; table: string; fields: FieldDef[]; consentLabel: string }) {
+function FormPage({ title, description, table, fields, consentLabel }: { title: string; description: string; table: PublicFormTable; fields: FieldDef[]; consentLabel: string }) {
   const [state, setState] = useState<FormState>({ type: 'idle', message: '' });
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (state.type === 'loading') return;
     const form = event.currentTarget;
     const data = new FormData(form);
-    const missing = fields.some((field) => field.required && !String(data.get(field.name) || '').trim());
+    if (isHoneypotFilled(data)) {
+      setState({ type: 'success', message: 'Votre demande a bien été enregistrée.' });
+      form.reset();
+      return;
+    }
+    const missing = fields.some((field) => field.required && !sanitizeText(data.get(field.name), 2000));
     const consent = data.get('consent') === 'on';
     if (missing || !consent) {
       setState({ type: 'error', message: 'Complétez les champs obligatoires et cochez le consentement RGPD.' });
       return;
     }
+    const email = sanitizeText(data.get('email'), 254).toLowerCase();
+    if (!isValidEmail(email)) {
+      setState({ type: 'error', message: 'Adresse email invalide.' });
+      return;
+    }
     setState({ type: 'loading', message: '' });
-    const payload = Object.fromEntries(fields.map((field) => [field.name, data.get(field.name)]));
+    const payload = Object.fromEntries(fields.map((field) => {
+      const maxLength = field.type === 'textarea' ? 2000 : 254;
+      const value = field.name === 'email' ? email : sanitizeText(data.get(field.name), maxLength);
+      return [field.name, value];
+    }));
     const result = await insertPublicRecord(table, { ...payload, consent_given: consent });
     setState({ type: result.ok ? 'success' : 'error', message: result.message });
     if (result.ok) form.reset();
@@ -592,6 +620,10 @@ function FormPage({ title, description, table, fields, consentLabel }: { title: 
       <PageHero title={title} description={description} />
       <section className="form-shell single">
         <form className="stacked-form" onSubmit={onSubmit} noValidate>
+          <label className="visually-hidden" aria-hidden="true">
+            <span>Site web</span>
+            <input name="company_website" type="text" tabIndex={-1} autoComplete="off" />
+          </label>
           {fields.map((field) => <RenderField key={field.name} field={field} />)}
           <label className="checkbox-line"><input name="consent" type="checkbox" required /><span>{consentLabel}</span></label>
           <button className="primary-button" type="submit" disabled={state.type === 'loading'}>
@@ -605,9 +637,9 @@ function FormPage({ title, description, table, fields, consentLabel }: { title: 
 }
 
 function RenderField({ field }: { field: FieldDef }) {
-  if (field.type === 'textarea') return <label><span>{field.label}{field.required ? ' *' : ''}</span><textarea name={field.name} required={field.required} rows={5} placeholder={field.placeholder} /></label>;
+  if (field.type === 'textarea') return <label><span>{field.label}{field.required ? ' *' : ''}</span><textarea name={field.name} required={field.required} rows={5} maxLength={2000} placeholder={field.placeholder} /></label>;
   if (field.type === 'select') return <SelectField name={field.name} label={field.label} options={field.options || []} required={field.required} />;
-  return <label><span>{field.label}{field.required ? ' *' : ''}</span><input name={field.name} type={field.type || 'text'} required={field.required} placeholder={field.placeholder} /></label>;
+  return <label><span>{field.label}{field.required ? ' *' : ''}</span><input name={field.name} type={field.type || 'text'} required={field.required} maxLength={field.type === 'email' ? 254 : 160} placeholder={field.placeholder} /></label>;
 }
 
 function SelectField({ name, label, options, required }: { name: string; label: string; options: string[]; required?: boolean }) {
@@ -623,10 +655,8 @@ function SelectField({ name, label, options, required }: { name: string; label: 
 }
 
 function getCasePersistenceMessage(error: { code?: string; message?: string }) {
-  if (error.code === '42P01' || error.message?.toLowerCase().includes('does not exist')) {
-    return 'Migration Supabase requise : créez les tables cases et case_intake_answers avant d’enregistrer un dossier.';
-  }
-  return "Nous n'avons pas pu créer votre dossier. Réessayez ou contactez-nous par email.";
+  void error;
+  return 'Impossible de créer le dossier pour le moment. Veuillez réessayer.';
 }
 
 function PageHero({ title, description }: { title: string; description: string }) {
