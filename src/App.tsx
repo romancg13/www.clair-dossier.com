@@ -2,6 +2,10 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { AuthPage, BlogCategoryPage, BlogIndexPage, BlogPostPage, ContactPage, CreateCasePage, DemoPage, HomePage, InfoPage, LegalPage, NotFoundPage, PaymentStatusPage, PricingPage, WorkspacePage } from './pages';
+import type { UserRole } from './lib/security';
+
+const clientRoles: UserRole[] = ['client_particulier', 'client_entreprise'];
+const cabinetRoles: UserRole[] = ['avocat', 'collaborateur', 'admin_cabinet'];
 
 export default function App() {
   return (
@@ -26,22 +30,22 @@ export default function App() {
           <Route path="cookies" element={<LegalPage pageKey="cookies" />} />
           <Route path="connexion" element={<AuthPage mode="connexion" />} />
           <Route path="inscription" element={<AuthPage mode="inscription" />} />
-          <Route path="creer-dossier" element={<ProtectedRoute><CreateCasePage /></ProtectedRoute>} />
-          <Route path="dashboard" element={<WorkspacePage title="Tableau de bord client" audience="client" />} />
-          <Route path="mes-dossiers" element={<WorkspacePage title="Mes dossiers" audience="client" />} />
-          <Route path="dossier/:id" element={<WorkspacePage title="Dossier" audience="client" />} />
-          <Route path="documents" element={<WorkspacePage title="Documents" audience="client" />} />
-          <Route path="messages" element={<WorkspacePage title="Messages" audience="client" />} />
-          <Route path="paiements" element={<WorkspacePage title="Paiements" audience="client" />} />
-          <Route path="abonnement" element={<WorkspacePage title="Abonnement" audience="client" />} />
-          <Route path="parametres" element={<WorkspacePage title="Paramètres" audience="client" />} />
-          <Route path="cabinet/dashboard" element={<WorkspacePage title="Dashboard cabinet" audience="cabinet" />} />
-          <Route path="cabinet/dossiers" element={<WorkspacePage title="Dossiers cabinet" audience="cabinet" />} />
-          <Route path="cabinet/clients" element={<WorkspacePage title="Clients cabinet" audience="cabinet" />} />
-          <Route path="cabinet/messages" element={<WorkspacePage title="Messages cabinet" audience="cabinet" />} />
-          <Route path="cabinet/taches" element={<WorkspacePage title="Tâches cabinet" audience="cabinet" />} />
-          <Route path="cabinet/facturation" element={<WorkspacePage title="Facturation cabinet" audience="cabinet" />} />
-          <Route path="cabinet/parametres" element={<WorkspacePage title="Paramètres cabinet" audience="cabinet" />} />
+          <Route path="creer-dossier" element={<ProtectedRoute allowedRoles={clientRoles} unauthenticatedTo="/inscription"><CreateCasePage /></ProtectedRoute>} />
+          <Route path="dashboard" element={<ProtectedRoute allowedRoles={clientRoles}><WorkspacePage title="Tableau de bord client" audience="client" /></ProtectedRoute>} />
+          <Route path="mes-dossiers" element={<ProtectedRoute allowedRoles={clientRoles}><WorkspacePage title="Mes dossiers" audience="client" /></ProtectedRoute>} />
+          <Route path="dossier/:id" element={<ProtectedRoute allowedRoles={clientRoles}><WorkspacePage title="Dossier" audience="client" /></ProtectedRoute>} />
+          <Route path="documents" element={<ProtectedRoute allowedRoles={clientRoles}><WorkspacePage title="Documents" audience="client" /></ProtectedRoute>} />
+          <Route path="messages" element={<ProtectedRoute allowedRoles={clientRoles}><WorkspacePage title="Messages" audience="client" /></ProtectedRoute>} />
+          <Route path="paiements" element={<ProtectedRoute allowedRoles={clientRoles}><WorkspacePage title="Paiements" audience="client" /></ProtectedRoute>} />
+          <Route path="abonnement" element={<ProtectedRoute allowedRoles={clientRoles}><WorkspacePage title="Abonnement" audience="client" /></ProtectedRoute>} />
+          <Route path="parametres" element={<ProtectedRoute allowedRoles={clientRoles}><WorkspacePage title="Paramètres" audience="client" /></ProtectedRoute>} />
+          <Route path="cabinet/dashboard" element={<ProtectedRoute allowedRoles={cabinetRoles}><WorkspacePage title="Dashboard cabinet" audience="cabinet" /></ProtectedRoute>} />
+          <Route path="cabinet/dossiers" element={<ProtectedRoute allowedRoles={cabinetRoles}><WorkspacePage title="Dossiers cabinet" audience="cabinet" /></ProtectedRoute>} />
+          <Route path="cabinet/clients" element={<ProtectedRoute allowedRoles={cabinetRoles}><WorkspacePage title="Clients cabinet" audience="cabinet" /></ProtectedRoute>} />
+          <Route path="cabinet/messages" element={<ProtectedRoute allowedRoles={cabinetRoles}><WorkspacePage title="Messages cabinet" audience="cabinet" /></ProtectedRoute>} />
+          <Route path="cabinet/taches" element={<ProtectedRoute allowedRoles={cabinetRoles}><WorkspacePage title="Tâches cabinet" audience="cabinet" /></ProtectedRoute>} />
+          <Route path="cabinet/facturation" element={<ProtectedRoute allowedRoles={cabinetRoles}><WorkspacePage title="Facturation cabinet" audience="cabinet" /></ProtectedRoute>} />
+          <Route path="cabinet/parametres" element={<ProtectedRoute allowedRoles={cabinetRoles}><WorkspacePage title="Paramètres cabinet" audience="cabinet" /></ProtectedRoute>} />
           <Route path="success" element={<PaymentStatusPage status="success" />} />
           <Route path="cancel" element={<PaymentStatusPage status="cancel" />} />
           <Route path="*" element={<NotFoundPage />} />

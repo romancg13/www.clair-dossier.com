@@ -32,6 +32,8 @@ export const legalLinks = [
   { label: 'Politique de confidentialité', path: '/politique-confidentialite' },
   { label: 'Mentions légales', path: '/mentions-legales' },
   { label: 'Cookies', path: '/cookies' },
+  { label: 'RGPD', path: '/rgpd' },
+  { label: 'Sécurité', path: '/securite' },
 ];
 
 export const footerBadges = [
@@ -451,7 +453,9 @@ export const legalPages = {
       { title: 'Bases légales', text: 'Contrat, mesures précontractuelles, consentement, intérêt légitime de sécurité et obligations légales selon les traitements.' },
       { title: 'Durée de conservation', text: 'Les durées doivent être définies selon la nature du dossier, les obligations légales et les demandes de suppression recevables.' },
       { title: 'Droits RGPD', text: 'Accès, rectification, suppression, opposition, limitation et portabilité peuvent être exercés via contact@clair-dossier.com.' },
+      { title: 'Suppression de compte et export', text: 'L’utilisateur peut demander l’export ou la suppression de son compte et de ses données, sous réserve des obligations légales de conservation.' },
       { title: 'Sous-traitants', text: 'Supabase, Stripe et les services d’hébergement ou d’emailing doivent être documentés avant mise en production.' },
+      { title: 'Information IA', text: "Aucune donnée confidentielle ne doit être transmise à un service d’IA sans information claire. L’IA ne remplace pas l’avocat et les analyses sont soumises à validation professionnelle." },
       { title: 'Sécurité', text: 'Le service prévoit contrôle d’accès, RLS, journalisation, sauvegardes et hébergement UE lorsque la configuration est finalisée.' },
       { title: 'Contact confidentialité', text: 'Contact confidentialité/DPO à compléter : privacy@clair-dossier.com ou contact@clair-dossier.com.' },
     ],
@@ -489,6 +493,8 @@ export const legalPages = {
       { title: 'Opposition', text: 'Vous pouvez vous opposer à certains traitements lorsque la base légale le permet.' },
       { title: 'Portabilité', text: 'Vous pouvez demander la transmission de certaines données dans un format exploitable.' },
       { title: 'Limitation', text: 'Vous pouvez demander la limitation temporaire de certains traitements.' },
+      { title: 'Suppression de compte', text: 'Vous pouvez demander la suppression de votre compte depuis le support, sous réserve des obligations légales de conservation.' },
+      { title: 'Aucune garantie de résultat', text: 'ClairDossier aide à structurer les informations ; aucune garantie de résultat juridique ou judiciaire n’est donnée.' },
       { title: 'Contact', text: 'Contact RGPD : privacy@clair-dossier.com ou contact@clair-dossier.com.' },
     ],
   },

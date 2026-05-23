@@ -1,21 +1,28 @@
-# Security Policy
+# Politique de sécurité ClairDossier
 
-## Supported Versions
+## Périmètre
 
-Use this section to tell people about which versions of your project are
-currently being supported with security updates.
+ClairDossier manipule des comptes, dossiers juridiques, documents, messages, paiements et journaux d’audit. Les secrets Stripe, Supabase service role et IA ne doivent jamais être placés dans le frontend, `public/`, `src/` ou le bundle Vite.
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 5.1.x   | :white_check_mark: |
-| 5.0.x   | :x:                |
-| 4.0.x   | :white_check_mark: |
-| < 4.0   | :x:                |
+## Versions supportées
 
-## Reporting a Vulnerability
+La branche de production et les dernières migrations Supabase sont maintenues pour les correctifs de sécurité.
 
-Use this section to tell people how to report a vulnerability.
+## Signaler une vulnérabilité
 
-Tell them where to go, how often they can expect to get an update on a
-reported vulnerability, what to expect if the vulnerability is accepted or
-declined, etc.
+Écrivez à `contact@clair-dossier.com` avec :
+
+- la route ou le composant concerné ;
+- les étapes de reproduction ;
+- l’impact potentiel ;
+- toute preuve utile sans exfiltrer de données réelles.
+
+Ne publiez pas publiquement une faille exploitable avant correction.
+
+## Exigences minimales avant production
+
+- RLS Supabase activée et migrations appliquées.
+- Bucket `case-documents` privé avec URLs signées.
+- Webhook Stripe déployé avec `--no-verify-jwt` et signature Stripe vérifiée.
+- Secrets uniquement dans Supabase Edge Functions ou GitHub Actions.
+- Headers de sécurité servis par l’hébergeur ou le proxy frontal.
