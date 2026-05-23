@@ -16,6 +16,7 @@ Slogan : **Votre dossier juridique, clair, structuré et suivi.**
 
 ```bash
 npm install
+npm run dev:payments
 npm run dev
 ```
 
@@ -33,6 +34,7 @@ Variables publiques frontend :
 
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_ANON_KEY`
+- `VITE_PAYMENTS_API_URL`
 - `VITE_STRIPE_PUBLIC_KEY`
 - `VITE_SUPABASE_FUNCTIONS_URL`
 - `VITE_STRIPE_CLIENT_ESSENTIEL_MONTHLY_PRICE_ID`
@@ -50,6 +52,8 @@ Variables serveur uniquement, à configurer dans Supabase Edge Functions ou l'en
 
 - `STRIPE_SECRET_KEY`
 - `STRIPE_WEBHOOK_SECRET`
+- `PAYMENTS_PORT`
+- `STRIPE_ALLOWED_ORIGINS`
 - `AI_API_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `SITE_URL`
@@ -75,19 +79,40 @@ La migration crée les tables demandées : `profiles`, `contact_requests`, `news
 
 ## Stripe
 
-Les boutons de tarifs appellent `create-checkout-session`. Le paiement réel nécessite :
+Le fichier backend Node `payments.js` expose :
 
-1. créer les produits Stripe et les Prices mensuels/annuels, avec les Prices annuels calculés sur une réduction de 10 % ;
-2. ajouter les Price IDs dans les secrets GitHub `VITE_STRIPE_*_PRICE_ID` ;
-3. ajouter `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_SUPABASE_FUNCTIONS_URL` et `VITE_STRIPE_PUBLIC_KEY` dans les secrets GitHub ;
-4. ajouter dans Supabase Edge Functions `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `SITE_URL`, `SUPABASE_SERVICE_ROLE_KEY` et les mêmes `VITE_STRIPE_*_PRICE_ID` ;
-5. lancer le workflow manuel `Deploy Supabase Stripe Functions` ;
-6. redéployer GitHub Pages depuis `main` ;
-7. créer le webhook Stripe vers `https://<project-ref>.functions.supabase.co/stripe-webhook`.
+- `GET /api/stripe-health` pour vérifier que Stripe est connecté et détecter le mode `test` ou `live` depuis `STRIPE_SECRET_KEY` ;
+- `POST /api/create-checkout-session` pour créer une session Stripe Checkout en mode `subscription`.
+
+Le frontend appelle ce backend via `/api/create-checkout-session` en local grâce au proxy Vite. En production, renseignez `VITE_PAYMENTS_API_URL` si le backend est hébergé sur un domaine différent du site.
+
+La clé secrète Stripe doit être collée uniquement dans l'environnement serveur qui lance `payments.js` :
+
+```bash
+STRIPE_SECRET_KEY=sk_test_...
+```
+
+Utilisez une clé `sk_test_...` pour le mode test et une clé `sk_live_...` pour le mode live. Ne placez jamais `STRIPE_SECRET_KEY` dans une variable `VITE_*`.
+
+Les prix Stripe Checkout sont calculés côté serveur depuis le catalogue de `payments.js` :
+
+- Client Essentiel : 19 € / mois ou 205,20 € / an ;
+- Business / PME : 79 € / mois ou 853,20 € / an ;
+- Cabinet Solo : 99 € / mois ou 1 069,20 € / an ;
+- Cabinet Pro : 249 € / mois ou 2 689,20 € / an.
+
+Les abonnements annuels appliquent automatiquement une réduction de 10 % côté backend et dans l'affichage frontend.
+
+Les boutons de tarifs appellent Stripe Checkout. Le paiement réel nécessite :
+
+1. lancer `payments.js` avec `STRIPE_SECRET_KEY`, `SITE_URL` et `STRIPE_ALLOWED_ORIGINS` ;
+2. ajouter `VITE_PAYMENTS_API_URL` si le backend n'est pas sur le même domaine que le frontend ;
+3. conserver `VITE_SUPABASE_URL` et `VITE_SUPABASE_ANON_KEY` pour lier le checkout aux comptes utilisateurs ;
+4. configurer le webhook Stripe si vous utilisez la synchronisation Supabase des paiements et abonnements.
 
 Stripe Checkout utilise les moyens de paiement automatiques. Les cartes, Apple Pay et PayPal peuvent apparaître au checkout si ces moyens sont activés et éligibles dans le Dashboard Stripe pour le pays, la devise, le navigateur et le type d'abonnement. Aucun moyen de paiement sensible ne doit être collecté dans le frontend.
 
-Sans cette configuration, le frontend affiche clairement que le paiement est bientôt disponible.
+Sans `STRIPE_SECRET_KEY`, `/api/stripe-health` renvoie `connected: false` et la création de session renvoie une erreur claire.
 
 ## Avertissement LegalTech
 

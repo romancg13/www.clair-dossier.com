@@ -1,11 +1,14 @@
 import { supabase } from './supabase';
 
-const stripePublicKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const functionsUrl = import.meta.env.VITE_SUPABASE_FUNCTIONS_URL || (supabaseUrl ? `${supabaseUrl}/functions/v1` : undefined);
+const paymentsApiUrl = import.meta.env.VITE_PAYMENTS_API_URL?.replace(/\/$/, '') || '';
+const nodeCheckoutEndpoint = `${paymentsApiUrl}/api/create-checkout-session`;
 
 export type BillingPeriod = 'monthly' | 'yearly';
+
+const nodeCheckoutPlanIds = new Set(['client-essential', 'business', 'cabinet-solo', 'cabinet-pro']);
 
 const stripePriceIds: Record<string, Record<BillingPeriod, string | undefined>> = {
   'client-essential': {
@@ -30,7 +33,16 @@ const stripePriceIds: Record<string, Record<BillingPeriod, string | undefined>> 
   },
 };
 
-export const isStripeBaseConfigured = Boolean(stripePublicKey && functionsUrl && anonKey);
+export class CheckoutAuthRequiredError extends Error {
+  constructor() {
+    super('Créez votre compte pour choisir cette formule.');
+    this.name = 'CheckoutAuthRequiredError';
+  }
+}
+
+const isSupabaseCheckoutConfigured = Boolean(functionsUrl && anonKey);
+
+export const isStripeBaseConfigured = Boolean(nodeCheckoutEndpoint || isSupabaseCheckoutConfigured);
 
 export function getStripePriceId(planId: string, billingPeriod: BillingPeriod) {
   return stripePriceIds[planId]?.[billingPeriod];
@@ -38,41 +50,43 @@ export function getStripePriceId(planId: string, billingPeriod: BillingPeriod) {
 
 export function isPlanCheckoutAvailable(planId: string, billingPeriod: BillingPeriod) {
   if (planId === 'discovery') return true;
-  return Boolean(isStripeBaseConfigured && getStripePriceId(planId, billingPeriod));
+  return Boolean(nodeCheckoutPlanIds.has(planId) || (isSupabaseCheckoutConfigured && getStripePriceId(planId, billingPeriod)));
 }
 
 export async function redirectToCheckout(planId: string, billingPeriod: BillingPeriod): Promise<void> {
-  if (!isStripeBaseConfigured || !functionsUrl || !anonKey || !getStripePriceId(planId, billingPeriod)) {
-    throw new Error('Le paiement sera disponible après configuration Stripe.');
-  }
-  if (!supabase) {
-    throw new Error('Créez votre compte pour choisir cette formule.');
+  if (!isPlanCheckoutAvailable(planId, billingPeriod)) {
+    throw new Error('Cette formule n’est pas disponible au paiement automatique.');
   }
 
-  const { data: sessionData } = await supabase.auth.getSession();
-  if (!sessionData.session) {
-    throw new Error('Créez votre compte pour choisir cette formule.');
+  const { session, authHeader } = await getCheckoutSession();
+  if (supabase && !session) {
+    throw new CheckoutAuthRequiredError();
   }
 
-  const response = await fetch(`${functionsUrl}/create-checkout-session`, {
+  const checkoutEndpoint = nodeCheckoutPlanIds.has(planId)
+    ? nodeCheckoutEndpoint
+    : `${functionsUrl}/create-checkout-session`;
+
+  const response = await fetch(checkoutEndpoint, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${sessionData.session.access_token}`,
+      ...(authHeader ? { Authorization: authHeader } : {}),
     },
     body: JSON.stringify({
       planId,
       billingPeriod,
-      customerEmail: sessionData.session.user.email,
-      userId: sessionData.session.user.id,
+      customerEmail: session?.user.email,
+      userId: session?.user.id,
       successUrl: `${window.location.origin}/success`,
       cancelUrl: `${window.location.origin}/cancel`,
     }),
   });
 
   if (!response.ok) {
-    console.error('Erreur create-checkout-session', await response.text());
-    throw new Error("Le paiement n'est pas encore disponible. Vérifiez la configuration Stripe serveur.");
+    const message = await getCheckoutErrorMessage(response);
+    console.error('Erreur create-checkout-session', message);
+    throw new Error(message);
   }
 
   const checkoutData = (await response.json()) as { url?: string };
@@ -81,4 +95,24 @@ export async function redirectToCheckout(planId: string, billingPeriod: BillingP
   }
 
   window.location.assign(checkoutData.url);
+}
+
+async function getCheckoutSession() {
+  if (!supabase) return { session: null, authHeader: '' };
+  const { data: sessionData } = await supabase.auth.getSession();
+  const session = sessionData.session;
+  return {
+    session,
+    authHeader: session ? `Bearer ${session.access_token}` : '',
+  };
+}
+
+async function getCheckoutErrorMessage(response: Response) {
+  try {
+    const body = (await response.json()) as { error?: string };
+    if (body.error) return body.error;
+  } catch {
+    // The backend may return a plain text platform error.
+  }
+  return "Le paiement n'est pas encore disponible. Vérifiez la configuration Stripe serveur.";
 }
