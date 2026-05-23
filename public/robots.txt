@@ -10,4 +10,4 @@ Disallow: /abonnement
 Disallow: /parametres
 Disallow: /cabinet/
 
-Sitemap: https://clair-dossier.com/sitemap.xml
+Sitemap: https://www.clair-dossier.com/sitemap.xml

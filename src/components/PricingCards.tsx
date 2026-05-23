@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { plans } from '../data/site';
 import type { BillingPeriod } from '../lib/stripe';
-import { isPlanCheckoutAvailable, redirectToCheckout } from '../lib/stripe';
+import { CheckoutAuthRequiredError, isPlanCheckoutAvailable, redirectToCheckout } from '../lib/stripe';
 
 const POPULAR_PLAN = 'business';
 const yearlyDiscountPercent = 10;
@@ -45,6 +45,10 @@ export function PricingCards() {
       await redirectToCheckout(planId, billingPeriod);
     } catch (error) {
       console.error('Paiement Stripe indisponible', error);
+      if (error instanceof CheckoutAuthRequiredError) {
+        navigate('/inscription?redirect=/tarifs');
+        return;
+      }
       setMessage(error instanceof Error ? error.message : 'Paiement disponible après configuration Stripe.');
     } finally {
       setLoadingPlan('');

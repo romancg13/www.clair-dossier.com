@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { footerBadges, legalLinks, productLinks, publicNav, resourceLinks, site, warnings } from '../data/site';
+import { supabase } from '../lib/supabase';
 
 function linkClass({ isActive }: { isActive: boolean }) {
   return isActive ? 'nav-link active' : 'nav-link';
@@ -12,6 +13,7 @@ export function Layout() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [showCookies, setShowCookies] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const location = useLocation();
 
   useEffect(() => { setMenuOpen(false); }, [location.pathname]);
@@ -37,6 +39,30 @@ export function Layout() {
     function onScroll() { setShowScrollTop(window.scrollY > 400); }
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  useEffect(() => {
+    if (!supabase) {
+      setIsAuthenticated(false);
+      return;
+    }
+    let isMounted = true;
+    void supabase.auth.getSession().then(({ data }) => {
+      if (isMounted) setIsAuthenticated(Boolean(data.session));
+    });
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAuthenticated(Boolean(session));
+    });
+    return () => {
+      isMounted = false;
+      listener.subscription.unsubscribe();
+    };
+  }, []);
+
+  const signOut = useCallback(async () => {
+    if (!supabase) return;
+    const { error } = await supabase.auth.signOut();
+    if (error) console.error('Erreur déconnexion Supabase', error);
   }, []);
 
   const acceptCookies = useCallback(() => {
@@ -73,8 +99,17 @@ export function Layout() {
         </nav>
 
         <div className="header-actions">
-          <Link className="ghost-button" to="/connexion">Connexion</Link>
-          <Link className="primary-button" to="/creer-dossier">Créer un dossier</Link>
+          {isAuthenticated ? (
+            <>
+              <Link className="ghost-button" to="/dashboard">Tableau de bord</Link>
+              <button className="secondary-button" type="button" onClick={signOut}>Déconnexion</button>
+            </>
+          ) : (
+            <>
+              <Link className="ghost-button" to="/connexion">Connexion</Link>
+              <Link className="primary-button" to="/creer-dossier">Créer un dossier</Link>
+            </>
+          )}
         </div>
 
         <button
@@ -97,8 +132,17 @@ export function Layout() {
             <NavLink key={item.path} to={item.path} className={linkClass}>{item.label}</NavLink>
           ))}
           <div className="drawer-actions">
-            <Link className="ghost-button full" to="/connexion">Connexion</Link>
-            <Link className="primary-button full" to="/creer-dossier">Créer un dossier</Link>
+            {isAuthenticated ? (
+              <>
+                <Link className="ghost-button full" to="/dashboard">Tableau de bord</Link>
+                <button className="secondary-button full" type="button" onClick={signOut}>Déconnexion</button>
+              </>
+            ) : (
+              <>
+                <Link className="ghost-button full" to="/connexion">Connexion</Link>
+                <Link className="primary-button full" to="/creer-dossier">Créer un dossier</Link>
+              </>
+            )}
           </div>
         </nav>
       </div>
