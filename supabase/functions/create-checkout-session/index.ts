@@ -1,8 +1,11 @@
 import Stripe from 'npm:stripe';
+import { createClient } from 'npm:@supabase/supabase-js';
 import { corsHeaders, jsonResponse } from '../_shared/cors.ts';
 
 const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
 const siteUrl = Deno.env.get('SITE_URL') || 'https://clair-dossier.com';
+const supabaseUrl = Deno.env.get('SUPABASE_URL');
+const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
 
 const priceEnvByPlan: Record<string, string> = {
   discovery: 'STRIPE_PRICE_DISCOVERY',
@@ -19,12 +22,27 @@ Deno.serve(async (request) => {
   if (!stripeSecretKey) return jsonResponse({ error: 'STRIPE_SECRET_KEY is not configured' }, 500);
 
   try {
-    const { planId, successUrl, cancelUrl, customerEmail, userId } = await request.json();
+    const { planId, successUrl, cancelUrl } = await request.json();
     const envName = priceEnvByPlan[String(planId || '')];
     const price = envName ? Deno.env.get(envName) : undefined;
     if (!price) {
       return jsonResponse({ error: 'Stripe price is not configured for this plan' }, 400);
     }
+    if (!supabaseUrl || !supabaseAnonKey) {
+      return jsonResponse({ error: 'Supabase Auth is not configured for checkout' }, 500);
+    }
+
+    const authHeader = request.headers.get('Authorization') || '';
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+      auth: { persistSession: false },
+    });
+    const { data: authData, error: authError } = await supabase.auth.getUser();
+    if (authError || !authData.user) {
+      return jsonResponse({ error: 'Authentication required for paid checkout' }, 401);
+    }
+    const userId = authData.user.id;
+    const customerEmail = authData.user.email;
 
     const stripe = new Stripe(stripeSecretKey, { apiVersion: '2024-12-18.acacia' });
     const session = await stripe.checkout.sessions.create({

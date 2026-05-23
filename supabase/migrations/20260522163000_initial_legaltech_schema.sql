@@ -23,6 +23,33 @@ create table if not exists public.profiles (
   updated_at timestamptz not null default now()
 );
 
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  insert into public.profiles (id, email, full_name, role)
+  values (
+    new.id,
+    new.email,
+    coalesce(new.raw_user_meta_data->>'full_name', split_part(new.email, '@', 1)),
+    'client'
+  )
+  on conflict (id) do update
+    set email = excluded.email,
+        full_name = coalesce(public.profiles.full_name, excluded.full_name),
+        updated_at = now();
+  return new;
+end;
+$$;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+after insert on auth.users
+for each row execute function public.handle_new_user();
+
 create table if not exists public.contact_requests (
   id uuid primary key default gen_random_uuid(),
   name text not null,
@@ -163,6 +190,25 @@ create table if not exists public.audit_logs (
   created_at timestamptz not null default now()
 );
 
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'case-documents',
+  'case-documents',
+  false,
+  52428800,
+  array[
+    'application/pdf',
+    'image/png',
+    'image/jpeg',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  ]
+)
+on conflict (id) do update
+  set public = false,
+      file_size_limit = excluded.file_size_limit,
+      allowed_mime_types = excluded.allowed_mime_types;
+
 alter table public.profiles enable row level security;
 alter table public.contact_requests enable row level security;
 alter table public.newsletter_subscribers enable row level security;
@@ -178,6 +224,7 @@ alter table public.blog_posts enable row level security;
 alter table public.audit_logs enable row level security;
 
 create policy "profiles_select_own_or_admin" on public.profiles for select using (id = auth.uid() or public.is_admin());
+create policy "profiles_insert_own" on public.profiles for insert to authenticated with check (id = auth.uid());
 create policy "profiles_update_own" on public.profiles for update using (id = auth.uid()) with check (id = auth.uid());
 create policy "profiles_admin_all" on public.profiles for all using (public.is_admin()) with check (public.is_admin());
 
@@ -195,12 +242,31 @@ create policy "public_insert_cases" on public.cases for insert to anon, authenti
 create policy "cases_select_owner_or_admin" on public.cases for select to authenticated using (created_by = auth.uid() or assigned_lawyer_id = auth.uid() or public.is_admin());
 create policy "cases_update_owner_lawyer_or_admin" on public.cases for update to authenticated using (created_by = auth.uid() or assigned_lawyer_id = auth.uid() or public.is_admin()) with check (created_by = auth.uid() or assigned_lawyer_id = auth.uid() or public.is_admin());
 
-create policy "public_insert_case_answers" on public.case_intake_answers for insert to anon, authenticated with check (consent_given = true);
+create policy "public_insert_case_answers" on public.case_intake_answers for insert to anon, authenticated with check (
+  consent_given = true
+  and exists (select 1 from public.cases c where c.id = case_id and c.terms_accepted = true)
+);
 create policy "case_answers_select_related" on public.case_intake_answers for select to authenticated using (exists (select 1 from public.cases c where c.id = case_id and (c.created_by = auth.uid() or c.assigned_lawyer_id = auth.uid() or public.is_admin())));
 
 create policy "documents_select_related" on public.documents for select to authenticated using (owner_id = auth.uid() or exists (select 1 from public.cases c where c.id = case_id and (c.created_by = auth.uid() or c.assigned_lawyer_id = auth.uid() or public.is_admin())));
 create policy "documents_insert_owner" on public.documents for insert to authenticated with check (owner_id = auth.uid() or public.is_admin());
 create policy "documents_update_related" on public.documents for update to authenticated using (owner_id = auth.uid() or public.is_admin()) with check (owner_id = auth.uid() or public.is_admin());
+
+create policy "case_documents_storage_select_own" on storage.objects for select to authenticated using (
+  bucket_id = 'case-documents'
+  and ((storage.foldername(name))[1] = auth.uid()::text or public.is_admin())
+);
+create policy "case_documents_storage_insert_own" on storage.objects for insert to authenticated with check (
+  bucket_id = 'case-documents'
+  and ((storage.foldername(name))[1] = auth.uid()::text or public.is_admin())
+);
+create policy "case_documents_storage_update_own" on storage.objects for update to authenticated using (
+  bucket_id = 'case-documents'
+  and ((storage.foldername(name))[1] = auth.uid()::text or public.is_admin())
+) with check (
+  bucket_id = 'case-documents'
+  and ((storage.foldername(name))[1] = auth.uid()::text or public.is_admin())
+);
 
 create policy "messages_select_related" on public.messages for select to authenticated using (sender_id = auth.uid() or recipient_id = auth.uid() or public.is_admin());
 create policy "messages_insert_sender" on public.messages for insert to authenticated with check (sender_id = auth.uid() or public.is_admin());

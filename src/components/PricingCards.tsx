@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { plans } from '../data/site';
 import { isStripeConfigured, redirectToCheckout } from '../lib/stripe';
 
@@ -7,12 +8,21 @@ const POPULAR_PLAN = 'business';
 export function PricingCards() {
   const [message, setMessage] = useState<string>('');
   const [loadingPlan, setLoadingPlan] = useState<string>('');
+  const navigate = useNavigate();
 
-  async function choosePlan(planId: string) {
+  async function choosePlan(plan: (typeof plans)[number]) {
     setMessage('');
-    setLoadingPlan(planId);
+    if (plan.action === 'free') {
+      navigate('/creer-dossier');
+      return;
+    }
+    if (plan.action === 'contact') {
+      navigate('/contact');
+      return;
+    }
+    setLoadingPlan(plan.id);
     try {
-      await redirectToCheckout(planId);
+      await redirectToCheckout(plan.id);
     } catch (error) {
       console.error('Paiement Stripe indisponible', error);
       setMessage(error instanceof Error ? error.message : 'Paiement bientôt disponible.');
@@ -43,7 +53,7 @@ export function PricingCards() {
             <button
               className="primary-button full"
               type="button"
-              onClick={() => choosePlan(plan.id)}
+              onClick={() => choosePlan(plan)}
               disabled={loadingPlan === plan.id}
             >
               {loadingPlan === plan.id ? 'Préparation…' : plan.price === '0 €' ? 'Commencer gratuitement' : plan.price === 'Sur devis' ? 'Nous contacter' : 'Choisir cette formule'}

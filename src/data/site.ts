@@ -13,6 +13,24 @@ export const publicNav = [
   { label: 'Contact', path: '/contact' },
 ];
 
+export const clientWorkspaceLinks = [
+  { label: 'Dashboard', path: '/dashboard' },
+  { label: 'Mes dossiers', path: '/mes-dossiers' },
+  { label: 'Documents', path: '/documents' },
+  { label: 'Messages', path: '/messages' },
+  { label: 'Paiements', path: '/paiements' },
+  { label: 'Abonnement', path: '/abonnement' },
+];
+
+export const cabinetWorkspaceLinks = [
+  { label: 'Cabinet', path: '/cabinet/dashboard' },
+  { label: 'Dossiers', path: '/cabinet/dossiers' },
+  { label: 'Clients', path: '/cabinet/clients' },
+  { label: 'Messages', path: '/cabinet/messages' },
+  { label: 'Tâches', path: '/cabinet/taches' },
+  { label: 'Facturation', path: '/cabinet/facturation' },
+];
+
 export const productLinks = [
   { label: 'Fonctionnalités', path: '/fonctionnalites' },
   { label: 'Tarifs', path: '/tarifs' },
@@ -66,6 +84,7 @@ export const plans = [
     price: '0 €',
     audience: 'Particuliers qui veulent cadrer un premier dossier',
     features: ['1 dossier de test', 'Check-list documentaire', 'Accès blog et ressources', 'Paiement non requis'],
+    action: 'free',
   },
   {
     id: 'client-essential',
@@ -73,6 +92,7 @@ export const plans = [
     price: '19 € / mois',
     audience: 'Clients particuliers avec suivi régulier',
     features: ['3 dossiers actifs', 'Messagerie dossier', 'Upload documents', 'Notifications de statut'],
+    action: 'checkout',
   },
   {
     id: 'business',
@@ -80,6 +100,7 @@ export const plans = [
     price: '79 € / mois',
     audience: 'Dirigeants et PME',
     features: ['Dossiers illimités PME', 'Contrats et recouvrement', 'Tableau de bord priorités', 'Accès multi-utilisateurs'],
+    action: 'checkout',
   },
   {
     id: 'cabinet-solo',
@@ -87,6 +108,7 @@ export const plans = [
     price: '99 € / mois',
     audience: 'Avocats indépendants',
     features: ['Pipeline dossiers', 'Demandes clients entrantes', 'Validation avocat', 'Facturation Stripe préparée'],
+    action: 'checkout',
   },
   {
     id: 'cabinet-pro',
@@ -94,6 +116,7 @@ export const plans = [
     price: '249 € / mois',
     audience: 'Cabinets en croissance',
     features: ['Gestion clients', 'Tâches cabinet', 'Rôles équipe', 'Audit logs et reporting'],
+    action: 'checkout',
   },
   {
     id: 'cabinet-premium',
@@ -101,6 +124,7 @@ export const plans = [
     price: 'Sur devis',
     audience: 'Structures avec exigences avancées',
     features: ['Onboarding dédié', 'Paramétrage sécurité', 'Support prioritaire', 'Intégrations sur demande'],
+    action: 'contact',
   },
 ];
 

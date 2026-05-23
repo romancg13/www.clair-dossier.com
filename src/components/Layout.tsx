@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
-import { footerBadges, legalLinks, productLinks, publicNav, resourceLinks, site, warnings } from '../data/site';
+import { clientWorkspaceLinks, footerBadges, legalLinks, productLinks, publicNav, resourceLinks, site, warnings } from '../data/site';
+import { useAuth } from '../lib/auth';
 
 function linkClass({ isActive }: { isActive: boolean }) {
   return isActive ? 'nav-link active' : 'nav-link';
@@ -13,6 +14,7 @@ export function Layout() {
   const [showCookies, setShowCookies] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const location = useLocation();
+  const auth = useAuth();
 
   useEffect(() => { setMenuOpen(false); }, [location.pathname]);
 
@@ -53,6 +55,10 @@ export function Layout() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
+  const signOut = useCallback(async () => {
+    await auth.signOut();
+  }, [auth]);
+
   return (
     <div className="app-shell">
       <a className="skip-nav" href="#main-content">Aller au contenu principal</a>
@@ -73,8 +79,17 @@ export function Layout() {
         </nav>
 
         <div className="header-actions">
-          <Link className="ghost-button" to="/connexion">Connexion</Link>
-          <Link className="primary-button" to="/creer-dossier">Créer un dossier</Link>
+          {auth.user ? (
+            <>
+              <Link className="ghost-button" to="/dashboard">Mon espace</Link>
+              <button className="secondary-button" type="button" onClick={signOut}>Déconnexion</button>
+            </>
+          ) : (
+            <>
+              <Link className="ghost-button" to="/connexion">Connexion</Link>
+              <Link className="primary-button" to="/creer-dossier">Créer un dossier</Link>
+            </>
+          )}
         </div>
 
         <button
@@ -96,9 +111,23 @@ export function Layout() {
           {publicNav.map((item) => (
             <NavLink key={item.path} to={item.path} className={linkClass}>{item.label}</NavLink>
           ))}
+          {auth.user && (
+            <div className="drawer-section">
+              <p>Espace client</p>
+              {clientWorkspaceLinks.map((item) => (
+                <NavLink key={item.path} to={item.path} className={linkClass}>{item.label}</NavLink>
+              ))}
+            </div>
+          )}
           <div className="drawer-actions">
-            <Link className="ghost-button full" to="/connexion">Connexion</Link>
-            <Link className="primary-button full" to="/creer-dossier">Créer un dossier</Link>
+            {auth.user ? (
+              <button className="secondary-button full" type="button" onClick={signOut}>Déconnexion</button>
+            ) : (
+              <>
+                <Link className="ghost-button full" to="/connexion">Connexion</Link>
+                <Link className="primary-button full" to="/creer-dossier">Créer un dossier</Link>
+              </>
+            )}
           </div>
         </nav>
       </div>

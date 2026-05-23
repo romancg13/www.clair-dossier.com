@@ -1,12 +1,42 @@
-import { FormEvent, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { FormEvent, useEffect, useState } from 'react';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { NewsletterForm } from './components/NewsletterForm';
 import { PricingCards } from './components/PricingCards';
 import { Seo } from './components/Seo';
-import { blogPosts, categories, caseStatuses, featureCards, infoPages, legalPages, plans, site, warnings } from './data/site';
+import { blogPosts, cabinetWorkspaceLinks, categories, caseStatuses, clientWorkspaceLinks, featureCards, infoPages, legalPages, plans, site, warnings } from './data/site';
+import { useAuth } from './lib/auth';
+import { redirectToCustomerPortal } from './lib/stripe';
 import { insertPublicRecord, supabase } from './lib/supabase';
 
 type FormState = { type: 'idle' | 'loading' | 'success' | 'error'; message: string };
+
+type SubscriptionRecord = {
+  id: string;
+  plan_id: string;
+  status: string;
+  stripe_customer_id: string | null;
+  current_period_end: string | null;
+  cancel_at_period_end: boolean;
+  updated_at: string | null;
+};
+
+type PaymentRecord = {
+  id: string;
+  amount_total: number | null;
+  currency: string | null;
+  status: string;
+  stripe_checkout_session_id: string | null;
+  created_at: string;
+};
+
+type DocumentRecord = {
+  id: string;
+  file_name: string;
+  file_path: string;
+  confidentiality: string;
+  status: string;
+  created_at: string;
+};
 
 type FieldDef = {
   name: string;
@@ -353,7 +383,17 @@ export function BlogCategoryPage() {
 export function AuthPage({ mode }: { mode: 'connexion' | 'inscription' }) {
   const [state, setState] = useState<FormState>({ type: 'idle', message: '' });
   const [showPassword, setShowPassword] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const auth = useAuth();
   const isSignup = mode === 'inscription';
+  const from = (location.state as { from?: string } | null)?.from || '/dashboard';
+
+  useEffect(() => {
+    if (!auth.loading && auth.user && !isSignup) {
+      navigate(from, { replace: true });
+    }
+  }, [auth.loading, auth.user, from, isSignup, navigate]);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -375,7 +415,7 @@ export function AuthPage({ mode }: { mode: 'connexion' | 'inscription' }) {
     }
     setState({ type: 'loading', message: '' });
     const response = isSignup
-      ? await supabase.auth.signUp({ email, password })
+      ? await supabase.auth.signUp({ email, password, options: { data: { full_name: email.split('@')[0] } } })
       : await supabase.auth.signInWithPassword({ email, password });
     if (response.error) {
       console.error('Erreur auth Supabase', response.error);
@@ -383,6 +423,9 @@ export function AuthPage({ mode }: { mode: 'connexion' | 'inscription' }) {
       return;
     }
     setState({ type: 'success', message: isSignup ? 'Compte créé. Vérifiez votre email si la confirmation est activée.' : 'Connexion réussie.' });
+    if (response.data.session) {
+      navigate(from, { replace: true });
+    }
   }
 
   return (
@@ -423,10 +466,15 @@ export function AuthPage({ mode }: { mode: 'connexion' | 'inscription' }) {
 
 export function WorkspacePage({ title, audience }: { title: string; audience: 'client' | 'cabinet' }) {
   const isClient = audience === 'client';
+  const workspaceLinks = isClient ? clientWorkspaceLinks : cabinetWorkspaceLinks;
   return (
     <>
       <Seo title={title} description={`Espace ${audience} ClairDossier prêt à connecter à Supabase Auth et RLS.`} />
       <PageHero title={title} description={`Page privée ${audience}. Les données réelles doivent être protégées par Supabase Auth et RLS avant production.`} />
+
+      <section className="workspace-nav" aria-label={`Navigation espace ${audience}`}>
+        {workspaceLinks.map((link) => <Link key={link.path} to={link.path}>{link.label}</Link>)}
+      </section>
 
       <section className="stat-row" style={{ width: 'min(1180px, calc(100% - 2rem))', margin: '0 auto' }}>
         {isClient ? (
@@ -471,6 +519,273 @@ export function WorkspacePage({ title, audience }: { title: string; audience: 'c
             <li>Activer les notifications</li>
           </ul>
         </article>
+      </section>
+    </>
+  );
+}
+
+export function PaymentsPage() {
+  const auth = useAuth();
+  const [payments, setPayments] = useState<PaymentRecord[]>([]);
+  const [state, setState] = useState<FormState>({ type: 'loading', message: '' });
+
+  useEffect(() => {
+    let mounted = true;
+    async function loadPayments() {
+      if (!supabase || !auth.user) {
+        setState({ type: 'error', message: 'Connectez Supabase Auth pour consulter vos paiements.' });
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('payments')
+        .select('id, amount_total, currency, status, stripe_checkout_session_id, created_at')
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      if (!mounted) return;
+      if (error) {
+        console.error('Erreur chargement paiements', error);
+        setState({ type: 'error', message: "Impossible de charger les paiements pour le moment." });
+        return;
+      }
+      setPayments((data || []) as PaymentRecord[]);
+      setState({ type: 'idle', message: '' });
+    }
+    loadPayments();
+    return () => { mounted = false; };
+  }, [auth.user]);
+
+  return (
+    <>
+      <Seo title="Paiements" description="Historique des paiements ClairDossier synchronisés par Stripe." path="/paiements" />
+      <PageHero title="Paiements" description="Consultez les paiements enregistrés par le webhook Stripe. Les factures détaillées restent disponibles dans Stripe." />
+      <section className="workspace-nav" aria-label="Navigation espace client">
+        {clientWorkspaceLinks.map((link) => <Link key={link.path} to={link.path}>{link.label}</Link>)}
+      </section>
+      <section className="section-block">
+        {state.type === 'loading' && <p className="notice">Chargement des paiements...</p>}
+        {state.message && <p className={`form-message ${state.type === 'error' ? 'error' : 'success'}`}>{state.message}</p>}
+        {state.type !== 'loading' && payments.length === 0 && (
+          <article className="feature-card">
+            <h2>Aucun paiement enregistré</h2>
+            <p>Les paiements apparaîtront ici après un checkout Stripe réussi et la réception du webhook.</p>
+            <Link className="primary-button" to="/tarifs">Voir les formules</Link>
+          </article>
+        )}
+        {payments.length > 0 && (
+          <div className="data-list">
+            {payments.map((payment) => (
+              <article className="feature-card" key={payment.id}>
+                <h2>{formatAmount(payment.amount_total, payment.currency)}</h2>
+                <p>Statut : <strong>{payment.status}</strong></p>
+                <p>Date : {new Date(payment.created_at).toLocaleDateString('fr-FR')}</p>
+                {payment.stripe_checkout_session_id && <p>Session Stripe : {payment.stripe_checkout_session_id}</p>}
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+    </>
+  );
+}
+
+export function DocumentsPage() {
+  const auth = useAuth();
+  const [documents, setDocuments] = useState<DocumentRecord[]>([]);
+  const [state, setState] = useState<FormState>({ type: 'loading', message: '' });
+
+  async function loadDocuments() {
+    if (!supabase || !auth.user) {
+      setState({ type: 'error', message: 'Connectez Supabase Auth pour gérer vos documents.' });
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from('documents')
+      .select('id, file_name, file_path, confidentiality, status, created_at')
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (error) {
+      console.error('Erreur chargement documents', error);
+      setState({ type: 'error', message: 'Impossible de charger les documents pour le moment.' });
+      return;
+    }
+    setDocuments((data || []) as DocumentRecord[]);
+    setState({ type: 'idle', message: '' });
+  }
+
+  useEffect(() => {
+    loadDocuments();
+  }, [auth.user]);
+
+  async function uploadDocument(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const fileInput = form.elements.namedItem('document') as HTMLInputElement | null;
+    const file = fileInput?.files?.[0];
+    if (!file) {
+      setState({ type: 'error', message: 'Sélectionnez un document à déposer.' });
+      return;
+    }
+    if (!supabase || !auth.user) {
+      setState({ type: 'error', message: 'Upload indisponible : Supabase Auth doit être configuré.' });
+      return;
+    }
+
+    setState({ type: 'loading', message: '' });
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '-');
+    const path = `${auth.user.id}/${Date.now()}-${safeName}`;
+    const upload = await supabase.storage.from('case-documents').upload(path, file, {
+      cacheControl: '3600',
+      upsert: false,
+    });
+
+    if (upload.error) {
+      console.error('Erreur upload document', upload.error);
+      setState({ type: 'error', message: "Impossible d'envoyer le document. Vérifiez le bucket Supabase case-documents." });
+      return;
+    }
+
+    const insert = await supabase.from('documents').insert({
+      owner_id: auth.user.id,
+      file_path: path,
+      file_name: file.name,
+      confidentiality: 'private',
+      status: 'uploaded',
+    });
+
+    if (insert.error) {
+      console.error('Erreur insertion document', insert.error);
+      setState({ type: 'error', message: "Le fichier a été envoyé mais n'a pas pu être enregistré dans la liste des documents." });
+      return;
+    }
+
+    form.reset();
+    setState({ type: 'success', message: 'Document envoyé et enregistré.' });
+    await loadDocuments();
+  }
+
+  return (
+    <>
+      <Seo title="Documents" description="Upload et liste des documents confidentiels rattachables aux dossiers ClairDossier." path="/documents" />
+      <PageHero title="Documents" description="Déposez des pièces confidentielles dans un bucket Supabase privé. Le rattachement fin à un dossier peut être ajouté dès que les dossiers utilisateurs sont connectés." />
+      <section className="workspace-nav" aria-label="Navigation espace client">
+        {clientWorkspaceLinks.map((link) => <Link key={link.path} to={link.path}>{link.label}</Link>)}
+      </section>
+      <section className="form-shell">
+        <form className="stacked-form" onSubmit={uploadDocument}>
+          <label>
+            <span>Document confidentiel *</span>
+            <input name="document" type="file" required />
+          </label>
+          <button className="primary-button" type="submit" disabled={state.type === 'loading'}>
+            {state.type === 'loading' ? 'Envoi...' : 'Envoyer le document'}
+          </button>
+          {state.message && <p className={`form-message ${state.type === 'success' ? 'success' : 'error'}`}>{state.message}</p>}
+        </form>
+        <aside className="feature-card">
+          <h2>Confidentialité</h2>
+          <p>Les fichiers sont stockés dans un bucket privé et listés via les règles RLS liées au propriétaire du document.</p>
+          <p className="notice mini">Le rattachement obligatoire à un dossier précis doit être activé lorsque les dossiers authentifiés seront généralisés.</p>
+        </aside>
+      </section>
+      <section className="section-block">
+        <h2>Documents déposés</h2>
+        {documents.length === 0 ? (
+          <p className="notice">Aucun document enregistré pour ce compte.</p>
+        ) : (
+          <div className="data-list">
+            {documents.map((document) => (
+              <article className="feature-card" key={document.id}>
+                <h3>{document.file_name}</h3>
+                <p>Statut : <strong>{document.status}</strong></p>
+                <p>Confidentialité : {document.confidentiality}</p>
+                <p>Déposé le {new Date(document.created_at).toLocaleDateString('fr-FR')}</p>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+    </>
+  );
+}
+
+export function SubscriptionPage() {
+  const auth = useAuth();
+  const [subscription, setSubscription] = useState<SubscriptionRecord | null>(null);
+  const [state, setState] = useState<FormState>({ type: 'loading', message: '' });
+
+  useEffect(() => {
+    let mounted = true;
+    async function loadSubscription() {
+      if (!supabase || !auth.user) {
+        setState({ type: 'error', message: 'Connectez Supabase Auth pour consulter votre abonnement.' });
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .select('id, plan_id, status, stripe_customer_id, current_period_end, cancel_at_period_end, updated_at')
+        .order('updated_at', { ascending: false })
+        .limit(1);
+
+      if (!mounted) return;
+      if (error) {
+        console.error('Erreur chargement abonnement', error);
+        setState({ type: 'error', message: "Impossible de charger l'abonnement pour le moment." });
+        return;
+      }
+      setSubscription(((data || []) as SubscriptionRecord[])[0] || null);
+      setState({ type: 'idle', message: '' });
+    }
+    loadSubscription();
+    return () => { mounted = false; };
+  }, [auth.user]);
+
+  async function openPortal() {
+    if (!subscription?.stripe_customer_id) {
+      setState({ type: 'error', message: 'Portail Stripe indisponible : aucun client Stripe synchronisé pour ce compte.' });
+      return;
+    }
+    setState({ type: 'loading', message: '' });
+    try {
+      await redirectToCustomerPortal(subscription.stripe_customer_id);
+    } catch (error) {
+      console.error('Erreur portail Stripe', error);
+      setState({ type: 'error', message: error instanceof Error ? error.message : 'Portail Stripe bientôt disponible.' });
+    }
+  }
+
+  return (
+    <>
+      <Seo title="Abonnement" description="Gestion de l'abonnement ClairDossier et accès au portail client Stripe." path="/abonnement" />
+      <PageHero title="Abonnement" description="Votre abonnement est synchronisé par Stripe via webhook. Le portail client permet de gérer les factures et moyens de paiement lorsqu'il est configuré." />
+      <section className="workspace-nav" aria-label="Navigation espace client">
+        {clientWorkspaceLinks.map((link) => <Link key={link.path} to={link.path}>{link.label}</Link>)}
+      </section>
+      <section className="section-block">
+        {state.type === 'loading' && <p className="notice">Chargement...</p>}
+        {state.message && <p className={`form-message ${state.type === 'error' ? 'error' : 'success'}`}>{state.message}</p>}
+        {!subscription && state.type !== 'loading' && (
+          <article className="feature-card">
+            <h2>Aucun abonnement actif synchronisé</h2>
+            <p>Choisissez une formule pour créer une session Stripe. L'abonnement sera enregistré après confirmation du webhook.</p>
+            <Link className="primary-button" to="/tarifs">Choisir une formule</Link>
+          </article>
+        )}
+        {subscription && (
+          <article className="feature-card">
+            <h2>Formule {subscription.plan_id}</h2>
+            <p>Statut : <strong>{subscription.status}</strong></p>
+            <p>Renouvellement : {subscription.current_period_end ? new Date(subscription.current_period_end).toLocaleDateString('fr-FR') : 'à synchroniser'}</p>
+            <p>Annulation en fin de période : {subscription.cancel_at_period_end ? 'oui' : 'non'}</p>
+            <button className="primary-button" type="button" onClick={openPortal} disabled={state.type === 'loading'}>
+              Ouvrir le portail Stripe
+            </button>
+          </article>
+        )}
       </section>
     </>
   );
@@ -554,6 +869,14 @@ function SelectField({ name, label, options, required }: { name: string; label: 
       </select>
     </label>
   );
+}
+
+function formatAmount(amount: number | null, currency: string | null) {
+  if (amount === null) return 'Montant à synchroniser';
+  return new Intl.NumberFormat('fr-FR', {
+    style: 'currency',
+    currency: (currency || 'eur').toUpperCase(),
+  }).format(amount / 100);
 }
 
 function PageHero({ title, description }: { title: string; description: string }) {
