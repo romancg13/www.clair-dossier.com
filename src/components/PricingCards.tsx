@@ -19,8 +19,8 @@ function getDisplayedPrice(monthlyPrice: number | null, billingPeriod: BillingPe
   if (monthlyPrice === null) return { main: 'Sur devis', detail: 'Abonnement personnalisé' };
   if (monthlyPrice === 0) return { main: billingPeriod === 'monthly' ? '0 € / mois' : '0 € / an', detail: null };
   if (billingPeriod === 'monthly') return { main: `${formatEuro(monthlyPrice)} / mois`, detail: null };
-  const yearlyPrice = monthlyPrice * 12 * (1 - yearlyDiscountPercent / 100);
-  const monthlyEquivalent = monthlyPrice * (1 - yearlyDiscountPercent / 100);
+  const yearlyPrice = monthlyPrice * 12 * (1 - annualDiscountPercent / 100);
+  const monthlyEquivalent = monthlyPrice * (1 - annualDiscountPercent / 100);
   return {
     main: `${formatEuro(yearlyPrice)} / an`,
     detail: `${formatEuro(monthlyEquivalent)} / mois équivalent`,
@@ -39,8 +39,12 @@ export function PricingCards() {
       navigate('/creer-dossier');
       return;
     }
-    if (!isPlanCheckoutAvailable(planId, billingPeriod)) {
+    if (planId === 'cabinet-premium') {
       navigate('/contact');
+      return;
+    }
+    if (!isPlanCheckoutAvailable(planId, billingPeriod)) {
+      setMessage('Paiement bientôt disponible : configurez le backend Stripe et les identifiants de prix avant de lancer ce checkout.');
       return;
     }
     setLoadingPlan(planId);
@@ -95,7 +99,15 @@ export function PricingCards() {
               </ul>
               {isQuotePlan && <p className="payment-note">Cette formule avancée nécessite un devis personnalisé.</p>}
               <button className="primary-button full" type="button" onClick={() => choosePlan(plan.id)} disabled={loadingPlan === plan.id}>
-                {loadingPlan === plan.id ? 'Préparation…' : plan.id === 'discovery' ? 'Commencer gratuitement' : isQuotePlan ? 'Demander un devis' : 'Choisir cette formule'}
+                {loadingPlan === plan.id
+                  ? 'Préparation…'
+                  : plan.id === 'discovery'
+                    ? 'Commencer gratuitement'
+                    : isQuotePlan
+                      ? 'Demander un devis'
+                      : checkoutAvailable
+                        ? 'Choisir cette formule'
+                        : 'Paiement bientôt disponible'}
               </button>
             </article>
           );

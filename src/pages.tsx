@@ -195,6 +195,7 @@ export function DemoPage() {
 }
 
 export function CreateCasePage() {
+  const navigate = useNavigate();
   const [state, setState] = useState<FormState>({ type: 'idle', message: '' });
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
@@ -209,7 +210,7 @@ export function CreateCasePage() {
       return;
     }
     if (!supabase) {
-      setState({ type: 'error', message: 'Créez votre compte pour commencer votre dossier.' });
+      setState({ type: 'error', message: 'Supabase doit être configuré avant la création de dossier. Vous pouvez préparer les informations puis réessayer.' });
       return;
     }
 
@@ -217,6 +218,7 @@ export function CreateCasePage() {
     if (userError || !userData.user) {
       console.error('Session Supabase absente pour création dossier', userError);
       setState({ type: 'error', message: 'Créez votre compte pour commencer votre dossier.' });
+      navigate('/inscription?redirect=/creer-dossier');
       return;
     }
 
@@ -268,6 +270,7 @@ export function CreateCasePage() {
       <PageHero title="Créer un dossier" description="Décrivez votre situation. Le dossier sera ensuite à compléter et à faire valider par un professionnel habilité." />
       <section className="form-shell">
         <form className="stacked-form" onSubmit={onSubmit} noValidate>
+          <p className="notice mini">La page est accessible publiquement, mais l'enregistrement du dossier nécessite un compte afin d'appliquer les règles d'accès Supabase.</p>
           <SelectField name="client_type" label="Type de client" options={['Particulier', 'PME', 'Association', 'Cabinet']} required />
           <SelectField name="legal_domain" label="Domaine juridique" options={['Droit du travail', 'Recouvrement', 'Bail et immobilier', 'Contrats', 'Droit des sociétés', 'RGPD', 'Autre']} required />
           <label><span>Description du problème *</span><textarea name="problem_description" required rows={6} placeholder="Décrivez les faits, le contexte et les documents disponibles..." /></label>

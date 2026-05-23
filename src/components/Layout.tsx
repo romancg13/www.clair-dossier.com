@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { footerBadges, legalLinks, productLinks, publicNav, resourceLinks, site, warnings } from '../data/site';
+import { supabase } from '../lib/supabase';
 
 function linkClass({ isActive }: { isActive: boolean }) {
   return isActive ? 'nav-link active' : 'nav-link';
@@ -8,13 +9,93 @@ function linkClass({ isActive }: { isActive: boolean }) {
 
 const COOKIE_KEY = 'cd_cookie_consent';
 
+type Audience = 'visitor' | 'client' | 'cabinet' | 'admin';
+type NavItem = { label: string; path: string };
+
+const clientNav: NavItem[] = [
+  { label: 'Espace client', path: '/dashboard' },
+  { label: 'Mes dossiers', path: '/mes-dossiers' },
+  { label: 'Documents', path: '/documents' },
+];
+
+const cabinetNav: NavItem[] = [
+  { label: 'Cabinet', path: '/cabinet/dashboard' },
+  { label: 'Dossiers reçus', path: '/cabinet/dossiers' },
+  { label: 'Clients', path: '/cabinet/clients' },
+];
+
+function getWorkspaceNav(audience: Audience): NavItem[] {
+  if (audience === 'admin' || audience === 'cabinet') return cabinetNav;
+  if (audience === 'client') return clientNav;
+  return publicNav;
+}
+
+function getWorkspaceHome(audience: Audience) {
+  return audience === 'cabinet' || audience === 'admin' ? '/cabinet/dashboard' : '/dashboard';
+}
+
 export function Layout() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [showCookies, setShowCookies] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [audience, setAudience] = useState<Audience>('visitor');
   const location = useLocation();
+  const isAuthenticated = audience !== 'visitor';
+  const navItems = isAuthenticated ? [...publicNav, ...getWorkspaceNav(audience)] : publicNav;
+  const workspaceHome = getWorkspaceHome(audience);
 
   useEffect(() => { setMenuOpen(false); }, [location.pathname]);
+
+  useEffect(() => {
+    if (!supabase) {
+      setAudience('visitor');
+      return;
+    }
+
+    let isMounted = true;
+
+    async function syncAudience(sessionUserId?: string) {
+      if (!supabase) return;
+      let userId = sessionUserId;
+      if (!userId) {
+        const { data } = await supabase.auth.getSession();
+        userId = data.session?.user.id;
+      }
+      if (!isMounted) return;
+      if (!userId) {
+        setAudience('visitor');
+        return;
+      }
+
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('role, account_type')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Impossible de charger le profil de navigation', error);
+        setAudience('client');
+        return;
+      }
+
+      const role = profile?.role;
+      const accountType = profile?.account_type;
+      if (role === 'admin') setAudience('admin');
+      else if (role === 'lawyer' || role === 'cabinet_admin' || accountType === 'cabinet') setAudience('cabinet');
+      else setAudience('client');
+    }
+
+    void syncAudience();
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      void syncAudience(session?.user.id);
+    });
+
+    return () => {
+      isMounted = false;
+      listener.subscription.unsubscribe();
+    };
+  }, []);
 
   useEffect(() => {
     if (menuOpen) {
@@ -53,6 +134,16 @@ export function Layout() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
+  const signOut = useCallback(async () => {
+    if (!supabase) return;
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error('Erreur de déconnexion Supabase', error);
+      return;
+    }
+    setAudience('visitor');
+  }, []);
+
   return (
     <div className="app-shell">
       <a className="skip-nav" href="#main-content">Aller au contenu principal</a>
@@ -67,14 +158,23 @@ export function Layout() {
         </Link>
 
         <nav className="main-nav" aria-label="Navigation principale">
-          {publicNav.map((item) => (
+          {navItems.map((item) => (
             <NavLink key={item.path} to={item.path} className={linkClass}>{item.label}</NavLink>
           ))}
         </nav>
 
         <div className="header-actions">
-          <Link className="ghost-button" to="/connexion">Connexion</Link>
-          <Link className="primary-button" to="/creer-dossier">Créer un dossier</Link>
+          {isAuthenticated ? (
+            <>
+              <Link className="ghost-button" to={workspaceHome}>Mon espace</Link>
+              <button className="primary-button" type="button" onClick={signOut}>Déconnexion</button>
+            </>
+          ) : (
+            <>
+              <Link className="ghost-button" to="/connexion">Connexion</Link>
+              <Link className="primary-button" to="/creer-dossier">Créer un dossier</Link>
+            </>
+          )}
         </div>
 
         <button
@@ -93,12 +193,21 @@ export function Layout() {
       <div className={`mobile-drawer${menuOpen ? ' open' : ''}`} aria-hidden={!menuOpen}>
         <div className="drawer-backdrop" onClick={() => setMenuOpen(false)} />
         <nav className="drawer-panel" aria-label="Navigation mobile">
-          {publicNav.map((item) => (
+          {navItems.map((item) => (
             <NavLink key={item.path} to={item.path} className={linkClass}>{item.label}</NavLink>
           ))}
           <div className="drawer-actions">
-            <Link className="ghost-button full" to="/connexion">Connexion</Link>
-            <Link className="primary-button full" to="/creer-dossier">Créer un dossier</Link>
+            {isAuthenticated ? (
+              <>
+                <Link className="ghost-button full" to={workspaceHome}>Mon espace</Link>
+                <button className="primary-button full" type="button" onClick={signOut}>Déconnexion</button>
+              </>
+            ) : (
+              <>
+                <Link className="ghost-button full" to="/connexion">Connexion</Link>
+                <Link className="primary-button full" to="/creer-dossier">Créer un dossier</Link>
+              </>
+            )}
           </div>
         </nav>
       </div>

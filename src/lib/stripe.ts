@@ -4,7 +4,7 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const functionsUrl = import.meta.env.VITE_SUPABASE_FUNCTIONS_URL || (supabaseUrl ? `${supabaseUrl}/functions/v1` : undefined);
 const paymentsApiUrl = import.meta.env.VITE_PAYMENTS_API_URL?.replace(/\/$/, '') || '';
-const nodeCheckoutEndpoint = `${paymentsApiUrl}/api/create-checkout-session`;
+const nodeCheckoutEndpoint = paymentsApiUrl ? `${paymentsApiUrl}/api/create-checkout-session` : '';
 
 export type BillingPeriod = 'monthly' | 'yearly';
 
@@ -50,7 +50,9 @@ export function getStripePriceId(planId: string, billingPeriod: BillingPeriod) {
 
 export function isPlanCheckoutAvailable(planId: string, billingPeriod: BillingPeriod) {
   if (planId === 'discovery') return true;
-  return Boolean(nodeCheckoutPlanIds.has(planId) || (isSupabaseCheckoutConfigured && getStripePriceId(planId, billingPeriod)));
+  const hasNodeBackend = Boolean(nodeCheckoutEndpoint && nodeCheckoutPlanIds.has(planId));
+  const hasSupabaseBackend = Boolean(isSupabaseCheckoutConfigured && getStripePriceId(planId, billingPeriod));
+  return hasNodeBackend || hasSupabaseBackend;
 }
 
 export async function redirectToCheckout(planId: string, billingPeriod: BillingPeriod): Promise<void> {
@@ -63,7 +65,7 @@ export async function redirectToCheckout(planId: string, billingPeriod: BillingP
     throw new CheckoutAuthRequiredError();
   }
 
-  const checkoutEndpoint = nodeCheckoutPlanIds.has(planId)
+  const checkoutEndpoint = nodeCheckoutEndpoint && nodeCheckoutPlanIds.has(planId)
     ? nodeCheckoutEndpoint
     : `${functionsUrl}/create-checkout-session`;
 
