@@ -1,7 +1,7 @@
 export const site = {
   name: 'ClairDossier',
   slogan: 'Votre dossier juridique, clair, structuré et suivi.',
-  url: 'https://clair-dossier.com',
+  url: 'https://www.clair-dossier.com',
   email: 'contact@clair-dossier.com',
 };
 

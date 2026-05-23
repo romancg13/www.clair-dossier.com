@@ -49,8 +49,10 @@ export function ProtectedRoute({ children, allowedRoles, unauthenticatedTo = '/c
         .maybeSingle();
       if (!isMounted) return;
       if (profileError) console.error('Erreur lecture rôle utilisateur', profileError);
-      const role = profile?.role as UserRole | undefined;
-      setGuardState(role && allowedRoles.includes(role) ? { status: 'authorized' } : { status: 'forbidden' });
+      const role = normalizeRole(profile?.role);
+      const fallbackRole = normalizeRole(data.user.user_metadata?.account_type);
+      const authorized = (role && allowedRoles.includes(role)) || (fallbackRole && allowedRoles.includes(fallbackRole));
+      setGuardState(authorized ? { status: 'authorized' } : { status: 'forbidden' });
     }
 
     void checkAccess();
@@ -79,4 +81,23 @@ export function ProtectedRoute({ children, allowedRoles, unauthenticatedTo = '/c
   }
 
   return <>{children}</>;
+}
+
+function normalizeRole(role: unknown): UserRole | undefined {
+  if (role === 'client') return 'client_particulier';
+  if (role === 'entreprise' || role === 'cabinet') return 'client_entreprise';
+  if (role === 'lawyer') return 'avocat';
+  if (role === 'cabinet_admin') return 'admin_cabinet';
+  if (role === 'admin') return 'super_admin';
+  if (
+    role === 'client_particulier'
+    || role === 'client_entreprise'
+    || role === 'avocat'
+    || role === 'collaborateur'
+    || role === 'admin_cabinet'
+    || role === 'super_admin'
+  ) {
+    return role;
+  }
+  return undefined;
 }

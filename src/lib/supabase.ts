@@ -2,13 +2,14 @@ import { createClient } from '@supabase/supabase-js';
 import { isPublicFormTable } from './security';
 import type { PublicFormTable } from './security';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl = String(import.meta.env.VITE_SUPABASE_URL || '').trim();
+const supabaseAnonKey = String(import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim();
 
-export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
+export const supabaseConfigurationError = getSupabaseConfigurationError(supabaseUrl, supabaseAnonKey);
+export const isSupabaseConfigured = !supabaseConfigurationError;
 
 export const supabase = isSupabaseConfigured
-  ? createClient(supabaseUrl as string, supabaseAnonKey as string)
+  ? createClient(supabaseUrl, supabaseAnonKey)
   : null;
 
 export type PublicInsertResult = {
@@ -41,4 +42,25 @@ export async function insertPublicRecord(table: PublicFormTable, payload: Record
   }
 
   return { ok: true, message: 'Votre demande a bien été enregistrée.' };
+}
+
+function getSupabaseConfigurationError(url: string, anonKey: string) {
+  if (!url || !anonKey) {
+    return 'La connexion Supabase n’est pas configurée en production. Vérifiez VITE_SUPABASE_URL et VITE_SUPABASE_ANON_KEY.';
+  }
+
+  try {
+    const parsedUrl = new URL(url);
+    if (parsedUrl.protocol !== 'https:' || !parsedUrl.hostname.endsWith('.supabase.co')) {
+      return 'La variable VITE_SUPABASE_URL doit pointer vers un projet Supabase HTTPS valide.';
+    }
+  } catch {
+    return 'La variable VITE_SUPABASE_URL est invalide.';
+  }
+
+  if (!anonKey.startsWith('eyJ')) {
+    return 'La variable VITE_SUPABASE_ANON_KEY ne ressemble pas à une clé anon Supabase valide.';
+  }
+
+  return '';
 }

@@ -1,6 +1,11 @@
 name: Deploy Supabase Stripe Functions
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/**'
+      - '.github/workflows/deploy-supabase.yml'
   workflow_dispatch:
 
 jobs:

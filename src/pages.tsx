@@ -4,7 +4,7 @@ import { NewsletterForm } from './components/NewsletterForm';
 import { PricingCards } from './components/PricingCards';
 import { Seo } from './components/Seo';
 import { blogPosts, categories, caseStatuses, featureCards, infoPages, legalPages, plans, site, warnings } from './data/site';
-import { insertPublicRecord, supabase } from './lib/supabase';
+import { insertPublicRecord, supabase, supabaseConfigurationError } from './lib/supabase';
 import { getSafeRedirect, isHoneypotFilled, isValidEmail, sanitizeText, validatePassword } from './lib/security';
 import type { PublicFormTable } from './lib/security';
 
@@ -431,7 +431,8 @@ export function AuthPage({ mode }: { mode: 'connexion' | 'inscription' }) {
       return;
     }
     if (!supabase) {
-      setState({ type: 'error', message: 'Impossible de créer le compte pour le moment. Veuillez réessayer.' });
+      console.error('Configuration Supabase absente', supabaseConfigurationError);
+      setState({ type: 'error', message: getAuthPersistenceMessage({ message: supabaseConfigurationError }, isSignup) });
       return;
     }
     setState({ type: 'loading', message: '' });
@@ -440,6 +441,7 @@ export function AuthPage({ mode }: { mode: 'connexion' | 'inscription' }) {
         email,
         password,
         options: {
+          emailRedirectTo: `${window.location.origin}/connexion`,
           data: {
             full_name: fullName,
             account_type: accountType,
@@ -449,7 +451,11 @@ export function AuthPage({ mode }: { mode: 'connexion' | 'inscription' }) {
       : await supabase.auth.signInWithPassword({ email, password });
     if (response.error) {
       console.error('Erreur auth Supabase', response.error);
-      setState({ type: 'error', message: isSignup ? 'Impossible de créer le compte pour le moment. Veuillez réessayer.' : 'Impossible de vous connecter. Vérifiez vos informations.' });
+      setState({ type: 'error', message: getAuthPersistenceMessage(response.error, isSignup) });
+      return;
+    }
+    if (isSignup && response.data.user?.identities?.length === 0) {
+      setState({ type: 'error', message: 'Un compte existe déjà avec cet email. Connectez-vous ou réinitialisez votre mot de passe.' });
       return;
     }
     if (response.data.session) {
@@ -487,10 +493,10 @@ export function AuthPage({ mode }: { mode: 'connexion' | 'inscription' }) {
             </div>
           </label>
           {isSignup && <label><span>Confirmation du mot de passe</span><input name="password_confirm" type="password" autoComplete="new-password" minLength={12} required placeholder="Répétez le mot de passe" /></label>}
-          {isSignup && <SelectField name="account_type" label="Type de compte" options={['client_particulier', 'client_entreprise', 'cabinet']} required />}
+          {isSignup && <AccountTypeField />}
           {isSignup && <label className="checkbox-line"><input name="terms_accepted" type="checkbox" required /><span>J'accepte les <Link to="/conditions-utilisation">conditions d'utilisation</Link> et la <Link to="/politique-confidentialite">politique de confidentialité</Link>.</span></label>}
           <button className="primary-button" type="submit" disabled={state.type === 'loading'}>
-            {state.type === 'loading' ? 'Chargement…' : isSignup ? 'Créer mon compte' : 'Me connecter'}
+            {state.type === 'loading' ? (isSignup ? 'Création du compte…' : 'Connexion…') : isSignup ? 'Créer un compte' : 'Me connecter'}
           </button>
           {state.message && <p className={`form-message ${state.type === 'success' ? 'success' : 'error'}`}>{state.message}</p>}
           <Link className="text-link" to={`${isSignup ? '/connexion' : '/inscription'}${redirectQuery}`}>{isSignup ? "J'ai déjà un compte" : 'Créer un compte'}</Link>
@@ -642,6 +648,18 @@ function RenderField({ field }: { field: FieldDef }) {
   return <label><span>{field.label}{field.required ? ' *' : ''}</span><input name={field.name} type={field.type || 'text'} required={field.required} maxLength={field.type === 'email' ? 254 : 160} placeholder={field.placeholder} /></label>;
 }
 
+function AccountTypeField() {
+  return (
+    <label>
+      <span>Type de compte *</span>
+      <select name="account_type" required defaultValue="client_particulier">
+        <option value="client_particulier">Client particulier</option>
+        <option value="client_entreprise">Client entreprise / PME</option>
+      </select>
+    </label>
+  );
+}
+
 function SelectField({ name, label, options, required }: { name: string; label: string; options: string[]; required?: boolean }) {
   return (
     <label>
@@ -654,8 +672,41 @@ function SelectField({ name, label, options, required }: { name: string; label: 
   );
 }
 
+function getAuthPersistenceMessage(error: { code?: string; message?: string; status?: number }, isSignup: boolean) {
+  const message = `${error.code || ''} ${error.message || ''}`.toLowerCase();
+
+  if (message.includes('supabase') || message.includes('vite_supabase')) {
+    return 'Le service d’inscription n’est pas configuré en production. Les variables Supabase doivent être renseignées avant de créer un compte.';
+  }
+  if (isSignup && (message.includes('already') || message.includes('registered') || message.includes('exists') || message.includes('duplicate') || error.status === 409)) {
+    return 'Un compte existe déjà avec cet email. Connectez-vous ou réinitialisez votre mot de passe.';
+  }
+  if (message.includes('password') || message.includes('weak') || error.status === 422) {
+    return 'Le mot de passe ne respecte pas les règles de sécurité : utilisez au moins 12 caractères avec une minuscule, une majuscule et un chiffre.';
+  }
+  if (message.includes('email')) {
+    return 'Adresse email invalide ou non acceptée par le service d’authentification.';
+  }
+  if (message.includes('network') || message.includes('fetch') || error.status === 0) {
+    return 'Connexion au service d’authentification impossible. Vérifiez votre réseau puis réessayez.';
+  }
+
+  return isSignup
+    ? 'Impossible de créer le compte pour le moment. Veuillez réessayer.'
+    : 'Impossible de vous connecter. Vérifiez vos informations.';
+}
+
 function getCasePersistenceMessage(error: { code?: string; message?: string }) {
-  void error;
+  const message = `${error.code || ''} ${error.message || ''}`.toLowerCase();
+  if (message.includes('row-level security') || error.code === '42501') {
+    return 'Votre session ne permet pas de créer ce dossier. Reconnectez-vous puis réessayez.';
+  }
+  if (message.includes('check constraint') || error.code === '23514') {
+    return 'Le dossier contient une valeur non acceptée. Vérifiez les champs puis réessayez.';
+  }
+  if (message.includes('foreign key') || error.code === '23503') {
+    return 'Le dossier n’a pas pu être rattaché à votre compte. Reconnectez-vous puis réessayez.';
+  }
   return 'Impossible de créer le dossier pour le moment. Veuillez réessayer.';
 }
 

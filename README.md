@@ -65,6 +65,7 @@ Variables GitHub Actions pour déployer Supabase :
 - `SUPABASE_DB_PASSWORD`
 
 Ne jamais exposer les clés secrètes Stripe, service role Supabase ou IA dans le frontend.
+Les deux valeurs Supabase publiques (`VITE_SUPABASE_URL` et `VITE_SUPABASE_ANON_KEY`) doivent être configurées pour le build GitHub Pages. Le workflow de déploiement accepte aussi `SUPABASE_URL` et `SUPABASE_ANON_KEY` comme fallback, mais échoue volontairement si aucune paire publique Supabase n’est disponible afin d’éviter un site déployé avec une inscription inactive.
 
 ## Supabase
 
