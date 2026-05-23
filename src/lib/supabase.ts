@@ -2,19 +2,35 @@ import { createClient } from '@supabase/supabase-js';
 import { isPublicFormTable } from './security';
 import type { PublicFormTable } from './security';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl = normalizePublicEnv(import.meta.env.VITE_SUPABASE_URL);
+const supabaseAnonKey = normalizePublicEnv(import.meta.env.VITE_SUPABASE_ANON_KEY);
 
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
+export const supabaseConfigurationMessage = isSupabaseConfigured
+  ? ''
+  : "Service d'authentification indisponible : la configuration Supabase de production est manquante.";
 
 export const supabase = isSupabaseConfigured
-  ? createClient(supabaseUrl as string, supabaseAnonKey as string)
+  ? createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: true,
+    },
+  })
   : null;
 
 export type PublicInsertResult = {
   ok: boolean;
   message: string;
 };
+
+function normalizePublicEnv(value: unknown) {
+  if (typeof value !== 'string') return '';
+  const trimmed = value.trim();
+  if (!trimmed || trimmed === 'undefined' || trimmed === 'null') return '';
+  return trimmed;
+}
 
 export async function insertPublicRecord(table: PublicFormTable, payload: Record<string, unknown>): Promise<PublicInsertResult> {
   if (!isPublicFormTable(table)) {

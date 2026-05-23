@@ -6,11 +6,20 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
 
@@ -20,6 +29,14 @@ jobs:
           cache: npm
 
       - run: npm ci
+
+      - name: Check required frontend configuration
+        run: |
+          test -n "$VITE_SUPABASE_URL"
+          test -n "$VITE_SUPABASE_ANON_KEY"
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
 
       - name: Build
         run: npm run build
@@ -39,9 +56,11 @@ jobs:
           VITE_STRIPE_CABINET_PREMIUM_MONTHLY_PRICE_ID: ${{ secrets.VITE_STRIPE_CABINET_PREMIUM_MONTHLY_PRICE_ID }}
           VITE_STRIPE_CABINET_PREMIUM_YEARLY_PRICE_ID: ${{ secrets.VITE_STRIPE_CABINET_PREMIUM_YEARLY_PRICE_ID }}
 
-      - name: Deploy to gh-pages branch
-        uses: peaceiris/actions-gh-pages@v4
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v4
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist
-          cname: www.clair-dossier.com
+          path: ./dist
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -4,10 +4,11 @@ import { NewsletterForm } from './components/NewsletterForm';
 import { PricingCards } from './components/PricingCards';
 import { Seo } from './components/Seo';
 import { blogPosts, categories, caseStatuses, featureCards, infoPages, legalPages, plans, site, warnings } from './data/site';
-import { insertPublicRecord, supabase } from './lib/supabase';
+import { insertPublicRecord, supabase, supabaseConfigurationMessage } from './lib/supabase';
 import { getSafeRedirect, isHoneypotFilled, isValidEmail, sanitizeText, validatePassword } from './lib/security';
 import { redirectToCustomerPortal } from './lib/stripe';
 import type { PublicFormTable } from './lib/security';
+import type { AuthError } from '@supabase/supabase-js';
 
 type FormState = { type: 'idle' | 'loading' | 'success' | 'error'; message: string };
 
@@ -476,7 +477,7 @@ export function AuthPage({ mode }: { mode: 'connexion' | 'inscription' }) {
       return;
     }
     if (!supabase) {
-      setState({ type: 'error', message: 'Impossible de créer le compte pour le moment. Veuillez réessayer.' });
+      setState({ type: 'error', message: supabaseConfigurationMessage });
       return;
     }
     setState({ type: 'loading', message: '' });
@@ -495,7 +496,11 @@ export function AuthPage({ mode }: { mode: 'connexion' | 'inscription' }) {
       : await supabase.auth.signInWithPassword({ email, password });
     if (response.error) {
       console.error('Erreur auth Supabase', response.error);
-      setState({ type: 'error', message: isSignup ? 'Impossible de créer le compte pour le moment. Veuillez réessayer.' : 'Impossible de vous connecter. Vérifiez vos informations.' });
+      setState({ type: 'error', message: getAuthErrorMessage(response.error, isSignup) });
+      return;
+    }
+    if (isSignup && response.data.user?.identities && response.data.user.identities.length === 0) {
+      setState({ type: 'error', message: "Un compte existe déjà avec cet email. Connectez-vous ou utilisez la réinitialisation du mot de passe." });
       return;
     }
     if (response.data.session) {
@@ -537,7 +542,7 @@ export function AuthPage({ mode }: { mode: 'connexion' | 'inscription' }) {
           {isSignup && <p className="notice mini">Les accès avocat et cabinet sont attribués après vérification par l'administration.</p>}
           {isSignup && <label className="checkbox-line"><input name="terms_accepted" type="checkbox" required /><span>J'accepte les <Link to="/conditions-utilisation">conditions d'utilisation</Link> et la <Link to="/politique-confidentialite">politique de confidentialité</Link>.</span></label>}
           <button className="primary-button" type="submit" disabled={state.type === 'loading'}>
-            {state.type === 'loading' ? 'Chargement…' : isSignup ? 'Créer mon compte' : 'Me connecter'}
+            {state.type === 'loading' ? (isSignup ? 'Création du compte…' : 'Connexion…') : isSignup ? 'Créer un compte' : 'Me connecter'}
           </button>
           {state.message && <p className={`form-message ${state.type === 'success' ? 'success' : 'error'}`}>{state.message}</p>}
           <Link className="text-link" to={`${isSignup ? '/connexion' : '/inscription'}${redirectQuery}`}>{isSignup ? "J'ai déjà un compte" : 'Créer un compte'}</Link>
@@ -780,8 +785,64 @@ function SelectField({ name, label, options, required }: { name: string; label: 
   );
 }
 
+function getAuthErrorMessage(error: AuthError, isSignup: boolean) {
+  const code = String(error.code || '').toLowerCase();
+  const message = String(error.message || '').toLowerCase();
+
+  if (isWeakPasswordError(code, message)) {
+    return 'Le mot de passe ne respecte pas les règles de sécurité : utilisez au moins 12 caractères, une minuscule, une majuscule et un chiffre.';
+  }
+  if (isSignup && isDuplicateEmailError(code, message)) {
+    return "Un compte existe déjà avec cet email. Connectez-vous ou utilisez la réinitialisation du mot de passe.";
+  }
+  if (isSignup && (code.includes('signup_disabled') || message.includes('signups not allowed'))) {
+    return "La création de compte est désactivée côté service d'authentification. Contactez le support.";
+  }
+  if (code.includes('email') && (message.includes('invalid') || message.includes('not valid'))) {
+    return 'Adresse email invalide.';
+  }
+  if (code.includes('over_email_send_rate_limit') || message.includes('rate limit')) {
+    return 'Trop de tentatives ont été effectuées. Patientez quelques minutes avant de réessayer.';
+  }
+  if (!isSignup && (code.includes('invalid_credentials') || message.includes('invalid login credentials'))) {
+    return 'Impossible de vous connecter. Vérifiez votre email et votre mot de passe.';
+  }
+  if (message.includes('database') || message.includes('saving new user')) {
+    return isSignup
+      ? "Le compte n'a pas pu être créé à cause d'un problème serveur. Réessayez ou contactez le support si le problème persiste."
+      : 'Connexion indisponible à cause d’un problème serveur. Veuillez réessayer.';
+  }
+
+  return isSignup
+    ? 'Impossible de créer le compte pour le moment. Veuillez réessayer.'
+    : 'Impossible de vous connecter. Vérifiez vos informations.';
+}
+
+function isWeakPasswordError(code: string, message: string) {
+  return code.includes('weak_password')
+    || message.includes('weak password')
+    || message.includes('password should')
+    || message.includes('password must')
+    || message.includes('password')
+      && (message.includes('characters') || message.includes('uppercase') || message.includes('lowercase') || message.includes('digit'));
+}
+
+function isDuplicateEmailError(code: string, message: string) {
+  return code.includes('user_already_exists')
+    || code.includes('email_exists')
+    || message.includes('already registered')
+    || message.includes('already exists')
+    || message.includes('user already');
+}
+
 function getCasePersistenceMessage(error: { code?: string; message?: string }) {
-  void error;
+  const message = String(error.message || '').toLowerCase();
+  if (error.code === '42501' || message.includes('row-level security') || message.includes('permission denied')) {
+    return "Votre session ne permet pas encore de créer ce dossier. Reconnectez-vous puis réessayez.";
+  }
+  if (message.includes('network') || message.includes('fetch')) {
+    return 'Connexion au serveur indisponible. Vérifiez votre réseau puis réessayez.';
+  }
   return 'Impossible de créer le dossier pour le moment. Veuillez réessayer.';
 }
 

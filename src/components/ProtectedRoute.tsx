@@ -50,7 +50,13 @@ export function ProtectedRoute({ children, allowedRoles, unauthenticatedTo = '/c
       if (!isMounted) return;
       if (profileError) console.error('Erreur lecture rôle utilisateur', profileError);
       const role = profile?.role as UserRole | undefined;
-      setGuardState(role && allowedRoles.includes(role) ? { status: 'authorized' } : { status: 'forbidden' });
+      if (role && allowedRoles.includes(role)) {
+        setGuardState({ status: 'authorized' });
+        return;
+      }
+
+      const clientRole = getClientRoleFromMetadata(data.user.user_metadata?.account_type);
+      setGuardState(clientRole && allowedRoles.includes(clientRole) ? { status: 'authorized' } : { status: 'forbidden' });
     }
 
     void checkAccess();
@@ -79,4 +85,10 @@ export function ProtectedRoute({ children, allowedRoles, unauthenticatedTo = '/c
   }
 
   return <>{children}</>;
+}
+
+function getClientRoleFromMetadata(accountType: unknown): UserRole | undefined {
+  if (accountType === 'client_entreprise' || accountType === 'entreprise') return 'client_entreprise';
+  if (accountType === 'client_particulier' || accountType === 'particulier') return 'client_particulier';
+  return undefined;
 }
