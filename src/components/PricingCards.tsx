@@ -74,9 +74,6 @@ export function PricingCards() {
               <p className="price">{price.main}</p>
               {price.detail && <p className="price-detail">{price.detail}</p>}
               {billingPeriod === 'yearly' && plan.monthlyPrice !== null && plan.monthlyPrice > 0 && <span className="discount-badge">Économisez 10 %</span>}
-              <ul>
-                {plan.features.map((feature) => <li key={feature}>{feature}</li>)}
-              </ul>
               {isPaidPlan && (
                 <div className="payment-methods" aria-label="Moyens de paiement acceptés">
                   <span>Carte</span>
@@ -84,6 +81,9 @@ export function PricingCards() {
                   <span>PayPal</span>
                 </div>
               )}
+              <ul>
+                {plan.features.map((feature) => <li key={feature}>{feature}</li>)}
+              </ul>
               {isPaidPlan && !checkoutAvailable && <p className="payment-note">Le paiement sera activé dès que Stripe sera configuré.</p>}
               <button className="primary-button full" type="button" onClick={() => choosePlan(plan.id)} disabled={loadingPlan === plan.id || (isPaidPlan && !checkoutAvailable)}>
                 {loadingPlan === plan.id ? 'Préparation…' : plan.id === 'discovery' ? 'Commencer gratuitement' : 'Choisir cette formule'}
