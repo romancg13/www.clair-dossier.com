@@ -77,7 +77,7 @@ La migration crée les tables demandées : `profiles`, `contact_requests`, `news
 
 Les boutons de tarifs appellent `create-checkout-session`. Le paiement réel nécessite :
 
-1. créer les produits Stripe et les Prices mensuels/annuels ;
+1. créer les produits Stripe et les Prices mensuels/annuels, avec les Prices annuels calculés sur une réduction de 10 % ;
 2. ajouter les Price IDs dans les secrets GitHub `VITE_STRIPE_*_PRICE_ID` ;
 3. ajouter `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_SUPABASE_FUNCTIONS_URL` et `VITE_STRIPE_PUBLIC_KEY` dans les secrets GitHub ;
 4. ajouter dans Supabase Edge Functions `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `SITE_URL`, `SUPABASE_SERVICE_ROLE_KEY` et les mêmes `VITE_STRIPE_*_PRICE_ID` ;
