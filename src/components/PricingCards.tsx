@@ -18,6 +18,7 @@ function formatEuro(amount: number) {
 
 function getDisplayedPrice(monthlyPrice: number | null, billingPeriod: BillingPeriod) {
   if (monthlyPrice === null) return { main: 'Sur devis', detail: 'Abonnement personnalisé' };
+  if (monthlyPrice === 0) return { main: billingPeriod === 'monthly' ? '0 € / mois' : '0 € / an', detail: null };
   if (billingPeriod === 'monthly') return { main: `${formatEuro(monthlyPrice)} / mois`, detail: null };
   const yearlyPrice = monthlyPrice * 12 * (1 - yearlyDiscountPercent / 100);
   const monthlyEquivalent = monthlyPrice * (1 - yearlyDiscountPercent / 100);
