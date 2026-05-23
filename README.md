@@ -85,6 +85,8 @@ Les boutons de tarifs appellent `create-checkout-session`. Le paiement réel né
 6. redéployer GitHub Pages depuis `main` ;
 7. créer le webhook Stripe vers `https://<project-ref>.functions.supabase.co/stripe-webhook`.
 
+Stripe Checkout utilise les moyens de paiement automatiques. Les cartes, Apple Pay et PayPal peuvent apparaître au checkout si ces moyens sont activés et éligibles dans le Dashboard Stripe pour le pays, la devise, le navigateur et le type d'abonnement. Aucun moyen de paiement sensible ne doit être collecté dans le frontend.
+
 Sans cette configuration, le frontend affiche clairement que le paiement est bientôt disponible.
 
 ## Avertissement LegalTech
