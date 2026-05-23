@@ -18,6 +18,7 @@ function formatEuro(amount: number) {
 
 function getDisplayedPrice(monthlyPrice: number | null, billingPeriod: BillingPeriod) {
   if (monthlyPrice === null) return { main: 'Sur devis', detail: 'Abonnement personnalisé' };
+  if (monthlyPrice === 0) return { main: billingPeriod === 'monthly' ? '0 € / mois' : '0 € / an', detail: null };
   if (billingPeriod === 'monthly') return { main: `${formatEuro(monthlyPrice)} / mois`, detail: null };
   const yearlyPrice = monthlyPrice * 12 * (1 - yearlyDiscountPercent / 100);
   const monthlyEquivalent = monthlyPrice * (1 - yearlyDiscountPercent / 100);
@@ -74,6 +75,13 @@ export function PricingCards() {
               <p className="price">{price.main}</p>
               {price.detail && <p className="price-detail">{price.detail}</p>}
               {billingPeriod === 'yearly' && plan.monthlyPrice !== null && plan.monthlyPrice > 0 && <span className="discount-badge">Économisez 10 %</span>}
+              {isPaidPlan && (
+                <div className="payment-methods" aria-label="Moyens de paiement acceptés">
+                  <span>Carte</span>
+                  <span>Apple Pay</span>
+                  <span>PayPal</span>
+                </div>
+              )}
               <ul>
                 {plan.features.map((feature) => <li key={feature}>{feature}</li>)}
               </ul>

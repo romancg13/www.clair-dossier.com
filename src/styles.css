@@ -303,6 +303,21 @@ main { flex: 1; }
 .price { color: var(--navy); font-size: 1.9rem; font-weight: 900; margin: 0.5rem 0; }
 .price-detail, .payment-note { color: #475569; font-weight: 750; margin: -0.2rem 0 0.8rem; }
 .payment-note { background: #eef4fb; border-radius: var(--radius-sm); padding: 0.75rem; color: var(--navy); }
+.payment-methods {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin: 0.75rem 0 0.9rem;
+}
+.payment-methods span {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-full);
+  color: var(--navy);
+  font-size: 0.78rem;
+  font-weight: 900;
+  padding: 0.35rem 0.6rem;
+  background: #f8fafc;
+}
 .discount-badge {
   display: inline-flex;
   width: fit-content;
