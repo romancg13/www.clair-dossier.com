@@ -3,43 +3,98 @@ import { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
-export function ProtectedRoute({ children }: { children: ReactNode }) {
+export type UserRole = 'client' | 'lawyer' | 'cabinet_admin' | 'admin';
+
+type ProtectedRouteProps = {
+  children: ReactNode;
+  allowedRoles?: UserRole[];
+};
+
+type AuthCheck = {
+  isCheckingSession: boolean;
+  isAuthenticated: boolean;
+  isAuthorized: boolean;
+};
+
+export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
   const location = useLocation();
-  const [isCheckingSession, setIsCheckingSession] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authCheck, setAuthCheck] = useState<AuthCheck>({
+    isCheckingSession: true,
+    isAuthenticated: false,
+    isAuthorized: false,
+  });
+  const roleKey = allowedRoles?.join('|') || '';
 
   useEffect(() => {
     if (!supabase) {
-      setIsAuthenticated(false);
-      setIsCheckingSession(false);
+      setAuthCheck({ isCheckingSession: false, isAuthenticated: false, isAuthorized: false });
       return;
     }
 
     let isMounted = true;
-    supabase.auth.getSession().then(({ data }) => {
+    async function checkSession() {
+      const { data } = await supabase.auth.getSession();
       if (!isMounted) return;
-      setIsAuthenticated(Boolean(data.session));
-      setIsCheckingSession(false);
-    });
+
+      if (!data.session) {
+        setAuthCheck({ isCheckingSession: false, isAuthenticated: false, isAuthorized: false });
+        return;
+      }
+
+      if (!allowedRoles?.length) {
+        setAuthCheck({ isCheckingSession: false, isAuthenticated: true, isAuthorized: true });
+        return;
+      }
+
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', data.session.user.id)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Impossible de vérifier le rôle utilisateur', error);
+      }
+
+      const role = profile?.role as UserRole | undefined;
+      setAuthCheck({
+        isCheckingSession: false,
+        isAuthenticated: true,
+        isAuthorized: Boolean(role && allowedRoles.includes(role)),
+      });
+    }
+
+    void checkSession();
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsAuthenticated(Boolean(session));
-      setIsCheckingSession(false);
+      if (!session) {
+        setAuthCheck({ isCheckingSession: false, isAuthenticated: false, isAuthorized: false });
+        return;
+      }
+      void checkSession();
     });
 
     return () => {
       isMounted = false;
       listener.subscription.unsubscribe();
     };
-  }, []);
+  }, [allowedRoles, roleKey]);
 
-  if (isCheckingSession) {
+  if (authCheck.isCheckingSession) {
     return <section className="section-block centered"><p className="notice">Vérification de votre session...</p></section>;
   }
 
-  if (!isAuthenticated) {
+  if (!authCheck.isAuthenticated) {
     const redirect = encodeURIComponent(`${location.pathname}${location.search}`);
     return <Navigate to={`/inscription?redirect=${redirect}`} replace />;
+  }
+
+  if (!authCheck.isAuthorized) {
+    return (
+      <section className="section-block centered">
+        <p className="notice">Vous n'avez pas les droits nécessaires pour accéder à cet espace.</p>
+      </section>
+    );
   }
 
   return <>{children}</>;

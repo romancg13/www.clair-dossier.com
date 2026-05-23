@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">ClairDossier</title>
+  <desc id="desc">Votre dossier juridique, clair, structure et suivi.</desc>
+  <rect width="1200" height="630" fill="#0B2545"/>
+  <circle cx="1000" cy="80" r="240" fill="#C6A24A" opacity="0.16"/>
+  <circle cx="130" cy="560" r="210" fill="#FFFFFF" opacity="0.08"/>
+  <rect x="84" y="88" width="1032" height="454" rx="34" fill="#FFFFFF"/>
+  <rect x="124" y="128" width="92" height="92" rx="28" fill="#0B2545"/>
+  <text x="170" y="186" text-anchor="middle" fill="#C6A24A" font-family="Inter, Arial, sans-serif" font-size="34" font-weight="800">CD</text>
+  <text x="248" y="174" fill="#0B2545" font-family="Inter, Arial, sans-serif" font-size="48" font-weight="800">ClairDossier</text>
+  <text x="124" y="304" fill="#111827" font-family="Inter, Arial, sans-serif" font-size="56" font-weight="800">Votre dossier juridique, clair,</text>
+  <text x="124" y="372" fill="#111827" font-family="Inter, Arial, sans-serif" font-size="56" font-weight="800">structure et suivi.</text>
+  <text x="124" y="454" fill="#475569" font-family="Inter, Arial, sans-serif" font-size="28">LegalTech pour clients, PME, avocats et cabinets.</text>
+  <rect x="124" y="484" width="218" height="42" rx="21" fill="#FFF7DF"/>
+  <text x="233" y="512" text-anchor="middle" fill="#775B11" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="800">RGPD prudent</text>
+  <rect x="366" y="484" width="220" height="42" rx="21" fill="#EEF4FB"/>
+  <text x="476" y="512" text-anchor="middle" fill="#0B2545" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="800">IA encadree</text>
+  <rect x="610" y="484" width="248" height="42" rx="21" fill="#EEF4FB"/>
+  <text x="734" y="512" text-anchor="middle" fill="#0B2545" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="800">Stripe prepare</text>
+</svg>

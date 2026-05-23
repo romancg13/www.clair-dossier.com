@@ -51,7 +51,10 @@ Variables serveur uniquement, à configurer dans Supabase Edge Functions ou l'en
 - `STRIPE_SECRET_KEY`
 - `STRIPE_WEBHOOK_SECRET`
 - `AI_API_KEY`
+- `AI_PROVIDER_URL` (optionnel)
 - `SUPABASE_SERVICE_ROLE_KEY`
+- `SUPABASE_URL`
+- `SUPABASE_ANON_KEY`
 - `SITE_URL`
 - les mêmes `VITE_STRIPE_*_PRICE_ID` que le frontend, ajoutés comme secrets Supabase Edge Functions
 
@@ -81,13 +84,20 @@ Les boutons de tarifs appellent `create-checkout-session`. Le paiement réel né
 2. ajouter les Price IDs dans les secrets GitHub `VITE_STRIPE_*_PRICE_ID` ;
 3. ajouter `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_SUPABASE_FUNCTIONS_URL` et `VITE_STRIPE_PUBLIC_KEY` dans les secrets GitHub ;
 4. ajouter dans Supabase Edge Functions `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `SITE_URL`, `SUPABASE_SERVICE_ROLE_KEY` et les mêmes `VITE_STRIPE_*_PRICE_ID` ;
-5. lancer le workflow manuel `Deploy Supabase Stripe Functions` ;
-6. redéployer GitHub Pages depuis `main` ;
-7. créer le webhook Stripe vers `https://<project-ref>.functions.supabase.co/stripe-webhook`.
+5. vérifier que `SUPABASE_URL` et `SUPABASE_ANON_KEY` sont disponibles dans les Edge Functions pour authentifier les utilisateurs ;
+6. lancer le workflow manuel `Deploy Supabase Edge Functions` ;
+7. redéployer GitHub Pages depuis `main` ;
+8. créer le webhook Stripe vers `https://<project-ref>.functions.supabase.co/stripe-webhook`.
 
 Stripe Checkout utilise les moyens de paiement automatiques. Les cartes, Apple Pay et PayPal peuvent apparaître au checkout si ces moyens sont activés et éligibles dans le Dashboard Stripe pour le pays, la devise, le navigateur et le type d'abonnement. Aucun moyen de paiement sensible ne doit être collecté dans le frontend.
 
 Sans cette configuration, le frontend affiche clairement que le paiement est bientôt disponible.
+
+Le portail client Stripe est disponible depuis `/abonnement` et `/paiements` lorsqu'un abonnement synchronisé contient un `stripe_customer_id`.
+
+## Assistant IA blog
+
+La fonction `ai-blog-assistant` prépare des idées, plans, méta-descriptions, FAQ et résumés SEO/GEO. Elle utilise `AI_API_KEY` côté Supabase Edge Function uniquement ; aucune clé IA ne doit être exposée dans le frontend.
 
 ## Avertissement LegalTech
 

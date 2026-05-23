@@ -1,4 +1,4 @@
-name: Deploy Supabase Stripe Functions
+name: Deploy Supabase Edge Functions
 
 on:
   workflow_dispatch:
@@ -29,8 +29,9 @@ jobs:
         if: env.SUPABASE_DB_PASSWORD != ''
         run: supabase db push --password "$SUPABASE_DB_PASSWORD"
 
-      - name: Deploy Stripe Edge Functions
+      - name: Deploy Supabase Edge Functions
         run: |
           supabase functions deploy create-checkout-session --project-ref "$SUPABASE_PROJECT_REF"
           supabase functions deploy stripe-webhook --project-ref "$SUPABASE_PROJECT_REF"
           supabase functions deploy customer-portal --project-ref "$SUPABASE_PROJECT_REF"
+          supabase functions deploy ai-blog-assistant --project-ref "$SUPABASE_PROJECT_REF"

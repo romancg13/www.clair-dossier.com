@@ -4,6 +4,7 @@ import { NewsletterForm } from './components/NewsletterForm';
 import { PricingCards } from './components/PricingCards';
 import { Seo } from './components/Seo';
 import { blogPosts, categories, caseStatuses, featureCards, infoPages, legalPages, plans, site, warnings } from './data/site';
+import { redirectToCustomerPortal } from './lib/stripe';
 import { insertPublicRecord, supabase } from './lib/supabase';
 
 type FormState = { type: 'idle' | 'loading' | 'success' | 'error'; message: string };
@@ -475,7 +476,7 @@ export function AuthPage({ mode }: { mode: 'connexion' | 'inscription' }) {
           </label>
           {isSignup && <label><span>Confirmation du mot de passe</span><input name="password_confirm" type="password" minLength={8} required placeholder="Répétez le mot de passe" /></label>}
           {isSignup && <SelectField name="account_type" label="Type de compte" options={['client', 'entreprise', 'cabinet']} required />}
-          {isSignup && <label className="checkbox-line"><input name="terms_accepted" type="checkbox" required /><span>J'accepte les conditions d'utilisation et la politique de confidentialité.</span></label>}
+          {isSignup && <label className="checkbox-line"><input name="terms_accepted" type="checkbox" required /><span>J'accepte les <Link to="/conditions-utilisation">conditions d'utilisation</Link> et la <Link to="/politique-confidentialite">politique de confidentialité</Link>.</span></label>}
           <button className="primary-button" type="submit" disabled={state.type === 'loading'}>
             {state.type === 'loading' ? 'Chargement…' : isSignup ? 'Créer mon compte' : 'Me connecter'}
           </button>
@@ -489,6 +490,22 @@ export function AuthPage({ mode }: { mode: 'connexion' | 'inscription' }) {
 
 export function WorkspacePage({ title, audience }: { title: string; audience: 'client' | 'cabinet' }) {
   const isClient = audience === 'client';
+  const [portalState, setPortalState] = useState<FormState>({ type: 'idle', message: '' });
+  const showBillingPortal = isClient && (title === 'Abonnement' || title === 'Paiements');
+
+  async function openBillingPortal() {
+    setPortalState({ type: 'loading', message: '' });
+    try {
+      await redirectToCustomerPortal();
+    } catch (error) {
+      console.error('Portail client Stripe indisponible', error);
+      setPortalState({
+        type: 'error',
+        message: error instanceof Error ? error.message : "Le portail client n'est pas disponible pour le moment.",
+      });
+    }
+  }
+
   return (
     <>
       <Seo title={title} description={`Espace ${audience} ClairDossier prêt à connecter à Supabase Auth et RLS.`} />
@@ -524,6 +541,16 @@ export function WorkspacePage({ title, audience }: { title: string; audience: 'c
             : 'Dossiers, clients, messages, tâches, validations et facturation sont structurés dans les routes et le schéma SQL.'
           }</p>
         </article>
+        {showBillingPortal && (
+          <article className="feature-card">
+            <h2>Gestion Stripe</h2>
+            <p>Si un abonnement Stripe actif existe, le portail client permet de consulter les factures, moyens de paiement et paramètres d'abonnement.</p>
+            <button className="secondary-button" type="button" onClick={openBillingPortal} disabled={portalState.type === 'loading'}>
+              {portalState.type === 'loading' ? 'Ouverture...' : 'Ouvrir le portail client Stripe'}
+            </button>
+            {portalState.message && <p className={`form-message ${portalState.type === 'success' ? 'success' : 'error'}`}>{portalState.message}</p>}
+          </article>
+        )}
         <article className="feature-card">
           <h2>Sécurité</h2>
           <p>Ne pas exposer de données sensibles sans session active, règles RLS et vérification du rôle utilisateur.</p>

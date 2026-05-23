@@ -1,21 +1,69 @@
 import Stripe from 'npm:stripe';
+import { createClient } from 'npm:@supabase/supabase-js';
 import { corsHeaders, jsonResponse } from '../_shared/cors.ts';
 
 const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
 const siteUrl = Deno.env.get('SITE_URL') || 'https://clair-dossier.com';
+const supabaseUrl = Deno.env.get('SUPABASE_URL');
+const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
+const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+function getBearerToken(request: Request) {
+  const authorization = request.headers.get('Authorization') || '';
+  return authorization.startsWith('Bearer ') ? authorization.slice('Bearer '.length) : '';
+}
+
+function safeReturnUrl(value: unknown) {
+  const fallback = new URL('/abonnement', siteUrl).toString();
+  if (typeof value !== 'string' || !value.trim()) return fallback;
+  try {
+    const url = new URL(value);
+    return url.origin === new URL(siteUrl).origin ? url.toString() : fallback;
+  } catch {
+    return fallback;
+  }
+}
 
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   if (request.method !== 'POST') return jsonResponse({ error: 'Method not allowed' }, 405);
   if (!stripeSecretKey) return jsonResponse({ error: 'STRIPE_SECRET_KEY is not configured' }, 500);
+  if (!supabaseUrl || !supabaseAnonKey || !serviceRoleKey) return jsonResponse({ error: 'Supabase auth is not configured' }, 500);
 
   try {
-    const { customerId, returnUrl } = await request.json();
-    if (!customerId) return jsonResponse({ error: 'customerId is required' }, 400);
+    const token = getBearerToken(request);
+    if (!token) return jsonResponse({ error: 'Authentication required' }, 401);
+
+    const authClient = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: { persistSession: false },
+      global: { headers: { Authorization: `Bearer ${token}` } },
+    });
+    const { data: userData, error: userError } = await authClient.auth.getUser(token);
+    if (userError || !userData.user) return jsonResponse({ error: 'Authentication required' }, 401);
+
+    const { returnUrl } = await request.json();
+    const adminClient = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } });
+    const { data: subscription, error: subscriptionError } = await adminClient
+      .from('subscriptions')
+      .select('stripe_customer_id')
+      .eq('user_id', userData.user.id)
+      .not('stripe_customer_id', 'is', null)
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (subscriptionError) {
+      console.error('customer-portal subscription lookup error', subscriptionError);
+      return jsonResponse({ error: 'Unable to find subscription' }, 500);
+    }
+    if (!subscription?.stripe_customer_id) {
+      return jsonResponse({ error: 'No Stripe customer found for this user' }, 404);
+    }
+
     const stripe = new Stripe(stripeSecretKey, { apiVersion: '2024-12-18.acacia' });
     const portal = await stripe.billingPortal.sessions.create({
-      customer: customerId,
-      return_url: returnUrl || `${siteUrl}/abonnement`,
+      customer: subscription.stripe_customer_id,
+      return_url: safeReturnUrl(returnUrl),
     });
     return jsonResponse({ url: portal.url });
   } catch (error) {

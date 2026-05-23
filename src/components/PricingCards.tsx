@@ -79,12 +79,13 @@ export function PricingCards() {
               </ul>
               {isPaidPlan && (
                 <div className="payment-methods" aria-label="Moyens de paiement acceptés">
+                  <span>Stripe Checkout</span>
                   <span>Carte</span>
-                  <span>Apple Pay</span>
-                  <span>PayPal</span>
+                  <span>Apple Pay éligible</span>
+                  <span>PayPal si activé</span>
                 </div>
               )}
-              {isPaidPlan && !checkoutAvailable && <p className="payment-note">Le paiement sera activé dès que Stripe sera configuré.</p>}
+              {isPaidPlan && !checkoutAvailable && <p className="payment-note">Paiement bientôt disponible : configurez Stripe, les Price IDs et les fonctions serveur pour activer cette formule.</p>}
               <button className="primary-button full" type="button" onClick={() => choosePlan(plan.id)} disabled={loadingPlan === plan.id || (isPaidPlan && !checkoutAvailable)}>
                 {loadingPlan === plan.id ? 'Préparation…' : plan.id === 'discovery' ? 'Commencer gratuitement' : 'Choisir cette formule'}
               </button>
