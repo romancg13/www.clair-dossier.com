@@ -1,5 +1,15 @@
 create extension if not exists pgcrypto;
 
+create table if not exists public.profiles (
+  id uuid primary key references auth.users(id) on delete cascade,
+  email text,
+  full_name text,
+  role text not null default 'client' check (role in ('client', 'lawyer', 'cabinet_admin', 'admin')),
+  cabinet_id uuid,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create or replace function public.is_admin()
 returns boolean
 language sql
@@ -12,16 +22,6 @@ as $$
       and role in ('admin', 'lawyer', 'cabinet_admin')
   );
 $$;
-
-create table if not exists public.profiles (
-  id uuid primary key references auth.users(id) on delete cascade,
-  email text,
-  full_name text,
-  role text not null default 'client' check (role in ('client', 'lawyer', 'cabinet_admin', 'admin')),
-  cabinet_id uuid,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
 
 create table if not exists public.contact_requests (
   id uuid primary key default gen_random_uuid(),

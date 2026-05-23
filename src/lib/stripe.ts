@@ -31,6 +31,7 @@ const stripePriceIds: Record<string, Record<BillingPeriod, string | undefined>> 
 };
 
 export const isStripeBaseConfigured = Boolean(stripePublicKey && functionsUrl && anonKey);
+export const areBillingFunctionsConfigured = Boolean(functionsUrl && anonKey);
 
 export function getStripePriceId(planId: string, billingPeriod: BillingPeriod) {
   return stripePriceIds[planId]?.[billingPeriod];
@@ -81,4 +82,41 @@ export async function redirectToCheckout(planId: string, billingPeriod: BillingP
   }
 
   window.location.assign(checkoutData.url);
+}
+
+export async function openCustomerPortal(): Promise<void> {
+  if (!areBillingFunctionsConfigured || !functionsUrl) {
+    throw new Error('Le portail client sera disponible après configuration Stripe.');
+  }
+  if (!supabase) {
+    throw new Error('Connectez-vous pour gérer votre abonnement.');
+  }
+
+  const { data: sessionData } = await supabase.auth.getSession();
+  if (!sessionData.session) {
+    throw new Error('Connectez-vous pour gérer votre abonnement.');
+  }
+
+  const response = await fetch(`${functionsUrl}/customer-portal`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${sessionData.session.access_token}`,
+    },
+    body: JSON.stringify({
+      returnUrl: `${window.location.origin}/abonnement`,
+    }),
+  });
+
+  if (!response.ok) {
+    console.error('Erreur customer-portal', await response.text());
+    throw new Error("Le portail client n'est pas encore disponible. Vérifiez la configuration Stripe serveur.");
+  }
+
+  const portalData = (await response.json()) as { url?: string };
+  if (!portalData.url) {
+    throw new Error('Session de portail client invalide.');
+  }
+
+  window.location.assign(portalData.url);
 }

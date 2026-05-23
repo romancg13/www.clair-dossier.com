@@ -1,10 +1,11 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { NewsletterForm } from './components/NewsletterForm';
 import { PricingCards } from './components/PricingCards';
 import { Seo } from './components/Seo';
 import { blogPosts, categories, caseStatuses, featureCards, infoPages, legalPages, plans, site, warnings } from './data/site';
 import { insertPublicRecord, supabase } from './lib/supabase';
+import { openCustomerPortal } from './lib/stripe';
 
 type FormState = { type: 'idle' | 'loading' | 'success' | 'error'; message: string };
 
@@ -17,10 +18,41 @@ type FieldDef = {
   placeholder?: string;
 };
 
+type SubscriptionRecord = {
+  plan_id: string;
+  billing_period: string | null;
+  status: string;
+  current_period_end: string | null;
+  stripe_customer_id: string | null;
+};
+
+type PaymentRecord = {
+  id: string;
+  plan_id: string | null;
+  billing_period: string | null;
+  amount_total: number | null;
+  currency: string | null;
+  status: string;
+  created_at: string;
+};
+
 function formatPlanPreviewPrice(monthlyPrice: number | null) {
   if (monthlyPrice === null) return 'Sur devis';
   if (monthlyPrice === 0) return '0 €';
   return `${monthlyPrice} € / mois`;
+}
+
+function formatDate(value: string | null) {
+  if (!value) return 'Non défini';
+  return new Intl.DateTimeFormat('fr-FR', { dateStyle: 'medium' }).format(new Date(value));
+}
+
+function formatAmount(amountInCents: number | null, currency: string | null) {
+  if (amountInCents === null) return 'Montant indisponible';
+  return new Intl.NumberFormat('fr-FR', {
+    style: 'currency',
+    currency: (currency || 'eur').toUpperCase(),
+  }).format(amountInCents / 100);
 }
 
 export function HomePage() {
@@ -475,13 +507,176 @@ export function AuthPage({ mode }: { mode: 'connexion' | 'inscription' }) {
           </label>
           {isSignup && <label><span>Confirmation du mot de passe</span><input name="password_confirm" type="password" minLength={8} required placeholder="Répétez le mot de passe" /></label>}
           {isSignup && <SelectField name="account_type" label="Type de compte" options={['client', 'entreprise', 'cabinet']} required />}
-          {isSignup && <label className="checkbox-line"><input name="terms_accepted" type="checkbox" required /><span>J'accepte les conditions d'utilisation et la politique de confidentialité.</span></label>}
+          {isSignup && (
+            <label className="checkbox-line">
+              <input name="terms_accepted" type="checkbox" required />
+              <span>J'accepte les <Link to="/conditions-utilisation">conditions d'utilisation</Link> et la <Link to="/politique-confidentialite">politique de confidentialité</Link>.</span>
+            </label>
+          )}
           <button className="primary-button" type="submit" disabled={state.type === 'loading'}>
             {state.type === 'loading' ? 'Chargement…' : isSignup ? 'Créer mon compte' : 'Me connecter'}
           </button>
           {state.message && <p className={`form-message ${state.type === 'success' ? 'success' : 'error'}`}>{state.message}</p>}
           <Link className="text-link" to={`${isSignup ? '/connexion' : '/inscription'}${redirectQuery}`}>{isSignup ? "J'ai déjà un compte" : 'Créer un compte'}</Link>
         </form>
+      </section>
+    </>
+  );
+}
+
+export function SubscriptionPage() {
+  const [state, setState] = useState<FormState>({ type: 'loading', message: 'Chargement de votre abonnement...' });
+  const [subscription, setSubscription] = useState<SubscriptionRecord | null>(null);
+  const [portalLoading, setPortalLoading] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadSubscription() {
+      if (!supabase) {
+        setState({ type: 'error', message: 'Configurez Supabase pour consulter les abonnements.' });
+        return;
+      }
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError || !userData.user) {
+        console.error('Session Supabase absente pour abonnement', userError);
+        setState({ type: 'error', message: 'Connectez-vous pour consulter votre abonnement.' });
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .select('plan_id,billing_period,status,current_period_end,stripe_customer_id')
+        .eq('user_id', userData.user.id)
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (!isMounted) return;
+      if (error) {
+        console.error('Erreur Supabase (subscriptions)', error);
+        setState({ type: 'error', message: "Impossible de charger l'abonnement pour le moment." });
+        return;
+      }
+      setSubscription((data as SubscriptionRecord | null) || null);
+      setState({
+        type: data ? 'success' : 'idle',
+        message: data ? 'Abonnement synchronisé depuis Stripe.' : 'Aucun abonnement actif trouvé pour ce compte.',
+      });
+    }
+
+    loadSubscription();
+    return () => { isMounted = false; };
+  }, []);
+
+  async function manageSubscription() {
+    setPortalLoading(true);
+    try {
+      await openCustomerPortal();
+    } catch (error) {
+      console.error('Portail Stripe indisponible', error);
+      setState({ type: 'error', message: error instanceof Error ? error.message : "Le portail client n'est pas disponible." });
+    } finally {
+      setPortalLoading(false);
+    }
+  }
+
+  return (
+    <>
+      <Seo title="Abonnement" description="Gérer l'abonnement ClairDossier synchronisé avec Stripe." path="/abonnement" />
+      <PageHero title="Abonnement" description="Consultez votre statut d'abonnement et ouvrez le portail client Stripe lorsque la configuration serveur est active." />
+      <section className="dashboard-grid">
+        <article className="feature-card">
+          <h2>Statut</h2>
+          <p className={`form-message ${state.type === 'error' ? 'error' : 'success'}`}>{state.message}</p>
+          {subscription && (
+            <div className="info-table" role="table" aria-label="Détail abonnement">
+              <div role="row"><strong role="cell">Formule</strong><span role="cell">{subscription.plan_id}</span></div>
+              <div role="row"><strong role="cell">Périodicité</strong><span role="cell">{subscription.billing_period || 'monthly'}</span></div>
+              <div role="row"><strong role="cell">Statut Stripe</strong><span role="cell">{subscription.status}</span></div>
+              <div role="row"><strong role="cell">Fin de période</strong><span role="cell">{formatDate(subscription.current_period_end)}</span></div>
+            </div>
+          )}
+          <button className="primary-button" type="button" onClick={manageSubscription} disabled={portalLoading || !subscription?.stripe_customer_id}>
+            {portalLoading ? 'Ouverture...' : 'Gérer via le portail Stripe'}
+          </button>
+          {!subscription?.stripe_customer_id && <p className="notice mini">Le portail client sera disponible dès qu'un abonnement Stripe aura été synchronisé.</p>}
+        </article>
+        <article className="feature-card">
+          <h2>Restrictions par formule</h2>
+          <p>Les limites de dossiers, documents et utilisateurs doivent être appliquées côté base et côté API selon le plan actif avant mise en production.</p>
+          <Link className="text-link" to="/tarifs">Voir les formules</Link>
+        </article>
+      </section>
+    </>
+  );
+}
+
+export function PaymentsPage() {
+  const [state, setState] = useState<FormState>({ type: 'loading', message: 'Chargement de vos paiements...' });
+  const [payments, setPayments] = useState<PaymentRecord[]>([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadPayments() {
+      if (!supabase) {
+        setState({ type: 'error', message: 'Configurez Supabase pour consulter les paiements.' });
+        return;
+      }
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError || !userData.user) {
+        console.error('Session Supabase absente pour paiements', userError);
+        setState({ type: 'error', message: 'Connectez-vous pour consulter vos paiements.' });
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('payments')
+        .select('id,plan_id,billing_period,amount_total,currency,status,created_at')
+        .eq('user_id', userData.user.id)
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      if (!isMounted) return;
+      if (error) {
+        console.error('Erreur Supabase (payments)', error);
+        setState({ type: 'error', message: 'Impossible de charger les paiements pour le moment.' });
+        return;
+      }
+      setPayments((data as PaymentRecord[]) || []);
+      setState({
+        type: data && data.length > 0 ? 'success' : 'idle',
+        message: data && data.length > 0 ? 'Paiements synchronisés depuis Stripe.' : 'Aucun paiement enregistré pour le moment.',
+      });
+    }
+
+    loadPayments();
+    return () => { isMounted = false; };
+  }, []);
+
+  return (
+    <>
+      <Seo title="Paiements" description="Historique des paiements ClairDossier enregistrés par le webhook Stripe." path="/paiements" />
+      <PageHero title="Paiements" description="Consultez les paiements enregistrés après retour webhook Stripe. Les factures complètes restent disponibles dans Stripe." />
+      <section className="dashboard-grid">
+        <article className="feature-card">
+          <h2>Historique</h2>
+          <p className={`form-message ${state.type === 'error' ? 'error' : 'success'}`}>{state.message}</p>
+          {payments.length > 0 && (
+            <div className="info-table" role="table" aria-label="Historique paiements">
+              {payments.map((payment) => (
+                <div role="row" key={payment.id}>
+                  <strong role="cell">{formatDate(payment.created_at)}</strong>
+                  <span role="cell">{payment.plan_id || 'Formule'} · {payment.billing_period || 'monthly'} · {formatAmount(payment.amount_total, payment.currency)} · {payment.status}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </article>
+        <article className="feature-card">
+          <h2>Factures</h2>
+          <p>Les factures Stripe détaillées sont accessibles depuis le portail client une fois l'abonnement synchronisé.</p>
+          <Link className="text-link" to="/abonnement">Gérer mon abonnement</Link>
+        </article>
       </section>
     </>
   );

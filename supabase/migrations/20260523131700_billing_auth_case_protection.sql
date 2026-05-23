@@ -4,7 +4,7 @@ create table if not exists public.plans (
   slug text not null unique,
   monthly_price numeric(10, 2),
   yearly_price numeric(10, 2),
-  yearly_discount_percent integer not null default 15,
+  yearly_discount_percent integer not null default 10,
   stripe_monthly_price_id text,
   stripe_yearly_price_id text,
   features jsonb not null default '[]'::jsonb,
@@ -21,12 +21,12 @@ alter table public.profiles add column if not exists account_type text;
 
 insert into public.plans (id, name, slug, monthly_price, yearly_price, yearly_discount_percent, features, active)
 values
-  ('discovery', 'Découverte', 'decouverte', 0, 0, 15, '["1 dossier de test", "Check-list documentaire", "Accès blog et ressources", "Paiement non requis"]'::jsonb, true),
-  ('client-essential', 'Client Essentiel', 'client-essentiel', 19, 193.80, 15, '["3 dossiers actifs", "Messagerie dossier", "Upload documents", "Notifications de statut"]'::jsonb, true),
-  ('business', 'Business / PME', 'business-pme', 79, 805.80, 15, '["Dossiers illimités PME", "Contrats et recouvrement", "Tableau de bord priorités", "Accès multi-utilisateurs"]'::jsonb, true),
-  ('cabinet-solo', 'Cabinet Solo', 'cabinet-solo', 99, 1009.80, 15, '["Pipeline dossiers", "Demandes clients entrantes", "Validation avocat", "Facturation Stripe préparée"]'::jsonb, true),
-  ('cabinet-pro', 'Cabinet Pro', 'cabinet-pro', 249, 2539.80, 15, '["Gestion clients", "Tâches cabinet", "Rôles équipe", "Audit logs et reporting"]'::jsonb, true),
-  ('cabinet-premium', 'Cabinet Premium', 'cabinet-premium', null, null, 15, '["Onboarding dédié", "Paramétrage sécurité", "Support prioritaire", "Intégrations sur demande"]'::jsonb, true)
+  ('discovery', 'Découverte', 'decouverte', 0, 0, 10, '["1 dossier de test", "Check-list documentaire", "Accès blog et ressources", "Paiement non requis"]'::jsonb, true),
+  ('client-essential', 'Client Essentiel', 'client-essentiel', 19, 205.20, 10, '["3 dossiers actifs", "Messagerie dossier", "Upload documents", "Notifications de statut"]'::jsonb, true),
+  ('business', 'Business / PME', 'business-pme', 79, 853.20, 10, '["Dossiers illimités PME", "Contrats et recouvrement", "Tableau de bord priorités", "Accès multi-utilisateurs"]'::jsonb, true),
+  ('cabinet-solo', 'Cabinet Solo', 'cabinet-solo', 99, 1069.20, 10, '["Pipeline dossiers", "Demandes clients entrantes", "Validation avocat", "Facturation Stripe préparée"]'::jsonb, true),
+  ('cabinet-pro', 'Cabinet Pro', 'cabinet-pro', 249, 2689.20, 10, '["Gestion clients", "Tâches cabinet", "Rôles équipe", "Audit logs et reporting"]'::jsonb, true),
+  ('cabinet-premium', 'Cabinet Premium', 'cabinet-premium', null, null, 10, '["Onboarding dédié", "Paramétrage sécurité", "Support prioritaire", "Intégrations sur demande"]'::jsonb, true)
 on conflict (id) do update set
   name = excluded.name,
   slug = excluded.slug,
