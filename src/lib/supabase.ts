@@ -5,11 +5,20 @@ import type { PublicFormTable } from './security';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
+function createConfiguredSupabaseClient() {
+  if (!supabaseUrl || !supabaseAnonKey) return null;
 
-export const supabase = isSupabaseConfigured
-  ? createClient(supabaseUrl as string, supabaseAnonKey as string)
-  : null;
+  try {
+    new URL(supabaseUrl);
+    return createClient(supabaseUrl, supabaseAnonKey);
+  } catch (error) {
+    console.error('Configuration Supabase invalide', error);
+    return null;
+  }
+}
+
+export const supabase = createConfiguredSupabaseClient();
+export const isSupabaseConfigured = Boolean(supabase);
 
 export type PublicInsertResult = {
   ok: boolean;

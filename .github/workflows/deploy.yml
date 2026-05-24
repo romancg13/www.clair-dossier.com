@@ -6,10 +6,16 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -18,6 +24,8 @@ jobs:
         with:
           node-version: 22
           cache: npm
+
+      - uses: actions/configure-pages@v5
 
       - run: npm ci
 
@@ -39,9 +47,22 @@ jobs:
           VITE_STRIPE_CABINET_PREMIUM_MONTHLY_PRICE_ID: ${{ secrets.VITE_STRIPE_CABINET_PREMIUM_MONTHLY_PRICE_ID }}
           VITE_STRIPE_CABINET_PREMIUM_YEARLY_PRICE_ID: ${{ secrets.VITE_STRIPE_CABINET_PREMIUM_YEARLY_PRICE_ID }}
 
-      - name: Deploy to gh-pages branch
-        uses: peaceiris/actions-gh-pages@v4
+      - name: Verify GitHub Pages artifact
+        run: |
+          node -e "const fs=require('fs'); const html=fs.readFileSync('dist/index.html','utf8'); if (html.includes('/src/main.tsx')) throw new Error('dist/index.html still references /src/main.tsx'); if (!html.includes('/assets/')) throw new Error('dist/index.html does not reference built assets'); for (const file of ['dist/404.html','dist/manifest.json','dist/icon.svg','dist/CNAME']) { if (!fs.existsSync(file)) throw new Error(`${file} is missing from the Pages artifact`); }"
+
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist
-          cname: www.clair-dossier.com
+          path: ./dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy built artifact
+        id: deployment
+        uses: actions/deploy-pages@v4
