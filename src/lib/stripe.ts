@@ -3,7 +3,20 @@ import { supabase } from './supabase';
 const stripePublicKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-const functionsUrl = import.meta.env.VITE_SUPABASE_FUNCTIONS_URL || (supabaseUrl ? `${supabaseUrl}/functions/v1` : undefined);
+
+function getValidUrl(value: string | undefined, label: string) {
+  if (!value) return undefined;
+  try {
+    return new URL(value).toString().replace(/\/$/, '');
+  } catch (error) {
+    console.error(`Configuration ${label} invalide`, error);
+    return undefined;
+  }
+}
+
+const configuredFunctionsUrl = getValidUrl(import.meta.env.VITE_SUPABASE_FUNCTIONS_URL, 'Supabase Functions');
+const fallbackFunctionsUrl = supabaseUrl ? getValidUrl(`${supabaseUrl}/functions/v1`, 'Supabase Functions') : undefined;
+const functionsUrl = configuredFunctionsUrl || fallbackFunctionsUrl;
 
 export type BillingPeriod = 'monthly' | 'yearly';
 
