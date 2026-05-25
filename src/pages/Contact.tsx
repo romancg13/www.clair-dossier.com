@@ -35,7 +35,7 @@ export function Contact() {
       />
 
       <section className="bg-cream-50">
-        <div className="mx-auto max-w-7xl px-5 py-24 sm:px-8 lg:px-12">
+        <div className="mx-auto max-w-7xl px-5 py-14 sm:py-20 lg:py-24 sm:px-8 lg:px-12">
           <div className="grid gap-12 lg:grid-cols-[1fr_1.1fr]">
             {/* Left — copy */}
             <Reveal>

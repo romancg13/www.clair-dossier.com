@@ -22,7 +22,7 @@ export function FinalCTA() {
         }}
       />
 
-      <div className="mx-auto max-w-5xl px-5 py-24 text-center sm:px-8 sm:py-28 lg:px-12">
+      <div className="mx-auto max-w-5xl px-5 py-14 sm:py-20 lg:py-24 text-center sm:px-8 sm:py-28 lg:px-12">
         <p className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-500">
           Passez à l'usage
         </p>

@@ -33,7 +33,7 @@ export function Hero() {
             'radial-gradient(60% 50% at 80% 0%, rgba(196,164,86,0.10), transparent 60%), radial-gradient(50% 40% at 0% 100%, rgba(13,27,61,0.06), transparent 70%)',
         }}
       />
-      <div className="mx-auto max-w-7xl px-5 pb-24 pt-16 sm:px-8 lg:grid lg:grid-cols-[1.15fr_0.85fr] lg:gap-16 lg:px-12 lg:pb-32 lg:pt-24">
+      <div className="mx-auto max-w-7xl px-5 pb-14 pt-12 sm:px-8 sm:pb-20 sm:pt-16 lg:grid lg:grid-cols-[1.15fr_0.85fr] lg:gap-16 lg:px-12 lg:pb-32 lg:pt-24">
         <div>
           <motion.p
             initial={{ opacity: 0, y: 8 }}
@@ -44,7 +44,7 @@ export function Hero() {
             Legaltech pour clients · PME · cabinets
           </motion.p>
 
-          <h1 className="mt-5 font-display text-[clamp(2.6rem,6vw,5.4rem)] font-semibold leading-[0.96] tracking-tight text-navy-900">
+          <h1 className="mt-5 font-display text-[clamp(2.1rem,7vw,5.4rem)] font-semibold leading-[0.98] tracking-tight text-navy-900 sm:leading-[0.96]">
             <SplitWords
               segments={[
                 'Votre',

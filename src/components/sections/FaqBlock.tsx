@@ -5,7 +5,7 @@ import { homeFaq } from '../../data/faq';
 export function FaqBlock() {
   return (
     <Reveal as="section" className="bg-cream-50">
-      <div className="mx-auto max-w-4xl px-5 py-24 sm:px-8 lg:px-12">
+      <div className="mx-auto max-w-4xl px-5 py-14 sm:py-20 lg:py-24 sm:px-8 lg:px-12">
         <div className="text-center">
           <p className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-500">
             Foire aux questions

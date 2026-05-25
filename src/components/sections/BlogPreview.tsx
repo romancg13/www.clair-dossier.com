@@ -10,7 +10,7 @@ function formatDate(iso: string): string {
 export function BlogPreview() {
   return (
     <Reveal as="section" className="bg-cream-50">
-      <div className="mx-auto max-w-7xl px-5 py-24 sm:px-8 lg:px-12">
+      <div className="mx-auto max-w-7xl px-5 py-14 sm:py-20 lg:py-24 sm:px-8 lg:px-12">
         <div className="flex flex-wrap items-end justify-between gap-6">
           <div className="max-w-2xl">
             <p className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-500">
@@ -29,7 +29,7 @@ export function BlogPreview() {
           </Link>
         </div>
 
-        <Stagger inView className="mt-12 grid gap-5 md:grid-cols-3">
+        <Stagger inView className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {blogPosts.map((post) => (
             <StaggerItem key={post.slug}>
               <Link

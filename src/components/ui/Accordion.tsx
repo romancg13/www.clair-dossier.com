@@ -20,9 +20,9 @@ export function Accordion({ items }: { items: AccordionItem[] }) {
               type="button"
               onClick={() => setOpen(isOpen ? null : item.id)}
               aria-expanded={isOpen}
-              className="flex w-full items-center justify-between gap-6 py-5 text-left transition-colors"
+              className="flex min-h-[44px] w-full items-center justify-between gap-4 py-4 text-left transition-colors sm:gap-6 sm:py-5"
             >
-              <span className="font-display text-lg font-semibold text-navy-900 sm:text-xl">
+              <span className="font-display text-base font-semibold text-navy-900 sm:text-xl">
                 {item.question}
               </span>
               <span
@@ -46,7 +46,7 @@ export function Accordion({ items }: { items: AccordionItem[] }) {
                   transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
                   className="overflow-hidden"
                 >
-                  <div className="pb-6 pr-10 text-slate-500 leading-relaxed">
+                  <div className="pb-5 pr-2 text-sm text-slate-500 leading-relaxed sm:pb-6 sm:pr-10 sm:text-base">
                     {item.answer}
                   </div>
                 </motion.div>

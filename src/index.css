@@ -176,6 +176,16 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--color-navy-900);
 }
 
+/* Drop cap off on mobile — float + huge first-letter crushes single-col reading */
+@media (max-width: 640px) {
+  .drop-cap > p:first-of-type::first-letter {
+    float: none;
+    font-size: inherit;
+    line-height: inherit;
+    margin: 0;
+  }
+}
+
 /* ─── Reduced motion ───────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

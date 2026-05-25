@@ -197,7 +197,7 @@ export function DossierFlow() {
       </section>
 
       {/* Step content */}
-      <section className="bg-cream-50 pb-24">
+      <section className="bg-cream-50 pb-14 sm:pb-20 lg:pb-24">
         <div className="mx-auto max-w-4xl px-5 sm:px-8 lg:px-12">
           <AnimatePresence mode="wait">
             <motion.div

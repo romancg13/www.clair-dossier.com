@@ -81,7 +81,7 @@ export function Pricing() {
 
       {/* Hero */}
       <section className="bg-cream-50">
-        <div className="mx-auto max-w-7xl px-5 pb-12 pt-24 text-center sm:px-8 lg:px-12">
+        <div className="mx-auto max-w-7xl px-5 pb-12 pt-12 sm:pt-16 lg:pt-24 text-center sm:px-8 lg:px-12">
           <p className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-500">
             Tarifs
           </p>
@@ -138,7 +138,7 @@ export function Pricing() {
       </section>
 
       {/* Plans grid */}
-      <section className="bg-cream-50 pb-24">
+      <section className="bg-cream-50 pb-14 sm:pb-20 lg:pb-24">
         <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-12">
           <Stagger inView className="grid items-stretch gap-5 lg:grid-cols-3">
             {plans.map((plan) => (
@@ -202,7 +202,7 @@ export function Pricing() {
 
       {/* Add-ons */}
       <Reveal as="section" className="bg-cream-50">
-        <div className="mx-auto max-w-7xl px-5 py-24 sm:px-8 lg:px-12">
+        <div className="mx-auto max-w-7xl px-5 py-14 sm:py-20 lg:py-24 sm:px-8 lg:px-12">
           <div className="max-w-3xl">
             <p className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-500">
               Add-ons
@@ -234,7 +234,7 @@ export function Pricing() {
 
       {/* FAQ tarifs */}
       <Reveal as="section" className="border-t hairline bg-cream-100/40">
-        <div className="mx-auto max-w-4xl px-5 py-24 sm:px-8 lg:px-12">
+        <div className="mx-auto max-w-4xl px-5 py-14 sm:py-20 lg:py-24 sm:px-8 lg:px-12">
           <div className="text-center">
             <p className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-500">
               Questions tarifs

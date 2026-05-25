@@ -71,7 +71,7 @@ export function Nav() {
 
         <button
           type="button"
-          className="ml-auto grid h-10 w-10 place-items-center rounded-md border hairline lg:hidden"
+          className="ml-auto grid h-11 w-11 place-items-center rounded-md border hairline lg:hidden"
           aria-expanded={open}
           aria-label={open ? 'Fermer le menu' : 'Ouvrir le menu'}
           onClick={() => setOpen(!open)}

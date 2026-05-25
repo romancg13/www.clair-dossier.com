@@ -30,7 +30,7 @@ export function Tabs({
               role="tab"
               aria-selected={isActive}
               onClick={() => setActive(item.id)}
-              className={`relative rounded-full px-5 py-2 text-sm font-medium transition-colors ${
+              className={`relative min-h-[40px] rounded-full px-4 py-2 text-xs font-medium transition-colors sm:px-5 sm:text-sm ${
                 isActive ? 'text-navy-900' : 'text-cream-50/75 hover:text-cream-50'
               }`}
             >

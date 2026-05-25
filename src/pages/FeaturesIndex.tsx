@@ -31,7 +31,7 @@ export function FeaturesIndex() {
 
       {/* Hero */}
       <section className="bg-cream-50">
-        <div className="mx-auto max-w-7xl px-5 pb-12 pt-24 sm:px-8 lg:px-12">
+        <div className="mx-auto max-w-7xl px-5 pb-12 pt-12 sm:pt-16 lg:pt-24 sm:px-8 lg:px-12">
           <div className="max-w-3xl">
             <p className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-500">
               Fonctionnalités
@@ -50,7 +50,7 @@ export function FeaturesIndex() {
 
       {/* Grid 4×2 */}
       <Reveal as="section" className="bg-cream-50">
-        <div className="mx-auto max-w-7xl px-5 pb-24 sm:px-8 lg:px-12">
+        <div className="mx-auto max-w-7xl px-5 pb-14 sm:pb-20 lg:pb-24 sm:px-8 lg:px-12">
           <Stagger inView className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {features.map((f) => {
               const Icon = FEATURE_ICONS[f.icon];

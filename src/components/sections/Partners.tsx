@@ -14,7 +14,7 @@ export function Partners() {
             {partners.map((name) => (
               <span
                 key={name}
-                className="whitespace-nowrap font-display text-lg font-medium tracking-tight text-slate-400 opacity-60 transition-opacity duration-300 hover:text-navy-900 hover:opacity-100 sm:text-xl"
+                className="whitespace-nowrap font-display text-base font-medium tracking-tight text-slate-400 opacity-60 transition-opacity duration-300 hover:text-navy-900 hover:opacity-100 sm:text-lg lg:text-xl"
               >
                 {name}
               </span>

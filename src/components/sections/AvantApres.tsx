@@ -20,7 +20,7 @@ const AVEC = [
 export function AvantApres() {
   return (
     <Reveal as="section" className="bg-cream-50">
-      <div className="mx-auto max-w-7xl px-5 py-24 sm:px-8 lg:px-12">
+      <div className="mx-auto max-w-7xl px-5 py-14 sm:py-20 lg:py-24 sm:px-8 lg:px-12">
         <div className="grid items-stretch gap-4 lg:grid-cols-[1fr_auto_1fr] lg:gap-8">
           {/* Avant */}
           <div className="rounded-2xl border hairline bg-cream-100 p-7 sm:p-9">

@@ -11,7 +11,7 @@ export function Workflow() {
 
   return (
     <Reveal as="section" className="bg-cream-50">
-      <div className="mx-auto max-w-7xl px-5 py-24 sm:px-8 lg:px-12">
+      <div className="mx-auto max-w-7xl px-5 py-14 sm:py-20 lg:py-24 sm:px-8 lg:px-12">
         <div className="max-w-3xl">
           <p className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-500">
             Workflow

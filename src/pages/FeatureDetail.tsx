@@ -70,7 +70,7 @@ export function FeatureDetail() {
 
       {/* Body */}
       <Reveal as="section" className="bg-cream-50">
-        <div className="mx-auto grid max-w-5xl gap-12 px-5 pb-24 sm:px-8 lg:grid-cols-[1fr_280px] lg:px-12">
+        <div className="mx-auto grid max-w-5xl gap-12 px-5 pb-14 sm:pb-20 lg:pb-24 sm:px-8 lg:grid-cols-[1fr_280px] lg:px-12">
           <article className="space-y-5 text-base leading-relaxed text-slate-500 sm:text-[1.05rem]">
             {feature.body.map((p, i) => (
               <p key={i}>{p}</p>
