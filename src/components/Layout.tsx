@@ -9,8 +9,12 @@ export function Layout() {
 
   // Reset scroll on every route change so each page mounts at the top
   // and the in-view animations have a chance to fire from a clean slate.
+  // Use legacy two-arg signature for guaranteed synchronous, instant scroll
+  // (the object form with behavior:'instant' is not honored everywhere).
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
   }, [location.pathname]);
 
   return (
