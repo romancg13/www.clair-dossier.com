@@ -1,8 +1,8 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'motion/react';
 import { Seo, breadcrumbSchema } from '../lib/seo';
-import { ArrowRightIcon, CheckIcon } from '../components/icons';
+import { ArrowRightIcon, CheckIcon, WhatsAppIcon } from '../components/icons';
+import { openWhatsApp } from '../lib/whatsapp';
 
 type Typology =
   | 'prud-hommes'
@@ -347,6 +347,18 @@ function Step3({
   const typologyMeta = TYPOLOGIES.find((t) => t.id === typology);
   const fields = FIELDS[typology];
 
+  function submitToWhatsApp() {
+    const lines = fields
+      .map((f) => `• ${f.label} : ${answers[f.id]?.trim() || 'Non renseigné'}`)
+      .join('\n');
+    const text =
+      `Bonjour ClairDossier,\n\n` +
+      `Je souhaite soumettre un dossier ${typologyMeta?.label ?? typology} pour validation.\n\n` +
+      `Synthèse :\n${lines}\n\n` +
+      `Pouvez-vous me confirmer la prise en charge ? Merci.`;
+    openWhatsApp(text);
+  }
+
   return (
     <div className="rounded-2xl border hairline bg-white p-7 shadow-card sm:p-9">
       <div className="flex items-start justify-between gap-3">
@@ -379,9 +391,9 @@ function Step3({
           Prochaine étape
         </p>
         <p className="mt-2 text-sm leading-relaxed text-navy-900">
-          Soumettre le dossier le placera en attente de prise en charge par un avocat habilité.
-          Vous serez notifié dès qu'une décision est rendue — validation, demande de pièce, ou
-          motivation de non prise en charge.
+          Au clic sur « Envoyer sur WhatsApp », la synthèse de votre dossier est composée et
+          WhatsApp s'ouvre, prêt à être envoyé à notre équipe. Vous gardez le dernier clic —
+          aucun envoi ne part avant votre validation dans WhatsApp.
         </p>
       </div>
 
@@ -401,18 +413,20 @@ function Step3({
           >
             Supprimer ce brouillon
           </button>
-          <Link
-            to="/contact"
+          <button
+            type="button"
+            onClick={submitToWhatsApp}
             className="sheen inline-flex items-center gap-2 rounded-full bg-gold-500 px-6 py-3.5 text-sm font-semibold text-navy-900 shadow-gold transition-all duration-200 hover:-translate-y-0.5"
           >
-            Soumettre à un avocat
+            <WhatsAppIcon width={16} height={16} />
+            Envoyer sur WhatsApp
             <ArrowRightIcon width={14} height={14} strokeWidth={2} />
-          </Link>
+          </button>
         </div>
       </div>
 
       <p className="mt-6 text-center text-xs text-slate-400">
-        Showcase : aucune soumission réelle. Le brouillon reste dans votre navigateur (localStorage).
+        Le brouillon reste dans votre navigateur (localStorage) tant que vous ne le supprimez pas.
       </p>
     </div>
   );
