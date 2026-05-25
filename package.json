@@ -1,46 +1,31 @@
 {
-  "name": "clairdossier-legaltech",
+  "name": "clairdossier-showcase",
   "version": "0.1.0",
-  "description": "Application LegalTech ClairDossier - dossiers juridiques clairs, structures et suivis.",
+  "private": true,
+  "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -p tsconfig.json && vite build",
-    "preview": "vite preview",
-    "typecheck": "tsc -p tsconfig.json --pretty"
+    "preview": "vite preview --port 4173",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/romancg13/www.clair-dossier.com.git"
-  },
-  "keywords": [
-    "legaltech",
-    "react",
-    "vite",
-    "supabase",
-    "stripe",
-    "rgpd"
-  ],
-  "author": "",
-  "license": "UNLICENSED",
-  "bugs": {
-    "url": "https://github.com/romancg13/www.clair-dossier.com/issues"
-  },
-  "homepage": "https://www.clair-dossier.com",
   "dependencies": {
-    "@supabase/supabase-js": "^2.106.1",
-    "motion": "^12.40.0",
-    "react": "^19.2.6",
-    "react-dom": "^19.2.6",
-    "react-router-dom": "^7.15.1"
+    "@fontsource/cormorant-garamond": "^5.2.5",
+    "@fontsource/inter": "^5.2.5",
+    "@fontsource/jetbrains-mono": "^5.2.5",
+    "motion": "^11.15.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-router-dom": "^7.1.0"
   },
   "devDependencies": {
-    "@types/node": "^25.9.1",
-    "@types/react": "^19.2.15",
-    "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^6.0.2",
-    "typescript": "^6.0.3",
-    "vite": "^8.0.14"
-  },
-  "private": true,
-  "type": "module"
+    "@tailwindcss/vite": "^4.0.0",
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "tailwindcss": "^4.0.0",
+    "typescript": "^5.7.0",
+    "vite": "^6.0.0"
+  }
 }

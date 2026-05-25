@@ -1,4 +1,4 @@
-name: Deploy to GitHub Pages
+name: Deploy showcase to GitHub Pages
 
 on:
   push:
@@ -26,34 +26,15 @@ jobs:
           cache: npm
 
       - uses: actions/configure-pages@v5
-        with:
-          enablement: true
 
       - run: npm ci
 
       - name: Build
         run: npm run build
         env:
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-          VITE_SUPABASE_FUNCTIONS_URL: ${{ secrets.VITE_SUPABASE_FUNCTIONS_URL }}
-          VITE_STRIPE_PUBLIC_KEY: ${{ secrets.VITE_STRIPE_PUBLIC_KEY }}
-          VITE_STRIPE_CLIENT_ESSENTIEL_MONTHLY_PRICE_ID: ${{ secrets.VITE_STRIPE_CLIENT_ESSENTIEL_MONTHLY_PRICE_ID }}
-          VITE_STRIPE_CLIENT_ESSENTIEL_YEARLY_PRICE_ID: ${{ secrets.VITE_STRIPE_CLIENT_ESSENTIEL_YEARLY_PRICE_ID }}
-          VITE_STRIPE_BUSINESS_MONTHLY_PRICE_ID: ${{ secrets.VITE_STRIPE_BUSINESS_MONTHLY_PRICE_ID }}
-          VITE_STRIPE_BUSINESS_YEARLY_PRICE_ID: ${{ secrets.VITE_STRIPE_BUSINESS_YEARLY_PRICE_ID }}
-          VITE_STRIPE_CABINET_SOLO_MONTHLY_PRICE_ID: ${{ secrets.VITE_STRIPE_CABINET_SOLO_MONTHLY_PRICE_ID }}
-          VITE_STRIPE_CABINET_SOLO_YEARLY_PRICE_ID: ${{ secrets.VITE_STRIPE_CABINET_SOLO_YEARLY_PRICE_ID }}
-          VITE_STRIPE_CABINET_PRO_MONTHLY_PRICE_ID: ${{ secrets.VITE_STRIPE_CABINET_PRO_MONTHLY_PRICE_ID }}
-          VITE_STRIPE_CABINET_PRO_YEARLY_PRICE_ID: ${{ secrets.VITE_STRIPE_CABINET_PRO_YEARLY_PRICE_ID }}
-          VITE_STRIPE_CABINET_PREMIUM_MONTHLY_PRICE_ID: ${{ secrets.VITE_STRIPE_CABINET_PREMIUM_MONTHLY_PRICE_ID }}
-          VITE_STRIPE_CABINET_PREMIUM_YEARLY_PRICE_ID: ${{ secrets.VITE_STRIPE_CABINET_PREMIUM_YEARLY_PRICE_ID }}
+          VITE_BASE_PATH: /
 
-      - name: Verify GitHub Pages artifact
-        run: |
-          node -e "const fs=require('fs'); const html=fs.readFileSync('dist/index.html','utf8'); if (html.includes('/src/main.tsx')) throw new Error('dist/index.html still references /src/main.tsx'); if (!html.includes('/assets/')) throw new Error('dist/index.html does not reference built assets'); for (const file of ['dist/404.html','dist/manifest.json','dist/icon.svg','dist/CNAME']) { if (!fs.existsSync(file)) throw new Error(`${file} is missing from the Pages artifact`); }"
-
-      - name: Upload GitHub Pages artifact
+      - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./dist
@@ -65,6 +46,5 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Deploy built artifact
-        id: deployment
+      - id: deployment
         uses: actions/deploy-pages@v4

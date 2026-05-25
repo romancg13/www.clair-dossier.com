@@ -1,7 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="ClairDossier">
-  <rect width="128" height="128" rx="24" fill="#0B2545"/>
-  <path d="M34 36h39l21 21v35H34z" fill="#FFFFFF"/>
-  <path d="M73 36v22h21" fill="#E8DDBB"/>
-  <path d="M47 66h34M47 78h34M47 90h21" stroke="#0B2545" stroke-width="6" stroke-linecap="round"/>
-  <circle cx="92" cy="94" r="13" fill="#C6A24A"/>
-</svg>

@@ -1,0 +1,188 @@
+@import "tailwindcss";
+
+@import "@fontsource/cormorant-garamond/400.css";
+@import "@fontsource/cormorant-garamond/500.css";
+@import "@fontsource/cormorant-garamond/500-italic.css";
+@import "@fontsource/cormorant-garamond/600.css";
+@import "@fontsource/cormorant-garamond/700.css";
+@import "@fontsource/inter/300.css";
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
+@import "@fontsource/jetbrains-mono/400.css";
+@import "@fontsource/jetbrains-mono/500.css";
+
+@theme {
+  /* ─── Palette signature ──────────────────────────────────── */
+  --color-navy-900: #0d1b3d;
+  --color-navy-800: #152348;
+  --color-navy-700: #1e2c52;
+  --color-navy-600: #2a3960;
+
+  --color-gold-500: #c4a456;
+  --color-gold-400: #e6c97d;
+  --color-gold-300: #f0d99a;
+
+  --color-cream-50: #fbf9f4;
+  --color-cream-100: #f5f0e6;
+  --color-cream-200: #ebe2cf;
+
+  --color-ink: #0a1228;
+  --color-slate-500: #5a6378;
+  --color-slate-400: #7c8497;
+  --color-slate-300: #a3aab9;
+
+  --color-sky-marker: rgba(179, 210, 239, 0.6);
+  --color-sky-marker-deep: rgba(150, 190, 230, 0.8);
+
+  /* ─── Typo ───────────────────────────────────────────────── */
+  --font-display: "Cormorant Garamond", "Iowan Old Style", Georgia, serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* ─── Radii ──────────────────────────────────────────────── */
+  --radius-xs: 0.25rem;
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1.125rem;
+  --radius-xl: 1.5rem;
+  --radius-full: 9999px;
+
+  /* ─── Shadows hairline ────────────────────────────────────── */
+  --shadow-card: 0 2px 24px rgba(13, 27, 61, 0.06);
+  --shadow-card-hover: 0 12px 48px rgba(13, 27, 61, 0.1);
+  --shadow-gold: 0 8px 24px rgba(196, 164, 86, 0.22);
+  --shadow-gold-strong: 0 14px 36px rgba(196, 164, 86, 0.32);
+
+  /* ─── Animation easing ────────────────────────────────────── */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ─── Base ─────────────────────────────────────────────────── */
+html {
+  background: var(--color-cream-50);
+  color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: "ss01", "cv11", "calt";
+}
+
+body {
+  font-family: var(--font-sans);
+  font-weight: 400;
+  line-height: 1.55;
+  overflow-x: clip;
+  min-height: 100dvh;
+}
+
+::selection {
+  background: var(--color-sky-marker);
+  color: var(--color-navy-900);
+}
+
+/* ─── Headings ─────────────────────────────────────────────── */
+.font-display {
+  font-family: var(--font-display);
+  font-feature-settings: "liga", "kern";
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: inherit;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+
+/* ─── Skip nav ─────────────────────────────────────────────── */
+.skip-nav {
+  position: fixed;
+  top: -100%;
+  left: 1rem;
+  z-index: 100;
+  padding: 0.75rem 1.25rem;
+  background: var(--color-navy-900);
+  color: var(--color-cream-50);
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  transition: top 0.2s var(--ease-out-soft);
+}
+.skip-nav:focus { top: 1rem; }
+
+/* ─── Focus visible ────────────────────────────────────────── */
+*:focus { outline: none; }
+*:focus-visible {
+  outline: 2px solid var(--color-gold-500);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* ─── Hairlines ────────────────────────────────────────────── */
+.hairline { border-color: rgba(13, 27, 61, 0.08); }
+.hairline-strong { border-color: rgba(13, 27, 61, 0.12); }
+.hairline-gold { border-color: rgba(196, 164, 86, 0.35); }
+
+/* ─── Sheen for primary buttons ────────────────────────────── */
+.sheen {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.sheen::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    115deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.45) 50%,
+    transparent 70%
+  );
+  transform: translateX(-100%);
+  transition: transform 0.6s var(--ease-out-soft);
+  pointer-events: none;
+}
+.sheen:hover::before { transform: translateX(100%); }
+
+/* ─── Marker highlight ─────────────────────────────────────── */
+.marker-track {
+  position: relative;
+  display: inline-block;
+  isolation: isolate;
+}
+.marker-track::before {
+  content: "";
+  position: absolute;
+  inset: 0.2em -0.08em 0.05em -0.08em;
+  background: var(--color-sky-marker);
+  z-index: -1;
+  border-radius: 0.1em 0.3em 0.15em 0.2em;
+  transform-origin: left center;
+  transform: scaleX(var(--marker-scale, 0));
+  transition: transform 0.9s var(--ease-out-expo);
+}
+.marker-track[data-revealed="true"]::before {
+  --marker-scale: 1;
+}
+
+/* ─── Drop cap (article blog) ──────────────────────────────── */
+.drop-cap > p:first-of-type::first-letter {
+  font-family: var(--font-display);
+  font-weight: 600;
+  float: left;
+  font-size: 4.2em;
+  line-height: 0.85;
+  margin: 0.05em 0.12em 0 0;
+  color: var(--color-navy-900);
+}
+
+/* ─── Reduced motion ───────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .sheen::before { display: none; }
+  .marker-track::before { transform: scaleX(1); }
+}

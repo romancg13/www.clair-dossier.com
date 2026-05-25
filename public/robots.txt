@@ -1,13 +1,21 @@
 User-agent: *
 Allow: /
-Disallow: /dashboard
-Disallow: /mes-dossiers
 Disallow: /dossier/
-Disallow: /documents
-Disallow: /messages
-Disallow: /paiements
-Disallow: /abonnement
-Disallow: /parametres
-Disallow: /cabinet/
+
+# Allow AI crawlers (sourced citations)
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
 
 Sitemap: https://www.clair-dossier.com/sitemap.xml

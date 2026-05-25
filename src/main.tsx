@@ -1,19 +1,16 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
 import App from './App';
-import { ErrorBoundary } from './components/ErrorBoundary';
-import './styles.css';
+import './index.css';
 
-const rootElement = document.getElementById('root');
+const container = document.getElementById('root');
+if (!container) throw new Error('Missing #root element');
 
-if (!rootElement) {
-  console.error('Element racine #root introuvable: rendu ClairDossier impossible.');
-} else {
-  ReactDOM.createRoot(rootElement).render(
-    <React.StrictMode>
-      <ErrorBoundary>
-        <App />
-      </ErrorBoundary>
-    </React.StrictMode>,
-  );
-}
+createRoot(container).render(
+  <StrictMode>
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
+  </StrictMode>
+);

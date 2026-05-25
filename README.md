@@ -1,107 +1,74 @@
-# ClairDossier
+# ClairDossier — Showcase v2
 
-ClairDossier est une application LegalTech React/Vite pour structurer les dossiers juridiques, préparer le suivi client-avocat, publier un blog SEO/GEO et connecter Supabase + Stripe.
-
-Slogan : **Votre dossier juridique, clair, structuré et suivi.**
+Site showcase B2B/B2C ClairDossier construit en **Vite 6 + Tailwind v4 + Motion**. Cette branche est une refonte visuelle complète et indépendante de l'application principale (`main`).
 
 ## Stack
 
-- React + Vite + TypeScript
-- React Router
-- Supabase client côté frontend, schéma SQL/RLS dans `supabase/migrations`
-- Fonctions Supabase Edge pour Stripe Checkout, webhook Stripe, portail client et assistant IA blog
-- SEO statique : `index.html`, `robots.txt`, `sitemap.xml`, Open Graph, JSON-LD Article/FAQ
+- React 19 · TypeScript 5 strict
+- Vite 6 · `@vitejs/plugin-react`
+- Tailwind v4 via `@tailwindcss/vite` (tokens dans `@theme`)
+- Motion (`motion/react`) pour les animations
+- React Router 7
+- Fonts self-hosted : Cormorant Garamond, Inter, JetBrains Mono (via `@fontsource`)
 
-## Lancer en local
+## Démarrer
 
 ```bash
 npm install
 npm run dev
 ```
 
+L'application tourne sur http://localhost:5173/
+
 ## Build production
 
 ```bash
-npm run build
+npm run build      # compile + bundle (tsc + vite build)
+npm run preview    # sert le build sur :4173
+npm run typecheck  # tsc --noEmit
 ```
 
-## Variables d'environnement
+## Routes
 
-Copiez `.env.example` vers `.env` puis renseignez les valeurs nécessaires.
+| Route | Description |
+|---|---|
+| `/` | Home — 11 sections (Hero, Partners, Avant/Après, Features, Workspaces tabs, Workflow, Sécurité, Pricing, Témoignages, Blog preview, FAQ, Final CTA) |
+| `/fonctionnalites` | Index des 8 fonctionnalités |
+| `/fonctionnalites/:slug` | 8 pages détail (200-400 mots chacune) |
+| `/tarifs` | 3 plans + toggle annuel/mensuel + matrice comparatif + add-ons |
+| `/securite` | Schéma archi + 6 piliers détaillés + badges + documents |
+| `/blog` | Index + 3 articles complets (800-1200 mots) |
+| `/blog/:slug` | Article avec drop cap, citations, "À retenir", FAQ inline |
+| `/contact` | Formulaire 4 topics avec état submitted simulé |
+| `/dossier/nouveau` | Flow 3 étapes avec persistance localStorage |
 
-Variables publiques frontend :
+## Architecture
 
-- `VITE_SUPABASE_URL`
-- `VITE_SUPABASE_ANON_KEY`
-- `VITE_STRIPE_PUBLIC_KEY`
-- `VITE_SUPABASE_FUNCTIONS_URL`
-- `VITE_STRIPE_CLIENT_ESSENTIEL_MONTHLY_PRICE_ID`
-- `VITE_STRIPE_CLIENT_ESSENTIEL_YEARLY_PRICE_ID`
-- `VITE_STRIPE_BUSINESS_MONTHLY_PRICE_ID`
-- `VITE_STRIPE_BUSINESS_YEARLY_PRICE_ID`
-- `VITE_STRIPE_CABINET_SOLO_MONTHLY_PRICE_ID`
-- `VITE_STRIPE_CABINET_SOLO_YEARLY_PRICE_ID`
-- `VITE_STRIPE_CABINET_PRO_MONTHLY_PRICE_ID`
-- `VITE_STRIPE_CABINET_PRO_YEARLY_PRICE_ID`
-- `VITE_STRIPE_CABINET_PREMIUM_MONTHLY_PRICE_ID`
-- `VITE_STRIPE_CABINET_PREMIUM_YEARLY_PRICE_ID`
-
-Variables serveur uniquement, à configurer dans Supabase Edge Functions ou l'environnement backend :
-
-- `STRIPE_SECRET_KEY`
-- `STRIPE_WEBHOOK_SECRET`
-- `AI_API_KEY`
-- `SUPABASE_SERVICE_ROLE_KEY`
-- `SUPABASE_URL`
-- `SUPABASE_ANON_KEY`
-- `SITE_URL` = `https://www.clair-dossier.com`
-- `ALLOWED_ORIGINS` = `https://www.clair-dossier.com,https://clair-dossier.com`
-- les `STRIPE_*_PRICE_ID` serveur, avec compatibilité temporaire pour les anciens `VITE_STRIPE_*_PRICE_ID` ajoutés comme secrets Supabase Edge Functions
-
-Variables GitHub Actions pour déployer Supabase :
-
-- `SUPABASE_ACCESS_TOKEN`
-- `SUPABASE_PROJECT_REF`
-- `SUPABASE_DB_PASSWORD`
-
-Ne jamais exposer les clés secrètes Stripe, service role Supabase ou IA dans le frontend.
-
-## Supabase
-
-Appliquez la migration :
-
-```bash
-supabase db push
+```
+src/
+├── components/
+│   ├── primitives/   Reveal, SplitWords, MarkerHighlight, Marquee, Magnetic
+│   ├── sections/     12 sections de la Home
+│   ├── ui/           Button, Pill, Card, Tabs, Accordion
+│   ├── Nav.tsx · Footer.tsx · Layout.tsx · Logo.tsx · icons.tsx
+├── data/             Contenus typés (features, pricing, statuses, testimonials, faq, workspaces, partners, authors, blog/*)
+├── lib/              seo.tsx (composant Seo + builders JSON-LD)
+├── pages/            Une page par route
+├── App.tsx           Router
+├── main.tsx          Entry
+└── index.css         Tokens Tailwind v4 + base + utilities CSS
 ```
 
-La migration crée les tables demandées : `profiles`, `contact_requests`, `newsletter_subscribers`, `demo_requests`, `cases`, `case_intake_answers`, `payments`, `subscriptions`, `blog_posts`, `blog_categories`, `audit_logs`, ainsi que `documents` et `messages` pour les espaces privés.
+Voir `PLAN.md` pour le détail d'implémentation et les 10 détails signature.
 
-## Stripe
+## Bundles (build prod)
 
-Les boutons de tarifs appellent `create-checkout-session`. Le paiement réel nécessite :
+| Chunk | Taille | Gzip |
+|---|---|---|
+| `index.js` | 163 KB | 44 KB |
+| `react.js` | 194 KB | 60 KB |
+| `motion.js` | 121 KB | 40 KB |
+| `router.js` | 36 KB | 13 KB |
+| `index.css` | 88 KB | 25 KB |
 
-1. créer les produits Stripe et les Prices mensuels/annuels, avec les Prices annuels calculés sur une réduction de 10 % ;
-2. ajouter les Price IDs publics dans les secrets GitHub `VITE_STRIPE_*_PRICE_ID` pour le build frontend ;
-3. ajouter `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_SUPABASE_FUNCTIONS_URL` et `VITE_STRIPE_PUBLIC_KEY` dans les secrets GitHub ;
-4. ajouter dans les secrets GitHub du workflow Supabase `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `SITE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `ALLOWED_ORIGINS` et les `STRIPE_*_PRICE_ID` serveur ;
-5. lancer le workflow manuel `Deploy Supabase Stripe Functions`, qui applique les migrations, configure les secrets Edge Functions et déploie les fonctions ;
-6. créer le webhook Stripe vers `https://<project-ref>.functions.supabase.co/stripe-webhook` ;
-7. redéployer GitHub Pages depuis `main` sur le domaine `www.clair-dossier.com`.
-
-Le webhook doit être déployé avec `--no-verify-jwt` et vérifie la signature Stripe via `STRIPE_WEBHOOK_SECRET`. Un abonnement ne doit être considéré actif qu’après événement Stripe fiable, jamais uniquement après une redirection vers `/success`.
-
-## Sécurité applicative
-
-- Les routes privées sont protégées par `ProtectedRoute` et une vérification `supabase.auth.getUser()`.
-- Les rôles applicatifs sont `client_particulier`, `client_entreprise`, `avocat`, `collaborateur`, `admin_cabinet` et `super_admin`.
-- Les rôles élevés ne sont pas auto-attribués à l’inscription ; ils doivent être affectés côté administration ou workflow serveur.
-- Les documents doivent rester dans le bucket privé `case-documents` et être consultés via URLs signées temporaires.
-- Les formulaires publics incluent validation, honeypot et règles RLS d’insertion sans lecture publique.
-
-Stripe Checkout utilise les moyens de paiement automatiques. Les cartes, Apple Pay et PayPal peuvent apparaître au checkout si ces moyens sont activés et éligibles dans le Dashboard Stripe pour le pays, la devise, le navigateur et le type d'abonnement. Aucun moyen de paiement sensible ne doit être collecté dans le frontend.
-
-Sans cette configuration, le frontend affiche clairement que le paiement est bientôt disponible.
-
-## Avertissement LegalTech
-
-Les textes sont juridiquement prudents mais doivent être relus par un professionnel avant mise en production. L'IA ne remplace pas l'avocat et toute analyse doit être validée par un professionnel habilité.
+Fonts chargées en woff/woff2 par sous-set (latin + latin-ext), ~30-50 KB chacune.
