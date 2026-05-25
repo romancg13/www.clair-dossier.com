@@ -1,5 +1,4 @@
 import { useEffect } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { Nav } from './Nav';
 import { Footer } from './Footer';
@@ -7,10 +6,8 @@ import { Footer } from './Footer';
 export function Layout() {
   const location = useLocation();
 
-  // Reset scroll on every route change so each page mounts at the top
-  // and the in-view animations have a chance to fire from a clean slate.
-  // Use legacy two-arg signature for guaranteed synchronous, instant scroll
-  // (the object form with behavior:'instant' is not honored everywhere).
+  // Reset scroll on every route change so each page mounts at the top.
+  // Legacy two-arg form is guaranteed synchronous and instant on all browsers.
   useEffect(() => {
     window.scrollTo(0, 0);
     document.documentElement.scrollTop = 0;
@@ -22,17 +19,7 @@ export function Layout() {
       <a className="skip-nav" href="#main">Aller au contenu principal</a>
       <Nav />
       <main id="main" className="flex-1">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={location.pathname}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -6 }}
-            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-          >
-            <Outlet />
-          </motion.div>
-        </AnimatePresence>
+        <Outlet />
       </main>
       <Footer />
     </div>
