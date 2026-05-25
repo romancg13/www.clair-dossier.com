@@ -146,9 +146,8 @@ img { max-width: 100%; display: block; }
   gap: 0.5rem;
   overflow-y: auto;
   box-shadow: -8px 0 30px rgba(0,0,0,0.15);
-  animation: slideIn var(--transition-med) forwards;
 }
-@keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+.mobile-drawer.open { display: block; }
 .drawer-panel .nav-link {
   display: block;
   padding: 0.85rem 1rem;
@@ -602,21 +601,20 @@ summary:hover { color: var(--gold); }
 /* ─── Cookie Banner ─── */
 .cookie-banner {
   position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  bottom: 1rem;
+  left: 1rem;
+  right: 1rem;
   z-index: 55;
   background: var(--white);
-  border-top: 1px solid var(--line);
-  box-shadow: 0 -4px 20px rgba(11, 37, 69, 0.1);
-  padding: 1.25rem clamp(1rem, 4vw, 4rem);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 24px 80px rgba(11, 37, 69, 0.18);
+  padding: 1.25rem clamp(1rem, 3vw, 2rem);
   display: flex;
   align-items: center;
   gap: 1.25rem;
   flex-wrap: wrap;
-  animation: slideUp var(--transition-med) forwards;
 }
-@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
 .cookie-banner p { flex: 1; min-width: 240px; margin: 0; color: #475569; font-size: 0.9rem; line-height: 1.55; }
 .cookie-banner p a { color: var(--navy); font-weight: 800; text-decoration: underline; }
 .cookie-actions { display: flex; gap: 0.6rem; flex-shrink: 0; }
@@ -652,3 +650,167 @@ summary:hover { color: var(--gold); }
   .cookie-banner { flex-direction: column; text-align: center; }
   .cookie-actions { width: 100%; justify-content: center; }
 }
+
+/* ─── Design polish (Fraunces serif + gradient mesh + scrolled header) ─── */
+
+.display-heading {
+  font-family: 'Iowan Old Style', 'Palatino Linotype', 'URW Palladio L',
+    P052, Georgia, 'Times New Roman', serif;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  font-feature-settings: 'ss01' on, 'liga' on;
+}
+
+.hero-copy h1.display-heading,
+.page-hero h1.display-heading,
+.article-page h1 {
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 1.02;
+}
+
+/* Hero section overhaul */
+.hero-section {
+  position: relative;
+  isolation: isolate;
+}
+
+.hero-mesh {
+  position: absolute;
+  inset: -4rem -2rem;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  filter: blur(60px);
+  opacity: 0.55;
+}
+
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  will-change: transform;
+}
+
+.orb-gold {
+  width: 420px;
+  height: 420px;
+  top: -8%;
+  right: -6%;
+  background: radial-gradient(circle, rgba(198, 162, 74, 0.42), rgba(198, 162, 74, 0));
+}
+
+.orb-navy {
+  width: 360px;
+  height: 360px;
+  bottom: -10%;
+  left: 8%;
+  background: radial-gradient(circle, rgba(11, 37, 69, 0.32), rgba(11, 37, 69, 0));
+}
+
+.orb-sky {
+  width: 320px;
+  height: 320px;
+  top: 30%;
+  left: -8%;
+  background: radial-gradient(circle, rgba(56, 132, 213, 0.28), rgba(56, 132, 213, 0));
+}
+
+/* Header scrolled state — boosts contrast when content scrolls under */
+.site-header {
+  transition: background var(--transition-med), border-color var(--transition-med), box-shadow var(--transition-med);
+  border-bottom: 1px solid transparent;
+}
+
+.site-header.scrolled {
+  background: rgba(255, 255, 255, 0.94);
+  border-bottom-color: var(--line);
+  box-shadow: 0 6px 24px rgba(11, 37, 69, 0.06);
+}
+
+/* Hero panel — refined glass card */
+.hero-panel {
+  position: relative;
+  background:
+    linear-gradient(145deg, rgba(255,255,255,0.95), rgba(238, 244, 251, 0.85));
+  border: 1px solid rgba(219, 227, 239, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.8) inset,
+    var(--shadow-lg);
+}
+
+.hero-panel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(198, 162, 74, 0.35), transparent 40%);
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Button polish */
+.primary-button {
+  position: relative;
+  overflow: hidden;
+}
+
+.primary-button::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  transform: translateX(-100%);
+  transition: transform 0.6s ease;
+}
+
+.primary-button:hover::before { transform: translateX(100%); }
+
+/* Feature card refinement */
+.feature-card {
+  position: relative;
+  background: linear-gradient(180deg, var(--white), #fbfdff);
+}
+
+.feature-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(180deg, rgba(198, 162, 74, 0.18), transparent);
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity var(--transition-med);
+  pointer-events: none;
+}
+
+.feature-card:hover::before { opacity: 1; }
+
+/* Refine inputs focus state */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  border-color: var(--gold);
+  box-shadow:
+    0 0 0 4px rgba(198, 162, 74, 0.22),
+    0 4px 16px rgba(198, 162, 74, 0.12);
+}
+
+/* Reduced motion respect */
+@media (prefers-reduced-motion: reduce) {
+  .hero-mesh { display: none; }
+  .primary-button::before { display: none; }
+  * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+

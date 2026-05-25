@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
+import { AnimatePresence, motion, useMotionValueEvent, useScroll } from 'motion/react';
 import { footerBadges, legalLinks, productLinks, publicNav, resourceLinks, site, warnings } from '../data/site';
 import { supabase } from '../lib/supabase';
 
@@ -13,8 +14,15 @@ export function Layout() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [showCookies, setShowCookies] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const location = useLocation();
+  const { scrollY } = useScroll();
+
+  useMotionValueEvent(scrollY, 'change', (latest) => {
+    setScrolled(latest > 24);
+    setShowScrollTop(latest > 400);
+  });
 
   useEffect(() => { setMenuOpen(false); }, [location.pathname]);
 
@@ -33,12 +41,6 @@ export function Layout() {
     } catch {
       /* localStorage unavailable */
     }
-  }, []);
-
-  useEffect(() => {
-    function onScroll() { setShowScrollTop(window.scrollY > 400); }
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
   useEffect(() => {
@@ -61,8 +63,7 @@ export function Layout() {
 
   const signOut = useCallback(async () => {
     if (!supabase) return;
-    const { error } = await supabase.auth.signOut();
-    if (error) console.error('Erreur déconnexion Supabase', error);
+    await supabase.auth.signOut();
   }, []);
 
   const acceptCookies = useCallback(() => {
@@ -83,7 +84,7 @@ export function Layout() {
     <div className="app-shell">
       <a className="skip-nav" href="#main-content">Aller au contenu principal</a>
 
-      <header className="site-header">
+      <header className={`site-header${scrolled ? ' scrolled' : ''}`}>
         <Link className="brand" to="/" aria-label="Accueil ClairDossier">
           <span className="brand-mark">CD</span>
           <span>
@@ -125,30 +126,65 @@ export function Layout() {
       </header>
 
       {/* Mobile drawer */}
-      <div className={`mobile-drawer${menuOpen ? ' open' : ''}`} aria-hidden={!menuOpen}>
-        <div className="drawer-backdrop" onClick={() => setMenuOpen(false)} />
-        <nav className="drawer-panel" aria-label="Navigation mobile">
-          {publicNav.map((item) => (
-            <NavLink key={item.path} to={item.path} className={linkClass}>{item.label}</NavLink>
-          ))}
-          <div className="drawer-actions">
-            {isAuthenticated ? (
-              <>
-                <Link className="ghost-button full" to="/dashboard">Tableau de bord</Link>
-                <button className="secondary-button full" type="button" onClick={signOut}>Déconnexion</button>
-              </>
-            ) : (
-              <>
-                <Link className="ghost-button full" to="/connexion">Connexion</Link>
-                <Link className="primary-button full" to="/creer-dossier">Créer un dossier</Link>
-              </>
-            )}
-          </div>
-        </nav>
-      </div>
+      <AnimatePresence>
+        {menuOpen && (
+          <motion.div
+            className="mobile-drawer open"
+            aria-hidden={false}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <motion.div
+              className="drawer-backdrop"
+              onClick={() => setMenuOpen(false)}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.25 }}
+            />
+            <motion.nav
+              className="drawer-panel"
+              aria-label="Navigation mobile"
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', stiffness: 320, damping: 32 }}
+            >
+              {publicNav.map((item) => (
+                <NavLink key={item.path} to={item.path} className={linkClass}>{item.label}</NavLink>
+              ))}
+              <div className="drawer-actions">
+                {isAuthenticated ? (
+                  <>
+                    <Link className="ghost-button full" to="/dashboard">Tableau de bord</Link>
+                    <button className="secondary-button full" type="button" onClick={signOut}>Déconnexion</button>
+                  </>
+                ) : (
+                  <>
+                    <Link className="ghost-button full" to="/connexion">Connexion</Link>
+                    <Link className="primary-button full" to="/creer-dossier">Créer un dossier</Link>
+                  </>
+                )}
+              </div>
+            </motion.nav>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <main id="main-content">
-        <Outlet />
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={location.pathname}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <Outlet />
+          </motion.div>
+        </AnimatePresence>
       </main>
 
       <aside className="ai-warning" aria-label="Avertissements IA et validation">
@@ -181,29 +217,49 @@ export function Layout() {
       </footer>
 
       {/* Scroll to top */}
-      <button
-        className={`scroll-top${showScrollTop ? ' visible' : ''}`}
-        type="button"
-        onClick={scrollToTop}
-        aria-label="Retour en haut de page"
-      >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15" /></svg>
-      </button>
+      <AnimatePresence>
+        {showScrollTop && (
+          <motion.button
+            className="scroll-top visible"
+            type="button"
+            onClick={scrollToTop}
+            aria-label="Retour en haut de page"
+            initial={{ opacity: 0, scale: 0.6, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.6, y: 20 }}
+            whileHover={{ scale: 1.1, y: -2 }}
+            whileTap={{ scale: 0.95 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15" /></svg>
+          </motion.button>
+        )}
+      </AnimatePresence>
 
       {/* Cookie consent banner */}
-      {showCookies && (
-        <div className="cookie-banner" role="dialog" aria-label="Consentement cookies">
-          <p>
-            ClairDossier utilise des cookies nécessaires au fonctionnement du site.
-            Aucun cookie analytique ou marketing n'est activé sans votre consentement.{' '}
-            <Link to="/cookies">En savoir plus</Link>
-          </p>
-          <div className="cookie-actions">
-            <button className="ghost-button" type="button" onClick={refuseCookies}>Refuser</button>
-            <button className="primary-button" type="button" onClick={acceptCookies}>Accepter</button>
-          </div>
-        </div>
-      )}
+      <AnimatePresence>
+        {showCookies && (
+          <motion.div
+            className="cookie-banner"
+            role="dialog"
+            aria-label="Consentement cookies"
+            initial={{ y: '120%', opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: '120%', opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 260, damping: 28 }}
+          >
+            <p>
+              ClairDossier utilise des cookies nécessaires au fonctionnement du site.
+              Aucun cookie analytique ou marketing n'est activé sans votre consentement.{' '}
+              <Link to="/cookies">En savoir plus</Link>
+            </p>
+            <div className="cookie-actions">
+              <button className="ghost-button" type="button" onClick={refuseCookies}>Refuser</button>
+              <button className="primary-button" type="button" onClick={acceptCookies}>Accepter</button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

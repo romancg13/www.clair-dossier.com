@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { AnimatePresence, motion } from 'motion/react';
 import { plans } from '../data/site';
 import type { BillingPeriod } from '../lib/stripe';
 import { CheckoutAuthRequiredError, isPlanCheckoutAvailable, redirectToCheckout } from '../lib/stripe';
+import { Stagger, StaggerItem } from './MotionPrimitives';
 
 const POPULAR_PLAN = 'business';
 const yearlyDiscountPercent = 10;
@@ -44,7 +46,6 @@ export function PricingCards() {
     try {
       await redirectToCheckout(planId, billingPeriod);
     } catch (error) {
-      console.error('Paiement Stripe indisponible', error);
       if (error instanceof CheckoutAuthRequiredError) {
         navigate('/inscription?redirect=/tarifs');
         return;
@@ -63,15 +64,28 @@ export function PricingCards() {
           Annuel <span>Économisez 10 %</span>
         </button>
       </div>
-      {billingPeriod === 'yearly' && <p className="notice centered">Vous bénéficiez de 10 % de réduction avec le paiement annuel.</p>}
+      <AnimatePresence mode="wait">
+        {billingPeriod === 'yearly' && (
+          <motion.p
+            key="yearly-notice"
+            className="notice centered"
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.3 }}
+          >
+            Vous bénéficiez de 10 % de réduction avec le paiement annuel.
+          </motion.p>
+        )}
+      </AnimatePresence>
       {message && <p className="form-message error centered">{message}</p>}
-      <div className="pricing-grid">
+      <Stagger inView className="pricing-grid">
         {plans.map((plan) => {
           const price = getDisplayedPrice(plan.monthlyPrice, billingPeriod);
           const checkoutAvailable = isPlanCheckoutAvailable(plan.id, billingPeriod);
           const isPaidPlan = plan.id !== 'discovery';
           return (
-            <article key={plan.id} className={`price-card${plan.id === POPULAR_PLAN ? ' popular' : ''}`}>
+            <StaggerItem key={plan.id} className={`price-card${plan.id === POPULAR_PLAN ? ' popular' : ''}`}>
               {plan.id === POPULAR_PLAN && <span className="popular-badge">Populaire</span>}
               <p className="eyebrow">{plan.audience}</p>
               <h3>{plan.name}</h3>
@@ -93,10 +107,10 @@ export function PricingCards() {
               <button className="primary-button full" type="button" onClick={() => choosePlan(plan.id)} disabled={loadingPlan === plan.id || (isPaidPlan && !checkoutAvailable)}>
                 {loadingPlan === plan.id ? 'Préparation…' : plan.id === 'discovery' ? 'Commencer gratuitement' : 'Choisir cette formule'}
               </button>
-            </article>
+            </StaggerItem>
           );
         })}
-      </div>
+      </Stagger>
     </>
   );
 }

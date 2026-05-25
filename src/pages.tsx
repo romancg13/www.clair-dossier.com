@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { NewsletterForm } from './components/NewsletterForm';
 import { PricingCards } from './components/PricingCards';
 import { Seo } from './components/Seo';
+import { FadeUp, FloatingOrb, HoverLift, Reveal, Stagger, StaggerItem } from './components/MotionPrimitives';
 import { blogPosts, categories, caseStatuses, featureCards, infoPages, legalPages, plans, site, warnings } from './data/site';
 import { insertPublicRecord, supabase } from './lib/supabase';
 import { getSafeRedirect, isHoneypotFilled, isValidEmail, sanitizeText, validatePassword } from './lib/security';
@@ -66,63 +67,78 @@ export function HomePage() {
     <>
       <Seo title="ClairDossier - LegalTech pour dossiers juridiques" description="ClairDossier structure les dossiers juridiques, facilite le suivi client-avocat et prépare une base SaaS LegalTech sécurisée." />
       <section className="hero-section">
-        <div className="hero-copy">
-          <p className="eyebrow">LegalTech pour clients, PME et cabinets</p>
-          <h1>{site.slogan}</h1>
-          <p className="lead">Transformez les demandes juridiques en dossiers lisibles, suivis et prêts à être validés par un professionnel habilité.</p>
-          <div className="hero-actions">
-            <Link className="primary-button" to="/creer-dossier">Créer un dossier</Link>
-            <Link className="secondary-button" to="/demo">Demander une démo</Link>
-          </div>
-          <div className="metrics-row">
-            <span><strong>6</strong> statuts dossier</span>
-            <span><strong>3</strong> espaces dédiés</span>
-            <span><strong>100%</strong> liens footer actifs</span>
-          </div>
+        <div className="hero-mesh" aria-hidden="true">
+          <FloatingOrb className="orb orb-gold" duration={16} />
+          <FloatingOrb className="orb orb-navy" duration={20} delay={2} />
+          <FloatingOrb className="orb orb-sky" duration={18} delay={4} />
         </div>
-        <div className="hero-panel" aria-label="Aperçu dossier ClairDossier">
-          <span className="status-pill">En attente validation avocat</span>
-          <h2>Dossier prud'homal - synthèse</h2>
-          <ul className="timeline-list">
-            <li>Chronologie client complétée</li>
-            <li>4 documents à vérifier</li>
-            <li>Question IA préparatoire générée</li>
-            <li>Validation professionnelle requise</li>
-          </ul>
-        </div>
+        <Stagger className="hero-copy">
+          <StaggerItem><p className="eyebrow">LegalTech pour clients, PME et cabinets</p></StaggerItem>
+          <StaggerItem><h1 className="display-heading">{site.slogan}</h1></StaggerItem>
+          <StaggerItem><p className="lead">Transformez les demandes juridiques en dossiers lisibles, suivis et prêts à être validés par un professionnel habilité.</p></StaggerItem>
+          <StaggerItem>
+            <div className="hero-actions">
+              <Link className="primary-button" to="/creer-dossier">Créer un dossier</Link>
+              <Link className="secondary-button" to="/demo">Demander une démo</Link>
+            </div>
+          </StaggerItem>
+          <StaggerItem>
+            <div className="metrics-row">
+              <span><strong>6</strong> statuts dossier</span>
+              <span><strong>3</strong> espaces dédiés</span>
+              <span><strong>100%</strong> liens footer actifs</span>
+            </div>
+          </StaggerItem>
+        </Stagger>
+        <FadeUp delay={0.3}>
+          <div className="hero-panel" aria-label="Aperçu dossier ClairDossier">
+            <span className="status-pill">En attente validation avocat</span>
+            <h2>Dossier prud'homal — synthèse</h2>
+            <ul className="timeline-list">
+              <li>Chronologie client complétée</li>
+              <li>4 documents à vérifier</li>
+              <li>Question IA préparatoire générée</li>
+              <li>Validation professionnelle requise</li>
+            </ul>
+          </div>
+        </FadeUp>
       </section>
 
-      <section className="section-block">
+      <Reveal as="section" className="section-block">
         <p className="eyebrow">Fonctionnalités</p>
-        <h2>Une structure claire pour chaque acteur du dossier</h2>
-        <div className="card-grid">
+        <h2 className="display-heading">Une structure claire pour chaque acteur du dossier</h2>
+        <Stagger inView className="card-grid">
           {featureCards.map((feature) => (
-            <article className="feature-card" key={feature.title}>
-              <h3>{feature.title}</h3>
-              <p>{feature.text}</p>
-            </article>
+            <StaggerItem key={feature.title}>
+              <HoverLift className="feature-card">
+                <h3>{feature.title}</h3>
+                <p>{feature.text}</p>
+              </HoverLift>
+            </StaggerItem>
           ))}
-        </div>
-      </section>
+        </Stagger>
+      </Reveal>
 
-      <section className="section-block">
+      <Reveal as="section" className="section-block">
         <p className="eyebrow">Tarifs</p>
-        <h2>Des formules pour chaque profil</h2>
-        <div className="card-grid">
+        <h2 className="display-heading">Des formules pour chaque profil</h2>
+        <Stagger inView className="card-grid">
           {plans.slice(0, 4).map((plan) => (
-            <article className="feature-card" key={plan.id}>
-              <h3>{plan.name} — {formatPlanPreviewPrice(plan.monthlyPrice)}</h3>
-              <p>{plan.audience}</p>
-              <Link className="text-link" to="/tarifs">Voir les détails</Link>
-            </article>
+            <StaggerItem key={plan.id}>
+              <HoverLift className="feature-card">
+                <h3>{plan.name} — {formatPlanPreviewPrice(plan.monthlyPrice)}</h3>
+                <p>{plan.audience}</p>
+                <Link className="text-link" to="/tarifs">Voir les détails</Link>
+              </HoverLift>
+            </StaggerItem>
           ))}
-        </div>
-      </section>
+        </Stagger>
+      </Reveal>
 
-      <section className="split-section">
+      <Reveal as="section" className="split-section">
         <div>
           <p className="eyebrow">SEO / GEO</p>
-          <h2>Des contenus utiles aux utilisateurs et compréhensibles par les moteurs IA</h2>
+          <h2 className="display-heading">Des contenus utiles aux utilisateurs et compréhensibles par les moteurs IA</h2>
           <p>Le blog combine définitions courtes, FAQ, sections à retenir, maillage interne et avertissement juridique afin de rester utile sans promettre de conseil personnalisé automatisé.</p>
           <Link className="text-link" to="/blog">Lire le blog juridique</Link>
         </div>
@@ -130,7 +146,7 @@ export function HomePage() {
           <h3>Recevoir les ressources ClairDossier</h3>
           <NewsletterForm />
         </div>
-      </section>
+      </Reveal>
     </>
   );
 }
@@ -264,7 +280,6 @@ export function CreateCasePage() {
 
     const { data: userData, error: userError } = await supabase.auth.getUser();
     if (userError || !userData.user) {
-      console.error('Session Supabase absente pour création dossier', userError);
       setState({ type: 'error', message: 'Créez votre compte pour commencer votre dossier.' });
       setCreatedCaseId('');
       return;
@@ -286,7 +301,6 @@ export function CreateCasePage() {
     });
 
     if (caseError) {
-      console.error('Erreur Supabase (cases)', caseError);
       setState({ type: 'error', message: getCasePersistenceMessage(caseError) });
       setCreatedCaseId('');
       return;
@@ -304,7 +318,6 @@ export function CreateCasePage() {
       consent_given: accepted,
     });
     if (answerError) {
-      console.error('Erreur Supabase (case_intake_answers)', answerError);
       setState({ type: 'error', message: getCasePersistenceMessage(answerError) });
       setCreatedCaseId('');
       return;
@@ -494,7 +507,6 @@ export function AuthPage({ mode }: { mode: 'connexion' | 'inscription' }) {
       })
       : await supabase.auth.signInWithPassword({ email, password });
     if (response.error) {
-      console.error('Erreur auth Supabase', response.error);
       setState({ type: 'error', message: isSignup ? 'Impossible de créer le compte pour le moment. Veuillez réessayer.' : 'Impossible de vous connecter. Vérifiez vos informations.' });
       return;
     }
@@ -575,7 +587,6 @@ export function WorkspacePage({ title, audience }: { title: string; audience: 'c
       ]);
       if (!isMounted) return;
       const errors = [casesResult.error, documentsResult.error, subscriptionResult.error, paymentsResult.error].filter(Boolean);
-      errors.forEach((error) => console.error('Erreur chargement espace privé', error));
       setPrivateData({
         loading: false,
         message: errors.length ? 'Certaines données privées n’ont pas pu être chargées.' : '',
@@ -595,7 +606,6 @@ export function WorkspacePage({ title, audience }: { title: string; audience: 'c
     try {
       await redirectToCustomerPortal();
     } catch (error) {
-      console.error('Portail Stripe indisponible', error);
       setPortalState({ type: 'error', message: error instanceof Error ? error.message : 'Portail client indisponible temporairement.' });
     }
   }
@@ -804,7 +814,13 @@ function formatDate(value: string) {
 }
 
 function PageHero({ title, description }: { title: string; description: string }) {
-  return <section className="page-hero"><p className="eyebrow">ClairDossier</p><h1>{title}</h1><p>{description}</p></section>;
+  return (
+    <FadeUp as="section" className="page-hero">
+      <p className="eyebrow">ClairDossier</p>
+      <h1 className="display-heading">{title}</h1>
+      <p>{description}</p>
+    </FadeUp>
+  );
 }
 
 function StatusPanel() {
@@ -820,12 +836,12 @@ function StatusPanel() {
 
 function BlogCard({ post }: { post: (typeof blogPosts)[number] }) {
   return (
-    <article className="blog-card">
+    <HoverLift className="blog-card">
       <p className="eyebrow">{post.category}</p>
       <h2>{post.title}</h2>
       <p>{post.summary}</p>
       <div className="keyword-row">{post.keywords.map((keyword) => <span key={keyword}>{keyword}</span>)}</div>
       <Link className="text-link" to={`/blog/${post.slug}`}>Lire l'article</Link>
-    </article>
+    </HoverLift>
   );
 }

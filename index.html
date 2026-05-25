@@ -10,22 +10,18 @@
     <meta property="og:title" content="ClairDossier - Votre dossier juridique, clair, structuré et suivi." />
     <meta property="og:description" content="Une plateforme LegalTech pour clients, PME et cabinets d'avocats." />
     <meta property="og:url" content="https://www.clair-dossier.com/" />
+    <meta property="og:image" content="https://www.clair-dossier.com/og-default.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale" content="fr_FR" />
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="ClairDossier - Votre dossier juridique, clair, structuré et suivi." />
+    <meta name="twitter:description" content="Une plateforme LegalTech pour clients, PME et cabinets d'avocats." />
+    <meta name="twitter:image" content="https://www.clair-dossier.com/og-default.png" />
     <link rel="canonical" href="https://www.clair-dossier.com/" />
     <link rel="icon" href="/icon.svg" type="image/svg+xml" />
     <link rel="manifest" href="/manifest.json" />
     <title>ClairDossier - Votre dossier juridique, clair, structuré et suivi.</title>
-    <!-- SPA redirect handler for GitHub Pages -->
-    <script>
-      (function(l) {
-        if (l.search[1] === '/') {
-          var decoded = l.search.slice(1).split('&').map(function(s) {
-            return s.replace(/~and~/g, '&')
-          }).join('?');
-          window.history.replaceState(null, null, l.pathname.slice(0, -1) + decoded + l.hash);
-        }
-      }(window.location))
-    </script>
   </head>
   <body>
     <div id="root"></div>
