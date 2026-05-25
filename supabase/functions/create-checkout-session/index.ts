@@ -59,7 +59,10 @@ Deno.serve(async (request) => {
     const metadata = { plan_id: String(planId), billing_period: period, user_id: userData.user.id };
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
-      automatic_payment_methods: { enabled: true },
+      // SEC-04 : automatic methods restreintes aux méthodes sans redirect
+      // (card / Apple Pay / Google Pay / Link). Bloque klarna, paypal, etc.
+      // qui ont des fenêtres de chargeback plus longues et surface de fraude élevée.
+      automatic_payment_methods: { enabled: true, allow_redirects: 'never' },
       customer_email: userData.user.email,
       client_reference_id: userData.user.id,
       line_items: [{ price, quantity: 1 }],
