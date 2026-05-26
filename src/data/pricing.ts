@@ -1,130 +1,173 @@
-export type BillingPeriod = 'monthly' | 'yearly';
+export type FeatureStatus = 'yes' | 'no' | 'limited';
+
+export type PlanBadge = {
+  label: string;
+  tone: 'gratuit' | 'popular' | 'recommended';
+};
 
 export type Plan = {
   id: string;
-  name: string;
   audience: string;
+  name: string;
   description: string;
-  priceMonthly: number | null; // null = sur devis
-  popular?: boolean;
+  priceMonthly: number | null;
+  badge?: PlanBadge;
+  variant: 'light' | 'dark';
   ctaLabel: string;
   ctaHref: string;
-  features: string[];
+  specs: { dossiers: string; users: string; support: string };
+  features: Record<string, FeatureStatus>;
 };
 
-export const YEARLY_DISCOUNT = 0.15;
+export const COMPARISON_FEATURES: { id: string; label: string }[] = [
+  { id: 'messagerie', label: 'Messagerie sécurisée' },
+  { id: 'resume-ia', label: 'Résumé IA' },
+  { id: 'redaction-ia', label: 'Rédaction IA (brouillons)' },
+  { id: 'ia-avancee', label: 'IA avancée (GPT-4o)' },
+  { id: 'modeles', label: 'Modèles de documents' },
+  { id: 'recurrents', label: 'Dossiers récurrents' },
+];
 
 export const plans: Plan[] = [
   {
-    id: 'particulier',
-    name: 'Particulier',
-    audience: 'Pour traiter un dossier personnel.',
-    description: "Une affaire à monter — prud'hommes, bail, recouvrement, succession. Vous remplissez, ClairDossier structure, un avocat habilité valide.",
+    id: 'decouverte',
+    audience: 'Particulier / indépendant',
+    name: 'Découverte',
+    description: 'Testez ClairDossier gratuitement. Idéal pour découvrir la plateforme.',
     priceMonthly: 0,
-    ctaLabel: 'Créer un dossier',
+    badge: { label: 'Gratuit', tone: 'gratuit' },
+    variant: 'light',
+    ctaLabel: 'Commencer gratuitement',
     ctaHref: '/dossier/nouveau',
-    features: [
-      "1 dossier actif",
-      "12 typologies juridiques",
-      "Pièces jointes jusqu'à 500 Mo",
-      "Chronologie automatique",
-      "Validation par un avocat partenaire",
-      "Messagerie sécurisée",
-      "Export ZIP intégral",
-      "Conservation 10 ans",
-    ],
+    specs: { dossiers: '1 dossier', users: '1 utilisateur', support: 'Support communauté' },
+    features: {
+      messagerie: 'no',
+      'resume-ia': 'no',
+      'redaction-ia': 'no',
+      'ia-avancee': 'no',
+      modeles: 'no',
+      recurrents: 'no',
+    },
   },
   {
-    id: 'professionnel',
-    name: 'Professionnel',
-    audience: "Pour un cabinet jusqu'à 5 utilisateurs.",
-    description: "L'avocat seul, le cabinet en démarrage, l'étude familiale. Tout l'outillage ClairDossier, sans les complexités SSO/audit dédiés.",
+    id: 'client-essentiel',
+    audience: 'Particulier / indépendant',
+    name: 'Client Essentiel',
+    description: 'Pour les particuliers et indépendants qui suivent leurs dossiers en autonomie.',
+    priceMonthly: 19,
+    variant: 'light',
+    ctaLabel: 'Essai gratuit 14 jours',
+    ctaHref: '/contact?plan=client-essentiel',
+    specs: { dossiers: '5 dossiers', users: '1 utilisateur', support: 'Support email' },
+    features: {
+      messagerie: 'yes',
+      'resume-ia': 'limited',
+      'redaction-ia': 'no',
+      'ia-avancee': 'no',
+      modeles: 'no',
+      recurrents: 'no',
+    },
+  },
+  {
+    id: 'business-pme',
+    audience: 'TPE / PME',
+    name: 'Business / PME',
+    description: 'Pour les PME avec plusieurs dossiers récurrents et des équipes internes.',
     priceMonthly: 49,
-    popular: true,
-    ctaLabel: 'Choisir Professionnel',
-    ctaHref: '/contact?plan=professionnel',
-    features: [
-      "5 utilisateurs inclus",
-      "Dossiers illimités",
-      "Stockage 50 Go",
-      "API d'intégration logicielle",
-      "Brief IA préparatoire avant chaque rendez-vous",
-      "Notes internes vs partagées",
-      "Notification SMS premium (option)",
-      "Support prioritaire 24h",
-    ],
+    badge: { label: 'Populaire', tone: 'popular' },
+    variant: 'dark',
+    ctaLabel: 'Essai gratuit 14 jours',
+    ctaHref: '/contact?plan=business',
+    specs: { dossiers: '20 dossiers', users: '5 utilisateurs', support: 'Support prioritaire' },
+    features: {
+      messagerie: 'yes',
+      'resume-ia': 'yes',
+      'redaction-ia': 'limited',
+      'ia-avancee': 'no',
+      modeles: 'yes',
+      recurrents: 'yes',
+    },
   },
   {
-    id: 'entreprise',
-    name: 'Entreprise',
-    audience: 'Pour les cabinets multi-sites et structures complexes.',
-    description: "SSO, audit dédié, DPA renforcé, onboarding sur site. Pour les structures où la conformité interne fait partie du contrat.",
-    priceMonthly: null,
-    ctaLabel: 'Demander un devis',
-    ctaHref: '/contact?plan=entreprise',
-    features: [
-      "Utilisateurs illimités",
-      "Stockage 1 To (extensible)",
-      "Single Sign-On (SAML, OIDC)",
-      "DPA renforcé et personnalisé",
-      "Audit annuel par tiers (rapport remis)",
-      "Onboarding sur site (2 jours)",
-      "Formation cabinet (équipe entière)",
-      "SLA 99,95 % avec garantie de remboursement",
-    ],
+    id: 'cabinet-solo',
+    audience: "Cabinet d'avocat",
+    name: 'Cabinet Solo',
+    description: "Pour les avocats indépendants. Intake client, résumé IA, validation et brouillons.",
+    priceMonthly: 79,
+    variant: 'light',
+    ctaLabel: 'Essai gratuit 14 jours',
+    ctaHref: '/contact?plan=cabinet-solo',
+    specs: { dossiers: '50 dossiers', users: '3 utilisateurs', support: 'Support prioritaire' },
+    features: {
+      messagerie: 'yes',
+      'resume-ia': 'yes',
+      'redaction-ia': 'yes',
+      'ia-avancee': 'no',
+      modeles: 'yes',
+      recurrents: 'yes',
+    },
+  },
+  {
+    id: 'cabinet-pro',
+    audience: "Cabinet d'avocat",
+    name: 'Cabinet Pro',
+    description: 'Pour les cabinets multi-avocats avec statistiques avancées et workflows.',
+    priceMonthly: 149,
+    badge: { label: 'Recommandé', tone: 'recommended' },
+    variant: 'dark',
+    ctaLabel: 'Essai gratuit 14 jours',
+    ctaHref: '/contact?plan=cabinet-pro',
+    specs: { dossiers: 'Dossiers illimités', users: '15 utilisateurs', support: 'Support dédié' },
+    features: {
+      messagerie: 'yes',
+      'resume-ia': 'yes',
+      'redaction-ia': 'yes',
+      'ia-avancee': 'yes',
+      modeles: 'yes',
+      recurrents: 'yes',
+    },
+  },
+  {
+    id: 'cabinet-premium',
+    audience: "Cabinet d'avocat",
+    name: 'Cabinet Premium',
+    description: 'Solution entreprise : marque blanche, API, SSO, audit avancé et accompagnement dédié.',
+    priceMonthly: 299,
+    variant: 'light',
+    ctaLabel: 'Essai gratuit 14 jours',
+    ctaHref: '/contact?plan=cabinet-premium',
+    specs: {
+      dossiers: 'Dossiers illimités',
+      users: 'Utilisateurs illimités',
+      support: 'Support entreprise',
+    },
+    features: {
+      messagerie: 'yes',
+      'resume-ia': 'yes',
+      'redaction-ia': 'yes',
+      'ia-avancee': 'yes',
+      modeles: 'yes',
+      recurrents: 'yes',
+    },
   },
 ];
 
-export type AddOn = {
-  id: string;
-  name: string;
-  blurb: string;
-  pricing: string;
-};
-
-export const addOns: AddOn[] = [
+export const TRUST_PILLARS: { id: string; title: string; body: string }[] = [
   {
-    id: 'audit-annuel',
-    name: 'Audit de sécurité annuel',
-    blurb: "Un cabinet de tiers indépendant audite notre infrastructure et les configurations RGPD de votre cabinet. Rapport remis sous 30 jours.",
-    pricing: '2 400 € HT / an',
+    id: 'donnees-chiffrees',
+    title: 'Données chiffrées',
+    body: 'Chiffrement de bout en bout, hébergement exclusivement UE.',
   },
   {
-    id: 'onboarding',
-    name: 'Onboarding sur site',
-    blurb: "Deux jours dans votre cabinet : reprise de vos dossiers existants, migration des pièces, formation des collaborateurs.",
-    pricing: 'À partir de 1 800 € HT',
+    id: 'ia-supervisee',
+    title: 'IA supervisée',
+    body: 'Chaque analyse IA est validée par un avocat habilité avant transmission.',
   },
   {
-    id: 'formation-cabinet',
-    name: 'Formation cabinet complète',
-    blurb: "Formation distancielle ou présentielle pour l'équipe entière — usage avancé, paramétrage des typologies internes, conventions de nommage.",
-    pricing: '950 € HT / session',
+    id: 'sans-engagement',
+    title: 'Sans engagement',
+    body: 'Résiliez à tout moment. Vos données restent exportables.',
   },
-];
-
-export type MatrixRow = {
-  feature: string;
-  particulier: boolean | string;
-  professionnel: boolean | string;
-  entreprise: boolean | string;
-};
-
-export const comparisonMatrix: MatrixRow[] = [
-  { feature: "Utilisateurs", particulier: '1', professionnel: '5', entreprise: 'Illimités' },
-  { feature: "Dossiers actifs", particulier: '1', professionnel: 'Illimités', entreprise: 'Illimités' },
-  { feature: "Stockage par compte", particulier: '500 Mo', professionnel: '50 Go', entreprise: '1 To+' },
-  { feature: "12 typologies juridiques", particulier: true, professionnel: true, entreprise: true },
-  { feature: "Chronologie automatique", particulier: true, professionnel: true, entreprise: true },
-  { feature: "Pièces jointes + OCR", particulier: true, professionnel: true, entreprise: true },
-  { feature: "Brief IA préparatoire", particulier: false, professionnel: true, entreprise: true },
-  { feature: "API d'intégration", particulier: false, professionnel: true, entreprise: true },
-  { feature: "Notes internes vs partagées", particulier: false, professionnel: true, entreprise: true },
-  { feature: "SSO (SAML, OIDC)", particulier: false, professionnel: false, entreprise: true },
-  { feature: "DPA personnalisé", particulier: 'Standard', professionnel: 'Standard', entreprise: 'Renforcé' },
-  { feature: "Audit annuel par tiers", particulier: false, professionnel: 'En option', entreprise: 'Inclus' },
-  { feature: "Support", particulier: 'Communauté', professionnel: 'Prioritaire 24h', entreprise: 'Dédié + SLA 99,95 %' },
-  { feature: "Conservation des données", particulier: '10 ans', professionnel: '10 ans', entreprise: 'Sur mesure' },
 ];
 
 export function formatEuro(amount: number): string {

@@ -191,6 +191,57 @@ export function CheckIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+export function LockIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...baseProps} {...props}>
+      <rect x="4" y="11" width="16" height="10" rx="2" />
+      <path d="M7.5 11V8a4.5 4.5 0 019 0v3" />
+      <circle cx="12" cy="16" r="1" fill="currentColor" />
+    </svg>
+  );
+}
+
+export function FilePagesIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...baseProps} {...props}>
+      <path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8z" />
+      <path d="M14 3v5h5" />
+    </svg>
+  );
+}
+
+export function UsersIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...baseProps} {...props}>
+      <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" />
+      <circle cx="9" cy="7" r="3.5" />
+      <path d="M22 21v-2a4 4 0 00-3-3.87" />
+      <path d="M16 3.13a4 4 0 010 7.75" />
+    </svg>
+  );
+}
+
+export function HeadsetIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...baseProps} {...props}>
+      <path d="M4 14v-2a8 8 0 0116 0v2" />
+      <rect x="3" y="14" width="4" height="6" rx="1" />
+      <rect x="17" y="14" width="4" height="6" rx="1" />
+      <path d="M19 20a4 4 0 01-4 4h-2" />
+    </svg>
+  );
+}
+
+export function InfoIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...baseProps} {...props}>
+      <circle cx="12" cy="12" r="9" />
+      <line x1="12" y1="11" x2="12" y2="16" />
+      <line x1="12" y1="8" x2="12.01" y2="8" strokeWidth="2" />
+    </svg>
+  );
+}
+
 export function WhatsAppIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <svg
