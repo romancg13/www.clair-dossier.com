@@ -19,7 +19,28 @@ import {
   FilePagesIcon,
   UsersIcon,
   HeadsetIcon,
+  WhatsAppIcon,
 } from '../components/icons';
+import { WHATSAPP_DISPLAY, buildWhatsAppUrl } from '../lib/whatsapp';
+
+const DEVIS_CAPABILITIES = [
+  {
+    title: 'Marque blanche complète',
+    body: "Logo, palette, domaine, exports : votre identité, votre clientèle ne saura pas qu'il s'agit de ClairDossier.",
+  },
+  {
+    title: 'API et webhooks dédiés',
+    body: "Intégration avec Septeo, Polyact, Cicéron, ou votre stack maison. SDK Node et Python disponibles.",
+  },
+  {
+    title: 'SSO et audit renforcé',
+    body: "SAML 2.0, OIDC, journalisation détaillée, DPA personnalisé négocié avec votre DPO.",
+  },
+  {
+    title: 'Onboarding sur site',
+    body: "Deux jours dans votre cabinet, reprise de vos dossiers existants, formation de l'équipe entière.",
+  },
+];
 
 const PRICING_FAQ = [
   {
@@ -140,6 +161,164 @@ export function Pricing() {
                 </div>
               );
             })}
+          </div>
+        </div>
+      </Reveal>
+
+      {/* Devis sur-mesure */}
+      <Reveal as="section" className="bg-navy-900 text-cream-50">
+        <div className="mx-auto max-w-7xl px-5 py-14 sm:py-20 lg:py-24 sm:px-8 lg:px-12">
+          <div className="grid gap-12 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
+            {/* Left — copy + capabilities */}
+            <div>
+              <p className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-500">
+                Devis sur-mesure
+              </p>
+              <h2 className="mt-4 font-display text-3xl font-semibold leading-tight text-cream-50 sm:text-4xl lg:text-5xl">
+                Au-delà du Cabinet Premium ?
+              </h2>
+              <p className="mt-5 max-w-md text-base leading-relaxed text-cream-50/75">
+                Pour les structures avec exigences de marque blanche, intégration API,
+                conformité interne ou volumétrie au-dessus du Premium, on construit une offre
+                sur-mesure avec proposition chiffrée sous 48 h.
+              </p>
+
+              <ul className="mt-9 grid gap-4 sm:grid-cols-2">
+                {DEVIS_CAPABILITIES.map((cap) => (
+                  <li key={cap.title} className="flex gap-3">
+                    <span
+                      aria-hidden="true"
+                      className="mt-1.5 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-gold-500"
+                    />
+                    <div>
+                      <h3 className="font-display text-lg font-semibold leading-tight text-cream-50">
+                        {cap.title}
+                      </h3>
+                      <p className="mt-1 text-sm leading-relaxed text-cream-50/70">{cap.body}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Right — contact card */}
+            <div className="rounded-2xl border border-cream-50/15 bg-navy-800/60 p-7 backdrop-blur sm:p-9">
+              <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-500">
+                Trois chemins pour démarrer
+              </p>
+              <h3 className="mt-3 font-display text-2xl font-semibold leading-tight text-cream-50 sm:text-3xl">
+                Décrivez votre besoin, on chiffre.
+              </h3>
+
+              <div className="mt-8 space-y-3">
+                {/* WhatsApp */}
+                <a
+                  href={buildWhatsAppUrl(
+                    "Bonjour ClairDossier, je souhaite un devis sur-mesure (marque blanche / API / SSO / autre). Pouvons-nous échanger ?"
+                  )}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group flex items-center justify-between gap-4 rounded-xl border border-cream-50/15 bg-cream-50/5 p-5 transition-colors hover:border-cream-50/35 hover:bg-cream-50/10"
+                >
+                  <div className="flex items-center gap-4">
+                    <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-[#25D366]/15 text-[#25D366]">
+                      <WhatsAppIcon width={22} height={22} />
+                    </span>
+                    <div>
+                      <p className="font-mono text-[0.65rem] uppercase tracking-[0.16em] text-cream-50/55">
+                        WhatsApp · réponse sous 1 h
+                      </p>
+                      <p className="mt-0.5 font-medium text-cream-50">{WHATSAPP_DISPLAY}</p>
+                    </div>
+                  </div>
+                  <ArrowRightIcon
+                    width={16}
+                    height={16}
+                    strokeWidth={2}
+                    className="text-cream-50/70 transition-transform group-hover:translate-x-0.5"
+                  />
+                </a>
+
+                {/* Email */}
+                <a
+                  href="mailto:bonjour@clair-dossier.com?subject=Demande%20de%20devis%20sur-mesure&body=Bonjour%2C%0A%0AJe%20souhaite%20un%20devis%20sur-mesure%20pour%20%3A%0A-%20Marque%20blanche%20%3F%0A-%20API%20%2F%20int%C3%A9gration%20%3F%0A-%20SSO%20%2F%20audit%20%3F%0A-%20Volum%C3%A9trie%20attendue%20%3A%0A%0AMerci."
+                  className="group flex items-center justify-between gap-4 rounded-xl border border-cream-50/15 bg-cream-50/5 p-5 transition-colors hover:border-cream-50/35 hover:bg-cream-50/10"
+                >
+                  <div className="flex items-center gap-4">
+                    <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-gold-500/15 text-gold-500">
+                      <svg
+                        width="22"
+                        height="22"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <rect x="3" y="5" width="18" height="14" rx="2" />
+                        <path d="M3 7l9 7 9-7" />
+                      </svg>
+                    </span>
+                    <div>
+                      <p className="font-mono text-[0.65rem] uppercase tracking-[0.16em] text-cream-50/55">
+                        Email · réponse sous 24 h ouvrées
+                      </p>
+                      <p className="mt-0.5 font-medium text-cream-50">bonjour@clair-dossier.com</p>
+                    </div>
+                  </div>
+                  <ArrowRightIcon
+                    width={16}
+                    height={16}
+                    strokeWidth={2}
+                    className="text-cream-50/70 transition-transform group-hover:translate-x-0.5"
+                  />
+                </a>
+
+                {/* Form */}
+                <Link
+                  to="/contact?topic=commercial"
+                  className="group flex items-center justify-between gap-4 rounded-xl border border-cream-50/15 bg-cream-50/5 p-5 transition-colors hover:border-cream-50/35 hover:bg-cream-50/10"
+                >
+                  <div className="flex items-center gap-4">
+                    <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-cream-50/10 text-cream-50">
+                      <svg
+                        width="22"
+                        height="22"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <rect x="3" y="3" width="18" height="18" rx="2" />
+                        <line x1="7" y1="9" x2="17" y2="9" />
+                        <line x1="7" y1="13" x2="17" y2="13" />
+                        <line x1="7" y1="17" x2="12" y2="17" />
+                      </svg>
+                    </span>
+                    <div>
+                      <p className="font-mono text-[0.65rem] uppercase tracking-[0.16em] text-cream-50/55">
+                        Formulaire détaillé
+                      </p>
+                      <p className="mt-0.5 font-medium text-cream-50">Décrire le contexte complet</p>
+                    </div>
+                  </div>
+                  <ArrowRightIcon
+                    width={16}
+                    height={16}
+                    strokeWidth={2}
+                    className="text-cream-50/70 transition-transform group-hover:translate-x-0.5"
+                  />
+                </Link>
+              </div>
+
+              <p className="mt-7 border-t border-cream-50/15 pt-5 text-xs leading-relaxed text-cream-50/55">
+                Engagement ClairDossier : proposition chiffrée écrite sous 48 h ouvrées, sans
+                ré-engagement après échange initial. Vos données restent en France.
+              </p>
+            </div>
           </div>
         </div>
       </Reveal>

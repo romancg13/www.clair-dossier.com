@@ -93,10 +93,15 @@ export function Contact() {
               </a>
 
               <div className="mt-10 space-y-5 border-t hairline pt-8">
-                <ContactInfo label="Email général" value="bonjour@clair-dossier.com" />
+                <ContactInfo
+                  label="Email général"
+                  value="bonjour@clair-dossier.com"
+                  href="mailto:bonjour@clair-dossier.com"
+                />
                 <ContactInfo
                   label="Sécurité"
                   value="security@clair-dossier.com"
+                  href="mailto:security@clair-dossier.com"
                   detail="Divulgation responsable — réponse sous 24 h"
                 />
                 <ContactInfo
@@ -228,11 +233,30 @@ function Field({
   );
 }
 
-function ContactInfo({ label, value, detail }: { label: string; value: string; detail?: string }) {
+function ContactInfo({
+  label,
+  value,
+  detail,
+  href,
+}: {
+  label: string;
+  value: string;
+  detail?: string;
+  href?: string;
+}) {
   return (
     <div>
       <p className="font-mono text-[0.65rem] uppercase tracking-[0.16em] text-slate-400">{label}</p>
-      <p className="mt-1.5 font-medium text-navy-900">{value}</p>
+      {href ? (
+        <a
+          href={href}
+          className="mt-1.5 inline-block font-medium text-navy-900 border-b hairline-gold transition-colors hover:text-gold-500"
+        >
+          {value}
+        </a>
+      ) : (
+        <p className="mt-1.5 font-medium text-navy-900">{value}</p>
+      )}
       {detail && <p className="mt-0.5 text-sm text-slate-500">{detail}</p>}
     </div>
   );
