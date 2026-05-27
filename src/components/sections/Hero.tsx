@@ -8,7 +8,7 @@ const heroPanelRows = [
   { label: 'Statut', value: 'En attente validation avocat', tone: 'gold' as const },
   { label: 'Pièces déposées', value: '7 / 9' },
   { label: 'Chronologie', value: '4 évènements datés' },
-  { label: 'Avocat assigné', value: 'Me Vasseur-Dupré', tone: 'navy' as const },
+  { label: 'Validation', value: 'Sous 24 h ouvrées', tone: 'navy' as const },
 ];
 
 const timelineSteps = [

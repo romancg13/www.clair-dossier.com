@@ -8,7 +8,7 @@ export const iaDroit: BlogPost = {
     "Ce que l'IA peut et ne doit pas faire dans le droit : synthèses, chronologies, recherche jurisprudentielle vs conseil, validation, plaidoirie. Position de fond.",
   summary:
     "L'IA générative bouleverse les métiers du droit, mais une frontière reste non négociable : l'IA prépare le travail du professionnel — elle ne le remplace pas. Voici où l'IA est utile, où elle est dangereuse, et pourquoi cette frontière protège autant les avocats que leurs clients.",
-  author: 'helene-vasseur',
+  author: 'redaction',
   date: '2026-05-02',
   readMinutes: 7,
   category: 'IA et droit',

@@ -1,13 +1,11 @@
 import { Seo, orgSchema, websiteSchema } from '../lib/seo';
 import { Hero } from '../components/sections/Hero';
-import { Partners } from '../components/sections/Partners';
 import { AvantApres } from '../components/sections/AvantApres';
 import { FeaturesGrid } from '../components/sections/FeaturesGrid';
 import { WorkspacesTabs } from '../components/sections/WorkspacesTabs';
 import { Workflow } from '../components/sections/Workflow';
 import { SecurityBlock } from '../components/sections/SecurityBlock';
 import { PricingPreview } from '../components/sections/PricingPreview';
-import { TestimonialsBlock } from '../components/sections/TestimonialsBlock';
 import { BlogPreview } from '../components/sections/BlogPreview';
 import { FaqBlock } from '../components/sections/FaqBlock';
 import { FinalCTA } from '../components/sections/FinalCTA';
@@ -23,7 +21,7 @@ const softwareSchema = {
     '@type': 'Offer',
     price: '0',
     priceCurrency: 'EUR',
-    description: "Plan Particulier gratuit, plan Professionnel à 49 €/mois HT, plan Entreprise sur devis.",
+    description: "Plan Découverte gratuit, plans payants à partir de 19 €/mois HT.",
   },
   description:
     "Plateforme legaltech française. Transforme les demandes juridiques en dossiers structurés, suivis et validés par un avocat habilité.",
@@ -49,14 +47,12 @@ export function Home() {
         jsonLd={[orgSchema, websiteSchema, softwareSchema, faqSchema]}
       />
       <Hero />
-      <Partners />
       <AvantApres />
       <FeaturesGrid />
       <WorkspacesTabs />
       <Workflow />
       <SecurityBlock />
       <PricingPreview />
-      <TestimonialsBlock />
       <BlogPreview />
       <FaqBlock />
       <FinalCTA />

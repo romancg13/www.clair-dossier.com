@@ -27,13 +27,13 @@ export const workspaces: Workspace[] = [
       "Export ZIP intégral à tout moment, sans condition",
     ],
     mockup: {
-      kicker: 'Dossier · #CD-2026-0421',
+      kicker: 'Aperçu dossier',
       title: "Prud'homal — synthèse",
       rows: [
         { label: 'Statut', value: 'En attente validation avocat', tone: 'gold' },
         { label: 'Pièces déposées', value: '7 / 9' },
         { label: 'Chronologie', value: '4 évènements datés' },
-        { label: 'Avocat assigné', value: 'Me Vasseur-Dupré', tone: 'navy' },
+        { label: 'Validation', value: 'Sous 24 h ouvrées', tone: 'navy' },
         { label: 'Dernier message', value: 'il y a 2 h' },
       ],
       footnote: 'Notification dès qu\'une action est requise.',
@@ -53,12 +53,12 @@ export const workspaces: Workspace[] = [
     ],
     mockup: {
       kicker: 'Brief · Préparation consultation',
-      title: 'Dossier prud\'homal C. Bertrand',
+      title: 'Aperçu dossier prud\'homal',
       rows: [
         { label: 'Points de droit', value: 'L1232-1 · L1232-6 CT' },
-        { label: 'Jurisprudence', value: 'Cass. soc. 2023, n° 21-19.456', tone: 'navy' },
+        { label: 'Jurisprudence', value: 'Cass. soc. arrêt récent', tone: 'navy' },
         { label: 'Incohérences', value: '1 datation à clarifier' },
-        { label: 'Pièces à vérifier', value: 'Mise en demeure 03/2024' },
+        { label: 'Pièces à vérifier', value: 'Mise en demeure' },
         { label: 'Durée estimée', value: '25 minutes', tone: 'gold' },
       ],
       footnote: 'Brief généré par IA. Validation professionnelle requise.',
@@ -77,8 +77,8 @@ export const workspaces: Workspace[] = [
       "Reporting mensuel automatique (PDF, CSV)",
     ],
     mockup: {
-      kicker: 'Cabinet · Marais & Associés',
-      title: 'Vue équipe — semaine du 18 mai',
+      kicker: 'Vue cabinet · semaine type',
+      title: 'Tableau de bord équipe',
       rows: [
         { label: 'Dossiers actifs', value: '47', tone: 'navy' },
         { label: 'En attente validation', value: '6' },

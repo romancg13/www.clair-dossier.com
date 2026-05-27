@@ -8,7 +8,7 @@ export const rgpdLegaltech: BlogPost = {
     "Cycle de vie des données dans une plateforme legaltech : hébergement, sous-traitance, conservation, suppression. Articles 28, 32, 35 RGPD expliqués.",
   summary:
     "Quand vous déposez le contrat de travail d'un salarié sur une plateforme legaltech, vous engagez la conformité RGPD du cabinet, pas seulement la vôtre. Voici comment vérifier qu'une legaltech tient ses engagements — et ce que les articles 28, 32 et 35 du RGPD exigent concrètement.",
-  author: 'thomas-leclerc',
+  author: 'redaction',
   date: '2026-04-28',
   readMinutes: 8,
   category: 'Conformité',

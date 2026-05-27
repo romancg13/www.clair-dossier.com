@@ -8,7 +8,7 @@ export const chronologiePrudHomale: BlogPost = {
     "Pourquoi la chronologie compte plus que les arguments en prud'hommes. Méthode, pièges classiques, exemple chiffré. Lecture 6 minutes.",
   summary:
     "Dans un dossier prud'homal, la chronologie reconstituée pèse souvent plus lourd que la qualité des arguments juridiques. Voici comment la construire correctement, dès le premier rendez-vous client, et pourquoi cette discipline change la stratégie de l'avocat.",
-  author: 'helene-vasseur',
+  author: 'redaction',
   date: '2026-05-12',
   readMinutes: 6,
   category: 'Droit social',
