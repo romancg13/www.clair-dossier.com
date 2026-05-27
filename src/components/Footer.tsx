@@ -62,7 +62,7 @@ export function Footer() {
 
         <div className="mt-12 flex flex-col gap-3 border-t hairline pt-6 text-xs text-slate-400 sm:flex-row sm:items-center sm:justify-between">
           <span className="font-mono">
-            © 2026 ClairDossier · Édité par Nouh BENZIDANE (13'UP AGENCY) · SIREN 899 453 401
+            © 2026 ClairDossier · Édité par Nouh BENZIDANE · SIREN 899 453 401
           </span>
           <span>
             Hébergement OVH (France) · Données en territoire européen ·{' '}
