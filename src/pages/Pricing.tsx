@@ -225,7 +225,7 @@ export function Pricing() {
                       <WhatsAppIcon width={22} height={22} />
                     </span>
                     <div>
-                      <p className="font-mono text-[0.65rem] uppercase tracking-[0.16em] text-cream-50/55">
+                      <p className="font-mono text-[0.65rem] uppercase tracking-[0.16em] text-cream-50/70">
                         WhatsApp · réponse sous 1 h
                       </p>
                       <p className="mt-0.5 font-medium text-cream-50">{WHATSAPP_DISPLAY}</p>
@@ -261,7 +261,7 @@ export function Pricing() {
                       </svg>
                     </span>
                     <div>
-                      <p className="font-mono text-[0.65rem] uppercase tracking-[0.16em] text-cream-50/55">
+                      <p className="font-mono text-[0.65rem] uppercase tracking-[0.16em] text-cream-50/70">
                         Email · réponse sous 24 h ouvrées
                       </p>
                       <p className="mt-0.5 font-medium text-cream-50">contact@clair-dossier.com</p>
@@ -299,7 +299,7 @@ export function Pricing() {
                       </svg>
                     </span>
                     <div>
-                      <p className="font-mono text-[0.65rem] uppercase tracking-[0.16em] text-cream-50/55">
+                      <p className="font-mono text-[0.65rem] uppercase tracking-[0.16em] text-cream-50/70">
                         Formulaire détaillé
                       </p>
                       <p className="mt-0.5 font-medium text-cream-50">Décrire le contexte complet</p>
@@ -314,7 +314,7 @@ export function Pricing() {
                 </Link>
               </div>
 
-              <p className="mt-7 border-t border-cream-50/15 pt-5 text-xs leading-relaxed text-cream-50/55">
+              <p className="mt-7 border-t border-cream-50/15 pt-5 text-xs leading-relaxed text-cream-50/70">
                 Engagement ClairDossier : proposition chiffrée écrite sous 48 h ouvrées, sans
                 ré-engagement après échange initial. Vos données restent en France.
               </p>
@@ -384,11 +384,11 @@ function PlanCard({ plan }: { plan: Plan }) {
   const cardSkin = isDark
     ? 'border-navy-900 bg-navy-900 text-cream-50'
     : 'hairline bg-white text-navy-900 shadow-card';
-  const eyebrow = isDark ? 'text-cream-50/60' : 'text-slate-400';
+  const eyebrow = isDark ? 'text-cream-50/60' : 'text-slate-500';
   const description = isDark ? 'text-cream-50/75' : 'text-slate-500';
   const hairlineClass = isDark ? 'border-cream-50/15' : 'border-[rgba(13,27,61,0.08)]';
   const specsLabel = isDark ? 'text-cream-50/90' : 'text-navy-900';
-  const featureMuted = isDark ? 'text-cream-50/40' : 'text-slate-300';
+  const featureMuted = isDark ? 'text-cream-50/60' : 'text-slate-300';
   const featureOn = isDark ? 'text-cream-50' : 'text-navy-900';
   const ctaClass = isDark
     ? 'border border-cream-50/25 bg-transparent text-cream-50 hover:border-cream-50/55 hover:bg-cream-50/5'
@@ -499,7 +499,7 @@ function FeatureRow({
     status === 'limited' ? (
       <>
         {label}{' '}
-        <span className={isDark ? 'text-cream-50/55' : 'text-slate-400'}>(limité)</span>
+        <span className={isDark ? 'text-cream-50/70' : 'text-slate-500'}>(limité)</span>
       </>
     ) : (
       label

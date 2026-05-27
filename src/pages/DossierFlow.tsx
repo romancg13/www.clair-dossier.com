@@ -178,7 +178,7 @@ export function DossierFlow() {
               <div key={n} className="flex flex-1 items-center gap-3">
                 <span
                   className={`grid h-7 w-7 place-items-center rounded-full font-mono text-[0.7rem] font-semibold transition-colors ${
-                    draft.step >= n ? 'bg-navy-900 text-cream-50' : 'border hairline-strong bg-white text-slate-400'
+                    draft.step >= n ? 'bg-navy-900 text-cream-50' : 'border hairline-strong bg-white text-slate-500'
                   }`}
                 >
                   {draft.step > n ? <CheckIcon width={12} height={12} strokeWidth={2.5} /> : n}
@@ -290,7 +290,7 @@ function Step2({
       <div className="mt-8 space-y-6">
         {fields.map((f) => (
           <label key={f.id} className="block">
-            <span className="font-mono text-[0.7rem] uppercase tracking-[0.16em] text-slate-400">
+            <span className="font-mono text-[0.7rem] uppercase tracking-[0.16em] text-slate-500">
               {f.label}
             </span>
             {f.type === 'textarea' ? (
@@ -308,7 +308,7 @@ function Step2({
                 className="mt-2 w-full rounded-xl border hairline bg-cream-50 px-4 py-3 text-sm text-navy-900 focus:border-gold-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-gold-500/20"
               />
             )}
-            {f.help && <span className="mt-1.5 block text-xs italic text-slate-400">{f.help}</span>}
+            {f.help && <span className="mt-1.5 block text-xs italic text-slate-500">{f.help}</span>}
           </label>
         ))}
       </div>
@@ -363,7 +363,7 @@ function Step3({
     <div className="rounded-2xl border hairline bg-white p-7 shadow-card sm:p-9">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-slate-400">
+          <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-slate-500">
             Dossier · brouillon · #CD-2026-NEW
           </p>
           <h2 className="mt-2 font-display text-2xl font-semibold leading-tight text-navy-900 sm:text-3xl">
@@ -380,7 +380,7 @@ function Step3({
           <div key={f.id} className="flex flex-col gap-1 py-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
             <dt className="text-sm font-medium text-slate-500">{f.label}</dt>
             <dd className="max-w-md text-sm text-navy-900 sm:text-right">
-              {answers[f.id]?.trim() || <span className="italic text-slate-400">Non renseigné</span>}
+              {answers[f.id]?.trim() || <span className="italic text-slate-500">Non renseigné</span>}
             </dd>
           </div>
         ))}
@@ -425,7 +425,7 @@ function Step3({
         </div>
       </div>
 
-      <p className="mt-6 text-center text-xs text-slate-400">
+      <p className="mt-6 text-center text-xs text-slate-500">
         Le brouillon reste dans votre navigateur (localStorage) tant que vous ne le supprimez pas.
       </p>
     </div>

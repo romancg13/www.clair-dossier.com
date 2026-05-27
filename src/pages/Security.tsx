@@ -116,7 +116,7 @@ export function Security() {
       <Reveal as="section" className="bg-cream-50 pb-16">
         <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-12">
           <div className="rounded-2xl border hairline bg-white p-8 shadow-card sm:p-10">
-            <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-slate-400">
+            <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-slate-500">
               Architecture simplifiée
             </p>
             <h2 className="mt-2 font-display text-3xl font-semibold text-navy-900">
@@ -183,7 +183,7 @@ export function Security() {
       {/* Badges */}
       <Reveal as="section" className="border-y hairline bg-cream-100/40">
         <div className="mx-auto max-w-7xl px-5 py-16 sm:px-8 lg:px-12">
-          <p className="text-center font-mono text-[0.72rem] uppercase tracking-[0.2em] text-slate-400">
+          <p className="text-center font-mono text-[0.72rem] uppercase tracking-[0.2em] text-slate-500">
             Cadres réglementaires couverts
           </p>
           <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">

@@ -53,10 +53,10 @@ function CompactPlanCard({ plan }: { plan: Plan }) {
   const cardSkin = isDark
     ? 'border-navy-900 bg-navy-900 text-cream-50'
     : 'hairline bg-white text-navy-900 shadow-card';
-  const eyebrow = isDark ? 'text-cream-50/60' : 'text-slate-400';
+  const eyebrow = isDark ? 'text-cream-50/60' : 'text-slate-500';
   const description = isDark ? 'text-cream-50/75' : 'text-slate-500';
   const hairlineClass = isDark ? 'border-cream-50/15' : 'border-[rgba(13,27,61,0.08)]';
-  const specIconClass = isDark ? 'text-cream-50/45' : 'text-slate-300';
+  const specIconClass = isDark ? 'text-cream-50/65' : 'text-slate-300';
   const specLabel = isDark ? 'text-cream-50/90' : 'text-navy-900';
   const ctaClass = isDark
     ? 'border border-cream-50/25 bg-transparent text-cream-50 hover:border-cream-50/55 hover:bg-cream-50/5'

@@ -24,7 +24,7 @@ export function AvantApres() {
         <div className="grid items-stretch gap-4 lg:grid-cols-[1fr_auto_1fr] lg:gap-8">
           {/* Avant */}
           <div className="rounded-2xl border hairline bg-cream-100 p-7 sm:p-9">
-            <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-slate-400">
+            <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-slate-500">
               Avant ClairDossier
             </p>
             <h2 className="mt-3 font-display text-3xl font-semibold leading-tight text-navy-900 sm:text-4xl">

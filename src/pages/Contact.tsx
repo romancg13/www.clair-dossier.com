@@ -128,7 +128,7 @@ export function Contact() {
 
                 <form onSubmit={onSubmit} className="mt-7 space-y-6" noValidate>
                   <div>
-                    <span className="font-mono text-[0.7rem] uppercase tracking-[0.16em] text-slate-400">
+                    <span className="font-mono text-[0.7rem] uppercase tracking-[0.16em] text-slate-500">
                       Nature de la demande
                     </span>
                     <div className="mt-3 grid gap-2 sm:grid-cols-2">
@@ -155,7 +155,7 @@ export function Contact() {
                   <Field id="organization" label="Structure" placeholder="Cabinet, entreprise, ou « particulier »" />
 
                   <label className="block">
-                    <span className="font-mono text-[0.7rem] uppercase tracking-[0.16em] text-slate-400">
+                    <span className="font-mono text-[0.7rem] uppercase tracking-[0.16em] text-slate-500">
                       Votre message
                     </span>
                     <textarea
@@ -163,7 +163,7 @@ export function Contact() {
                       required
                       rows={5}
                       placeholder="Quelques lignes suffisent — on vous recontacte pour creuser."
-                      className="mt-2 w-full rounded-xl border hairline bg-cream-50 px-4 py-3 text-sm text-navy-900 placeholder:text-slate-400 focus:border-gold-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-gold-500/20"
+                      className="mt-2 w-full rounded-xl border hairline bg-cream-50 px-4 py-3 text-sm text-navy-900 placeholder:text-slate-500 focus:border-gold-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-gold-500/20"
                     />
                   </label>
 
@@ -189,7 +189,7 @@ export function Contact() {
                     <WhatsAppIcon width={16} height={16} />
                     Continuer sur WhatsApp
                   </button>
-                  <p className="text-center text-xs text-slate-400">
+                  <p className="text-center text-xs text-slate-500">
                     On vous recontacte sur le numéro WhatsApp depuis lequel vous écrivez.
                   </p>
                 </form>
@@ -217,7 +217,7 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="font-mono text-[0.7rem] uppercase tracking-[0.16em] text-slate-400">
+      <span className="font-mono text-[0.7rem] uppercase tracking-[0.16em] text-slate-500">
         {label}
         {required && <span className="ml-1 text-gold-500">*</span>}
       </span>
@@ -227,7 +227,7 @@ function Field({
         type={type}
         required={required}
         placeholder={placeholder}
-        className="mt-2 w-full rounded-xl border hairline bg-cream-50 px-4 py-3 text-sm text-navy-900 placeholder:text-slate-400 focus:border-gold-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-gold-500/20"
+        className="mt-2 w-full rounded-xl border hairline bg-cream-50 px-4 py-3 text-sm text-navy-900 placeholder:text-slate-500 focus:border-gold-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-gold-500/20"
       />
     </label>
   );
@@ -246,7 +246,7 @@ function ContactInfo({
 }) {
   return (
     <div>
-      <p className="font-mono text-[0.65rem] uppercase tracking-[0.16em] text-slate-400">{label}</p>
+      <p className="font-mono text-[0.65rem] uppercase tracking-[0.16em] text-slate-500">{label}</p>
       {href ? (
         <a
           href={href}

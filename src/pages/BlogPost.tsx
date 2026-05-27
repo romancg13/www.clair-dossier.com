@@ -19,6 +19,17 @@ export function BlogPost() {
   const author = authors[post.author];
   const related = getRelatedPosts(post);
 
+  // Rough word count for the body — used by Article schema for GEO citation.
+  const wordCount = post.content
+    .flatMap((b) => {
+      if (b.type === 'p' || b.type === 'h2' || b.type === 'h3' || b.type === 'quote' || b.type === 'callout') return [b.text];
+      if (b.type === 'list') return b.items;
+      return [];
+    })
+    .join(' ')
+    .split(/\s+/)
+    .filter(Boolean).length;
+
   const articleSchema = {
     '@context': 'https://schema.org',
     '@type': 'BlogPosting',
@@ -27,12 +38,21 @@ export function BlogPost() {
     datePublished: post.date,
     dateModified: post.date,
     inLanguage: 'fr-FR',
+    articleSection: post.category,
+    wordCount,
+    timeRequired: `PT${post.readMinutes}M`,
     author: author
-      ? { '@type': 'Person', name: author.name, jobTitle: author.role }
+      ? {
+          '@type': 'Organization',
+          name: author.name,
+          description: author.role,
+          url: 'https://www.clair-dossier.com/',
+        }
       : { '@type': 'Organization', name: 'ClairDossier' },
     publisher: {
       '@type': 'Organization',
       name: 'ClairDossier',
+      url: 'https://www.clair-dossier.com/',
       logo: { '@type': 'ImageObject', url: 'https://www.clair-dossier.com/favicon.svg' },
     },
     mainEntityOfPage: `https://www.clair-dossier.com/blog/${post.slug}`,
@@ -43,10 +63,28 @@ export function BlogPost() {
     ? {
         '@context': 'https://schema.org',
         '@type': 'FAQPage',
+        inLanguage: 'fr-FR',
         mainEntity: post.faq.map((f) => ({
           '@type': 'Question',
           name: f.q,
           acceptedAnswer: { '@type': 'Answer', text: f.a },
+        })),
+      }
+    : null;
+
+  const howToSchema = post.howTo
+    ? {
+        '@context': 'https://schema.org',
+        '@type': 'HowTo',
+        name: post.howTo.name,
+        description: post.howTo.description,
+        inLanguage: 'fr-FR',
+        ...(post.howTo.totalTime ? { totalTime: post.howTo.totalTime } : {}),
+        step: post.howTo.steps.map((s, i) => ({
+          '@type': 'HowToStep',
+          position: i + 1,
+          name: s.name,
+          text: s.text,
         })),
       }
     : null;
@@ -65,6 +103,7 @@ export function BlogPost() {
             { name: post.title, path: `/blog/${post.slug}` },
           ]),
           articleSchema,
+          ...(howToSchema ? [howToSchema] : []),
           ...(faqSchema ? [faqSchema] : []),
         ]}
       />
@@ -101,7 +140,7 @@ export function BlogPost() {
                 <p className="font-medium text-navy-900">{author.name}</p>
                 <p className="text-xs text-slate-500">{author.role}</p>
               </div>
-              <span className="ml-auto font-mono text-xs text-slate-400">
+              <span className="ml-auto font-mono text-xs text-slate-500">
                 {formatDate(post.date)}
               </span>
             </div>
@@ -232,7 +271,7 @@ function ContentBlock({ block }: { block: BlogContentBlock }) {
             « {block.text} »
           </blockquote>
           {block.cite && (
-            <figcaption className="mt-3 font-mono text-xs uppercase tracking-[0.14em] text-slate-400">
+            <figcaption className="mt-3 font-mono text-xs uppercase tracking-[0.14em] text-slate-500">
               — {block.cite}
             </figcaption>
           )}

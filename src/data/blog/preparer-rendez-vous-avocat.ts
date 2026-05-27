@@ -130,5 +130,21 @@ export const preparerRendezVousAvocat: BlogPost = {
       a: "Venez avec ce que vous avez. L'avocat vous indiquera quels documents complémentaires obtenir et comment. Mieux vaut un rendez-vous avec un dossier incomplet bien organisé qu'un dossier complet en désordre.",
     },
   ],
+  howTo: {
+    name: 'Préparer un rendez-vous avocat',
+    description:
+      "Méthode en 8 étapes pour arriver chez un avocat avec un dossier structuré et tirer le maximum d'une heure de consultation.",
+    totalTime: 'PT30M',
+    steps: [
+      { name: 'Réunir les pièces', text: 'Regrouper contrats, courriers, factures, mails et attestations dans un dossier physique ou un PDF unique.' },
+      { name: 'Établir une chronologie', text: "Sur une feuille A4, tracer la ligne du temps entre les deux dates limites et placer chaque évènement avec date, nature et conséquence." },
+      { name: 'Lister les évènements oraux', text: 'Noter les conversations et appels non documentés avec date approximative et personnes présentes.' },
+      { name: 'Identifier la partie adverse', text: 'Préciser qui est en face (personne, société, administration) et localiser les documents qui contiennent ses obligations.' },
+      { name: "Quantifier l'enjeu financier", text: 'Indiquer une fourchette du montant en jeu pour orienter la stratégie et la proportionnalité des frais.' },
+      { name: 'Préparer trois questions', text: 'Sélectionner les trois questions critiques auxquelles vous voulez une réponse à la fin de la consultation.' },
+      { name: 'Définir un objectif réaliste', text: 'Décider si vous cherchez une réparation financière, une reconnaissance, un arrêt du comportement ou une simple clarification.' },
+      { name: 'Apporter le dossier complet', text: "Préparer deux exemplaires (un pour l'avocat, un pour vous), ou un lien sécurisé vers le coffre-fort numérique." },
+    ],
+  },
   relatedSlugs: ['chronologie-prud-homale', 'mise-en-demeure', 'mediation-contentieux'],
 };

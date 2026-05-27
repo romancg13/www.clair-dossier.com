@@ -119,7 +119,7 @@ export function Hero() {
             animate={reduce ? {} : { y: [0, -6, 0] }}
             transition={reduce ? undefined : { duration: 8, repeat: Infinity, ease: 'easeInOut' }}
           >
-            <div className="flex items-center justify-between text-[0.7rem] font-mono text-slate-400">
+            <div className="flex items-center justify-between text-[0.7rem] font-mono text-slate-500">
               <span className="uppercase tracking-[0.18em]">Dossier · #CD-2026-0421</span>
               <span className="inline-flex items-center gap-1.5">
                 <span className="grid h-2 w-2 place-items-center">
@@ -154,7 +154,7 @@ export function Hero() {
             </dl>
 
             <div className="mt-6">
-              <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-slate-400">
+              <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-slate-500">
                 Avancement
               </p>
               <div className="mt-3 flex items-center gap-1.5">
@@ -180,7 +180,7 @@ export function Hero() {
                   </div>
                 ))}
               </div>
-              <div className="mt-2 flex justify-between text-[0.65rem] font-mono uppercase tracking-[0.14em] text-slate-400">
+              <div className="mt-2 flex justify-between text-[0.65rem] font-mono uppercase tracking-[0.14em] text-slate-500">
                 {timelineSteps.map((step) => (
                   <span key={step.label} className={step.state === 'active' ? 'text-gold-500' : ''}>
                     {step.label}

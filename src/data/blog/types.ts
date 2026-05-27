@@ -6,6 +6,18 @@ export type BlogContentBlock =
   | { type: 'list'; items: string[] }
   | { type: 'callout'; text: string; tone?: 'gold' | 'navy' };
 
+export type HowToStep = {
+  name: string;
+  text: string;
+};
+
+export type HowToSchema = {
+  name: string;
+  description: string;
+  totalTime?: string; // ISO 8601 duration like PT30M
+  steps: HowToStep[];
+};
+
 export type BlogPost = {
   slug: string;
   title: string;
@@ -21,5 +33,7 @@ export type BlogPost = {
   content: BlogContentBlock[];
   takeaways: string[];
   faq?: Array<{ q: string; a: string }>;
+  /** Optional HowTo structured data — emitted as JSON-LD HowTo. */
+  howTo?: HowToSchema;
   relatedSlugs: string[];
 };

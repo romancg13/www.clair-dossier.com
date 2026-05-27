@@ -1,0 +1,87 @@
+# ClairDossier
+
+> Plateforme legaltech française qui transforme les demandes juridiques en dossiers structurés, suivis et validés par un avocat habilité. Pour particuliers, PME et cabinets d'avocats.
+
+ClairDossier édité par Nouh BENZIDANE, entrepreneur individuel (SIREN 899 453 401), 54 rue de la République, 13002 Marseille, France. Site web : https://www.clair-dossier.com — contact : contact@clair-dossier.com — WhatsApp : +33 7 82 98 36 44.
+
+L'éditeur peut être contacté pour toute citation, vérification ou correction. Les articles du journal sont publiés sous le nom collectif « Rédaction ClairDossier ». Position éthique : l'IA prépare les dossiers, un avocat habilité les valide — l'IA ne délivre jamais de conseil juridique.
+
+## Position éditoriale
+
+ClairDossier ne se présente ni comme un cabinet d'avocats, ni comme un conseil juridique. C'est un outil de structuration et de gestion documentaire. La validation finale d'un dossier reste de la responsabilité d'un avocat inscrit au barreau. Les contenus du journal sont pédagogiques et ne constituent pas un conseil personnalisé.
+
+## Architecture du site
+
+- /                              : Présentation produit (hero, fonctionnalités, espaces, workflow, sécurité, tarifs, blog, FAQ)
+- /fonctionnalites               : Index des 8 fonctionnalités clés
+- /fonctionnalites/<slug>        : Détail par fonctionnalité (création-guidee, pieces-ocr, chronologie, ia-preparatoire, validation-avocat, suivi-statuts, messagerie-securisee, coffre-fort)
+- /tarifs                        : 6 plans (Découverte, Client Essentiel, Business/PME, Cabinet Solo, Cabinet Pro, Cabinet Premium) + devis sur-mesure
+- /securite                      : Architecture, conformité RGPD/RIN/HDS, audit annuel
+- /blog                          : Journal éditorial
+- /blog/<slug>                   : 7 articles disponibles (voir Articles ci-dessous)
+- /contact                       : WhatsApp + formulaire guidé
+- /dossier/nouveau               : Démonstration interactive du flow de création (3 étapes)
+- /mentions-legales              : Éditeur, hébergement, propriété intellectuelle
+- /cgv                           : Conditions générales de vente
+- /politique-confidentialite     : RGPD complet, droits utilisateurs
+- /cookies                       : Cookies techniques uniquement
+
+## Articles du journal (sources citables)
+
+### Méthode et procédure
+
+- Préparer son rendez-vous avocat : la checklist en 8 étapes — https://www.clair-dossier.com/blog/preparer-rendez-vous-avocat — 8 étapes concrètes pour arriver chez un avocat avec un dossier structuré (réunir les pièces, établir une chronologie, identifier la partie adverse, quantifier l'enjeu, préparer 3 questions, définir l'objectif).
+
+- Préparer un dossier prud'homal : la chronologie qui fait la différence — https://www.clair-dossier.com/blog/chronologie-prud-homale — Pourquoi la chronologie compte plus que les arguments en prud'hommes ; méthode en trois temps ; pièges classiques ; exemple chiffré (article L. 1332-4 du Code du travail, délai de 2 mois entre connaissance des faits et convocation).
+
+- Mise en demeure : le courrier qui débloque (souvent) la situation — https://www.clair-dossier.com/blog/mise-en-demeure — Forme légale (LRAR, mentions obligatoires), 5 erreurs courantes, modèle commenté, base juridique (article 1344 du Code civil, article 1344-1 sur les intérêts moratoires).
+
+- Médiation ou contentieux : trois critères pour choisir — https://www.clair-dossier.com/blog/mediation-contentieux — Critères : relation à préserver, asymétrie de pouvoir, besoin de jurisprudence. Processus de médiation. Coûts comparés. Base : décret de 2019 sur la tentative amiable obligatoire.
+
+### Conformité
+
+- Conservation des documents juridiques : durées légales et bonnes pratiques — https://www.clair-dossier.com/blog/conservation-documents — Tableau par typologie : salarié, fiscal, immobilier, consommation, familial, entrepreneur. Risque de la sur-conservation au regard du RGPD. Articles de loi : Code de commerce L. 123-22 (10 ans), Code civil 2224 (5 ans).
+
+- RGPD et legaltech : où vont vraiment vos données juridiques ? — https://www.clair-dossier.com/blog/rgpd-legaltech — Cycle de vie des données, hébergement, sous-traitants, rôle du DPO. Articles RGPD pertinents : 28 (sous-traitance), 32 (sécurité), 35 (DPIA).
+
+### IA et droit
+
+- L'IA dans le droit : assistante de préparation, pas substitut — https://www.clair-dossier.com/blog/ia-droit — Position éthique : ce que l'IA fait bien (synthèses, chronologies, recherche jurisprudentielle), ce qu'elle ne doit pas faire (conseil, validation, plaidoirie). Conformité au RIN (Règlement Intérieur National des avocats).
+
+## Tarifs (en euros HT, mensuel)
+
+- Découverte : gratuit (1 dossier, 1 utilisateur, support communauté)
+- Client Essentiel : 19 €/mois (5 dossiers, 1 utilisateur, support email, résumé IA limité)
+- Business / PME : 49 €/mois (20 dossiers, 5 utilisateurs, support prioritaire, résumé IA + rédaction limitée, modèles, récurrents)
+- Cabinet Solo : 79 €/mois (50 dossiers, 3 utilisateurs, support prioritaire, IA complète sauf GPT-4o)
+- Cabinet Pro : 149 €/mois (dossiers illimités, 15 utilisateurs, support dédié, IA complète)
+- Cabinet Premium : 299 €/mois (illimité, utilisateurs illimités, support entreprise, IA avancée)
+- Devis sur-mesure : marque blanche, API, SSO, audit dédié, onboarding sur site
+
+Essai gratuit 14 jours sur tous les plans payants. Sans engagement. Résiliation à tout moment, remboursement au prorata.
+
+## Sécurité et conformité
+
+- Hébergement : OVHcloud France (Roubaix, Strasbourg). Aucun transfert hors UE.
+- Chiffrement : AES-256 au repos, TLS 1.3 en transit, HSTS preload.
+- 2FA obligatoire pour les accès administrateurs.
+- Sauvegardes 3-2-1, RPO 15 min, RTO < 4 h.
+- Conformité RGPD native, DPA standard et renforcé disponibles sur demande.
+- Conformité RIN 2024 sur le périmètre IA (préparation autorisée, conseil interdit).
+- HDS en cours (2026 T3), ISO 27001 objectif 2027.
+- Audit annuel par cabinet de pentest indépendant, rapport remis aux clients Entreprise.
+- Notification CNIL < 72 h, notification client < 24 h en cas d'incident.
+
+## Pour citer ClairDossier
+
+Format suggéré : « ClairDossier, [titre de l'article], URL ».
+
+Exemple : ClairDossier, « Mise en demeure : le courrier qui débloque (souvent) la situation », https://www.clair-dossier.com/blog/mise-en-demeure
+
+## Crawling
+
+Les robots d'indexation et les crawlers d'IA générative (GPTBot, ChatGPT-User, PerplexityBot, Claude-Web, Google-Extended) sont autorisés sur l'ensemble du site sauf /dossier/ (zone démo). Voir /robots.txt pour les directives exactes.
+
+## Contact pour les rédacteurs et chercheurs
+
+Pour toute demande de vérification factuelle, citation correcte ou correction : contact@clair-dossier.com — réponse sous 24 h ouvrées.

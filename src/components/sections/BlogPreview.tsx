@@ -58,7 +58,7 @@ export function BlogPreview() {
                   </span>
                 </div>
                 <div className="flex flex-1 flex-col p-6">
-                  <p className="font-mono text-[0.7rem] uppercase tracking-[0.14em] text-slate-400">
+                  <p className="font-mono text-[0.7rem] uppercase tracking-[0.14em] text-slate-500">
                     {formatDate(post.date)} · {post.readMinutes} min de lecture
                   </p>
                   <h3 className="mt-3 font-display text-xl font-semibold leading-snug text-navy-900 transition-colors group-hover:text-navy-800 sm:text-2xl">

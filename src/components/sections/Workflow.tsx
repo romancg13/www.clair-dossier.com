@@ -78,7 +78,7 @@ function WorkflowNode({ index, status }: { index: number; status: (typeof status
         <span className="h-2 w-2 rounded-full bg-navy-900" aria-hidden="true" />
       </div>
       <div className="mt-5 pr-2">
-        <p className="font-mono text-[0.65rem] uppercase tracking-[0.16em] text-slate-400">
+        <p className="font-mono text-[0.65rem] uppercase tracking-[0.16em] text-slate-500">
           Étape {String(index + 1).padStart(2, '0')}
         </p>
         <h3 className="mt-1.5 font-display text-lg font-semibold leading-tight text-navy-900">

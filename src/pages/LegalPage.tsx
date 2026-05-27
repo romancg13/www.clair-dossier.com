@@ -51,7 +51,7 @@ export function LegalPage({ slug }: { slug: keyof typeof legalPages }) {
             <p className="mt-5 text-base leading-relaxed text-slate-500 sm:text-lg">
               {page.intro}
             </p>
-            <p className="mt-6 font-mono text-xs uppercase tracking-[0.16em] text-slate-400">
+            <p className="mt-6 font-mono text-xs uppercase tracking-[0.16em] text-slate-500">
               Dernière mise à jour · {formatDate(page.lastUpdate)}
             </p>
           </Reveal>
@@ -74,7 +74,7 @@ export function LegalPage({ slug }: { slug: keyof typeof legalPages }) {
                       href={`#${section.id}`}
                       className="flex gap-2 text-slate-500 transition-colors hover:text-navy-900"
                     >
-                      <span className="font-mono text-[0.7rem] tabular-nums text-slate-400">
+                      <span className="font-mono text-[0.7rem] tabular-nums text-slate-500">
                         {String(i + 1).padStart(2, '0')}
                       </span>
                       <span className="leading-snug">{section.title}</span>

@@ -130,5 +130,20 @@ export const miseEnDemeure: BlogPost = {
       a: "Oui, pour une dette d'argent, la mise en demeure fait courir les intérêts moratoires au taux légal (article 1344-1 du Code civil) à compter de sa réception, ou à la date stipulée dans le contrat si elle est plus favorable au créancier.",
     },
   ],
+  howTo: {
+    name: 'Rédiger une mise en demeure',
+    description:
+      "Structure et mentions obligatoires d'une mise en demeure opposable juridiquement, conforme à l'article 1344 du Code civil.",
+    totalTime: 'PT20M',
+    steps: [
+      { name: "Identifier l'expéditeur et le destinataire", text: 'Indiquer noms, prénoms, adresses postales complètes des deux parties, et qualité (créancier, locataire, particulier, etc.).' },
+      { name: "Référencer l'obligation invoquée", text: "Citer précisément le contrat, la facture, le courrier ou la disposition légale qui fonde la créance ou l'obligation." },
+      { name: "Décrire l'action attendue", text: "Formuler de manière précise ce qui est demandé (paiement d'une somme chiffrée, exécution d'une prestation, cessation d'un trouble)." },
+      { name: 'Fixer un délai raisonnable', text: 'Accorder un délai de 8 à 15 jours minimum à compter de la réception. Un délai trop court (24 h) rend la mise en demeure inopposable.' },
+      { name: 'Mentionner explicitement « mise en demeure »', text: "Inscrire la qualification dans l'objet du courrier ou en première ligne pour que la portée juridique soit reconnue." },
+      { name: 'Annoncer la conséquence', text: "Indiquer qu'à défaut d'exécution dans le délai, la juridiction compétente sera saisie et les intérêts moratoires courus seront réclamés." },
+      { name: 'Envoyer en LRAR ou LRE certifiée', text: "Utiliser la lettre recommandée avec accusé de réception (papier, 6-8 €) ou une lettre recommandée électronique certifiée. Un email simple ne suffit pas." },
+    ],
+  },
   relatedSlugs: ['preparer-rendez-vous-avocat', 'conservation-documents', 'mediation-contentieux'],
 };

@@ -65,7 +65,7 @@ function WorkspacePanel({ workspace }: { workspace: (typeof workspaces)[number] 
 
       {/* Mockup */}
       <div className="rounded-2xl border border-cream-50/15 bg-navy-800/60 p-6 backdrop-blur sm:p-7">
-        <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-cream-50/55">
+        <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-cream-50/70">
           {workspace.mockup.kicker}
         </p>
         <h4 className="mt-2 font-display text-xl font-semibold leading-tight text-cream-50 sm:text-2xl">
