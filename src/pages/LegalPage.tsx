@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Seo, breadcrumbSchema } from '../lib/seo';
 import { Reveal } from '../components/primitives/Reveal';
@@ -143,9 +144,43 @@ export function LegalPage({ slug }: { slug: keyof typeof legalPages }) {
   );
 }
 
+// URLs (http/https) and emails — turn them into clickable links
+// when they appear inside a legal text block.
+const URL_RE = /\b(https?:\/\/[^\s,)]+[a-zA-Z0-9\/])|([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\b/g;
+
+function renderTextWithLinks(text: string): ReactNode {
+  const parts: ReactNode[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  const re = new RegExp(URL_RE.source, 'g');
+  while ((match = re.exec(text)) !== null) {
+    const matched = match[0];
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index));
+    }
+    const href = matched.includes('@') && !matched.startsWith('http') ? `mailto:${matched}` : matched;
+    const isExternal = !matched.includes('@');
+    parts.push(
+      <a
+        key={`${match.index}-${matched}`}
+        href={href}
+        {...(isExternal ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+        className="border-b hairline-gold text-navy-900 transition-colors hover:text-gold-500"
+      >
+        {matched}
+      </a>
+    );
+    lastIndex = re.lastIndex;
+  }
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+  return parts.length > 0 ? parts : text;
+}
+
 function LegalBlockRender({ block }: { block: LegalBlock }) {
   if (block.type === 'p') {
-    return <p>{block.text}</p>;
+    return <p>{renderTextWithLinks(block.text)}</p>;
   }
   if (block.type === 'h3') {
     return (
@@ -158,7 +193,7 @@ function LegalBlockRender({ block }: { block: LegalBlock }) {
     <ul className="space-y-2 border-l-2 border-gold-500/40 pl-5">
       {block.items.map((item, i) => (
         <li key={i} className="text-navy-900">
-          {item}
+          {renderTextWithLinks(item)}
         </li>
       ))}
     </ul>
