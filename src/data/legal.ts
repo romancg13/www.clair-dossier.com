@@ -34,10 +34,23 @@ const mentionsLegales: LegalPage = {
         {
           type: 'p',
           text:
-            "Le site clair-dossier.com est édité par la société ClairDossier, société par actions simplifiée (SAS) au capital social de 10 000 €, immatriculée au Registre du Commerce et des Sociétés de Paris sous le numéro XXX XXX XXX, dont le siège social est situé 12 rue Saint-Augustin, 75002 Paris, France.",
+            "Le site clair-dossier.com est édité par Nouh BENZIDANE, entrepreneur individuel exerçant sous le nom commercial « 13'UP AGENCY », immatriculé au Répertoire National des Entreprises (RNE) sous le numéro SIREN 899 453 401 (SIRET siège : 899 453 401 00015) depuis le 17 mai 2021, dont le siège social est situé 54 rue de la République, 13002 Marseille, France.",
         },
-        { type: 'p', text: 'Numéro de TVA intracommunautaire : FR XX XXX XXX XXX.' },
-        { type: 'p', text: 'Adresse électronique : contact@clair-dossier.com.' },
+        {
+          type: 'p',
+          text:
+            "Code APE : 70.22Z — Conseil pour les affaires et autres conseils de gestion.",
+        },
+        {
+          type: 'p',
+          text:
+            "TVA non applicable, article 293 B du Code général des impôts (régime de la franchise en base).",
+        },
+        {
+          type: 'p',
+          text:
+            "Site professionnel de l'éditeur : https://nouhbenzidane.fr. Contact : contact@clair-dossier.com.",
+        },
       ],
     },
     {
@@ -47,7 +60,7 @@ const mentionsLegales: LegalPage = {
         {
           type: 'p',
           text:
-            "Le directeur de la publication du site clair-dossier.com est le président de la société ClairDossier. Toute correspondance peut lui être adressée à contact@clair-dossier.com.",
+            "Le directeur de la publication du site clair-dossier.com est Nouh BENZIDANE, en sa qualité d'éditeur du site. Toute correspondance peut lui être adressée à contact@clair-dossier.com.",
         },
       ],
     },
@@ -129,7 +142,7 @@ const cgv: LegalPage = {
         {
           type: 'p',
           text:
-            "Les présentes CGV ont pour objet de définir les conditions dans lesquelles la société ClairDossier (ci-après « ClairDossier ») fournit au client (ci-après le « Client ») un accès à la plateforme legaltech ClairDossier (ci-après le « Service »), permettant la structuration, le suivi et la validation de dossiers juridiques.",
+            "Les présentes CGV ont pour objet de définir les conditions dans lesquelles Nouh BENZIDANE, entrepreneur individuel exerçant sous le nom commercial 13'UP AGENCY (SIREN 899 453 401), ci-après « ClairDossier » ou « l'Éditeur », fournit au client (ci-après le « Client ») un accès à la plateforme legaltech ClairDossier (ci-après le « Service »), permettant la structuration, le suivi et la validation de dossiers juridiques.",
         },
         {
           type: 'p',
@@ -270,7 +283,7 @@ const politiqueConfidentialite: LegalPage = {
         {
           type: 'p',
           text:
-            "Le responsable du traitement des données personnelles est la société ClairDossier, dont le siège est situé 12 rue Saint-Augustin, 75002 Paris. Pour toute question relative à la protection de vos données : contact@clair-dossier.com.",
+            "Le responsable du traitement des données personnelles collectées sur clair-dossier.com est Nouh BENZIDANE, entrepreneur individuel (13'UP AGENCY), SIREN 899 453 401, dont le siège est situé 54 rue de la République, 13002 Marseille. Pour toute question relative à la protection de vos données : contact@clair-dossier.com.",
         },
       ],
     },

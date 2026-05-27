@@ -105,9 +105,9 @@ export function Contact() {
                   detail="Divulgation responsable — réponse sous 24 h"
                 />
                 <ContactInfo
-                  label="Adresse"
-                  value="ClairDossier — 12 rue Saint-Augustin"
-                  detail="75002 Paris · France"
+                  label="Siège"
+                  value="54 rue de la République, 13002 Marseille"
+                  detail="Voir les mentions légales pour les coordonnées complètes"
                 />
               </div>
             </Reveal>
