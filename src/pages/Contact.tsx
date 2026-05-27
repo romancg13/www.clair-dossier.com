@@ -95,8 +95,8 @@ export function Contact() {
               <div className="mt-10 space-y-5 border-t hairline pt-8">
                 <ContactInfo
                   label="Email général"
-                  value="bonjour@clair-dossier.com"
-                  href="mailto:bonjour@clair-dossier.com"
+                  value="contact@clair-dossier.com"
+                  href="mailto:contact@clair-dossier.com"
                 />
                 <ContactInfo
                   label="Sécurité"

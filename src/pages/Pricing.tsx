@@ -241,7 +241,7 @@ export function Pricing() {
 
                 {/* Email */}
                 <a
-                  href="mailto:bonjour@clair-dossier.com?subject=Demande%20de%20devis%20sur-mesure&body=Bonjour%2C%0A%0AJe%20souhaite%20un%20devis%20sur-mesure%20pour%20%3A%0A-%20Marque%20blanche%20%3F%0A-%20API%20%2F%20int%C3%A9gration%20%3F%0A-%20SSO%20%2F%20audit%20%3F%0A-%20Volum%C3%A9trie%20attendue%20%3A%0A%0AMerci."
+                  href="mailto:contact@clair-dossier.com?subject=Demande%20de%20devis%20sur-mesure&body=Bonjour%2C%0A%0AJe%20souhaite%20un%20devis%20sur-mesure%20pour%20%3A%0A-%20Marque%20blanche%20%3F%0A-%20API%20%2F%20int%C3%A9gration%20%3F%0A-%20SSO%20%2F%20audit%20%3F%0A-%20Volum%C3%A9trie%20attendue%20%3A%0A%0AMerci."
                   className="group flex items-center justify-between gap-4 rounded-xl border border-cream-50/15 bg-cream-50/5 p-5 transition-colors hover:border-cream-50/35 hover:bg-cream-50/10"
                 >
                   <div className="flex items-center gap-4">
@@ -264,7 +264,7 @@ export function Pricing() {
                       <p className="font-mono text-[0.65rem] uppercase tracking-[0.16em] text-cream-50/55">
                         Email · réponse sous 24 h ouvrées
                       </p>
-                      <p className="mt-0.5 font-medium text-cream-50">bonjour@clair-dossier.com</p>
+                      <p className="mt-0.5 font-medium text-cream-50">contact@clair-dossier.com</p>
                     </div>
                   </div>
                   <ArrowRightIcon

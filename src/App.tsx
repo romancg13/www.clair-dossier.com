@@ -9,6 +9,7 @@ import { BlogIndex } from './pages/BlogIndex';
 import { BlogPost } from './pages/BlogPost';
 import { Contact } from './pages/Contact';
 import { DossierFlow } from './pages/DossierFlow';
+import { LegalPage } from './pages/LegalPage';
 import { NotFound } from './pages/NotFound';
 
 export default function App() {
@@ -24,6 +25,10 @@ export default function App() {
         <Route path="blog/:slug" element={<BlogPost />} />
         <Route path="contact" element={<Contact />} />
         <Route path="dossier/nouveau" element={<DossierFlow />} />
+        <Route path="mentions-legales" element={<LegalPage slug="mentions-legales" />} />
+        <Route path="cgv" element={<LegalPage slug="cgv" />} />
+        <Route path="politique-confidentialite" element={<LegalPage slug="politique-confidentialite" />} />
+        <Route path="cookies" element={<LegalPage slug="cookies" />} />
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>
