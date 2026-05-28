@@ -39,7 +39,7 @@ export function Hero() {
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-            className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-500"
+            className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-700"
           >
             Legaltech pour clients · PME · cabinets
           </motion.p>
@@ -144,7 +144,7 @@ export function Hero() {
                   <dt className="text-slate-500">{row.label}</dt>
                   <dd
                     className={`text-right font-medium ${
-                      row.tone === 'gold' ? 'text-gold-500' : row.tone === 'navy' ? 'text-navy-900' : 'text-navy-900'
+                      row.tone === 'gold' ? 'text-gold-700' : row.tone === 'navy' ? 'text-navy-900' : 'text-navy-900'
                     }`}
                   >
                     {row.value}
@@ -182,7 +182,7 @@ export function Hero() {
               </div>
               <div className="mt-2 flex justify-between text-[0.65rem] font-mono uppercase tracking-[0.14em] text-slate-500">
                 {timelineSteps.map((step) => (
-                  <span key={step.label} className={step.state === 'active' ? 'text-gold-500' : ''}>
+                  <span key={step.label} className={step.state === 'active' ? 'text-gold-700' : ''}>
                     {step.label}
                   </span>
                 ))}

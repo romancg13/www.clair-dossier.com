@@ -10,7 +10,7 @@ export function FeaturesGrid() {
     <Reveal as="section" className="bg-cream-50">
       <div className="mx-auto max-w-7xl px-5 py-14 sm:py-20 lg:py-24 sm:px-8 lg:px-12">
         <div className="max-w-3xl">
-          <p className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-500">
+          <p className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-700">
             Fonctionnalités
           </p>
           <h2 className="mt-3 font-display text-4xl font-semibold leading-tight text-navy-900 sm:text-5xl">
@@ -32,7 +32,7 @@ export function FeaturesGrid() {
                   transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
                   className="group relative flex h-full flex-col rounded-xl border hairline bg-white p-6 transition-colors duration-300 hover:border-gold-500"
                 >
-                  <span className="grid h-11 w-11 place-items-center rounded-lg bg-cream-100 text-navy-900 transition-colors group-hover:bg-gold-500/15 group-hover:text-gold-500">
+                  <span className="grid h-11 w-11 place-items-center rounded-lg bg-cream-100 text-navy-900 transition-colors group-hover:bg-gold-500/15 group-hover:text-gold-700">
                     <Icon />
                   </span>
                   <h3 className="mt-5 font-display text-xl font-semibold leading-snug text-navy-900">
@@ -43,7 +43,7 @@ export function FeaturesGrid() {
                   </p>
                   <Link
                     to={`/fonctionnalites/${f.slug}`}
-                    className="mt-5 inline-flex items-center gap-1.5 self-start text-sm font-medium text-navy-900 transition-colors hover:text-gold-500"
+                    className="mt-5 inline-flex items-center gap-1.5 self-start text-sm font-medium text-navy-900 transition-colors hover:text-gold-700"
                   >
                     Voir
                     <ArrowRightIcon width={14} height={14} strokeWidth={2} className="transition-transform group-hover:translate-x-0.5" />

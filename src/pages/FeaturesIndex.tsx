@@ -33,7 +33,7 @@ export function FeaturesIndex() {
       <section className="bg-cream-50">
         <div className="mx-auto max-w-7xl px-5 pb-12 pt-12 sm:pt-16 lg:pt-24 sm:px-8 lg:px-12">
           <div className="max-w-3xl">
-            <p className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-500">
+            <p className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-700">
               Fonctionnalités
             </p>
             <h1 className="mt-4 font-display text-5xl font-semibold leading-[1.05] text-navy-900 sm:text-6xl">
@@ -60,7 +60,7 @@ export function FeaturesIndex() {
                     to={`/fonctionnalites/${f.slug}`}
                     className="group flex h-full flex-col rounded-2xl border hairline bg-white p-7 transition-all duration-300 hover:-translate-y-1 hover:border-gold-500 hover:shadow-card-hover"
                   >
-                    <span className="grid h-12 w-12 place-items-center rounded-lg bg-cream-100 text-navy-900 transition-colors group-hover:bg-gold-500/15 group-hover:text-gold-500">
+                    <span className="grid h-12 w-12 place-items-center rounded-lg bg-cream-100 text-navy-900 transition-colors group-hover:bg-gold-500/15 group-hover:text-gold-700">
                       <Icon width={26} height={26} />
                     </span>
                     <h2 className="mt-5 font-display text-2xl font-semibold leading-tight text-navy-900">

@@ -97,7 +97,7 @@ export function Security() {
       <section className="bg-cream-50">
         <div className="mx-auto max-w-7xl px-5 pb-12 pt-12 sm:pt-16 lg:pt-24 sm:px-8 lg:px-12">
           <div className="max-w-3xl">
-            <p className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-500">
+            <p className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-700">
               Sécurité &amp; conformité
             </p>
             <h1 className="mt-4 font-display text-5xl font-semibold leading-[1.05] text-navy-900 sm:text-6xl">
@@ -135,7 +135,7 @@ export function Security() {
                   key={node.kicker}
                   className="rounded-xl border hairline bg-cream-50 p-4 text-center"
                 >
-                  <p className="font-mono text-[0.65rem] uppercase tracking-[0.16em] text-gold-500">
+                  <p className="font-mono text-[0.65rem] uppercase tracking-[0.16em] text-gold-700">
                     Étape {node.kicker}
                   </p>
                   <p className="mt-2 font-display text-lg font-semibold text-navy-900">
@@ -198,7 +198,7 @@ export function Security() {
                 className="rounded-xl border hairline bg-white px-4 py-5 text-center"
               >
                 <p className="font-display text-2xl font-semibold text-navy-900">{b.label}</p>
-                <p className="mt-1 font-mono text-[0.65rem] uppercase tracking-[0.14em] text-gold-500">
+                <p className="mt-1 font-mono text-[0.65rem] uppercase tracking-[0.14em] text-gold-700">
                   {b.status}
                 </p>
               </div>
@@ -211,7 +211,7 @@ export function Security() {
       <Reveal id="dpa" as="section" className="bg-cream-50">
         <div className="mx-auto max-w-7xl px-5 py-14 sm:py-20 lg:py-24 sm:px-8 lg:px-12">
           <div className="max-w-3xl">
-            <p className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-500">
+            <p className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-700">
               Documents
             </p>
             <h2 className="mt-3 font-display text-4xl font-semibold leading-tight text-navy-900 sm:text-5xl">

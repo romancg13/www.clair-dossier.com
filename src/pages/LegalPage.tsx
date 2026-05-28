@@ -42,7 +42,7 @@ export function LegalPage({ slug }: { slug: keyof typeof legalPages }) {
       <section className="bg-cream-50">
         <div className="mx-auto max-w-4xl px-5 pb-10 pt-16 sm:pt-20 lg:pt-24 sm:px-8 lg:px-12">
           <Reveal>
-            <p className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-500">
+            <p className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-700">
               Document légal
             </p>
             <h1 className="mt-4 font-display text-4xl font-semibold leading-[1.05] text-navy-900 sm:text-5xl lg:text-6xl">
@@ -64,7 +64,7 @@ export function LegalPage({ slug }: { slug: keyof typeof legalPages }) {
           {/* Table of contents — desktop sticky */}
           <aside className="hidden lg:block">
             <div className="sticky top-24">
-              <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-500">
+              <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">
                 Sommaire
               </p>
               <ol className="mt-4 space-y-2.5 text-sm">
@@ -118,7 +118,7 @@ export function LegalPage({ slug }: { slug: keyof typeof legalPages }) {
                   to={`/${p.slug}`}
                   className="group flex flex-col rounded-xl border hairline bg-white p-5 transition-colors hover:border-gold-500"
                 >
-                  <p className="font-mono text-[0.65rem] uppercase tracking-[0.16em] text-gold-500">
+                  <p className="font-mono text-[0.65rem] uppercase tracking-[0.16em] text-gold-700">
                     Document légal
                   </p>
                   <p className="mt-2 font-display text-lg font-semibold leading-tight text-navy-900 group-hover:text-navy-800">
@@ -132,7 +132,7 @@ export function LegalPage({ slug }: { slug: keyof typeof legalPages }) {
             Une question sur ces documents ou besoin d'une version signée ? Écrivez à{' '}
             <a
               href="mailto:contact@clair-dossier.com"
-              className="border-b hairline-gold text-navy-900 hover:text-gold-500"
+              className="border-b hairline-gold text-navy-900 hover:text-gold-700"
             >
               contact@clair-dossier.com
             </a>
@@ -165,7 +165,7 @@ function renderTextWithLinks(text: string): ReactNode {
         key={`${match.index}-${matched}`}
         href={href}
         {...(isExternal ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
-        className="border-b hairline-gold text-navy-900 transition-colors hover:text-gold-500"
+        className="border-b hairline-gold text-navy-900 transition-colors hover:text-gold-700"
       >
         {matched}
       </a>

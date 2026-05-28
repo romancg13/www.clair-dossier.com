@@ -14,7 +14,7 @@ export function PricingPreview() {
     <Reveal as="section" className="bg-cream-50">
       <div className="mx-auto max-w-7xl px-5 py-14 sm:py-20 lg:py-24 sm:px-8 lg:px-12">
         <div className="max-w-3xl">
-          <p className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-500">
+          <p className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-700">
             Tarifs
           </p>
           <h2 className="mt-3 font-display text-4xl font-semibold leading-tight text-navy-900 sm:text-5xl">
@@ -37,7 +37,7 @@ export function PricingPreview() {
         <div className="mt-10 text-center">
           <Link
             to="/tarifs"
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-navy-900 border-b hairline-gold pb-0.5 transition-colors hover:text-gold-500"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-navy-900 border-b hairline-gold pb-0.5 transition-colors hover:text-gold-700"
           >
             Voir les 6 plans et le détail
             <ArrowRightIcon width={14} height={14} strokeWidth={2} />

@@ -42,7 +42,7 @@ export function BlogIndex() {
       <section className="bg-cream-50">
         <div className="mx-auto max-w-7xl px-5 pb-12 pt-12 sm:pt-16 lg:pt-24 sm:px-8 lg:px-12">
           <div className="max-w-3xl">
-            <p className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-500">
+            <p className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-700">
               Journal
             </p>
             <h1 className="mt-4 font-display text-5xl font-semibold leading-[1.05] text-navy-900 sm:text-6xl">
@@ -103,7 +103,7 @@ export function BlogIndex() {
                       <div className="mt-5 flex items-center justify-between border-t hairline pt-4">
                         {author && (
                           <span className="inline-flex items-center gap-2 text-xs text-slate-500">
-                            <span className="grid h-7 w-7 place-items-center rounded-full bg-navy-900 font-mono text-[0.65rem] font-semibold text-gold-500">
+                            <span className="grid h-7 w-7 place-items-center rounded-full bg-navy-900 font-mono text-[0.65rem] font-semibold text-gold-700">
                               {author.initials}
                             </span>
                             {author.name}
@@ -111,7 +111,7 @@ export function BlogIndex() {
                         )}
                         <Link
                           to={`/blog/${post.slug}`}
-                          className="inline-flex items-center gap-1.5 text-sm font-medium text-navy-900 hover:text-gold-500"
+                          className="inline-flex items-center gap-1.5 text-sm font-medium text-navy-900 hover:text-gold-700"
                         >
                           Lire
                           <ArrowRightIcon width={14} height={14} strokeWidth={2} />

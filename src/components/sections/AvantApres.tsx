@@ -46,14 +46,14 @@ export function AvantApres() {
           <div className="hidden items-center lg:flex">
             <div className="flex flex-col items-center gap-3">
               <div className="h-12 w-px bg-gold-500/40" />
-              <ArrowRightIcon width={20} height={20} className="text-gold-500" strokeWidth={1.5} />
+              <ArrowRightIcon width={20} height={20} className="text-gold-700" strokeWidth={1.5} />
               <div className="h-12 w-px bg-gold-500/40" />
             </div>
           </div>
 
           {/* Avec */}
           <div className="rounded-2xl bg-navy-900 p-7 text-cream-50 sm:p-9">
-            <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-500">
+            <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">
               Avec ClairDossier
             </p>
             <h2 className="mt-3 font-display text-3xl font-semibold leading-tight text-cream-50 sm:text-4xl">
@@ -63,7 +63,7 @@ export function AvantApres() {
               {AVEC.map((item) => (
                 <li key={item} className="flex gap-3 text-sm leading-relaxed text-cream-50/80">
                   <span className="mt-1 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-gold-500/20">
-                    <CheckIcon width={12} height={12} strokeWidth={2.2} className="text-gold-500" />
+                    <CheckIcon width={12} height={12} strokeWidth={2.2} className="text-gold-700" />
                   </span>
                   {item}
                 </li>

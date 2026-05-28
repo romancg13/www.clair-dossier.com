@@ -114,7 +114,7 @@ export function Pricing() {
       <section className="bg-cream-50">
         <div className="mx-auto max-w-7xl px-5 pb-10 pt-12 sm:pt-16 lg:pt-20 sm:px-8 lg:px-12">
           <div className="max-w-3xl">
-            <p className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-500">
+            <p className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-700">
               Tarifs
             </p>
             <h1 className="mt-4 font-display text-4xl font-semibold leading-[1.05] text-navy-900 sm:text-5xl lg:text-6xl">
@@ -327,7 +327,7 @@ export function Pricing() {
       <Reveal as="section" className="bg-cream-50">
         <div className="mx-auto max-w-4xl px-5 py-14 sm:py-20 lg:py-24 sm:px-8 lg:px-12">
           <div className="text-center">
-            <p className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-500">
+            <p className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-700">
               Questions tarifs
             </p>
             <h2 className="mt-3 font-display text-3xl font-semibold leading-tight text-navy-900 sm:text-4xl lg:text-5xl">
@@ -513,7 +513,7 @@ function FeatureRow({
         )}
         {status === 'no' && <CrossIcon width={14} height={14} className={mutedClass} />}
         {status === 'limited' && (
-          <InfoIcon width={14} height={14} strokeWidth={2} className="text-gold-500" />
+          <InfoIcon width={14} height={14} strokeWidth={2} className="text-gold-700" />
         )}
       </span>
       <span>{labelText}</span>

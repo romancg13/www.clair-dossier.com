@@ -55,7 +55,7 @@ export function FeatureDetail() {
             <span className="inline-grid h-12 w-12 place-items-center rounded-lg bg-cream-100 text-navy-900">
               <Icon width={26} height={26} />
             </span>
-            <p className="mt-6 font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-500">
+            <p className="mt-6 font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-700">
               Fonctionnalité · {feature.shortTitle}
             </p>
             <h1 className="mt-4 font-display text-5xl font-semibold leading-[1.05] text-navy-900 sm:text-6xl">
@@ -77,13 +77,13 @@ export function FeatureDetail() {
             ))}
           </article>
           <aside className="rounded-2xl border hairline bg-white p-6">
-            <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-500">
+            <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">
               Concrètement
             </p>
             <ul className="mt-4 space-y-3">
               {feature.bullets.map((b) => (
                 <li key={b} className="flex gap-2.5 text-sm text-navy-900">
-                  <CheckIcon width={14} height={14} strokeWidth={2.2} className="mt-1 shrink-0 text-gold-500" />
+                  <CheckIcon width={14} height={14} strokeWidth={2.2} className="mt-1 shrink-0 text-gold-700" />
                   <span className="leading-relaxed">{b}</span>
                 </li>
               ))}
@@ -106,7 +106,7 @@ export function FeatureDetail() {
             <h2 className="font-display text-3xl font-semibold text-navy-900 sm:text-4xl">
               Autres briques utiles.
             </h2>
-            <Link to="/fonctionnalites" className="text-sm font-medium text-navy-900 border-b hairline-gold hover:text-gold-500">
+            <Link to="/fonctionnalites" className="text-sm font-medium text-navy-900 border-b hairline-gold hover:text-gold-700">
               Toutes les fonctionnalités
             </Link>
           </div>
@@ -119,7 +119,7 @@ export function FeatureDetail() {
                   to={`/fonctionnalites/${f.slug}`}
                   className="group flex h-full flex-col rounded-xl border hairline bg-white p-6 transition-colors duration-300 hover:border-gold-500"
                 >
-                  <span className="grid h-10 w-10 place-items-center rounded-lg bg-cream-100 text-navy-900 group-hover:bg-gold-500/15 group-hover:text-gold-500">
+                  <span className="grid h-10 w-10 place-items-center rounded-lg bg-cream-100 text-navy-900 group-hover:bg-gold-500/15 group-hover:text-gold-700">
                     <RIcon />
                   </span>
                   <h3 className="mt-4 font-display text-lg font-semibold leading-snug text-navy-900">

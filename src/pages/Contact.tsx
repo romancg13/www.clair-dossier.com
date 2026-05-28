@@ -54,7 +54,7 @@ export function Contact() {
           <div className="grid gap-12 lg:grid-cols-[1fr_1.1fr]">
             {/* Left — copy + WhatsApp CTA */}
             <Reveal>
-              <p className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-500">
+              <p className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-700">
                 Contact
               </p>
               <h1 className="mt-4 font-display text-5xl font-semibold leading-[1.05] text-navy-900 sm:text-6xl">
@@ -76,7 +76,7 @@ export function Contact() {
                   <WhatsAppIcon width={26} height={26} />
                 </span>
                 <div className="flex-1">
-                  <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-500">
+                  <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">
                     WhatsApp
                   </p>
                   <p className="mt-1 font-display text-2xl font-semibold leading-tight text-navy-900">
@@ -85,7 +85,7 @@ export function Contact() {
                   <p className="mt-2 text-sm text-slate-500">
                     Réponse en moyenne sous 1 h en journée (9 h – 19 h, lundi-vendredi).
                   </p>
-                  <span className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-navy-900 transition-colors group-hover:text-gold-500">
+                  <span className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-navy-900 transition-colors group-hover:text-gold-700">
                     Ouvrir une conversation
                     <ArrowRightIcon width={14} height={14} strokeWidth={2} className="transition-transform group-hover:translate-x-0.5" />
                   </span>
@@ -115,7 +115,7 @@ export function Contact() {
             {/* Right — form (pre-fills WhatsApp message) */}
             <Reveal delay={0.1}>
               <div className="rounded-2xl border hairline bg-white p-7 shadow-card sm:p-9">
-                <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-500">
+                <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">
                   Formulaire guidé
                 </p>
                 <h2 className="mt-2 font-display text-2xl font-semibold leading-tight text-navy-900 sm:text-3xl">
@@ -171,11 +171,11 @@ export function Contact() {
                     <input
                       type="checkbox"
                       required
-                      className="mt-1 h-4 w-4 shrink-0 rounded border-slate-300 text-gold-500 focus:ring-gold-500"
+                      className="mt-1 h-4 w-4 shrink-0 rounded border-slate-300 text-gold-700 focus:ring-gold-500"
                     />
                     <span className="text-slate-500 leading-relaxed">
                       J'accepte que ClairDossier traite ma demande selon la{' '}
-                      <a href="/politique-confidentialite" className="border-b hairline-gold text-navy-900 hover:text-gold-500">
+                      <a href="/politique-confidentialite" className="border-b hairline-gold text-navy-900 hover:text-gold-700">
                         politique de confidentialité
                       </a>
                       . Le message sera envoyé via WhatsApp.
@@ -219,7 +219,7 @@ function Field({
     <label className="block">
       <span className="font-mono text-[0.7rem] uppercase tracking-[0.16em] text-slate-500">
         {label}
-        {required && <span className="ml-1 text-gold-500">*</span>}
+        {required && <span className="ml-1 text-gold-700">*</span>}
       </span>
       <input
         id={id}
@@ -250,7 +250,7 @@ function ContactInfo({
       {href ? (
         <a
           href={href}
-          className="mt-1.5 inline-block font-medium text-navy-900 border-b hairline-gold transition-colors hover:text-gold-500"
+          className="mt-1.5 inline-block font-medium text-navy-900 border-b hairline-gold transition-colors hover:text-gold-700"
         >
           {value}
         </a>

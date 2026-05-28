@@ -21,14 +21,18 @@ export function Tabs({
 
   return (
     <div className={className}>
-      <div role="tablist" className="inline-flex flex-wrap gap-2 rounded-full border border-cream-50/15 bg-navy-800/40 p-1 backdrop-blur">
+      <div role="tablist" aria-label="Espaces dédiés" className="inline-flex flex-wrap gap-2 rounded-full border border-cream-50/15 bg-navy-800/40 p-1 backdrop-blur">
         {items.map((item) => {
           const isActive = item.id === active;
           return (
             <button
               key={item.id}
+              id={`tab-${item.id}`}
+              type="button"
               role="tab"
               aria-selected={isActive}
+              aria-controls={`tabpanel-${item.id}`}
+              tabIndex={isActive ? 0 : -1}
               onClick={() => setActive(item.id)}
               className={`relative min-h-[40px] rounded-full px-4 py-2 text-xs font-medium transition-colors sm:px-5 sm:text-sm ${
                 isActive ? 'text-navy-900' : 'text-cream-50/75 hover:text-cream-50'
@@ -51,6 +55,10 @@ export function Tabs({
         <AnimatePresence mode="wait">
           <motion.div
             key={activeItem.id}
+            id={`tabpanel-${activeItem.id}`}
+            role="tabpanel"
+            aria-labelledby={`tab-${activeItem.id}`}
+            tabIndex={0}
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}

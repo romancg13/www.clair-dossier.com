@@ -18,8 +18,10 @@ export function Accordion({ items }: { items: AccordionItem[] }) {
           <li key={item.id}>
             <button
               type="button"
+              id={`accordion-trigger-${item.id}`}
               onClick={() => setOpen(isOpen ? null : item.id)}
               aria-expanded={isOpen}
+              aria-controls={`accordion-panel-${item.id}`}
               className="flex min-h-[44px] w-full items-center justify-between gap-4 py-4 text-left transition-colors sm:gap-6 sm:py-5"
             >
               <span className="font-display text-base font-semibold text-navy-900 sm:text-xl">
@@ -40,6 +42,9 @@ export function Accordion({ items }: { items: AccordionItem[] }) {
               {isOpen && (
                 <motion.div
                   key="content"
+                  id={`accordion-panel-${item.id}`}
+                  role="region"
+                  aria-labelledby={`accordion-trigger-${item.id}`}
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: 'auto', opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}

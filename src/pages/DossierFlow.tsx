@@ -152,7 +152,7 @@ export function DossierFlow() {
 
       <section className="bg-cream-50">
         <div className="mx-auto max-w-4xl px-5 py-16 sm:px-8 lg:px-12">
-          <p className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-500">
+          <p className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-700">
             Création dossier · {draft.step} / 3
           </p>
           <h1 className="mt-4 font-display text-4xl font-semibold leading-[1.05] text-navy-900 sm:text-5xl">
@@ -248,7 +248,7 @@ function Step1({ selected, onSelect }: { selected?: Typology; onSelect: (id: Typ
               : 'hairline bg-white hover:border-gold-500 hover:shadow-card'
           }`}
         >
-          <p className="font-mono text-[0.7rem] uppercase tracking-[0.16em] text-gold-500">
+          <p className="font-mono text-[0.7rem] uppercase tracking-[0.16em] text-gold-700">
             Typologie
           </p>
           <h2 className="mt-3 font-display text-xl font-semibold leading-tight text-navy-900 sm:text-2xl">
@@ -279,7 +279,7 @@ function Step2({
   const fields = FIELDS[typology];
   return (
     <form onSubmit={onSubmit} className="rounded-2xl border hairline bg-white p-7 shadow-card sm:p-9" noValidate>
-      <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-500">
+      <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">
         {TYPOLOGIES.find((t) => t.id === typology)?.label}
       </p>
       <p className="mt-2 text-sm text-slate-500">
@@ -387,7 +387,7 @@ function Step3({
       </dl>
 
       <div className="mt-7 rounded-xl bg-cream-100 p-5">
-        <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-500">
+        <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">
           Prochaine étape
         </p>
         <p className="mt-2 text-sm leading-relaxed text-navy-900">
@@ -401,7 +401,7 @@ function Step3({
         <button
           type="button"
           onClick={onEdit}
-          className="text-sm font-medium text-navy-900 border-b hairline-gold pb-0.5 hover:text-gold-500"
+          className="text-sm font-medium text-navy-900 border-b hairline-gold pb-0.5 hover:text-gold-700"
         >
           ← Modifier les informations
         </button>

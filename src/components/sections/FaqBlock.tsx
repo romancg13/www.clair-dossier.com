@@ -7,7 +7,7 @@ export function FaqBlock() {
     <Reveal as="section" className="bg-cream-50">
       <div className="mx-auto max-w-4xl px-5 py-14 sm:py-20 lg:py-24 sm:px-8 lg:px-12">
         <div className="text-center">
-          <p className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-500">
+          <p className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-700">
             Foire aux questions
           </p>
           <h2 className="mt-3 font-display text-4xl font-semibold leading-tight text-navy-900 sm:text-5xl">

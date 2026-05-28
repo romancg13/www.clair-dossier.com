@@ -22,6 +22,8 @@
   --color-gold-500: #c4a456;
   --color-gold-400: #e6c97d;
   --color-gold-300: #f0d99a;
+  /* Texte uniquement sur fond clair — passe WCAG AA (contrast 5.3:1 sur cream-50) */
+  --color-gold-700: #7a5f28;
 
   --color-cream-50: #fbf9f4;
   --color-cream-100: #f5f0e6;

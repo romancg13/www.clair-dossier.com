@@ -6,7 +6,7 @@ export function NotFound() {
     <>
       <Seo title="Page introuvable" description="La page demandée n'existe pas." path="/" />
       <section className="mx-auto flex min-h-[60vh] max-w-3xl flex-col items-center justify-center px-5 py-14 sm:py-20 lg:py-24 text-center sm:px-8 lg:px-12">
-        <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-500">Erreur 404</p>
+        <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">Erreur 404</p>
         <h1 className="mt-3 font-display text-5xl font-semibold text-navy-900 sm:text-6xl">
           Cette page n'existe pas.
         </h1>

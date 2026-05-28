@@ -122,7 +122,7 @@ export function BlogPost() {
       {/* Hero */}
       <section className="bg-cream-50">
         <div className="mx-auto max-w-3xl px-5 pb-12 pt-16 sm:px-8 lg:px-12">
-          <p className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-500">
+          <p className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-700">
             {post.category} · {post.readMinutes} min de lecture
           </p>
           <h1 className="mt-4 font-display text-4xl font-semibold leading-[1.08] tracking-tight text-navy-900 sm:text-5xl">
@@ -179,7 +179,7 @@ export function BlogPost() {
 
           {/* Takeaways */}
           <aside className="mt-12 rounded-2xl border hairline bg-white p-7 sm:p-8">
-            <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-500">
+            <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">
               À retenir
             </p>
             <ul className="mt-4 space-y-3">
@@ -225,7 +225,7 @@ export function BlogPost() {
                   to={`/blog/${p.slug}`}
                   className="group flex flex-col rounded-2xl border hairline bg-white p-6 transition-colors duration-300 hover:border-gold-500"
                 >
-                  <p className="font-mono text-[0.7rem] uppercase tracking-[0.14em] text-gold-500">
+                  <p className="font-mono text-[0.7rem] uppercase tracking-[0.14em] text-gold-700">
                     {p.category} · {p.readMinutes} min
                   </p>
                   <h3 className="mt-3 font-display text-xl font-semibold leading-snug text-navy-900">
@@ -297,7 +297,7 @@ function ContentBlock({ block }: { block: BlogContentBlock }) {
         >
           <p
             className={`font-mono text-[0.7rem] uppercase tracking-[0.18em] ${
-              tone ? 'text-gold-500' : 'text-gold-500'
+              tone ? 'text-gold-500' : 'text-gold-700'
             }`}
           >
             Note
