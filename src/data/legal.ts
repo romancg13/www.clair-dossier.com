@@ -34,7 +34,7 @@ const mentionsLegales: LegalPage = {
         {
           type: 'p',
           text:
-            "Le site clair-dossier.com est édité par Roman Gomes, entrepreneur individuel immatriculé au Répertoire National des Entreprises (RNE) sous le numéro SIREN 105 490 734 (SIRET siège : 105 490 734 00016), domicilié en France.",
+            "Le site clair-dossier.com est édité par Roman Gomes, entrepreneur individuel immatriculé au Répertoire National des Entreprises (RNE) sous le numéro SIREN 105 490 734 (SIRET siège : 105 490 734 00016), dont le siège social est situé 96 avenue Paul Dalbret, 13013 Marseille, France.",
         },
         {
           type: 'p',
@@ -288,7 +288,7 @@ const politiqueConfidentialite: LegalPage = {
         {
           type: 'p',
           text:
-            "Le responsable du traitement des données personnelles collectées sur clair-dossier.com est Roman Gomes, entrepreneur individuel, SIREN 105 490 734, domicilié en France. Pour toute question relative à la protection de vos données : contact@clair-dossier.com.",
+            "Le responsable du traitement des données personnelles collectées sur clair-dossier.com est Roman Gomes, entrepreneur individuel, SIREN 105 490 734, dont le siège est situé 96 avenue Paul Dalbret, 13013 Marseille. Pour toute question relative à la protection de vos données : contact@clair-dossier.com.",
         },
       ],
     },
