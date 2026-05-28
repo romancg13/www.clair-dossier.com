@@ -180,7 +180,18 @@ export function Hero() {
                   </div>
                 ))}
               </div>
-              <div className="mt-2 flex justify-between text-[0.65rem] font-mono uppercase tracking-[0.14em] text-slate-500">
+              {/* Mobile: étape active uniquement (les 6 labels chevauchent à 360px) */}
+              <div className="mt-2 flex items-center justify-between text-[0.7rem] font-mono uppercase tracking-[0.16em] text-slate-500 sm:hidden">
+                <span>
+                  Étape {timelineSteps.findIndex((s) => s.state === 'active') + 1} / {timelineSteps.length}
+                </span>
+                <span className="text-gold-700">
+                  {timelineSteps.find((s) => s.state === 'active')?.label}
+                </span>
+              </div>
+
+              {/* Desktop: tous les labels sous chaque point */}
+              <div className="mt-2 hidden justify-between text-[0.65rem] font-mono uppercase tracking-[0.14em] text-slate-500 sm:flex">
                 {timelineSteps.map((step) => (
                   <span key={step.label} className={step.state === 'active' ? 'text-gold-700' : ''}>
                     {step.label}
