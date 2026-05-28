@@ -34,12 +34,12 @@ const mentionsLegales: LegalPage = {
         {
           type: 'p',
           text:
-            "Le site clair-dossier.com est édité par Nouh BENZIDANE, entrepreneur individuel immatriculé au Répertoire National des Entreprises (RNE) sous le numéro SIREN 899 453 401 (SIRET siège : 899 453 401 00015) depuis le 17 mai 2021, dont le siège social est situé 54 rue de la République, 13002 Marseille, France.",
+            "Le site clair-dossier.com est édité par Nouh BENZIDANE, entrepreneur individuel immatriculé au Répertoire National des Entreprises (RNE) sous le numéro SIREN 105 490 734 (SIRET siège : 105 490 734 00016), dont le siège social est situé 54 rue de la République, 13002 Marseille, France.",
         },
         {
           type: 'p',
           text:
-            "Code APE : 70.22Z — Conseil pour les affaires et autres conseils de gestion.",
+            "Code APE : 4791A — Vente à distance sur catalogue général.",
         },
         {
           type: 'p',
@@ -142,7 +142,7 @@ const cgv: LegalPage = {
         {
           type: 'p',
           text:
-            "Les présentes CGV ont pour objet de définir les conditions dans lesquelles Nouh BENZIDANE, entrepreneur individuel (SIREN 899 453 401), ci-après « ClairDossier » ou « l'Éditeur », fournit au client (ci-après le « Client ») un accès à la plateforme legaltech ClairDossier (ci-après le « Service »), permettant la structuration, le suivi et la validation de dossiers juridiques.",
+            "Les présentes CGV ont pour objet de définir les conditions dans lesquelles Nouh BENZIDANE, entrepreneur individuel (SIREN 105 490 734), ci-après « ClairDossier » ou « l'Éditeur », fournit au client (ci-après le « Client ») un accès à la plateforme legaltech ClairDossier (ci-après le « Service »), permettant la structuration, le suivi et la validation de dossiers juridiques.",
         },
         {
           type: 'p',
@@ -283,7 +283,7 @@ const politiqueConfidentialite: LegalPage = {
         {
           type: 'p',
           text:
-            "Le responsable du traitement des données personnelles collectées sur clair-dossier.com est Nouh BENZIDANE, entrepreneur individuel, SIREN 899 453 401, dont le siège est situé 54 rue de la République, 13002 Marseille. Pour toute question relative à la protection de vos données : contact@clair-dossier.com.",
+            "Le responsable du traitement des données personnelles collectées sur clair-dossier.com est Nouh BENZIDANE, entrepreneur individuel, SIREN 105 490 734, dont le siège est situé 54 rue de la République, 13002 Marseille. Pour toute question relative à la protection de vos données : contact@clair-dossier.com.",
         },
       ],
     },
