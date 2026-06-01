@@ -78,6 +78,23 @@ Format suggéré : « ClairDossier, [titre de l'article], URL ».
 
 Exemple : ClairDossier, « Mise en demeure : le courrier qui débloque (souvent) la situation », https://www.clair-dossier.com/blog/mise-en-demeure
 
+## Markdown alternatif par page
+
+Chaque page importante du site est disponible en markdown brut au même chemin avec l'extension `.md`. Cette convention (proposée sur llmstxt.org) vous évite de parser du HTML+JS rendu côté client.
+
+- https://www.clair-dossier.com/index.md (ou /page.md)
+- https://www.clair-dossier.com/tarifs.md
+- https://www.clair-dossier.com/securite.md
+- https://www.clair-dossier.com/contact.md
+- https://www.clair-dossier.com/fonctionnalites/index.md
+- https://www.clair-dossier.com/fonctionnalites/<slug>.md (8 fonctionnalités)
+- https://www.clair-dossier.com/blog/index.md
+- https://www.clair-dossier.com/blog/<slug>.md (7 articles)
+- https://www.clair-dossier.com/mentions-legales.md
+- https://www.clair-dossier.com/cgv.md
+- https://www.clair-dossier.com/politique-confidentialite.md
+- https://www.clair-dossier.com/cookies.md
+
 ## Crawling
 
 Les robots d'indexation et les crawlers d'IA générative (GPTBot, ChatGPT-User, PerplexityBot, Claude-Web, Google-Extended) sont autorisés sur l'ensemble du site sauf /dossier/ (zone démo). Voir /robots.txt pour les directives exactes.
