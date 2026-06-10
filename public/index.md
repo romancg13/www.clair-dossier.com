@@ -74,6 +74,8 @@ Tous les dossiers de votre équipe, tous les statuts, toutes les charges. La dir
 - **Cabinet Pro** (Cabinet d'avocat) — 149 €/mois HT. Pour les cabinets multi-avocats avec statistiques avancées et workflows.
 - **Cabinet Premium** (Cabinet d'avocat) — 299 €/mois HT. Solution entreprise : marque blanche, API, SSO, audit avancé et accompagnement dédié.
 
+Facturation annuelle disponible sur tous les plans payants avec 10 % de réduction sur le cumul mensuel.
+
 Détail complet : https://www.clair-dossier.com/tarifs
 
 ## Questions fréquentes

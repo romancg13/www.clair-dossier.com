@@ -22,7 +22,7 @@ export function PricingPreview() {
           </h2>
           <p className="mt-4 text-base leading-relaxed text-slate-500">
             Six niveaux couvrent du particulier au cabinet multi-sites. Essai gratuit 14 jours,
-            sans engagement.
+            sans engagement — et 10 % de réduction en facturation annuelle.
           </p>
         </div>
 

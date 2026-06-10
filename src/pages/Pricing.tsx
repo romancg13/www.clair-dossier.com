@@ -1,10 +1,14 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { motion } from 'motion/react';
 import { Seo, breadcrumbSchema } from '../lib/seo';
 import { Reveal, Stagger, StaggerItem } from '../components/primitives/Reveal';
 import { Accordion } from '../components/ui/Accordion';
 import {
   plans,
   formatEuro,
+  yearlyMonthlyEquivalent,
+  yearlyTotal,
   COMPARISON_FEATURES,
   TRUST_PILLARS,
   type Plan,
@@ -67,7 +71,15 @@ const PRICING_FAQ = [
     answer:
       "Vous accédez à toutes les fonctionnalités du plan choisi pendant 14 jours, sans carte requise. À la fin de l'essai, vous pouvez continuer en payant, basculer sur le plan Découverte, ou supprimer votre compte.",
   },
+  {
+    id: 'annuel',
+    question: "Comment fonctionne la facturation annuelle ?",
+    answer:
+      "L'abonnement annuel est facturé en une fois et bénéficie de 10 % de réduction par rapport au cumul mensuel. Il reste sans engagement : en cas de résiliation en cours d'année, le solde non consommé est remboursé au prorata, comme pour le mensuel.",
+  },
 ];
+
+type Billing = 'monthly' | 'yearly';
 
 const TRUST_ICONS = {
   'donnees-chiffrees': LockIcon,
@@ -76,11 +88,13 @@ const TRUST_ICONS = {
 } as const;
 
 export function Pricing() {
+  const [billing, setBilling] = useState<Billing>('monthly');
+
   return (
     <>
       <Seo
         title="Tarifs"
-        description="Six formules ClairDossier : Découverte gratuit, Client Essentiel, Business/PME, Cabinet Solo/Pro/Premium. Essai gratuit 14 jours, sans engagement."
+        description="Six formules ClairDossier : Découverte gratuit, Client Essentiel, Business/PME, Cabinet Solo/Pro/Premium. Essai gratuit 14 jours, sans engagement. −10 % en annuel."
         path="/tarifs"
         jsonLd={[
           breadcrumbSchema([
@@ -94,18 +108,32 @@ export function Pricing() {
               '@type': 'Product',
               name: `ClairDossier — ${p.name}`,
               description: p.description,
-              offers: {
-                '@type': 'Offer',
-                price: String(p.priceMonthly ?? 0),
-                priceCurrency: 'EUR',
-                priceSpecification: {
-                  '@type': 'UnitPriceSpecification',
+              offers: [
+                {
+                  '@type': 'Offer',
                   price: String(p.priceMonthly ?? 0),
                   priceCurrency: 'EUR',
-                  unitText: 'MON',
+                  priceSpecification: {
+                    '@type': 'UnitPriceSpecification',
+                    price: String(p.priceMonthly ?? 0),
+                    priceCurrency: 'EUR',
+                    unitText: 'MON',
+                  },
+                  availability: 'https://schema.org/InStock',
                 },
-                availability: 'https://schema.org/InStock',
-              },
+                {
+                  '@type': 'Offer',
+                  price: yearlyTotal(p.priceMonthly ?? 0).toFixed(2),
+                  priceCurrency: 'EUR',
+                  priceSpecification: {
+                    '@type': 'UnitPriceSpecification',
+                    price: yearlyTotal(p.priceMonthly ?? 0).toFixed(2),
+                    priceCurrency: 'EUR',
+                    unitText: 'ANN',
+                  },
+                  availability: 'https://schema.org/InStock',
+                },
+              ],
             })),
         ]}
       />
@@ -124,6 +152,53 @@ export function Pricing() {
               Du particulier qui monte un dossier à la fois au cabinet multi-sites — six niveaux
               de service couvrent tous les usages. Essai gratuit 14 jours sur tous les plans payants.
             </p>
+
+            {/* Toggle Mensuel / Annuel */}
+            <div
+              role="group"
+              aria-label="Période de facturation"
+              className="mt-8 inline-flex rounded-full border hairline bg-white p-1 shadow-card"
+            >
+              <button
+                type="button"
+                onClick={() => setBilling('monthly')}
+                aria-pressed={billing === 'monthly'}
+                className={`relative min-h-[40px] rounded-full px-5 py-2 text-sm font-medium transition-colors ${
+                  billing === 'monthly' ? 'text-navy-900' : 'text-slate-500 hover:text-navy-900'
+                }`}
+              >
+                {billing === 'monthly' && (
+                  <motion.span
+                    layoutId="billing-pill"
+                    className="absolute inset-0 rounded-full bg-cream-100"
+                    transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+                  />
+                )}
+                <span className="relative z-10">Mensuel</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setBilling('yearly')}
+                aria-pressed={billing === 'yearly'}
+                className={`relative min-h-[40px] rounded-full px-5 py-2 text-sm font-medium transition-colors ${
+                  billing === 'yearly' ? 'text-navy-900' : 'text-slate-500 hover:text-navy-900'
+                }`}
+              >
+                {billing === 'yearly' && (
+                  <motion.span
+                    layoutId="billing-pill"
+                    className="absolute inset-0 rounded-full bg-cream-100"
+                    transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+                  />
+                )}
+                <span className="relative z-10 inline-flex items-center gap-1.5">
+                  Annuel
+                  <span className="rounded-full bg-emerald-100 px-2 py-0.5 font-mono text-[0.65rem] font-semibold text-emerald-700">
+                    −10 %
+                  </span>
+                </span>
+              </button>
+            </div>
           </div>
         </div>
       </section>
@@ -134,7 +209,7 @@ export function Pricing() {
           <Stagger inView className="grid items-stretch gap-6 sm:gap-7 lg:grid-cols-2">
             {plans.map((plan) => (
               <StaggerItem key={plan.id}>
-                <PlanCard plan={plan} />
+                <PlanCard plan={plan} billing={billing} />
               </StaggerItem>
             ))}
           </Stagger>
@@ -377,8 +452,9 @@ export function Pricing() {
   );
 }
 
-function PlanCard({ plan }: { plan: Plan }) {
+function PlanCard({ plan, billing }: { plan: Plan; billing: Billing }) {
   const isDark = plan.variant === 'dark';
+  const isYearly = billing === 'yearly';
 
   const cardBase = 'relative flex h-full flex-col rounded-2xl border p-7 transition-colors duration-300 sm:p-8';
   const cardSkin = isDark
@@ -431,12 +507,20 @@ function PlanCard({ plan }: { plan: Plan }) {
         ) : plan.priceMonthly === 0 ? (
           <p className="font-display text-5xl font-semibold leading-none">Gratuit</p>
         ) : (
-          <div className="flex items-baseline gap-2">
-            <span className="font-display text-5xl font-semibold leading-none">
-              {formatEuro(plan.priceMonthly)}
-            </span>
-            <span className={`text-sm ${description}`}>/mois</span>
-          </div>
+          <>
+            <div className="flex items-baseline gap-2">
+              <span className="font-display text-5xl font-semibold leading-none">
+                {formatEuro(isYearly ? yearlyMonthlyEquivalent(plan.priceMonthly) : plan.priceMonthly)}
+              </span>
+              <span className={`text-sm ${description}`}>/mois</span>
+            </div>
+            {isYearly && (
+              <p className={`mt-2 text-xs leading-relaxed ${description}`}>
+                Facturé {formatEuro(yearlyTotal(plan.priceMonthly))} par an — économie de 10 %
+                sur le tarif mensuel.
+              </p>
+            )}
+          </>
         )}
       </div>
 

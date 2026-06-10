@@ -58,7 +58,7 @@ ClairDossier ne se présente ni comme un cabinet d'avocats, ni comme un conseil 
 - Cabinet Premium : 299 €/mois (illimité, utilisateurs illimités, support entreprise, IA avancée)
 - Devis sur-mesure : marque blanche, API, SSO, audit dédié, onboarding sur site
 
-Essai gratuit 14 jours sur tous les plans payants. Sans engagement. Résiliation à tout moment, remboursement au prorata.
+Essai gratuit 14 jours sur tous les plans payants. Sans engagement. Résiliation à tout moment, remboursement au prorata. Facturation annuelle disponible avec 10 % de réduction (ex. Client Essentiel : 205,20 € HT/an au lieu de 228 €).
 
 ## Sécurité et conformité
 

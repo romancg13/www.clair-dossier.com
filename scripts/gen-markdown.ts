@@ -108,6 +108,10 @@ function generateHome(): void {
     lines.push(`- **${p.name}** (${p.audience}) — ${price}. ${p.description}`);
   }
   lines.push('');
+  lines.push(
+    'Facturation annuelle disponible sur tous les plans payants avec 10 % de réduction sur le cumul mensuel.'
+  );
+  lines.push('');
   lines.push(`Détail complet : ${SITE}/tarifs`);
   lines.push('');
 
@@ -315,11 +319,14 @@ function generatePricing(): void {
     '',
     '# Tarifs ClairDossier',
     '',
-    "Du particulier qui monte un dossier à la fois au cabinet multi-sites — six niveaux de service couvrent tous les usages. Essai gratuit 14 jours sur tous les plans payants, sans engagement.",
+    "Du particulier qui monte un dossier à la fois au cabinet multi-sites — six niveaux de service couvrent tous les usages. Essai gratuit 14 jours sur tous les plans payants, sans engagement. Facturation mensuelle ou annuelle (−10 % en annuel).",
     '',
     '## Les six plans',
     '',
   ];
+
+  const euroFr = (n: number) =>
+    n.toFixed(2).replace('.', ',').replace(/,00$/, '') + ' €';
 
   for (const p of plans) {
     const price =
@@ -333,6 +340,12 @@ function generatePricing(): void {
     lines.push('');
     lines.push(`*${p.audience}.* ${p.description}`);
     lines.push('');
+    if (p.priceMonthly !== null && p.priceMonthly > 0) {
+      lines.push(
+        `Facturation annuelle : ${euroFr(p.priceMonthly * 12 * 0.9)} HT/an, soit ${euroFr(p.priceMonthly * 0.9)} HT/mois (−10 %).`
+      );
+      lines.push('');
+    }
     lines.push(`- **Dossiers** : ${p.specs.dossiers}`);
     lines.push(`- **Utilisateurs** : ${p.specs.users}`);
     lines.push(`- **Support** : ${p.specs.support}`);

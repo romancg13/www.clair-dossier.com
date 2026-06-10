@@ -6,7 +6,7 @@ url: https://www.clair-dossier.com/tarifs
 
 # Tarifs ClairDossier
 
-Du particulier qui monte un dossier à la fois au cabinet multi-sites — six niveaux de service couvrent tous les usages. Essai gratuit 14 jours sur tous les plans payants, sans engagement.
+Du particulier qui monte un dossier à la fois au cabinet multi-sites — six niveaux de service couvrent tous les usages. Essai gratuit 14 jours sur tous les plans payants, sans engagement. Facturation mensuelle ou annuelle (−10 % en annuel).
 
 ## Les six plans
 
@@ -30,6 +30,8 @@ Fonctionnalités incluses :
 
 *Particulier / indépendant.* Pour les particuliers et indépendants qui suivent leurs dossiers en autonomie.
 
+Facturation annuelle : 205,20 € HT/an, soit 17,10 € HT/mois (−10 %).
+
 - **Dossiers** : 5 dossiers
 - **Utilisateurs** : 1 utilisateur
 - **Support** : Support email
@@ -45,6 +47,8 @@ Fonctionnalités incluses :
 ### Business / PME (mis en avant) — 49 € HT/mois
 
 *TPE / PME.* Pour les PME avec plusieurs dossiers récurrents et des équipes internes.
+
+Facturation annuelle : 529,20 € HT/an, soit 44,10 € HT/mois (−10 %).
 
 - **Dossiers** : 20 dossiers
 - **Utilisateurs** : 5 utilisateurs
@@ -62,6 +66,8 @@ Fonctionnalités incluses :
 
 *Cabinet d'avocat.* Pour les avocats indépendants. Intake client, résumé IA, validation et brouillons.
 
+Facturation annuelle : 853,20 € HT/an, soit 71,10 € HT/mois (−10 %).
+
 - **Dossiers** : 50 dossiers
 - **Utilisateurs** : 3 utilisateurs
 - **Support** : Support prioritaire
@@ -78,6 +84,8 @@ Fonctionnalités incluses :
 
 *Cabinet d'avocat.* Pour les cabinets multi-avocats avec statistiques avancées et workflows.
 
+Facturation annuelle : 1609,20 € HT/an, soit 134,10 € HT/mois (−10 %).
+
 - **Dossiers** : Dossiers illimités
 - **Utilisateurs** : 15 utilisateurs
 - **Support** : Support dédié
@@ -93,6 +101,8 @@ Fonctionnalités incluses :
 ### Cabinet Premium — 299 € HT/mois
 
 *Cabinet d'avocat.* Solution entreprise : marque blanche, API, SSO, audit avancé et accompagnement dédié.
+
+Facturation annuelle : 3229,20 € HT/an, soit 269,10 € HT/mois (−10 %).
 
 - **Dossiers** : Dossiers illimités
 - **Utilisateurs** : Utilisateurs illimités

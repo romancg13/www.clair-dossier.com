@@ -170,11 +170,24 @@ export const TRUST_PILLARS: { id: string; title: string; body: string }[] = [
   },
 ];
 
+/** Remise appliquée quand le client choisit la facturation annuelle. */
+export const YEARLY_DISCOUNT = 0.1;
+
+/** Équivalent mensuel d'un plan facturé à l'année (mensuel − 10 %). */
+export function yearlyMonthlyEquivalent(priceMonthly: number): number {
+  return priceMonthly * (1 - YEARLY_DISCOUNT);
+}
+
+/** Total facturé en une fois pour un an (12 × mensuel − 10 %). */
+export function yearlyTotal(priceMonthly: number): number {
+  return priceMonthly * 12 * (1 - YEARLY_DISCOUNT);
+}
+
 export function formatEuro(amount: number): string {
   return new Intl.NumberFormat('fr-FR', {
     style: 'currency',
     currency: 'EUR',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
+    minimumFractionDigits: Number.isInteger(amount) ? 0 : 2,
+    maximumFractionDigits: 2,
   }).format(amount);
 }
