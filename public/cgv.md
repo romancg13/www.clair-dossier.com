@@ -47,7 +47,7 @@ Toute analyse IA est soumise à validation d'un avocat habilité avant transmiss
 
 ## Article 7 — Données personnelles
 
-Le traitement des données personnelles est régi par la politique de confidentialité accessible sur le site. Un accord de traitement des données (Data Processing Agreement) est disponible sur simple demande à contact@clair-dossier.com pour les clients professionnels.
+Le traitement des données personnelles est régi par la politique de confidentialité accessible sur le site. Un accord de traitement des données (Data Processing Agreement) est disponible sur simple demande à contact.clairdossier@icloud.com pour les clients professionnels.
 
 ## Article 8 — Limitation de responsabilité
 
@@ -62,6 +62,6 @@ Les présentes CGV sont régies par le droit français. Tout litige relatif à l
 
 ---
 
-*Source : https://www.clair-dossier.com/cgv — éditeur : Roman Gomes (SIREN 105 490 734, 96 avenue Paul Dalbret, 13013 Marseille). Site réalisé par Nouh BENZIDANE.*
+*Source : https://www.clair-dossier.com/cgv — éditeur : Roman Gomes (SIREN 105 490 734, Château-Gombert, 13013 Marseille). Site réalisé par Nouh BENZIDANE.*
 
 *Citation suggérée : « ClairDossier, [titre de la page], https://www.clair-dossier.com/cgv ».*

@@ -34,7 +34,7 @@ const mentionsLegales: LegalPage = {
         {
           type: 'p',
           text:
-            "Le site clair-dossier.com est édité par Roman Gomes, entrepreneur individuel immatriculé au Répertoire National des Entreprises (RNE) sous le numéro SIREN 105 490 734 (SIRET siège : 105 490 734 00016), dont le siège social est situé 96 avenue Paul Dalbret, 13013 Marseille, France.",
+            "Le site clair-dossier.com est édité par Roman Gomes, entrepreneur individuel immatriculé au Répertoire National des Entreprises (RNE) sous le numéro SIREN 105 490 734 (SIRET siège : 105 490 734 00016), dont le siège social est situé Château-Gombert, 13013 Marseille, France.",
         },
         {
           type: 'p',
@@ -49,7 +49,7 @@ const mentionsLegales: LegalPage = {
         {
           type: 'p',
           text:
-            "Contact : contact@clair-dossier.com — WhatsApp : +33 7 82 98 36 44.",
+            "Contact : contact.clairdossier@icloud.com — WhatsApp : +33 7 82 98 36 44.",
         },
         {
           type: 'p',
@@ -65,7 +65,7 @@ const mentionsLegales: LegalPage = {
         {
           type: 'p',
           text:
-            "Le directeur de la publication du site clair-dossier.com est Roman Gomes, en sa qualité d'éditeur du service. Toute correspondance peut lui être adressée à contact@clair-dossier.com.",
+            "Le directeur de la publication du site clair-dossier.com est Roman Gomes, en sa qualité d'éditeur du service. Toute correspondance peut lui être adressée à contact.clairdossier@icloud.com.",
         },
       ],
     },
@@ -124,7 +124,7 @@ const mentionsLegales: LegalPage = {
         {
           type: 'p',
           text:
-            "Pour toute question relative aux présentes mentions légales : contact@clair-dossier.com. Pour les questions liées à la protection des données personnelles : voir la politique de confidentialité.",
+            "Pour toute question relative aux présentes mentions légales : contact.clairdossier@icloud.com. Pour les questions liées à la protection des données personnelles : voir la politique de confidentialité.",
         },
       ],
     },
@@ -238,7 +238,7 @@ const cgv: LegalPage = {
         {
           type: 'p',
           text:
-            "Le traitement des données personnelles est régi par la politique de confidentialité accessible sur le site. Un accord de traitement des données (Data Processing Agreement) est disponible sur simple demande à contact@clair-dossier.com pour les clients professionnels.",
+            "Le traitement des données personnelles est régi par la politique de confidentialité accessible sur le site. Un accord de traitement des données (Data Processing Agreement) est disponible sur simple demande à contact.clairdossier@icloud.com pour les clients professionnels.",
         },
       ],
     },
@@ -288,7 +288,7 @@ const politiqueConfidentialite: LegalPage = {
         {
           type: 'p',
           text:
-            "Le responsable du traitement des données personnelles collectées sur clair-dossier.com est Roman Gomes, entrepreneur individuel, SIREN 105 490 734, dont le siège est situé 96 avenue Paul Dalbret, 13013 Marseille. Pour toute question relative à la protection de vos données : contact@clair-dossier.com.",
+            "Le responsable du traitement des données personnelles collectées sur clair-dossier.com est Roman Gomes, entrepreneur individuel, SIREN 105 490 734, dont le siège est situé Château-Gombert, 13013 Marseille. Pour toute question relative à la protection de vos données : contact.clairdossier@icloud.com.",
         },
       ],
     },
@@ -394,7 +394,7 @@ const politiqueConfidentialite: LegalPage = {
         {
           type: 'p',
           text:
-            "Pour exercer ces droits, contactez-nous à contact@clair-dossier.com en précisant votre demande. Une réponse vous est apportée sous 30 jours maximum. Si la réponse ne vous satisfait pas, vous pouvez introduire une réclamation auprès de la CNIL (www.cnil.fr).",
+            "Pour exercer ces droits, contactez-nous à contact.clairdossier@icloud.com en précisant votre demande. Une réponse vous est apportée sous 30 jours maximum. Si la réponse ne vous satisfait pas, vous pouvez introduire une réclamation auprès de la CNIL (www.cnil.fr).",
         },
       ],
     },

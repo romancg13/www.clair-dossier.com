@@ -47,11 +47,11 @@ Audit annuel par cabinet de pentest indépendant — rapport remis aux clients E
 
 ## Divulgation responsable
 
-Vulnérabilités à signaler à security@clair-dossier.com. Réponse sous 24 h ouvrées. Programme de récompense informel pour les contributions confirmées. Aucune action en justice contre les chercheurs de bonne foi.
+Vulnérabilités à signaler à contact.clairdossier@icloud.com. Réponse sous 24 h ouvrées. Programme de récompense informel pour les contributions confirmées. Aucune action en justice contre les chercheurs de bonne foi.
 
 
 ---
 
-*Source : https://www.clair-dossier.com/securite — éditeur : Roman Gomes (SIREN 105 490 734, 96 avenue Paul Dalbret, 13013 Marseille). Site réalisé par Nouh BENZIDANE.*
+*Source : https://www.clair-dossier.com/securite — éditeur : Roman Gomes (SIREN 105 490 734, Château-Gombert, 13013 Marseille). Site réalisé par Nouh BENZIDANE.*
 
 *Citation suggérée : « ClairDossier, [titre de la page], https://www.clair-dossier.com/securite ».*

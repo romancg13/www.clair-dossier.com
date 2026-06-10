@@ -94,19 +94,14 @@ export function Contact() {
 
               <div className="mt-10 space-y-5 border-t hairline pt-8">
                 <ContactInfo
-                  label="Email général"
-                  value="contact@clair-dossier.com"
-                  href="mailto:contact@clair-dossier.com"
-                />
-                <ContactInfo
-                  label="Sécurité"
-                  value="security@clair-dossier.com"
-                  href="mailto:security@clair-dossier.com"
-                  detail="Divulgation responsable — réponse sous 24 h"
+                  label="Email"
+                  value="contact.clairdossier@icloud.com"
+                  href="mailto:contact.clairdossier@icloud.com"
+                  detail="Demandes générales, devis, et divulgation responsable de vulnérabilités — réponse sous 24 h ouvrées"
                 />
                 <ContactInfo
                   label="Siège"
-                  value="54 rue de la République, 13002 Marseille"
+                  value="Château-Gombert, 13013 Marseille"
                   detail="Voir les mentions légales pour les coordonnées complètes"
                 />
               </div>

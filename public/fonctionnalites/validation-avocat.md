@@ -26,6 +26,6 @@ Si l'avocat refuse, le client n'est pas laissé seul. ClairDossier propose un me
 
 ---
 
-*Source : https://www.clair-dossier.com/fonctionnalites/validation-avocat — éditeur : Roman Gomes (SIREN 105 490 734, 96 avenue Paul Dalbret, 13013 Marseille). Site réalisé par Nouh BENZIDANE.*
+*Source : https://www.clair-dossier.com/fonctionnalites/validation-avocat — éditeur : Roman Gomes (SIREN 105 490 734, Château-Gombert, 13013 Marseille). Site réalisé par Nouh BENZIDANE.*
 
 *Citation suggérée : « ClairDossier, [titre de la page], https://www.clair-dossier.com/fonctionnalites/validation-avocat ».*

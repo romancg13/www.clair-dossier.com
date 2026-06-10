@@ -113,12 +113,12 @@ Datacenters OVH situés à Roubaix (59) et Strasbourg (67). Sauvegardes redondan
 ## Contact
 
 - WhatsApp : +33 7 82 98 36 44 (réponse en moyenne sous 1 h en journée)
-- Email : contact@clair-dossier.com (réponse sous 24 h ouvrées)
-- Sécurité (divulgation responsable) : security@clair-dossier.com
+- Email : contact.clairdossier@icloud.com (réponse sous 24 h ouvrées)
+- Sécurité (divulgation responsable) : contact.clairdossier@icloud.com
 - Formulaire : https://www.clair-dossier.com/contact
 
 ---
 
-*Source : https://www.clair-dossier.com/ — éditeur : Roman Gomes (SIREN 105 490 734, 96 avenue Paul Dalbret, 13013 Marseille). Site réalisé par Nouh BENZIDANE.*
+*Source : https://www.clair-dossier.com/ — éditeur : Roman Gomes (SIREN 105 490 734, Château-Gombert, 13013 Marseille). Site réalisé par Nouh BENZIDANE.*
 
 *Citation suggérée : « ClairDossier, [titre de la page], https://www.clair-dossier.com/ ».*

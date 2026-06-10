@@ -86,6 +86,6 @@ Un PDF A4 en orientation paysage, une ligne horizontale avec les dates principal
 
 ---
 
-*Source : https://www.clair-dossier.com/blog/chronologie-prud-homale — éditeur : Roman Gomes (SIREN 105 490 734, 96 avenue Paul Dalbret, 13013 Marseille). Site réalisé par Nouh BENZIDANE.*
+*Source : https://www.clair-dossier.com/blog/chronologie-prud-homale — éditeur : Roman Gomes (SIREN 105 490 734, Château-Gombert, 13013 Marseille). Site réalisé par Nouh BENZIDANE.*
 
 *Citation suggérée : « ClairDossier, [titre de la page], https://www.clair-dossier.com/blog/chronologie-prud-homale ».*

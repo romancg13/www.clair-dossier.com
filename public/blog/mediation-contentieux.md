@@ -92,6 +92,6 @@ Pas automatiquement. L'accord est un contrat qui engage les parties. Pour lui do
 
 ---
 
-*Source : https://www.clair-dossier.com/blog/mediation-contentieux — éditeur : Roman Gomes (SIREN 105 490 734, 96 avenue Paul Dalbret, 13013 Marseille). Site réalisé par Nouh BENZIDANE.*
+*Source : https://www.clair-dossier.com/blog/mediation-contentieux — éditeur : Roman Gomes (SIREN 105 490 734, Château-Gombert, 13013 Marseille). Site réalisé par Nouh BENZIDANE.*
 
 *Citation suggérée : « ClairDossier, [titre de la page], https://www.clair-dossier.com/blog/mediation-contentieux ».*

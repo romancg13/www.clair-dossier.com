@@ -131,10 +131,10 @@ export function LegalPage({ slug }: { slug: keyof typeof legalPages }) {
           <p className="mt-10 text-sm text-slate-500">
             Une question sur ces documents ou besoin d'une version signée ? Écrivez à{' '}
             <a
-              href="mailto:contact@clair-dossier.com"
+              href="mailto:contact.clairdossier@icloud.com"
               className="border-b hairline-gold text-navy-900 hover:text-gold-700"
             >
-              contact@clair-dossier.com
+              contact.clairdossier@icloud.com
             </a>
             .
           </p>

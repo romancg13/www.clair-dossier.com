@@ -13,7 +13,7 @@ ClairDossier traite des données personnelles dans le strict respect du Règleme
 
 ## Responsable du traitement
 
-Le responsable du traitement des données personnelles collectées sur clair-dossier.com est Roman Gomes, entrepreneur individuel, SIREN 105 490 734, dont le siège est situé 96 avenue Paul Dalbret, 13013 Marseille. Pour toute question relative à la protection de vos données : contact@clair-dossier.com.
+Le responsable du traitement des données personnelles collectées sur clair-dossier.com est Roman Gomes, entrepreneur individuel, SIREN 105 490 734, dont le siège est situé Château-Gombert, 13013 Marseille. Pour toute question relative à la protection de vos données : contact.clairdossier@icloud.com.
 
 ## Données collectées
 
@@ -65,7 +65,7 @@ Vous disposez à tout moment des droits suivants sur vos données :
 - Droit de limitation du traitement.
 - Droit de retirer votre consentement à tout moment.
 
-Pour exercer ces droits, contactez-nous à contact@clair-dossier.com en précisant votre demande. Une réponse vous est apportée sous 30 jours maximum. Si la réponse ne vous satisfait pas, vous pouvez introduire une réclamation auprès de la CNIL (www.cnil.fr).
+Pour exercer ces droits, contactez-nous à contact.clairdossier@icloud.com en précisant votre demande. Une réponse vous est apportée sous 30 jours maximum. Si la réponse ne vous satisfait pas, vous pouvez introduire une réclamation auprès de la CNIL (www.cnil.fr).
 
 ## Sécurité
 
@@ -74,6 +74,6 @@ Vos données sont protégées par un chiffrement AES-256 au repos et TLS 1.3 en 
 
 ---
 
-*Source : https://www.clair-dossier.com/politique-confidentialite — éditeur : Roman Gomes (SIREN 105 490 734, 96 avenue Paul Dalbret, 13013 Marseille). Site réalisé par Nouh BENZIDANE.*
+*Source : https://www.clair-dossier.com/politique-confidentialite — éditeur : Roman Gomes (SIREN 105 490 734, Château-Gombert, 13013 Marseille). Site réalisé par Nouh BENZIDANE.*
 
 *Citation suggérée : « ClairDossier, [titre de la page], https://www.clair-dossier.com/politique-confidentialite ».*

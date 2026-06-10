@@ -13,19 +13,19 @@ Conformément à la loi pour la confiance dans l'économie numérique (LCEN, n°
 
 ## Éditeur du site
 
-Le site clair-dossier.com est édité par Roman Gomes, entrepreneur individuel immatriculé au Répertoire National des Entreprises (RNE) sous le numéro SIREN 105 490 734 (SIRET siège : 105 490 734 00016), dont le siège social est situé 96 avenue Paul Dalbret, 13013 Marseille, France.
+Le site clair-dossier.com est édité par Roman Gomes, entrepreneur individuel immatriculé au Répertoire National des Entreprises (RNE) sous le numéro SIREN 105 490 734 (SIRET siège : 105 490 734 00016), dont le siège social est situé Château-Gombert, 13013 Marseille, France.
 
 Code APE : 4791A — Vente à distance sur catalogue général.
 
 TVA non applicable, article 293 B du Code général des impôts (régime de la franchise en base).
 
-Contact : contact@clair-dossier.com — WhatsApp : +33 7 82 98 36 44.
+Contact : contact.clairdossier@icloud.com — WhatsApp : +33 7 82 98 36 44.
 
 Réalisation et développement du site : Nouh BENZIDANE — https://nouhbenzidane.fr.
 
 ## Directeur de la publication
 
-Le directeur de la publication du site clair-dossier.com est Roman Gomes, en sa qualité d'éditeur du service. Toute correspondance peut lui être adressée à contact@clair-dossier.com.
+Le directeur de la publication du site clair-dossier.com est Roman Gomes, en sa qualité d'éditeur du service. Toute correspondance peut lui être adressée à contact.clairdossier@icloud.com.
 
 ## Hébergement
 
@@ -47,11 +47,11 @@ ClairDossier ne saurait être tenue responsable des dommages directs ou indirect
 
 ## Contact
 
-Pour toute question relative aux présentes mentions légales : contact@clair-dossier.com. Pour les questions liées à la protection des données personnelles : voir la politique de confidentialité.
+Pour toute question relative aux présentes mentions légales : contact.clairdossier@icloud.com. Pour les questions liées à la protection des données personnelles : voir la politique de confidentialité.
 
 
 ---
 
-*Source : https://www.clair-dossier.com/mentions-legales — éditeur : Roman Gomes (SIREN 105 490 734, 96 avenue Paul Dalbret, 13013 Marseille). Site réalisé par Nouh BENZIDANE.*
+*Source : https://www.clair-dossier.com/mentions-legales — éditeur : Roman Gomes (SIREN 105 490 734, Château-Gombert, 13013 Marseille). Site réalisé par Nouh BENZIDANE.*
 
 *Citation suggérée : « ClairDossier, [titre de la page], https://www.clair-dossier.com/mentions-legales ».*

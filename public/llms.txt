@@ -2,7 +2,7 @@
 
 > Plateforme legaltech française qui transforme les demandes juridiques en dossiers structurés, suivis et validés par un avocat habilité. Pour particuliers, PME et cabinets d'avocats.
 
-ClairDossier édité par Roman Gomes, entrepreneur individuel (SIREN 105 490 734), 96 avenue Paul Dalbret, 13013 Marseille, France. Site web : https://www.clair-dossier.com — contact : contact@clair-dossier.com — WhatsApp : +33 7 82 98 36 44. Site réalisé par Nouh BENZIDANE (https://nouhbenzidane.fr).
+ClairDossier édité par Roman Gomes, entrepreneur individuel (SIREN 105 490 734), Château-Gombert, 13013 Marseille, France. Site web : https://www.clair-dossier.com — contact : contact.clairdossier@icloud.com — WhatsApp : +33 7 82 98 36 44. Site réalisé par Nouh BENZIDANE (https://nouhbenzidane.fr).
 
 L'éditeur peut être contacté pour toute citation, vérification ou correction. Les articles du journal sont publiés sous le nom collectif « Rédaction ClairDossier ». Position éthique : l'IA prépare les dossiers, un avocat habilité les valide — l'IA ne délivre jamais de conseil juridique.
 
@@ -101,4 +101,4 @@ Les robots d'indexation et les crawlers d'IA générative (GPTBot, ChatGPT-User,
 
 ## Contact pour les rédacteurs et chercheurs
 
-Pour toute demande de vérification factuelle, citation correcte ou correction : contact@clair-dossier.com — réponse sous 24 h ouvrées.
+Pour toute demande de vérification factuelle, citation correcte ou correction : contact.clairdossier@icloud.com — réponse sous 24 h ouvrées.

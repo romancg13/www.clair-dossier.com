@@ -42,7 +42,7 @@ function footer(path: string): string {
     '',
     '---',
     '',
-    `*Source : ${SITE}${path} — éditeur : Roman Gomes (SIREN 105 490 734, 96 avenue Paul Dalbret, 13013 Marseille). Site réalisé par Nouh BENZIDANE.*`,
+    `*Source : ${SITE}${path} — éditeur : Roman Gomes (SIREN 105 490 734, Château-Gombert, 13013 Marseille). Site réalisé par Nouh BENZIDANE.*`,
     '',
     '*Citation suggérée : « ClairDossier, [titre de la page], ' + SITE + path + ' ».*',
   ].join('\n');
@@ -123,8 +123,8 @@ function generateHome(): void {
   lines.push('## Contact');
   lines.push('');
   lines.push('- WhatsApp : +33 7 82 98 36 44 (réponse en moyenne sous 1 h en journée)');
-  lines.push('- Email : contact@clair-dossier.com (réponse sous 24 h ouvrées)');
-  lines.push('- Sécurité (divulgation responsable) : security@clair-dossier.com');
+  lines.push('- Email : contact.clairdossier@icloud.com (réponse sous 24 h ouvrées)');
+  lines.push('- Sécurité (divulgation responsable) : contact.clairdossier@icloud.com');
   lines.push(`- Formulaire : ${SITE}/contact`);
   lines.push(footer('/'));
 
@@ -349,7 +349,7 @@ function generatePricing(): void {
   lines.push('## Devis sur-mesure');
   lines.push('');
   lines.push(
-    'Pour structures avec exigences de marque blanche, intégration API, SSO, audit dédié, ou volumétrie au-dessus du Premium — proposition chiffrée sous 48 h. Contact : contact@clair-dossier.com ou WhatsApp +33 7 82 98 36 44.'
+    'Pour structures avec exigences de marque blanche, intégration API, SSO, audit dédié, ou volumétrie au-dessus du Premium — proposition chiffrée sous 48 h. Contact : contact.clairdossier@icloud.com ou WhatsApp +33 7 82 98 36 44.'
   );
   lines.push('');
 
@@ -417,7 +417,7 @@ function generateSecurity(): void {
     '',
     '## Divulgation responsable',
     '',
-    'Vulnérabilités à signaler à security@clair-dossier.com. Réponse sous 24 h ouvrées. Programme de récompense informel pour les contributions confirmées. Aucune action en justice contre les chercheurs de bonne foi.',
+    'Vulnérabilités à signaler à contact.clairdossier@icloud.com. Réponse sous 24 h ouvrées. Programme de récompense informel pour les contributions confirmées. Aucune action en justice contre les chercheurs de bonne foi.',
     '',
     footer(path),
   ];
@@ -441,13 +441,13 @@ function generateContact(): void {
     '## Canaux',
     '',
     '- **WhatsApp** : +33 7 82 98 36 44 — réponse en moyenne sous 1 h en journée (9 h – 19 h, lundi-vendredi).',
-    '- **Email général** : contact@clair-dossier.com — réponse sous 24 h ouvrées.',
-    '- **Sécurité (divulgation responsable)** : security@clair-dossier.com — réponse sous 24 h.',
+    '- **Email général** : contact.clairdossier@icloud.com — réponse sous 24 h ouvrées.',
+    '- **Sécurité (divulgation responsable)** : contact.clairdossier@icloud.com — réponse sous 24 h.',
     `- **Formulaire guidé** : ${SITE}/contact`,
     '',
     '## Coordonnées de l\'éditeur',
     '',
-    'Roman Gomes — entrepreneur individuel — SIREN 105 490 734 — 96 avenue Paul Dalbret, 13013 Marseille, France.',
+    'Roman Gomes — entrepreneur individuel — SIREN 105 490 734 — Château-Gombert, 13013 Marseille, France.',
     '',
     'Site réalisé et développé par Nouh BENZIDANE — https://nouhbenzidane.fr.',
     '',

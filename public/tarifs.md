@@ -108,7 +108,7 @@ Fonctionnalités incluses :
 
 ## Devis sur-mesure
 
-Pour structures avec exigences de marque blanche, intégration API, SSO, audit dédié, ou volumétrie au-dessus du Premium — proposition chiffrée sous 48 h. Contact : contact@clair-dossier.com ou WhatsApp +33 7 82 98 36 44.
+Pour structures avec exigences de marque blanche, intégration API, SSO, audit dédié, ou volumétrie au-dessus du Premium — proposition chiffrée sous 48 h. Contact : contact.clairdossier@icloud.com ou WhatsApp +33 7 82 98 36 44.
 
 ## Engagement
 
@@ -119,6 +119,6 @@ Pour structures avec exigences de marque blanche, intégration API, SSO, audit d
 
 ---
 
-*Source : https://www.clair-dossier.com/tarifs — éditeur : Roman Gomes (SIREN 105 490 734, 96 avenue Paul Dalbret, 13013 Marseille). Site réalisé par Nouh BENZIDANE.*
+*Source : https://www.clair-dossier.com/tarifs — éditeur : Roman Gomes (SIREN 105 490 734, Château-Gombert, 13013 Marseille). Site réalisé par Nouh BENZIDANE.*
 
 *Citation suggérée : « ClairDossier, [titre de la page], https://www.clair-dossier.com/tarifs ».*

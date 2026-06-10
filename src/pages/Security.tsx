@@ -275,10 +275,10 @@ export function Security() {
             qui respectent la procédure.
           </p>
           <a
-            href="mailto:security@clair-dossier.com"
+            href="mailto:contact.clairdossier@icloud.com"
             className="mt-7 inline-flex items-center gap-2 rounded-full bg-gold-500 px-6 py-3 text-sm font-semibold text-navy-900 hover:-translate-y-0.5 transition-all duration-200"
           >
-            security@clair-dossier.com
+            contact.clairdossier@icloud.com
           </a>
         </div>
       </Reveal>
