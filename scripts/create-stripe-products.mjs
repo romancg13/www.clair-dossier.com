@@ -43,8 +43,8 @@ if (!KEY) {
   process.exit(1);
 }
 
-if (!/^sk_(test|live)_/.test(KEY)) {
-  console.error('\n❌ La clé doit commencer par sk_test_ ou sk_live_. Reçue :', KEY.slice(0, 8) + '...');
+if (!/^(sk|rk)_(test|live)_/.test(KEY)) {
+  console.error('\n❌ La clé doit commencer par sk_test_/sk_live_ ou rk_test_/rk_live_ (clé restreinte). Reçue :', KEY.slice(0, 8) + '...');
   process.exit(1);
 }
 
@@ -137,7 +137,7 @@ async function createPlanFlow(plan) {
 
 async function main() {
   console.log('Création des produits ClairDossier sur Stripe.');
-  console.log(`Mode : ${KEY.startsWith('sk_live_') ? '🔴 LIVE' : '🟢 TEST'}`);
+  console.log(`Mode : ${KEY.includes('_live_') ? '🔴 LIVE' : '🟢 TEST'}`);
 
   const results = [];
   for (const plan of PLANS) {

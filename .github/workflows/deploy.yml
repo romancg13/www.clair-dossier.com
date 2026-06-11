@@ -1,21 +1,12 @@
-name: Deploy showcase to GitHub Pages
+name: Deploy to Netlify
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: pages
-  cancel-in-progress: false
-
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -25,26 +16,23 @@ jobs:
           node-version: 22
           cache: npm
 
-      - uses: actions/configure-pages@v5
-
       - run: npm ci
 
       - name: Build
         run: npm run build
+
+      # Deploys to Netlify only when the two secrets are present.
+      # An admin must add them under Settings → Secrets and variables → Actions:
+      #   NETLIFY_SITE_ID    = 7043ca31-cc42-4222-9a29-7c2982987109
+      #   NETLIFY_AUTH_TOKEN = a Netlify personal access token
+      # Until then the job still runs and verifies the build, but skips the deploy.
+      - name: Deploy to Netlify
         env:
-          VITE_BASE_PATH: /
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: ./dist
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        run: |
+          if [ -z "$NETLIFY_AUTH_TOKEN" ] || [ -z "$NETLIFY_SITE_ID" ]; then
+            echo "::warning::NETLIFY_AUTH_TOKEN / NETLIFY_SITE_ID not set — build verified, deploy skipped."
+            exit 0
+          fi
+          npx netlify-cli@latest deploy --prod --dir=dist --message "CI deploy ${GITHUB_SHA::7}"

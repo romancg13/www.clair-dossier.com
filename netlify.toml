@@ -1,0 +1,16 @@
+# Netlify configuration — ClairDossier showcase (Vite + React SPA).
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+# SPA fallback: the site uses react-router BrowserRouter, so any unknown path
+# must return index.html. Real files in dist (sitemap.xml, *.md, assets…) are
+# served first; this only catches client-side routes.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
