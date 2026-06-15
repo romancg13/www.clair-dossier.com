@@ -72,22 +72,8 @@ export function BlogPost() {
       }
     : null;
 
-  const howToSchema = post.howTo
-    ? {
-        '@context': 'https://schema.org',
-        '@type': 'HowTo',
-        name: post.howTo.name,
-        description: post.howTo.description,
-        inLanguage: 'fr-FR',
-        ...(post.howTo.totalTime ? { totalTime: post.howTo.totalTime } : {}),
-        step: post.howTo.steps.map((s, i) => ({
-          '@type': 'HowToStep',
-          position: i + 1,
-          name: s.name,
-          text: s.text,
-        })),
-      }
-    : null;
+  // Schema HowTo retiré : Google a déprécié les rich results HowTo (sept. 2023).
+  // Le contenu pas-à-pas reste dans le corps de l'article (BlogPosting).
 
   return (
     <>
@@ -103,7 +89,6 @@ export function BlogPost() {
             { name: post.title, path: `/blog/${post.slug}` },
           ]),
           articleSchema,
-          ...(howToSchema ? [howToSchema] : []),
           ...(faqSchema ? [faqSchema] : []),
         ]}
       />

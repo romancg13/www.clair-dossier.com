@@ -8,7 +8,7 @@ export function Logo({ size = 40, withWordmark = true }: { size?: number; withWo
       aria-label="ClairDossier — accueil"
     >
       <span
-        className="grid place-items-center rounded-md bg-navy-900 font-display font-bold leading-none text-gold-700 transition-colors group-hover:bg-navy-800"
+        className="grid place-items-center rounded-md bg-navy-900 font-display font-bold leading-none text-gold-500 transition-colors group-hover:bg-navy-800"
         style={{ width: size, height: size, fontSize: size * 0.42 }}
       >
         CD

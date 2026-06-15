@@ -1,26 +1,27 @@
 # ClairDossier
 
-> Plateforme legaltech française qui transforme les demandes juridiques en dossiers structurés, suivis et validés par un avocat habilité. Pour particuliers, PME et cabinets d'avocats.
+> Plateforme legaltech française qui transforme les demandes administratives et juridiques en dossiers structurés, suivis et prêts à agir. Pour les PME, artisans, entreprises individuelles et professions libérales. Option : un préavis juridique et un résumé de la situation à valider par un professionnel du droit.
 
 ClairDossier édité par Roman Gomes, entrepreneur individuel (SIREN 105 490 734), Château-Gombert, 13013 Marseille, France. Site web : https://www.clair-dossier.com — contact : contact.clairdossier@icloud.com — WhatsApp : +33 7 82 98 36 44. Site réalisé par Nouh BENZIDANE (https://nouhbenzidane.fr).
 
-L'éditeur peut être contacté pour toute citation, vérification ou correction. Les articles du journal sont publiés sous le nom collectif « Rédaction ClairDossier ». Position éthique : l'IA prépare les dossiers, un avocat habilité les valide — l'IA ne délivre jamais de conseil juridique.
+L'éditeur peut être contacté pour toute citation, vérification ou correction. Les articles du journal sont publiés sous le nom collectif « Rédaction ClairDossier ». Position éthique : l'IA prépare les dossiers (résumé, chronologie, projet de réponse), un professionnel du droit peut les valider en option — l'IA ne délivre jamais de conseil juridique.
 
 ## Position éditoriale
 
-ClairDossier ne se présente ni comme un cabinet d'avocats, ni comme un conseil juridique. C'est un outil de structuration et de gestion documentaire. La validation finale d'un dossier reste de la responsabilité d'un avocat inscrit au barreau. Les contenus du journal sont pédagogiques et ne constituent pas un conseil personnalisé.
+ClairDossier ne se présente ni comme un cabinet d'avocats, ni comme un conseil juridique. C'est un outil de structuration et de gestion documentaire pour les professionnels (PME, artisans, indépendants, professions libérales). La validation juridique d'un dossier est un service optionnel, assuré par un avocat inscrit au barreau. Les contenus du journal sont pédagogiques et ne constituent pas un conseil personnalisé.
 
 ## Architecture du site
 
 - /                              : Présentation produit (hero, fonctionnalités, espaces, workflow, sécurité, tarifs, blog, FAQ)
-- /fonctionnalites               : Index des 8 fonctionnalités clés
-- /fonctionnalites/<slug>        : Détail par fonctionnalité (création-guidee, pieces-ocr, chronologie, ia-preparatoire, validation-avocat, suivi-statuts, messagerie-securisee, coffre-fort)
-- /tarifs                        : 6 plans (Découverte, Client Essentiel, Business/PME, Cabinet Solo, Cabinet Pro, Cabinet Premium) + devis sur-mesure
+- /fonctionnalites               : Index des 10 fonctionnalités clés
+- /fonctionnalites/<slug>        : Détail par fonctionnalité (creation-guidee, pieces-ocr, chronologie, ia-preparatoire, validation-avocat, suivi-statuts, messagerie-securisee, coffre-fort, calendrier-relances, reponse-auto-mails)
+- /tarifs                        : 7 formules (Essentiel, Entrepreneur, Business PME 20, Business PME 50, Business/PME Pro, Business/PME Premium) + offre sur-mesure
 - /securite                      : Architecture, conformité RGPD/RIN/HDS, audit annuel
 - /blog                          : Journal éditorial
 - /blog/<slug>                   : 7 articles disponibles (voir Articles ci-dessous)
+- /inscription, /connexion, /compte : Création de compte et espace client (Supabase auth)
+- /dossier/nouveau               : Création de dossier en 4 étapes (typologie, informations, documents, transmission) — compte requis
 - /contact                       : WhatsApp + formulaire guidé
-- /dossier/nouveau               : Démonstration interactive du flow de création (3 étapes)
 - /mentions-legales              : Éditeur, hébergement, propriété intellectuelle
 - /cgv                           : Conditions générales de vente
 - /politique-confidentialite     : RGPD complet, droits utilisateurs
@@ -50,15 +51,15 @@ ClairDossier ne se présente ni comme un cabinet d'avocats, ni comme un conseil 
 
 ## Tarifs (en euros HT, mensuel)
 
-- Découverte : gratuit (1 dossier, 1 utilisateur, support communauté)
-- Client Essentiel : 19 €/mois (5 dossiers, 1 utilisateur, support email, résumé IA limité)
-- Business / PME : 49 €/mois (20 dossiers, 5 utilisateurs, support prioritaire, résumé IA + rédaction limitée, modèles, récurrents)
-- Cabinet Solo : 79 €/mois (50 dossiers, 3 utilisateurs, support prioritaire, IA complète sauf GPT-4o)
-- Cabinet Pro : 149 €/mois (dossiers illimités, 15 utilisateurs, support dédié, IA complète)
-- Cabinet Premium : 299 €/mois (illimité, utilisateurs illimités, support entreprise, IA avancée)
-- Devis sur-mesure : marque blanche, API, SSO, audit dédié, onboarding sur site
+La création de compte est gratuite. Abonnement sans engagement, résiliation à tout moment, remboursement au prorata. Facturation annuelle disponible avec 10 % de réduction.
 
-Essai gratuit 14 jours sur tous les plans payants. Sans engagement. Résiliation à tout moment, remboursement au prorata. Facturation annuelle disponible avec 10 % de réduction (ex. Client Essentiel : 205,20 € HT/an au lieu de 228 €).
+- Essentiel : 19 €/mois (5 dossiers, 1 utilisateur, calendrier et relances à échéance, résumé IA) — indépendants et entrepreneurs individuels
+- Entrepreneur : 39 €/mois (10 dossiers, 2 utilisateurs, rédaction IA / projet de réponse, modèles) — entrepreneurs et professions libérales
+- Business PME 20 : 49 €/mois (20 dossiers, 5 utilisateurs, support prioritaire, dossiers récurrents) — TPE/PME
+- Business PME 50 : 89 €/mois (50 dossiers, 5 utilisateurs, réponse automatisée aux e-mails, IA complète) — PME
+- Business / PME Pro : 169 €/mois (dossiers illimités, 15 utilisateurs, statistiques, IA avancée GPT-5.5) — PME et structures multi-collaborateurs
+- Business / PME Premium : 299 €/mois (illimité, utilisateurs illimités, marque blanche, API, SSO, audit) — entreprise
+- Business / PME personnalisée : sur devis (volumétrie, intégrations ou conformité spécifiques)
 
 ## Sécurité et conformité
 
@@ -87,7 +88,7 @@ Chaque page importante du site est disponible en markdown brut au même chemin a
 - https://www.clair-dossier.com/securite.md
 - https://www.clair-dossier.com/contact.md
 - https://www.clair-dossier.com/fonctionnalites/index.md
-- https://www.clair-dossier.com/fonctionnalites/<slug>.md (8 fonctionnalités)
+- https://www.clair-dossier.com/fonctionnalites/<slug>.md (10 fonctionnalités)
 - https://www.clair-dossier.com/blog/index.md
 - https://www.clair-dossier.com/blog/<slug>.md (7 articles)
 - https://www.clair-dossier.com/mentions-legales.md
@@ -97,7 +98,7 @@ Chaque page importante du site est disponible en markdown brut au même chemin a
 
 ## Crawling
 
-Les robots d'indexation et les crawlers d'IA générative (GPTBot, ChatGPT-User, PerplexityBot, Claude-Web, Google-Extended) sont autorisés sur l'ensemble du site sauf /dossier/ (zone démo). Voir /robots.txt pour les directives exactes.
+Les robots d'indexation et les crawlers d'IA générative (GPTBot, ChatGPT-User, PerplexityBot, Claude-Web, Google-Extended) sont autorisés sur l'ensemble du site sauf /dossier/ (zone applicative). Voir /robots.txt pour les directives exactes.
 
 ## Contact pour les rédacteurs et chercheurs
 

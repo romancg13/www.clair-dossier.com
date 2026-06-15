@@ -7,6 +7,7 @@ type SeoProps = {
   type?: 'website' | 'article';
   image?: string;
   jsonLd?: Record<string, unknown> | Record<string, unknown>[];
+  noindex?: boolean;
 };
 
 const SITE_URL = 'https://www.clair-dossier.com';
@@ -29,6 +30,7 @@ export function Seo({
   type = 'website',
   image = '/og-default.svg',
   jsonLd,
+  noindex = false,
 }: SeoProps) {
   useEffect(() => {
     const fullTitle = title.includes(SITE_NAME) ? title : `${title} — ${SITE_NAME} · Dossier juridique clair, structuré et suivi`;
@@ -37,6 +39,12 @@ export function Seo({
 
     document.title = fullTitle;
     upsertMeta('meta[name="description"]', 'name', 'description', description);
+    upsertMeta(
+      'meta[name="robots"]',
+      'name',
+      'robots',
+      noindex ? 'noindex, follow' : 'index, follow, max-image-preview:large'
+    );
     upsertMeta('meta[property="og:title"]', 'property', 'og:title', fullTitle);
     upsertMeta('meta[property="og:description"]', 'property', 'og:description', description);
     upsertMeta('meta[property="og:url"]', 'property', 'og:url', url);
@@ -68,7 +76,7 @@ export function Seo({
         document.head.appendChild(s);
       });
     }
-  }, [title, description, path, type, image, jsonLd]);
+  }, [title, description, path, type, image, jsonLd, noindex]);
 
   return null;
 }

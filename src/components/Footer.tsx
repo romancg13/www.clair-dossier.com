@@ -30,29 +30,9 @@ export function Footer() {
           <div>
             <Logo />
             <p className="mt-5 max-w-xs text-sm leading-relaxed text-slate-500">
-              ClairDossier transforme les demandes juridiques en dossiers structurés,
-              suivis et prêts à être validés par un professionnel habilité.
+              ClairDossier structure vos dossiers administratifs et juridiques — du brouillon à
+              la transmission, avec calendrier, relances à échéance et projets de réponse.
             </p>
-            <div className="mt-5 flex items-center gap-3">
-              <a
-                href="#"
-                aria-label="LinkedIn ClairDossier"
-                className="grid h-9 w-9 place-items-center rounded-md border hairline text-slate-500 transition-colors hover:border-gold-500 hover:text-navy-900"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                  <path d="M20.45 20.45h-3.55v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.36V9h3.41v1.56h.05c.47-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.06 2.06 0 110-4.12 2.06 2.06 0 010 4.12zM7.12 20.45H3.55V9h3.57v11.45z" />
-                </svg>
-              </a>
-              <a
-                href="#"
-                aria-label="X (Twitter) ClairDossier"
-                className="grid h-9 w-9 place-items-center rounded-md border hairline text-slate-500 transition-colors hover:border-gold-500 hover:text-navy-900"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                  <path d="M18.244 2H21.5l-7.39 8.443L23 22h-6.91l-5.4-7.066L4.5 22H1.244l7.88-9.012L1 2h7.05l4.88 6.45L18.244 2zm-1.21 18.05h1.836L7.05 3.823H5.083L17.034 20.05z" />
-                </svg>
-              </a>
-            </div>
           </div>
 
           <FooterCol title="Produit" items={PRODUIT} />

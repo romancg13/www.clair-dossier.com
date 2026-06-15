@@ -49,9 +49,9 @@ Tous les dossiers de votre équipe, tous les statuts, toutes les charges. La dir
 
 1. **Brouillon** — Le client construit son dossier — il complète les informations, dépose les premières pièces. Aucune action côté professionnel.
 2. **Complété par client** — Le client estime que son dossier est prêt à être confié. ClairDossier vérifie l'exhaustivité des champs obligatoires avant de transmettre.
-3. **En attente avocat** — Le dossier attend la prise en charge par un avocat habilité. Aucun délai n'est garanti à ce stade — l'avocat priorise selon sa charge.
-4. **Validation en cours** — Un avocat instruit le dossier : il lit les pièces, demande des précisions, prépare l'analyse juridique. Le client est notifié à chaque action.
-5. **Validé** — Le dossier porte la signature électronique d'un avocat habilité. Il peut être plaidé, négocié, transmis à une juridiction ou suivi dans la durée.
+3. **En attente de validation** — Le dossier attend une validation par un professionnel du droit (option). Aucun délai n'est garanti à ce stade — le professionnel priorise selon sa charge.
+4. **Validation en cours** — Un professionnel du droit instruit le dossier : il lit les pièces, demande des précisions, prépare l'analyse juridique. Vous êtes notifié à chaque action.
+5. **Validé** — Le dossier porte la signature électronique d'un professionnel du droit habilité. Il peut être plaidé, négocié, transmis à une juridiction ou suivi dans la durée.
 6. **Archivé** — L'affaire est close. Les données sont conservées selon les délais légaux de prescription. Le client peut exporter à tout moment.
 
 ## Fonctionnalités

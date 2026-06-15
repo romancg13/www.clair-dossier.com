@@ -1,12 +1,12 @@
 ---
 title: "Fonctionnalités ClairDossier"
-description: "Huit fonctionnalités pour structurer, suivre et valider les dossiers juridiques."
+description: "Dix fonctionnalités pour structurer, suivre et traiter vos dossiers administratifs et juridiques."
 url: https://www.clair-dossier.com/fonctionnalites
 ---
 
 # Fonctionnalités ClairDossier
 
-Huit briques conçues à partir de points de friction identifiés dans des dossiers réels.
+Dix briques conçues à partir de points de friction identifiés dans des dossiers réels.
 
 ## Création guidée par typologie
 

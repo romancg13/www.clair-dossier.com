@@ -27,6 +27,16 @@ export function Nav() {
     };
   }, [open]);
 
+  // Fermeture du menu mobile au clavier (Escape).
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [open]);
+
   return (
     <header
       className={`sticky top-0 z-40 transition-[background,border-color,box-shadow] duration-300 ${
@@ -94,6 +104,7 @@ export function Nav() {
           type="button"
           className="ml-auto grid h-11 w-11 place-items-center rounded-md border hairline lg:hidden"
           aria-expanded={open}
+          aria-controls="mobile-menu"
           aria-label={open ? 'Fermer le menu' : 'Ouvrir le menu'}
           onClick={() => setOpen(!open)}
         >
@@ -133,6 +144,7 @@ export function Nav() {
               animate={{ y: 0 }}
               exit={{ y: '-30%' }}
               transition={{ type: 'spring', stiffness: 320, damping: 32 }}
+              id="mobile-menu"
               aria-label="Navigation mobile"
             >
               <div className="flex flex-col gap-1">

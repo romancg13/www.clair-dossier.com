@@ -14,3 +14,24 @@
   from = "/*"
   to = "/index.html"
   status = 200
+
+# Sécurité (defense-in-depth) — appliqué à toutes les réponses.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "geolocation=(), microphone=(), camera=()"
+    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://buzgokfmxpmyceppvjpp.supabase.co wss://buzgokfmxpmyceppvjpp.supabase.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https://buy.stripe.com"
+
+# Cache long terme pour les assets hashés (immutable), revalidation pour l'app.
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"

@@ -114,8 +114,9 @@ h1, h2, h3, h4, h5, h6 {
 /* ─── Focus visible ────────────────────────────────────────── */
 *:focus { outline: none; }
 *:focus-visible {
-  outline: 2px solid var(--color-gold-500);
-  outline-offset: 3px;
+  outline: 2px solid var(--color-navy-900);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(230, 201, 125, 0.95);
   border-radius: 2px;
 }
 

@@ -37,6 +37,7 @@ export function Login() {
         title="Connexion"
         description="Connectez-vous à votre espace ClairDossier pour retrouver vos dossiers, vos échéances et vos documents."
         path="/connexion"
+        noindex
       />
       <section className="bg-cream-50">
         <div className="mx-auto max-w-md px-5 py-16 sm:px-8 lg:py-24">

@@ -30,8 +30,8 @@ export function Signup() {
     const fullName = String(fd.get('fullName') || '').trim();
     const companyName = String(fd.get('companyName') || '').trim();
     const companyType = String(fd.get('companyType') || 'autre') as CompanyType;
-    if (password.length < 6) {
-      setError('Mot de passe trop court (6 caractères minimum).');
+    if (password.length < 8) {
+      setError('Mot de passe trop court (8 caractères minimum).');
       return;
     }
     setLoading(true);
@@ -50,6 +50,7 @@ export function Signup() {
         title="Créer un compte"
         description="Créez votre compte ClairDossier en 30 secondes : structurez vos dossiers administratifs et juridiques, suivez les échéances, générez vos projets de réponse."
         path="/inscription"
+        noindex
       />
       <section className="bg-cream-50">
         <div className="mx-auto max-w-md px-5 py-16 sm:px-8 lg:py-24">
@@ -93,7 +94,7 @@ export function Signup() {
                   name="password"
                   type="password"
                   required
-                  minLength={6}
+                  minLength={8}
                   autoComplete="new-password"
                   className={inputCls}
                 />

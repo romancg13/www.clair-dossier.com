@@ -101,40 +101,25 @@ export function Pricing() {
             { name: 'Accueil', path: '/' },
             { name: 'Tarifs', path: '/tarifs' },
           ]),
-          ...plans
-            .filter((p) => p.priceMonthly !== null && p.priceMonthly > 0)
-            .map((p) => ({
-              '@context': 'https://schema.org',
-              '@type': 'Product',
-              name: `ClairDossier — ${p.name}`,
-              description: p.description,
-              offers: [
-                {
-                  '@type': 'Offer',
-                  price: String(p.priceMonthly ?? 0),
-                  priceCurrency: 'EUR',
-                  priceSpecification: {
-                    '@type': 'UnitPriceSpecification',
-                    price: String(p.priceMonthly ?? 0),
-                    priceCurrency: 'EUR',
-                    unitText: 'MON',
-                  },
-                  availability: 'https://schema.org/InStock',
-                },
-                {
-                  '@type': 'Offer',
-                  price: yearlyTotal(p.priceMonthly ?? 0).toFixed(2),
-                  priceCurrency: 'EUR',
-                  priceSpecification: {
-                    '@type': 'UnitPriceSpecification',
-                    price: yearlyTotal(p.priceMonthly ?? 0).toFixed(2),
-                    priceCurrency: 'EUR',
-                    unitText: 'ANN',
-                  },
-                  availability: 'https://schema.org/InStock',
-                },
-              ],
-            })),
+          {
+            '@context': 'https://schema.org',
+            '@type': 'SoftwareApplication',
+            name: 'ClairDossier',
+            applicationCategory: 'BusinessApplication',
+            operatingSystem: 'Web',
+            description:
+              'Plateforme de gestion de dossiers administratifs et juridiques pour PME, artisans, indépendants et professions libérales.',
+            offers: {
+              '@type': 'AggregateOffer',
+              priceCurrency: 'EUR',
+              lowPrice: '19',
+              highPrice: '299',
+              offerCount: String(
+                plans.filter((p) => p.priceMonthly !== null && p.priceMonthly > 0).length
+              ),
+              availability: 'https://schema.org/InStock',
+            },
+          },
         ]}
       />
 

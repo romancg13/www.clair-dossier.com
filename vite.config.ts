@@ -34,6 +34,7 @@ export default defineConfig({
             if (id.includes('react-dom') || id.includes('/react/')) return 'react';
             if (id.includes('motion')) return 'motion';
             if (id.includes('react-router')) return 'router';
+            if (id.includes('@supabase')) return 'supabase';
             if (id.includes('@fontsource')) return 'fonts';
           }
         },

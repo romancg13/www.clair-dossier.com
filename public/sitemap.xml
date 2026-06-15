@@ -51,6 +51,16 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://www.clair-dossier.com/fonctionnalites/calendrier-relances</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.clair-dossier.com/fonctionnalites/reponse-auto-mails</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://www.clair-dossier.com/tarifs</loc>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>

@@ -52,7 +52,7 @@ export function Account() {
 
   return (
     <>
-      <Seo title="Mon compte" description="Votre espace ClairDossier." path="/compte" />
+      <Seo title="Mon compte" description="Votre espace ClairDossier." path="/compte" noindex />
       <section className="bg-cream-50">
         <div className="mx-auto max-w-4xl px-5 py-16 sm:px-8 lg:px-12">
           {paidPlan && (
