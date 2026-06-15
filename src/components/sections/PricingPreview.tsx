@@ -3,8 +3,8 @@ import { Reveal, Stagger, StaggerItem } from '../primitives/Reveal';
 import { plans, formatEuro, type Plan } from '../../data/pricing';
 import { ArrowRightIcon, FilePagesIcon, UsersIcon, HeadsetIcon } from '../icons';
 
-// 3 plans à mettre en avant sur la home : entrée gratuite, populaire, recommandé.
-const PREVIEW_IDS = ['client-essentiel', 'business-pme', 'cabinet-solo'] as const;
+// 3 plans à mettre en avant sur la home : entrée, populaire, recommandé.
+const PREVIEW_IDS = ['essentiel', 'business-pme-20', 'business-pme-pro'] as const;
 const previewPlans = PREVIEW_IDS
   .map((id) => plans.find((p) => p.id === id))
   .filter((p): p is Plan => Boolean(p));
@@ -21,8 +21,8 @@ export function PricingPreview() {
             Une formule par usage. Pas de surprise.
           </h2>
           <p className="mt-4 text-base leading-relaxed text-slate-500">
-            Six niveaux couvrent du particulier au cabinet multi-sites. Essai gratuit 14 jours,
-            sans engagement — et 10 % de réduction en facturation annuelle.
+            Sept formules, de l'indépendant à l'entreprise. Compte gratuit, abonnement sans
+            engagement — et 10 % de réduction en facturation annuelle.
           </p>
         </div>
 
@@ -39,7 +39,7 @@ export function PricingPreview() {
             to="/tarifs"
             className="inline-flex items-center gap-1.5 text-sm font-medium text-navy-900 border-b hairline-gold pb-0.5 transition-colors hover:text-gold-700"
           >
-            Voir les 6 plans et le détail
+            Voir les 7 formules et le détail
             <ArrowRightIcon width={14} height={14} strokeWidth={2} />
           </Link>
         </div>

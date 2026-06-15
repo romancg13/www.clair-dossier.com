@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { AnimatePresence, motion, useMotionValueEvent, useScroll } from 'motion/react';
 import { Logo } from './Logo';
+import { useAuth } from '../lib/auth';
 
 const NAV_ITEMS = [
   { to: '/fonctionnalites', label: 'Fonctionnalités' },
@@ -15,6 +16,7 @@ export function Nav() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const { scrollY } = useScroll();
+  const { session } = useAuth();
 
   useMotionValueEvent(scrollY, 'change', (latest) => setScrolled(latest > 24));
 
@@ -55,18 +57,37 @@ export function Nav() {
         </nav>
 
         <div className="hidden items-center gap-3 lg:flex">
-          <Link
-            to="/contact"
-            className="rounded-full bg-navy-900 px-4 py-2.5 text-sm font-medium text-cream-50 transition-colors hover:bg-navy-800"
-          >
-            Demander une démo
-          </Link>
-          <Link
-            to="/dossier/nouveau"
-            className="sheen rounded-full bg-gold-500 px-4 py-2.5 text-sm font-semibold text-navy-900 shadow-gold transition-transform hover:-translate-y-0.5"
-          >
-            Créer un dossier
-          </Link>
+          {session ? (
+            <>
+              <Link
+                to="/compte"
+                className="rounded-full bg-navy-900 px-4 py-2.5 text-sm font-medium text-cream-50 transition-colors hover:bg-navy-800"
+              >
+                Mon compte
+              </Link>
+              <Link
+                to="/dossier/nouveau"
+                className="sheen rounded-full bg-gold-500 px-4 py-2.5 text-sm font-semibold text-navy-900 shadow-gold transition-transform hover:-translate-y-0.5"
+              >
+                Créer un dossier
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link
+                to="/connexion"
+                className="rounded-full px-4 py-2.5 text-sm font-medium text-navy-900 transition-colors hover:bg-cream-100"
+              >
+                Se connecter
+              </Link>
+              <Link
+                to="/inscription"
+                className="sheen rounded-full bg-gold-500 px-4 py-2.5 text-sm font-semibold text-navy-900 shadow-gold transition-transform hover:-translate-y-0.5"
+              >
+                Créer un compte
+              </Link>
+            </>
+          )}
         </div>
 
         <button
@@ -131,20 +152,41 @@ export function Nav() {
                 ))}
               </div>
               <div className="mt-4 flex flex-col gap-2 border-t hairline pt-4">
-                <Link
-                  to="/contact"
-                  onClick={() => setOpen(false)}
-                  className="w-full rounded-full bg-navy-900 px-4 py-3 text-center text-sm font-medium text-cream-50"
-                >
-                  Demander une démo
-                </Link>
-                <Link
-                  to="/dossier/nouveau"
-                  onClick={() => setOpen(false)}
-                  className="sheen w-full rounded-full bg-gold-500 px-4 py-3 text-center text-sm font-semibold text-navy-900"
-                >
-                  Créer un dossier
-                </Link>
+                {session ? (
+                  <>
+                    <Link
+                      to="/compte"
+                      onClick={() => setOpen(false)}
+                      className="w-full rounded-full bg-navy-900 px-4 py-3 text-center text-sm font-medium text-cream-50"
+                    >
+                      Mon compte
+                    </Link>
+                    <Link
+                      to="/dossier/nouveau"
+                      onClick={() => setOpen(false)}
+                      className="sheen w-full rounded-full bg-gold-500 px-4 py-3 text-center text-sm font-semibold text-navy-900"
+                    >
+                      Créer un dossier
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      to="/connexion"
+                      onClick={() => setOpen(false)}
+                      className="w-full rounded-full bg-navy-900 px-4 py-3 text-center text-sm font-medium text-cream-50"
+                    >
+                      Se connecter
+                    </Link>
+                    <Link
+                      to="/inscription"
+                      onClick={() => setOpen(false)}
+                      className="sheen w-full rounded-full bg-gold-500 px-4 py-3 text-center text-sm font-semibold text-navy-900"
+                    >
+                      Créer un compte
+                    </Link>
+                  </>
+                )}
               </div>
             </motion.nav>
           </motion.div>

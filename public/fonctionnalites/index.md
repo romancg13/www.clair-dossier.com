@@ -32,9 +32,9 @@ Avant la consultation, l'IA prépare un brief : faits saillants, points de droit
 
 Détail : https://www.clair-dossier.com/fonctionnalites/ia-preparatoire · Markdown : https://www.clair-dossier.com/fonctionnalites/ia-preparatoire.md
 
-## Validation avocat en un clic
+## Validation juridique en option
 
-Quand le dossier est prêt, l'avocat habilité valide, demande une pièce, ou refuse avec motif. Le client est notifié dans la minute.
+En option, un professionnel du droit habilité valide votre dossier, demande une pièce ou émet un préavis motivé. Vous êtes notifié dans la minute.
 
 Détail : https://www.clair-dossier.com/fonctionnalites/validation-avocat · Markdown : https://www.clair-dossier.com/fonctionnalites/validation-avocat.md
 
@@ -55,6 +55,18 @@ Détail : https://www.clair-dossier.com/fonctionnalites/messagerie-securisee · 
 Vos données vivent en France, hébergées chez OVH, chiffrées au repos. Vous pouvez exporter, supprimer, transférer — à tout moment.
 
 Détail : https://www.clair-dossier.com/fonctionnalites/coffre-fort · Markdown : https://www.clair-dossier.com/fonctionnalites/coffre-fort.md
+
+## Calendrier et relances à échéance
+
+Chaque dossier a ses dates clés. ClairDossier les place dans un calendrier et vous relance avant chaque échéance — délai de réponse, prescription, paiement.
+
+Détail : https://www.clair-dossier.com/fonctionnalites/calendrier-relances · Markdown : https://www.clair-dossier.com/fonctionnalites/calendrier-relances.md
+
+## Projet de réponse automatisée aux e-mails
+
+Un e-mail reçu sur un dossier ? ClairDossier en propose un projet de réponse structuré, à relire et envoyer. Vous gardez la main, vous gagnez le temps de rédaction.
+
+Détail : https://www.clair-dossier.com/fonctionnalites/reponse-auto-mails · Markdown : https://www.clair-dossier.com/fonctionnalites/reponse-auto-mails.md
 
 
 ---

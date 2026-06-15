@@ -1,6 +1,7 @@
 import { lazy, Suspense, type ComponentType } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import { Layout } from './components/Layout';
+import { RequireAuth } from './components/RequireAuth';
 
 // Keep Home eager so the first paint is immediate on the most visited route.
 import { Home } from './pages/Home';
@@ -23,6 +24,9 @@ const LegalPage = lazy(() =>
   import('./pages/LegalPage').then((m) => ({ default: m.LegalPage }))
 );
 const NotFound = named(() => import('./pages/NotFound'), 'NotFound');
+const Signup = named(() => import('./pages/Signup'), 'Signup');
+const Login = named(() => import('./pages/Login'), 'Login');
+const Account = named(() => import('./pages/Account'), 'Account');
 
 function RouteFallback() {
   return (
@@ -102,9 +106,37 @@ export default function App() {
         <Route
           path="dossier/nouveau"
           element={
+            <RequireAuth>
+              <Suspense fallback={<RouteFallback />}>
+                <DossierFlow />
+              </Suspense>
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="inscription"
+          element={
             <Suspense fallback={<RouteFallback />}>
-              <DossierFlow />
+              <Signup />
             </Suspense>
+          }
+        />
+        <Route
+          path="connexion"
+          element={
+            <Suspense fallback={<RouteFallback />}>
+              <Login />
+            </Suspense>
+          }
+        />
+        <Route
+          path="compte"
+          element={
+            <RequireAuth>
+              <Suspense fallback={<RouteFallback />}>
+                <Account />
+              </Suspense>
+            </RequireAuth>
           }
         />
         <Route

@@ -1,37 +1,16 @@
 #!/usr/bin/env node
 /**
- * Crée les 5 produits payants ClairDossier dans ton compte Stripe, avec :
- *  - 1 produit par plan
- *  - 1 prix mensuel récurrent en EUR
- *  - 1 Payment Link prêt à coller dans pricing.ts (ctaHref)
+ * (Re)crée les produits payants ClairDossier dans Stripe :
+ *  - archive d'abord les anciens produits + Payment Links (metadata.source)
+ *  - crée 1 produit + 1 prix mensuel EUR + 1 Payment Link par plan
+ *  - affiche les Payment Link URLs à coller dans src/data/pricing.ts
  *
- * USAGE (depuis la racine du repo clair-dossier) :
+ * USAGE :
+ *   export STRIPE_SECRET_KEY=sk_live_... | rk_live_...   (clé restreinte OK)
+ *   node scripts/create-stripe-products.mjs
  *
- *   1. Récupère ta clé secrète depuis https://dashboard.stripe.com/apikeys
- *      (commence par sk_live_... pour la prod, ou sk_test_... pour tester)
- *
- *   2. Exporte-la en variable d'env (NE LA COMMITS JAMAIS) :
- *
- *        export STRIPE_SECRET_KEY=sk_test_xxxxxxxxxxxx
- *
- *   3. Installe Stripe SDK localement (déjà fait si tu lances depuis ce repo) :
- *
- *        npm install --no-save stripe@latest
- *
- *   4. Lance le script :
- *
- *        node scripts/create-stripe-products.mjs
- *
- *      Le script affiche les Payment Link URLs à la fin. Copie-les
- *      moi en chat (ces URLs publiques sont SAFE à partager — elles
- *      ne donnent que l'écran de paiement, pas l'API).
- *
- *   5. Si tu veux supprimer les produits créés (test), repasse en mode
- *      'archive' dans le dashboard (Products → ... → Archive).
- *
- * Le script est idempotent au niveau Stripe : si tu le relances, il
- * crée de nouveaux produits/prix (pas de dédoublonnage automatique).
- * Donc lance-le UNE fois en prod.
+ * Idempotent : relancer archive les anciens avant de recréer (pas de doublon
+ * de liens actifs). Cible : PME, artisans, entreprises individuelles, prof. libérales.
  */
 
 import Stripe from 'stripe';
@@ -39,69 +18,58 @@ import Stripe from 'stripe';
 const KEY = process.env.STRIPE_SECRET_KEY;
 if (!KEY) {
   console.error('\n❌ STRIPE_SECRET_KEY non défini.');
-  console.error('Lance :  export STRIPE_SECRET_KEY=sk_test_... && node scripts/create-stripe-products.mjs\n');
   process.exit(1);
 }
-
 if (!/^(sk|rk)_(test|live)_/.test(KEY)) {
-  console.error('\n❌ La clé doit commencer par sk_test_/sk_live_ ou rk_test_/rk_live_ (clé restreinte). Reçue :', KEY.slice(0, 8) + '...');
+  console.error('\n❌ La clé doit commencer par sk_test_/sk_live_ ou rk_test_/rk_live_. Reçue :', KEY.slice(0, 8) + '...');
   process.exit(1);
 }
 
 const stripe = new Stripe(KEY, { apiVersion: '2024-12-18.acacia' });
-
-// Plans à créer — alignés sur src/data/pricing.ts.
-// Le plan Découverte (gratuit) et Cabinet Premium (sur devis) ne sont pas
-// inclus : pas de paiement automatisé pour eux.
-const PLANS = [
-  {
-    planId: 'client-essentiel',
-    name: 'ClairDossier — Client Essentiel',
-    description: 'Pour les particuliers et indépendants qui suivent leurs dossiers en autonomie. 5 dossiers, 1 utilisateur, support email, résumé IA limité.',
-    monthlyEuros: 19,
-  },
-  {
-    planId: 'business-pme',
-    name: 'ClairDossier — Business / PME',
-    description: 'Pour les PME avec plusieurs dossiers récurrents et des équipes internes. 20 dossiers, 5 utilisateurs, support prioritaire, résumé IA + rédaction limitée, modèles, récurrents.',
-    monthlyEuros: 49,
-  },
-  {
-    planId: 'cabinet-solo',
-    name: 'ClairDossier — Cabinet Solo',
-    description: "Pour les avocats indépendants. 50 dossiers, 3 utilisateurs, support prioritaire, IA complète (résumé + rédaction).",
-    monthlyEuros: 79,
-  },
-  {
-    planId: 'cabinet-pro',
-    name: 'ClairDossier — Cabinet Pro',
-    description: 'Pour les cabinets multi-avocats avec statistiques avancées et workflows. Dossiers illimités, 15 utilisateurs, support dédié, IA complète incluant GPT-4o.',
-    monthlyEuros: 149,
-  },
-  {
-    planId: 'cabinet-premium',
-    name: 'ClairDossier — Cabinet Premium',
-    description: 'Solution entreprise : marque blanche, API, SSO, audit avancé. Utilisateurs et dossiers illimités, support entreprise.',
-    monthlyEuros: 299,
-  },
-];
-
+const SOURCE = 'clair-dossier-showcase';
 const SITE_URL = 'https://www.clair-dossier.com';
 
-async function createPlanFlow(plan) {
-  console.log(`\n→ ${plan.planId} (${plan.monthlyEuros} €/mois)...`);
+// Grille tarifaire 2026 — alignée sur src/data/pricing.ts.
+// Le plan « sur devis » n'est pas inclus (pas de paiement automatisé).
+const PLANS = [
+  { planId: 'essentiel', name: 'ClairDossier — Essentiel', monthlyEuros: 19,
+    description: "Pour les indépendants et entrepreneurs individuels qui structurent leurs premiers dossiers. 5 dossiers, 1 utilisateur, calendrier et relances à échéance, résumé IA." },
+  { planId: 'entrepreneur', name: 'ClairDossier — Entrepreneur', monthlyEuros: 39,
+    description: "Pour les entrepreneurs et professions libérales avec un flux régulier de dossiers. 10 dossiers, 2 utilisateurs, rédaction IA (projet de réponse), modèles." },
+  { planId: 'business-pme-20', name: 'ClairDossier — Business PME 20', monthlyEuros: 49,
+    description: "Pour les TPE/PME. 20 dossiers, 5 utilisateurs, support prioritaire, rédaction IA, dossiers récurrents." },
+  { planId: 'business-pme-50', name: 'ClairDossier — Business PME 50', monthlyEuros: 89,
+    description: "Pour les PME avec plusieurs dossiers en parallèle. 50 dossiers, 5 utilisateurs, support prioritaire, réponse automatisée aux e-mails, IA complète." },
+  { planId: 'business-pme-pro', name: 'ClairDossier — Business / PME Pro', monthlyEuros: 169,
+    description: "Pour les PME et structures multi-collaborateurs. Dossiers illimités, 15 utilisateurs, statistiques avancées, IA avancée (GPT-5.5)." },
+  { planId: 'business-pme-premium', name: 'ClairDossier — Business / PME Premium', monthlyEuros: 299,
+    description: "Solution entreprise : marque blanche, API, SSO, audit avancé. Utilisateurs et dossiers illimités, support dédié." },
+];
 
-  // 1. Product
+async function archiveOld() {
+  let archivedLinks = 0;
+  let archivedProducts = 0;
+  // Désactive les anciens Payment Links (tous les nôtres ont metadata.planId).
+  for await (const link of stripe.paymentLinks.list({ active: true, limit: 100 })) {
+    if (link.metadata?.planId || link.metadata?.source === SOURCE) {
+      try { await stripe.paymentLinks.update(link.id, { active: false }); archivedLinks++; } catch (e) { /* noop */ }
+    }
+  }
+  // Archive les anciens produits.
+  for await (const product of stripe.products.list({ active: true, limit: 100 })) {
+    if (product.metadata?.source === SOURCE) {
+      try { await stripe.products.update(product.id, { active: false }); archivedProducts++; } catch (e) { /* noop */ }
+    }
+  }
+  console.log(`Archivé : ${archivedProducts} produit(s), ${archivedLinks} Payment Link(s).`);
+}
+
+async function createPlanFlow(plan) {
   const product = await stripe.products.create({
     name: plan.name,
     description: plan.description,
-    metadata: {
-      planId: plan.planId,
-      source: 'clair-dossier-showcase',
-    },
+    metadata: { planId: plan.planId, source: SOURCE },
   });
-
-  // 2. Recurring price (EUR, monthly)
   const price = await stripe.prices.create({
     product: product.id,
     unit_amount: plan.monthlyEuros * 100,
@@ -109,57 +77,33 @@ async function createPlanFlow(plan) {
     recurring: { interval: 'month' },
     metadata: { planId: plan.planId },
   });
-
-  // 3. Payment Link (ce qu'on colle dans pricing.ts ctaHref)
   const paymentLink = await stripe.paymentLinks.create({
     line_items: [{ price: price.id, quantity: 1 }],
     after_completion: {
       type: 'redirect',
-      redirect: { url: `${SITE_URL}/?paid=${encodeURIComponent(plan.planId)}` },
+      redirect: { url: `${SITE_URL}/compte?paid=${encodeURIComponent(plan.planId)}` },
     },
     allow_promotion_codes: true,
     billing_address_collection: 'auto',
     payment_method_collection: 'always',
-    metadata: { planId: plan.planId },
+    metadata: { planId: plan.planId, source: SOURCE },
   });
-
-  console.log(`   ✓ Product   : ${product.id}`);
-  console.log(`   ✓ Price     : ${price.id}`);
-  console.log(`   ✓ Payment   : ${paymentLink.url}`);
-
-  return {
-    planId: plan.planId,
-    productId: product.id,
-    priceId: price.id,
-    paymentLinkUrl: paymentLink.url,
-  };
+  console.log(`   ✓ ${plan.planId.padEnd(22)} ${product.id} | ${price.id} | ${paymentLink.url}`);
+  return { planId: plan.planId, productId: product.id, priceId: price.id, paymentLinkUrl: paymentLink.url };
 }
 
 async function main() {
-  console.log('Création des produits ClairDossier sur Stripe.');
   console.log(`Mode : ${KEY.includes('_live_') ? '🔴 LIVE' : '🟢 TEST'}`);
-
+  await archiveOld();
+  console.log('\nCréation des nouveaux produits :');
   const results = [];
   for (const plan of PLANS) {
-    try {
-      results.push(await createPlanFlow(plan));
-    } catch (err) {
-      console.error(`   ❌ Erreur sur ${plan.planId} :`, err.message);
-      // continue avec les suivants
-    }
+    try { results.push(await createPlanFlow(plan)); }
+    catch (err) { console.error(`   ❌ ${plan.planId} :`, err.message); }
   }
-
-  console.log('\n\n──────────── À COLLER DANS LE CHAT ────────────');
-  console.log('Voici les Payment Link URLs (safe à partager) :\n');
-  for (const r of results) {
-    console.log(`  ${r.planId.padEnd(20)} → ${r.paymentLinkUrl}`);
-  }
-
-  console.log('\nJe mettrai à jour src/data/pricing.ts avec ces URLs.');
-  console.log('────────────────────────────────────────────────\n');
+  console.log('\n──────────── PAYMENT LINKS (à coller dans pricing.ts) ────────────');
+  console.log(JSON.stringify(Object.fromEntries(results.map((r) => [r.planId, r.paymentLinkUrl])), null, 2));
+  console.log('──────────────────────────────────────────────────────────────────\n');
 }
 
-main().catch((err) => {
-  console.error('\n❌ Erreur fatale :', err.message);
-  process.exit(1);
-});
+main().catch((err) => { console.error('\n❌ Erreur fatale :', err.message); process.exit(1); });

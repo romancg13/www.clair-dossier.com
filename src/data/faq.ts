@@ -9,7 +9,7 @@ export const homeFaq: FaqEntry[] = [
     id: 'qui-valide',
     question: "Qui valide juridiquement les dossiers sur ClairDossier ?",
     answer:
-      "Un avocat habilité — inscrit au barreau, à jour de ses obligations déontologiques. ClairDossier n'est ni un cabinet, ni un conseil juridique : nous structurons le dossier, un professionnel le valide. La signature électronique de l'avocat est jointe à chaque décision, avec horodatage et numéro de toque.",
+      "En option, vous pouvez demander qu'un professionnel du droit — avocat habilité, inscrit au barreau — établisse un préavis juridique et valide le résumé de votre situation. ClairDossier structure le dossier ; cette validation juridique est un service optionnel, jamais imposé. La signature électronique est jointe à la décision, avec horodatage.",
   },
   {
     id: 'donnees-securisees',
@@ -25,9 +25,9 @@ export const homeFaq: FaqEntry[] = [
   },
   {
     id: 'compatible-cabinet',
-    question: "ClairDossier est-il compatible avec mon cabinet existant ?",
+    question: "ClairDossier s'intègre-t-il à mes outils existants ?",
     answer:
-      "Oui. Nous proposons une API d'intégration (plan Professionnel et Entreprise) pour synchroniser les dossiers ClairDossier avec votre outil de gestion existant — Septeo, Polyact, Cicéron, ou solution maison. L'onboarding sur site (plan Entreprise) couvre cette intégration.",
+      "Oui. Une API d'intégration (plans Business / PME Pro et Premium) synchronise vos dossiers ClairDossier avec votre CRM, votre outil de gestion ou votre solution maison. L'onboarding sur site (offre sur-mesure) couvre cette intégration.",
   },
   {
     id: 'refus-avocat',
@@ -37,9 +37,9 @@ export const homeFaq: FaqEntry[] = [
   },
   {
     id: 'tarification-cabinet',
-    question: "Cabinet : la facturation est par utilisateur ou par dossier ?",
+    question: "La facturation est par utilisateur ou par dossier ?",
     answer:
-      "Par utilisateur, avec dossiers illimités. Le plan Professionnel inclut 5 utilisateurs ; le plan Entreprise est illimité. Cette tarification permet aux cabinets de ne pas être pénalisés sur la volumétrie — au contraire, plus le cabinet utilise ClairDossier, plus la valeur par utilisateur augmente.",
+      "Selon le plan. Les formules Essentiel à Business PME 50 incluent un nombre défini de dossiers et d'utilisateurs ; les plans Pro et Premium passent en dossiers illimités (15 utilisateurs, puis illimité). Vous montez en gamme quand votre volume augmente — jamais pénalisé à l'usage.",
   },
   {
     id: 'export-possible',

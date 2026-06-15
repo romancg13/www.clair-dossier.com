@@ -1,6 +1,6 @@
 ---
 title: "ClairDossier — Votre dossier juridique, clair, structuré et suivi"
-description: "Plateforme legaltech française pour clients, PME et cabinets d'avocats."
+description: "Plateforme legaltech française pour les PME, artisans, entreprises individuelles et professions libérales."
 url: https://www.clair-dossier.com/
 ---
 
@@ -8,37 +8,37 @@ url: https://www.clair-dossier.com/
 
 **Votre dossier juridique, clair, structuré et suivi.**
 
-Transformez les demandes juridiques en dossiers lisibles, suivis et prêts à être validés par un professionnel habilité. Pour les particuliers qui montent un dossier, les PME qui pilotent leur contentieux, et les cabinets qui veulent rendre du temps à l'analyse.
+Créez des dossiers administratifs et juridiques structurés : calendrier, relances à échéance et projets de réponse aux e-mails. Pour les PME, artisans, entreprises individuelles et professions libérales. Option : un préavis juridique et un résumé de la situation à valider par un professionnel du droit.
 
 ## Promesse
 
 - 6 statuts dossier standardisés et traçables
-- 3 espaces dédiés (client, avocat, cabinet)
+- Calendrier et relances automatiques à échéance
 - 100 % conforme RGPD — hébergement OVH France
 
 ## Trois espaces, un dossier
 
-### Client — Votre dossier, vos décisions.
+### Vous — Votre dossier, vos décisions.
 
 Vous construisez votre dossier à votre rythme. Vous voyez en permanence où il en est, qui agit, ce qui est attendu de vous.
 
 - Création guidée par typologie (prud'hommes, bail, recouvrement…)
 - Suivi en temps réel des 6 statuts de votre dossier
-- Messagerie sécurisée avec l'avocat assigné
+- Messagerie sécurisée avec votre interlocuteur
 - Export ZIP intégral à tout moment, sans condition
 
-### Avocat — Les dossiers arrivent prêts. Vous gardez l'analyse pour vous.
+### Validation — Un préavis juridique, quand vous le décidez.
 
-Brief IA préparatoire, chronologie reconstruite, pièces indexées. Vous arrivez en consultation avec dix minutes de gain — par dossier.
+En option, un professionnel du droit établit un préavis juridique et valide le résumé de votre situation : brief IA préparatoire, chronologie reconstruite, pièces indexées.
 
 - Brief IA préparatoire avant chaque consultation
 - Validation en un clic, demande de pièce ou refus motivé
 - Notes internes (privées) vs notes partagées (visibles client)
 - Signature électronique horodatée jointe à chaque validation
 
-### Cabinet — Une vue d'ensemble qui ne ment pas.
+### Entreprise — Une vue d'ensemble qui ne ment pas.
 
-Tous les dossiers de votre équipe, tous les statuts, toutes les charges. La direction du cabinet sait ce qui se passe — sans demander.
+Tous les dossiers de votre équipe, tous les statuts, toutes les charges. La direction de l'entreprise sait ce qui se passe — sans demander.
 
 - Tableau de bord équipe avec attribution des dossiers
 - Suivi de la charge par collaborateur
@@ -60,19 +60,22 @@ Tous les dossiers de votre équipe, tous les statuts, toutes les charges. La dir
 - [**Pièces & OCR**](https://www.clair-dossier.com/fonctionnalites/pieces-ocr) — Déposez vos pièces — contrats, courriers, factures. ClairDossier les renomme, les indexe et extrait les dates clés.
 - [**Chronologie**](https://www.clair-dossier.com/fonctionnalites/chronologie) — Une frise visuelle qui assemble seule les dates clés du dossier à partir des pièces et des réponses du client.
 - [**IA préparatoire**](https://www.clair-dossier.com/fonctionnalites/ia-preparatoire) — Avant la consultation, l'IA prépare un brief : faits saillants, points de droit potentiels, questions à poser. L'avocat valide, ajuste ou rejette.
-- [**Validation pro**](https://www.clair-dossier.com/fonctionnalites/validation-avocat) — Quand le dossier est prêt, l'avocat habilité valide, demande une pièce, ou refuse avec motif. Le client est notifié dans la minute.
+- [**Validation pro**](https://www.clair-dossier.com/fonctionnalites/validation-avocat) — En option, un professionnel du droit habilité valide votre dossier, demande une pièce ou émet un préavis motivé. Vous êtes notifié dans la minute.
 - [**Suivi 6 statuts**](https://www.clair-dossier.com/fonctionnalites/suivi-statuts) — Brouillon → Complété → En attente avocat → Validation en cours → Validé → Archivé. Le client voit exactement où en est son dossier.
 - [**Messagerie**](https://www.clair-dossier.com/fonctionnalites/messagerie-securisee) — Les échanges juridiques quittent enfin les SMS et les emails. Chiffrement TLS 1.3 en transit, AES-256 au repos, attribution garantie.
 - [**Coffre-fort RGPD**](https://www.clair-dossier.com/fonctionnalites/coffre-fort) — Vos données vivent en France, hébergées chez OVH, chiffrées au repos. Vous pouvez exporter, supprimer, transférer — à tout moment.
+- [**Calendrier & relances**](https://www.clair-dossier.com/fonctionnalites/calendrier-relances) — Chaque dossier a ses dates clés. ClairDossier les place dans un calendrier et vous relance avant chaque échéance — délai de réponse, prescription, paiement.
+- [**Réponse e-mails IA**](https://www.clair-dossier.com/fonctionnalites/reponse-auto-mails) — Un e-mail reçu sur un dossier ? ClairDossier en propose un projet de réponse structuré, à relire et envoyer. Vous gardez la main, vous gagnez le temps de rédaction.
 
 ## Tarifs
 
-- **Découverte** (Particulier / indépendant) — Gratuit. Testez ClairDossier gratuitement. Idéal pour découvrir la plateforme.
-- **Client Essentiel** (Particulier / indépendant) — 19 €/mois HT. Pour les particuliers et indépendants qui suivent leurs dossiers en autonomie.
-- **Business / PME** (TPE / PME) — 49 €/mois HT. Pour les PME avec plusieurs dossiers récurrents et des équipes internes.
-- **Cabinet Solo** (Cabinet d'avocat) — 79 €/mois HT. Pour les avocats indépendants. Intake client, résumé IA, validation et brouillons.
-- **Cabinet Pro** (Cabinet d'avocat) — 149 €/mois HT. Pour les cabinets multi-avocats avec statistiques avancées et workflows.
-- **Cabinet Premium** (Cabinet d'avocat) — 299 €/mois HT. Solution entreprise : marque blanche, API, SSO, audit avancé et accompagnement dédié.
+- **Essentiel** (Indépendant / EI) — 19 €/mois HT. Pour les indépendants et entrepreneurs individuels qui structurent leurs premiers dossiers.
+- **Entrepreneur** (Entrepreneur / prof. libérale) — 39 €/mois HT. Pour les entrepreneurs et professions libérales avec un flux régulier de dossiers.
+- **Business PME 20** (TPE / PME) — 49 €/mois HT. Pour les TPE/PME avec plusieurs dossiers récurrents et une petite équipe.
+- **Business PME 50** (PME) — 89 €/mois HT. Pour les PME qui gèrent de nombreux dossiers en parallèle.
+- **Business / PME Pro** (PME / multi-sites) — 169 €/mois HT. Pour les structures multi-collaborateurs avec statistiques et workflows avancés.
+- **Business / PME Premium** (Entreprise) — 299 €/mois HT. Solution entreprise : marque blanche, API, SSO, audit avancé.
+- **Business / PME personnalisée** (Grand compte) — Sur devis. Volumétrie, intégrations ou conformité spécifiques ? On construit une offre sur-mesure.
 
 Facturation annuelle disponible sur tous les plans payants avec 10 % de réduction sur le cumul mensuel.
 
@@ -82,7 +85,7 @@ Détail complet : https://www.clair-dossier.com/tarifs
 
 ### Qui valide juridiquement les dossiers sur ClairDossier ?
 
-Un avocat habilité — inscrit au barreau, à jour de ses obligations déontologiques. ClairDossier n'est ni un cabinet, ni un conseil juridique : nous structurons le dossier, un professionnel le valide. La signature électronique de l'avocat est jointe à chaque décision, avec horodatage et numéro de toque.
+En option, vous pouvez demander qu'un professionnel du droit — avocat habilité, inscrit au barreau — établisse un préavis juridique et valide le résumé de votre situation. ClairDossier structure le dossier ; cette validation juridique est un service optionnel, jamais imposé. La signature électronique est jointe à la décision, avec horodatage.
 
 ### Mes données sont-elles vraiment sécurisées ?
 
@@ -92,17 +95,17 @@ Hébergement OVH France (Roubaix, Strasbourg). Chiffrement AES-256 au repos, TLS
 
 Non. Vous pouvez constituer votre dossier, l'exporter en ZIP, et le transmettre à l'avocat de votre choix — ami de famille, conseil d'entreprise, avocat trouvé par recommandation. ClairDossier propose un réseau d'avocats partenaires si vous n'avez personne, mais nous n'imposons rien.
 
-### ClairDossier est-il compatible avec mon cabinet existant ?
+### ClairDossier s'intègre-t-il à mes outils existants ?
 
-Oui. Nous proposons une API d'intégration (plan Professionnel et Entreprise) pour synchroniser les dossiers ClairDossier avec votre outil de gestion existant — Septeo, Polyact, Cicéron, ou solution maison. L'onboarding sur site (plan Entreprise) couvre cette intégration.
+Oui. Une API d'intégration (plans Business / PME Pro et Premium) synchronise vos dossiers ClairDossier avec votre CRM, votre outil de gestion ou votre solution maison. L'onboarding sur site (offre sur-mesure) couvre cette intégration.
 
 ### Que se passe-t-il si l'avocat refuse de valider mon dossier ?
 
 L'avocat doit motiver son refus. Vous recevez l'explication par message dans l'app et par email. Trois cas : le dossier est incomplet (vous le complétez), le dossier est hors champ de l'avocat (nous vous orientons vers un autre confrère), le dossier est juridiquement non recevable (vous êtes orienté vers une démarche alternative).
 
-### Cabinet : la facturation est par utilisateur ou par dossier ?
+### La facturation est par utilisateur ou par dossier ?
 
-Par utilisateur, avec dossiers illimités. Le plan Professionnel inclut 5 utilisateurs ; le plan Entreprise est illimité. Cette tarification permet aux cabinets de ne pas être pénalisés sur la volumétrie — au contraire, plus le cabinet utilise ClairDossier, plus la valeur par utilisateur augmente.
+Selon le plan. Les formules Essentiel à Business PME 50 incluent un nombre défini de dossiers et d'utilisateurs ; les plans Pro et Premium passent en dossiers illimités (15 utilisateurs, puis illimité). Vous montez en gamme quand votre volume augmente — jamais pénalisé à l'usage.
 
 ### Puis-je exporter mes dossiers (PDF, ZIP) ?
 

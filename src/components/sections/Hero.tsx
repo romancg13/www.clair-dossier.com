@@ -5,7 +5,7 @@ import { SplitWords } from '../primitives/SplitWords';
 import { ArrowRightIcon } from '../icons';
 
 const heroPanelRows = [
-  { label: 'Statut', value: 'En attente validation avocat', tone: 'gold' as const },
+  { label: 'Statut', value: 'Validation pro (option)', tone: 'gold' as const },
   { label: 'Pièces déposées', value: '7 / 9' },
   { label: 'Chronologie', value: '4 évènements datés' },
   { label: 'Validation', value: 'Sous 24 h ouvrées', tone: 'navy' as const },
@@ -41,7 +41,7 @@ export function Hero() {
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
             className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-700"
           >
-            Legaltech pour clients · PME · cabinets
+            Legaltech pour PME · artisans · indépendants
           </motion.p>
 
           <h1 className="mt-5 font-display text-[clamp(2.1rem,7vw,5.4rem)] font-semibold leading-[0.98] tracking-tight text-navy-900 sm:leading-[0.96]">
@@ -67,10 +67,10 @@ export function Hero() {
             transition={{ duration: 0.6, delay: 0.5, ease: [0.16, 1, 0.3, 1] }}
             className="mt-6 max-w-2xl text-base leading-relaxed text-slate-500 sm:text-lg"
           >
-            Transformez les demandes juridiques en dossiers lisibles, suivis et prêts à être
-            validés par un professionnel habilité. Pour les particuliers qui montent un dossier,
-            les PME qui pilotent leur contentieux, et les cabinets qui veulent rendre du temps à
-            l'analyse.
+            Créez des dossiers administratifs et juridiques structurés : calendrier, relances à
+            échéance et projets de réponse aux e-mails. Pour les PME, artisans, entreprises
+            individuelles et professions libérales. Option : un préavis juridique validé par un
+            professionnel du droit.
           </motion.p>
 
           <motion.div
@@ -101,7 +101,7 @@ export function Hero() {
             className="mt-8 flex flex-wrap items-center gap-2.5"
           >
             <FactPill>6 statuts dossier</FactPill>
-            <FactPill>3 espaces dédiés</FactPill>
+            <FactPill>Relances à échéance</FactPill>
             <FactPill>100 % conforme RGPD</FactPill>
           </motion.div>
         </div>

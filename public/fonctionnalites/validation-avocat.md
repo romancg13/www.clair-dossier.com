@@ -1,12 +1,12 @@
 ---
-title: "Validation avocat en un clic"
-description: "Quand le dossier est prêt, l'avocat habilité valide, demande une pièce, ou refuse avec motif. Le client est notifié dans la minute."
+title: "Validation juridique en option"
+description: "En option, un professionnel du droit habilité valide votre dossier, demande une pièce ou émet un préavis motivé. Vous êtes notifié dans la minute."
 url: https://www.clair-dossier.com/fonctionnalites/validation-avocat
 ---
 
-# Validation avocat en un clic
+# Validation juridique en option
 
-**Un dossier non validé n'est pas un dossier. La signature d'un professionnel habilité est le seul tampon qui compte.**
+**La validation juridique, quand vous en avez besoin. Un professionnel du droit habilité appose sa signature — en option, jamais imposée.**
 
 Aucun dossier ne quitte le brouillon sans une décision d'un avocat habilité. C'est notre principe fondateur : ClairDossier n'est pas un cabinet, ClairDossier est une plateforme qui prépare les dossiers pour des cabinets.
 

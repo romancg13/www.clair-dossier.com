@@ -1,34 +1,18 @@
 ---
 title: "Tarifs ClairDossier"
-description: "Six formules : Découverte gratuit, Client Essentiel 19€, Business/PME 49€, Cabinet Solo 79€, Cabinet Pro 149€, Cabinet Premium 299€."
+description: "Sept formules, de l'indépendant à l'entreprise : Essentiel 19€, Entrepreneur 39€, Business PME 20 (49€), Business PME 50 (89€), Pro 169€, Premium 299€, et offre sur-mesure."
 url: https://www.clair-dossier.com/tarifs
 ---
 
 # Tarifs ClairDossier
 
-Du particulier qui monte un dossier à la fois au cabinet multi-sites — six niveaux de service couvrent tous les usages. Essai gratuit 14 jours sur tous les plans payants, sans engagement. Facturation mensuelle ou annuelle (−10 % en annuel).
+De l'indépendant à l'entreprise — sept niveaux de service couvrent tous les usages. Compte gratuit, abonnement sans engagement. Facturation mensuelle ou annuelle (−10 % en annuel).
 
-## Les six plans
+## Les sept formules
 
-### Découverte — Gratuit
+### Essentiel — 19 € HT/mois
 
-*Particulier / indépendant.* Testez ClairDossier gratuitement. Idéal pour découvrir la plateforme.
-
-- **Dossiers** : 1 dossier
-- **Utilisateurs** : 1 utilisateur
-- **Support** : Support communauté
-
-Fonctionnalités incluses :
-- Messagerie sécurisée : ✗
-- Résumé IA : ✗
-- Rédaction IA (brouillons) : ✗
-- IA avancée (GPT-4o) : ✗
-- Modèles de documents : ✗
-- Dossiers récurrents : ✗
-
-### Client Essentiel — 19 € HT/mois
-
-*Particulier / indépendant.* Pour les particuliers et indépendants qui suivent leurs dossiers en autonomie.
+*Indépendant / EI.* Pour les indépendants et entrepreneurs individuels qui structurent leurs premiers dossiers.
 
 Facturation annuelle : 205,20 € HT/an, soit 17,10 € HT/mois (−10 %).
 
@@ -38,15 +22,37 @@ Facturation annuelle : 205,20 € HT/an, soit 17,10 € HT/mois (−10 %).
 
 Fonctionnalités incluses :
 - Messagerie sécurisée : ✓
+- Calendrier & relances à échéance : limité
 - Résumé IA : limité
-- Rédaction IA (brouillons) : ✗
-- IA avancée (GPT-4o) : ✗
+- Rédaction IA (projet de réponse) : ✗
+- Réponse automatisée aux e-mails : ✗
+- IA avancée (GPT-5.5) : ✗
 - Modèles de documents : ✗
 - Dossiers récurrents : ✗
 
-### Business / PME (mis en avant) — 49 € HT/mois
+### Entrepreneur — 39 € HT/mois
 
-*TPE / PME.* Pour les PME avec plusieurs dossiers récurrents et des équipes internes.
+*Entrepreneur / prof. libérale.* Pour les entrepreneurs et professions libérales avec un flux régulier de dossiers.
+
+Facturation annuelle : 421,20 € HT/an, soit 35,10 € HT/mois (−10 %).
+
+- **Dossiers** : 10 dossiers
+- **Utilisateurs** : 2 utilisateurs
+- **Support** : Support email prioritaire
+
+Fonctionnalités incluses :
+- Messagerie sécurisée : ✓
+- Calendrier & relances à échéance : ✓
+- Résumé IA : ✓
+- Rédaction IA (projet de réponse) : limité
+- Réponse automatisée aux e-mails : ✗
+- IA avancée (GPT-5.5) : ✗
+- Modèles de documents : ✓
+- Dossiers récurrents : ✗
+
+### Business PME 20 (mis en avant) — 49 € HT/mois
+
+*TPE / PME.* Pour les TPE/PME avec plusieurs dossiers récurrents et une petite équipe.
 
 Facturation annuelle : 529,20 € HT/an, soit 44,10 € HT/mois (−10 %).
 
@@ -56,35 +62,39 @@ Facturation annuelle : 529,20 € HT/an, soit 44,10 € HT/mois (−10 %).
 
 Fonctionnalités incluses :
 - Messagerie sécurisée : ✓
+- Calendrier & relances à échéance : ✓
 - Résumé IA : ✓
-- Rédaction IA (brouillons) : limité
-- IA avancée (GPT-4o) : ✗
+- Rédaction IA (projet de réponse) : ✓
+- Réponse automatisée aux e-mails : limité
+- IA avancée (GPT-5.5) : ✗
 - Modèles de documents : ✓
 - Dossiers récurrents : ✓
 
-### Cabinet Solo — 79 € HT/mois
+### Business PME 50 — 89 € HT/mois
 
-*Cabinet d'avocat.* Pour les avocats indépendants. Intake client, résumé IA, validation et brouillons.
+*PME.* Pour les PME qui gèrent de nombreux dossiers en parallèle.
 
-Facturation annuelle : 853,20 € HT/an, soit 71,10 € HT/mois (−10 %).
+Facturation annuelle : 961,20 € HT/an, soit 80,10 € HT/mois (−10 %).
 
 - **Dossiers** : 50 dossiers
-- **Utilisateurs** : 3 utilisateurs
+- **Utilisateurs** : 5 utilisateurs
 - **Support** : Support prioritaire
 
 Fonctionnalités incluses :
 - Messagerie sécurisée : ✓
+- Calendrier & relances à échéance : ✓
 - Résumé IA : ✓
-- Rédaction IA (brouillons) : ✓
-- IA avancée (GPT-4o) : ✗
+- Rédaction IA (projet de réponse) : ✓
+- Réponse automatisée aux e-mails : ✓
+- IA avancée (GPT-5.5) : ✗
 - Modèles de documents : ✓
 - Dossiers récurrents : ✓
 
-### Cabinet Pro (mis en avant) — 149 € HT/mois
+### Business / PME Pro (mis en avant) — 169 € HT/mois
 
-*Cabinet d'avocat.* Pour les cabinets multi-avocats avec statistiques avancées et workflows.
+*PME / multi-sites.* Pour les structures multi-collaborateurs avec statistiques et workflows avancés.
 
-Facturation annuelle : 1609,20 € HT/an, soit 134,10 € HT/mois (−10 %).
+Facturation annuelle : 1825,20 € HT/an, soit 152,10 € HT/mois (−10 %).
 
 - **Dossiers** : Dossiers illimités
 - **Utilisateurs** : 15 utilisateurs
@@ -92,15 +102,17 @@ Facturation annuelle : 1609,20 € HT/an, soit 134,10 € HT/mois (−10 %).
 
 Fonctionnalités incluses :
 - Messagerie sécurisée : ✓
+- Calendrier & relances à échéance : ✓
 - Résumé IA : ✓
-- Rédaction IA (brouillons) : ✓
-- IA avancée (GPT-4o) : ✓
+- Rédaction IA (projet de réponse) : ✓
+- Réponse automatisée aux e-mails : ✓
+- IA avancée (GPT-5.5) : ✓
 - Modèles de documents : ✓
 - Dossiers récurrents : ✓
 
-### Cabinet Premium — 299 € HT/mois
+### Business / PME Premium — 299 € HT/mois
 
-*Cabinet d'avocat.* Solution entreprise : marque blanche, API, SSO, audit avancé et accompagnement dédié.
+*Entreprise.* Solution entreprise : marque blanche, API, SSO, audit avancé.
 
 Facturation annuelle : 3229,20 € HT/an, soit 269,10 € HT/mois (−10 %).
 
@@ -110,9 +122,29 @@ Facturation annuelle : 3229,20 € HT/an, soit 269,10 € HT/mois (−10 %).
 
 Fonctionnalités incluses :
 - Messagerie sécurisée : ✓
+- Calendrier & relances à échéance : ✓
 - Résumé IA : ✓
-- Rédaction IA (brouillons) : ✓
-- IA avancée (GPT-4o) : ✓
+- Rédaction IA (projet de réponse) : ✓
+- Réponse automatisée aux e-mails : ✓
+- IA avancée (GPT-5.5) : ✓
+- Modèles de documents : ✓
+- Dossiers récurrents : ✓
+
+### Business / PME personnalisée (mis en avant) — Sur devis
+
+*Grand compte.* Volumétrie, intégrations ou conformité spécifiques ? On construit une offre sur-mesure.
+
+- **Dossiers** : Dossiers illimités
+- **Utilisateurs** : Utilisateurs illimités
+- **Support** : Accompagnement dédié
+
+Fonctionnalités incluses :
+- Messagerie sécurisée : ✓
+- Calendrier & relances à échéance : ✓
+- Résumé IA : ✓
+- Rédaction IA (projet de réponse) : ✓
+- Réponse automatisée aux e-mails : ✓
+- IA avancée (GPT-5.5) : ✓
 - Modèles de documents : ✓
 - Dossiers récurrents : ✓
 
@@ -123,7 +155,7 @@ Pour structures avec exigences de marque blanche, intégration API, SSO, audit d
 ## Engagement
 
 - **Données chiffrées.** Chiffrement de bout en bout, hébergement exclusivement UE.
-- **IA supervisée.** Chaque analyse IA est validée par un avocat habilité avant transmission.
+- **IA supervisée.** Chaque analyse IA peut être validée par un professionnel du droit, en option, avant transmission.
 - **Sans engagement.** Résiliez à tout moment. Vos données restent exportables.
 
 

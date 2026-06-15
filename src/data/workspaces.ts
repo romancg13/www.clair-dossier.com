@@ -16,21 +16,21 @@ export type Workspace = {
 export const workspaces: Workspace[] = [
   {
     id: 'client',
-    label: 'Client',
+    label: 'Vous',
     title: 'Votre dossier, vos décisions.',
     description:
       "Vous construisez votre dossier à votre rythme. Vous voyez en permanence où il en est, qui agit, ce qui est attendu de vous.",
     capabilities: [
       "Création guidée par typologie (prud'hommes, bail, recouvrement…)",
       "Suivi en temps réel des 6 statuts de votre dossier",
-      "Messagerie sécurisée avec l'avocat assigné",
+      'Messagerie sécurisée avec votre interlocuteur',
       "Export ZIP intégral à tout moment, sans condition",
     ],
     mockup: {
       kicker: 'Aperçu dossier',
       title: "Prud'homal — synthèse",
       rows: [
-        { label: 'Statut', value: 'En attente validation avocat', tone: 'gold' },
+        { label: 'Statut', value: 'Validation pro (option)', tone: 'gold' },
         { label: 'Pièces déposées', value: '7 / 9' },
         { label: 'Chronologie', value: '4 évènements datés' },
         { label: 'Validation', value: 'Sous 24 h ouvrées', tone: 'navy' },
@@ -41,10 +41,10 @@ export const workspaces: Workspace[] = [
   },
   {
     id: 'avocat',
-    label: 'Avocat',
-    title: "Les dossiers arrivent prêts. Vous gardez l'analyse pour vous.",
+    label: 'Validation',
+    title: 'Un préavis juridique, quand vous le décidez.',
     description:
-      "Brief IA préparatoire, chronologie reconstruite, pièces indexées. Vous arrivez en consultation avec dix minutes de gain — par dossier.",
+      "En option, un professionnel du droit établit un préavis juridique et valide le résumé de votre situation : brief IA préparatoire, chronologie reconstruite, pièces indexées.",
     capabilities: [
       "Brief IA préparatoire avant chaque consultation",
       "Validation en un clic, demande de pièce ou refus motivé",
@@ -66,10 +66,10 @@ export const workspaces: Workspace[] = [
   },
   {
     id: 'cabinet',
-    label: 'Cabinet',
+    label: 'Entreprise',
     title: 'Une vue d\'ensemble qui ne ment pas.',
     description:
-      "Tous les dossiers de votre équipe, tous les statuts, toutes les charges. La direction du cabinet sait ce qui se passe — sans demander.",
+      "Tous les dossiers de votre équipe, tous les statuts, toutes les charges. La direction de l'entreprise sait ce qui se passe — sans demander.",
     capabilities: [
       "Tableau de bord équipe avec attribution des dossiers",
       "Suivi de la charge par collaborateur",
@@ -77,13 +77,13 @@ export const workspaces: Workspace[] = [
       "Reporting mensuel automatique (PDF, CSV)",
     ],
     mockup: {
-      kicker: 'Vue cabinet · semaine type',
+      kicker: 'Vue entreprise · semaine type',
       title: 'Tableau de bord équipe',
       rows: [
         { label: 'Dossiers actifs', value: '47', tone: 'navy' },
         { label: 'En attente validation', value: '6' },
         { label: 'Validés cette semaine', value: '12', tone: 'gold' },
-        { label: 'Charge par avocat', value: '5,2 dossiers/sem.' },
+        { label: 'Charge par membre', value: '5,2 dossiers/sem.' },
         { label: 'Délai moyen validation', value: '38 heures' },
       ],
       footnote: 'Rapport hebdomadaire envoyé chaque lundi à 8h.',

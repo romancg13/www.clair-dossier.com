@@ -34,7 +34,7 @@ const DEVIS_CAPABILITIES = [
   },
   {
     title: 'API et webhooks dédiés',
-    body: "Intégration avec Septeo, Polyact, Cicéron, ou votre stack maison. SDK Node et Python disponibles.",
+    body: "Intégration avec votre CRM, votre outil de gestion ou votre stack maison. SDK Node et Python disponibles.",
   },
   {
     title: 'SSO et audit renforcé',
@@ -42,7 +42,7 @@ const DEVIS_CAPABILITIES = [
   },
   {
     title: 'Onboarding sur site',
-    body: "Deux jours dans votre cabinet, reprise de vos dossiers existants, formation de l'équipe entière.",
+    body: "Deux jours dans vos locaux, reprise de vos dossiers existants, formation de l'équipe entière.",
   },
 ];
 
@@ -67,9 +67,9 @@ const PRICING_FAQ = [
   },
   {
     id: 'essai',
-    question: "Comment fonctionne l'essai gratuit 14 jours ?",
+    question: 'Faut-il payer pour créer un compte ?',
     answer:
-      "Vous accédez à toutes les fonctionnalités du plan choisi pendant 14 jours, sans carte requise. À la fin de l'essai, vous pouvez continuer en payant, basculer sur le plan Découverte, ou supprimer votre compte.",
+      "Non. La création de compte est gratuite et vous pouvez constituer vos dossiers immédiatement. Un abonnement n'est nécessaire que pour débloquer plus de dossiers, d'utilisateurs et les fonctions IA avancées. Sans engagement, résiliable à tout moment.",
   },
   {
     id: 'annuel',
@@ -94,7 +94,7 @@ export function Pricing() {
     <>
       <Seo
         title="Tarifs"
-        description="Six formules ClairDossier : Découverte gratuit, Client Essentiel, Business/PME, Cabinet Solo/Pro/Premium. Essai gratuit 14 jours, sans engagement. −10 % en annuel."
+        description="Sept formules ClairDossier, de l'indépendant à l'entreprise : Essentiel, Entrepreneur, Business PME 20/50, Pro, Premium et offre sur-mesure. Compte gratuit, sans engagement. −10 % en annuel."
         path="/tarifs"
         jsonLd={[
           breadcrumbSchema([
@@ -149,8 +149,8 @@ export function Pricing() {
               Une formule par usage. Pas de surprise.
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-relaxed text-slate-500">
-              Du particulier qui monte un dossier à la fois au cabinet multi-sites — six niveaux
-              de service couvrent tous les usages. Essai gratuit 14 jours sur tous les plans payants.
+              De l'indépendant à l'entreprise — sept niveaux de service couvrent tous les usages.
+              Compte gratuit, abonnement sans engagement.
             </p>
 
             {/* Toggle Mensuel / Annuel */}
@@ -250,7 +250,7 @@ export function Pricing() {
                 Devis sur-mesure
               </p>
               <h2 className="mt-4 font-display text-3xl font-semibold leading-tight text-cream-50 sm:text-4xl lg:text-5xl">
-                Au-delà du Cabinet Premium ?
+                Au-delà du plan Premium ?
               </h2>
               <p className="mt-5 max-w-md text-base leading-relaxed text-cream-50/75">
                 Pour les structures avec exigences de marque blanche, intégration API,
@@ -440,10 +440,10 @@ export function Pricing() {
               <ArrowRightIcon width={14} height={14} strokeWidth={2} />
             </Link>
             <Link
-              to="/dossier/nouveau"
+              to="/inscription"
               className="inline-flex items-center gap-2 rounded-full border border-cream-50/20 px-6 py-3.5 text-sm font-medium text-cream-50 hover:border-cream-50/50"
             >
-              Essayer gratuitement
+              Créer un compte gratuit
             </Link>
           </div>
         </div>

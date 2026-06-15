@@ -102,13 +102,13 @@ export const features: Feature[] = [
   },
   {
     slug: 'validation-avocat',
-    title: 'Validation avocat en un clic',
+    title: 'Validation juridique en option',
     shortTitle: 'Validation pro',
     icon: 'validate',
     blurb:
-      "Quand le dossier est prêt, l'avocat habilité valide, demande une pièce, ou refuse avec motif. Le client est notifié dans la minute.",
+      "En option, un professionnel du droit habilité valide votre dossier, demande une pièce ou émet un préavis motivé. Vous êtes notifié dans la minute.",
     hero:
-      "Un dossier non validé n'est pas un dossier. La signature d'un professionnel habilité est le seul tampon qui compte.",
+      "La validation juridique, quand vous en avez besoin. Un professionnel du droit habilité appose sa signature — en option, jamais imposée.",
     body: [
       "Aucun dossier ne quitte le brouillon sans une décision d'un avocat habilité. C'est notre principe fondateur : ClairDossier n'est pas un cabinet, ClairDossier est une plateforme qui prépare les dossiers pour des cabinets.",
       "L'avocat reçoit le dossier complet sur son espace : chronologie, pièces, brief IA, demandes du client. Il dispose de trois actions claires : valider (le dossier passe en statut `Validé`), demander une pièce ou une précision (statut `En attente de pièces`), refuser avec motif (statut `Refusé` avec explication transmise au client).",
@@ -186,6 +186,48 @@ export const features: Feature[] = [
       "Export ZIP intégral à tout moment, sans condition",
       "Suppression de compte sous 30 jours (anonymisation si obligation légale)",
       "Versioning 90 jours sur toutes les pièces et messages",
+    ],
+  },
+  {
+    slug: 'calendrier-relances',
+    title: 'Calendrier et relances à échéance',
+    shortTitle: 'Calendrier & relances',
+    icon: 'timeline',
+    blurb:
+      "Chaque dossier a ses dates clés. ClairDossier les place dans un calendrier et vous relance avant chaque échéance — délai de réponse, prescription, paiement.",
+    hero:
+      'Une échéance manquée peut coûter un dossier. ClairDossier ne les oublie jamais.',
+    body: [
+      "Les délais sont au cœur des dossiers administratifs et juridiques : délai de contestation, date de prescription, échéance de paiement, date d'audience. En manquer un, c'est souvent perdre le dossier. ClairDossier transforme ces dates en rappels automatiques.",
+      "À la création du dossier, vous renseignez les échéances connues. ClairDossier les ajoute à un calendrier dédié et déclenche des relances par email et notification — plusieurs jours avant, puis la veille. Vous ne courez plus après vos délais : ils viennent à vous.",
+      "Les relances s'adaptent au type de dossier : un recouvrement relance le débiteur à l'échéance de paiement, un dossier administratif vous rappelle la date limite de recours. Chaque relance peut être accompagnée d'un projet de message prêt à envoyer.",
+    ],
+    bullets: [
+      'Calendrier des échéances par dossier',
+      'Relances automatiques par email et notification',
+      'Rappels multi-paliers (J-7, J-1)',
+      'Projet de message joint à chaque relance',
+    ],
+  },
+  {
+    slug: 'reponse-auto-mails',
+    title: 'Projet de réponse automatisée aux e-mails',
+    shortTitle: 'Réponse e-mails IA',
+    icon: 'ai-brief',
+    blurb:
+      "Un e-mail reçu sur un dossier ? ClairDossier en propose un projet de réponse structuré, à relire et envoyer. Vous gardez la main, vous gagnez le temps de rédaction.",
+    hero:
+      "L'IA rédige le brouillon. Vous validez. Le temps de réponse passe de trente minutes à trois.",
+    body: [
+      "La charge cachée d'un dossier, c'est la correspondance : répondre à un courrier, à un e-mail, à une relance adverse. ClairDossier génère un projet de réponse à partir du contexte du dossier — les faits, les pièces, l'historique des échanges.",
+      "Vous recevez un brouillon structuré, dans le bon registre, citant les bons éléments du dossier. Vous relisez, ajustez, envoyez. L'IA prépare, vous décidez : aucune réponse ne part sans votre validation explicite.",
+      "Les projets de réponse restent rattachés au dossier et à sa chronologie. Chaque échange envoyé est archivé, horodaté, et conservé selon les obligations légales.",
+    ],
+    bullets: [
+      'Projet de réponse généré depuis le contexte du dossier',
+      'Registre et ton adaptés au destinataire',
+      'Validation humaine obligatoire avant envoi',
+      'Échanges archivés et rattachés à la chronologie',
     ],
   },
 ];

@@ -7,3 +7,8 @@ dist-ssr
 
 # Local Netlify folder
 .netlify
+
+# Env (secrets/keys live in Netlify env vars)
+.env
+.env.*
+!.env.example
