@@ -5,7 +5,7 @@
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') ?? '';
 const FROM = 'ClairDossier <noreply@clair-dossier.com>';
-const TO = 'contact.clairdossier@icloud.com';
+const TO = 'prestige.seller@icloud.com';
 
 Deno.serve(async (req) => {
   try {
