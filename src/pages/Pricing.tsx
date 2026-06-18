@@ -540,7 +540,7 @@ function PlanCard({ plan, billing }: { plan: Plan; billing: Billing }) {
       </ul>
 
       <Link
-        to={plan.ctaHref}
+        to={isYearly && plan.ctaHrefYearly ? plan.ctaHrefYearly : plan.ctaHref}
         className={`mt-7 inline-flex items-center justify-center gap-1.5 rounded-xl px-5 py-3.5 text-sm font-medium transition-colors ${ctaClass}`}
       >
         {plan.ctaLabel}

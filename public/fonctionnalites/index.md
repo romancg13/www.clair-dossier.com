@@ -1,12 +1,12 @@
 ---
 title: "Fonctionnalités ClairDossier"
-description: "Dix fonctionnalités pour structurer, suivre et traiter vos dossiers administratifs et juridiques."
+description: "Neuf fonctionnalités pour structurer, suivre et traiter vos dossiers administratifs et juridiques."
 url: https://www.clair-dossier.com/fonctionnalites
 ---
 
 # Fonctionnalités ClairDossier
 
-Dix briques conçues à partir de points de friction identifiés dans des dossiers réels.
+Neuf briques conçues à partir de points de friction identifiés dans des dossiers réels.
 
 ## Création guidée par typologie
 
@@ -26,15 +26,9 @@ Une frise visuelle qui assemble seule les dates clés du dossier à partir des p
 
 Détail : https://www.clair-dossier.com/fonctionnalites/chronologie · Markdown : https://www.clair-dossier.com/fonctionnalites/chronologie.md
 
-## Question IA préparatoire
-
-Avant la consultation, l'IA prépare un brief : faits saillants, points de droit potentiels, questions à poser. L'avocat valide, ajuste ou rejette.
-
-Détail : https://www.clair-dossier.com/fonctionnalites/ia-preparatoire · Markdown : https://www.clair-dossier.com/fonctionnalites/ia-preparatoire.md
-
 ## Validation juridique en option
 
-En option, un professionnel du droit habilité valide votre dossier, demande une pièce ou émet un préavis motivé. Vous êtes notifié dans la minute.
+En option, un professionnel du droit habilité valide votre dossier, demande une pièce ou émet un préavis motivé.
 
 Détail : https://www.clair-dossier.com/fonctionnalites/validation-avocat · Markdown : https://www.clair-dossier.com/fonctionnalites/validation-avocat.md
 

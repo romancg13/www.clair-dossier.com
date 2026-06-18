@@ -4,6 +4,7 @@ import { AvantApres } from '../components/sections/AvantApres';
 import { FeaturesGrid } from '../components/sections/FeaturesGrid';
 import { WorkspacesTabs } from '../components/sections/WorkspacesTabs';
 import { Workflow } from '../components/sections/Workflow';
+import { DossierLifecycle } from '../components/sections/DossierLifecycle';
 import { SecurityBlock } from '../components/sections/SecurityBlock';
 import { PricingPreview } from '../components/sections/PricingPreview';
 import { BlogPreview } from '../components/sections/BlogPreview';
@@ -51,6 +52,7 @@ export function Home() {
       <FeaturesGrid />
       <WorkspacesTabs />
       <Workflow />
+      <DossierLifecycle />
       <SecurityBlock />
       <PricingPreview />
       <BlogPreview />

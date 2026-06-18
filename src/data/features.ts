@@ -79,34 +79,12 @@ export const features: Feature[] = [
     ],
   },
   {
-    slug: 'ia-preparatoire',
-    title: 'Question IA préparatoire',
-    shortTitle: 'IA préparatoire',
-    icon: 'ai-brief',
-    blurb:
-      "Avant la consultation, l'IA prépare un brief : faits saillants, points de droit potentiels, questions à poser. L'avocat valide, ajuste ou rejette.",
-    hero:
-      "L'IA prépare. L'avocat décide. Cette frontière est notre charte.",
-    body: [
-      "ClairDossier intègre une assistance IA, mais notre position est nette : l'IA ne donne jamais de conseil juridique au client. Elle prépare le travail de l'avocat — synthèse des faits, identification des points de droit potentiels, suggestions de questions à creuser, repérage des incohérences dans le récit client.",
-      "Avant chaque consultation programmée, l'avocat reçoit un brief synthétique de deux pages maximum. Il l'ouvre, il lit, il garde ce qui l'aide, il barre ce qui est faux. Le brief n'est jamais transmis au client en l'état — c'est un outil interne, un brouillon pour le professionnel.",
-      "Les suggestions sont annotées : tel point de droit suggéré renvoie à tel article du Code du travail, telle jurisprudence est citée avec sa référence Cassation. L'avocat sait d'où vient chaque suggestion et peut la vérifier en un clic.",
-      "Cette frontière — l'IA prépare, l'avocat décide — n'est pas un slogan marketing. C'est une exigence déontologique du RIN (Règlement Intérieur National des avocats). ClairDossier la respecte techniquement, pas seulement contractuellement.",
-    ],
-    bullets: [
-      "Brief synthétique de 2 pages par consultation préparée",
-      "Citations sourcées (Code, Cassation, jurisprudence vérifiable)",
-      "Jamais transmis au client en l'état — outil interne avocat",
-      "Conformité RIN : l'IA ne délivre pas de conseil",
-    ],
-  },
-  {
     slug: 'validation-avocat',
     title: 'Validation juridique en option',
     shortTitle: 'Validation pro',
     icon: 'validate',
     blurb:
-      "En option, un professionnel du droit habilité valide votre dossier, demande une pièce ou émet un préavis motivé. Vous êtes notifié dans la minute.",
+      'En option, un professionnel du droit habilité valide votre dossier, demande une pièce ou émet un préavis motivé.',
     hero:
       "La validation juridique, quand vous en avez besoin. Un professionnel du droit habilité appose sa signature — en option, jamais imposée.",
     body: [
@@ -204,7 +182,7 @@ export const features: Feature[] = [
     ],
     bullets: [
       'Calendrier des échéances par dossier',
-      'Relances automatiques par email et notification',
+      'Suivez vos échéances et préparez vos relances au bon moment',
       'Rappels multi-paliers (J-7, J-1)',
       'Projet de message joint à chaque relance',
     ],

@@ -46,7 +46,7 @@ export function BlogIndex() {
               Journal
             </p>
             <h1 className="mt-4 font-display text-5xl font-semibold leading-[1.05] text-navy-900 sm:text-6xl">
-              Le droit, expliqué calmement.
+              Le droit administratif et juridique, expliqué calmement.
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-relaxed text-slate-500 sm:text-lg">
               Articles écrits par des avocats, des juristes IT et l'équipe éditoriale

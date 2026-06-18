@@ -107,21 +107,31 @@ export function Account() {
           ) : (
             <ul className="mt-6 space-y-3">
               {dossiers.map((d) => (
-                <li
-                  key={d.id}
-                  className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border hairline bg-white p-5 shadow-card"
-                >
-                  <div>
-                    <p className="font-display text-lg font-semibold text-navy-900">
-                      {d.title || d.typology}
-                    </p>
-                    <p className="mt-0.5 font-mono text-[0.7rem] uppercase tracking-[0.14em] text-slate-500">
-                      {new Date(d.created_at).toLocaleDateString('fr-FR')}
-                    </p>
-                  </div>
-                  <span className="rounded-full bg-gold-500/12 px-3 py-1.5 font-mono text-[0.7rem] font-medium text-navy-900 border hairline-gold">
-                    {STATUS_LABELS[d.status] ?? d.status}
-                  </span>
+                <li key={d.id}>
+                  <Link
+                    to={`/compte/dossier/${d.id}`}
+                    className="group flex flex-wrap items-center justify-between gap-3 rounded-2xl border hairline bg-white p-5 shadow-card transition-all duration-200 hover:-translate-y-0.5 hover:border-gold-500 hover:shadow-card-hover"
+                  >
+                    <div>
+                      <p className="font-display text-lg font-semibold text-navy-900">
+                        {d.title || d.typology}
+                      </p>
+                      <p className="mt-0.5 font-mono text-[0.7rem] uppercase tracking-[0.14em] text-slate-500">
+                        {new Date(d.created_at).toLocaleDateString('fr-FR')}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="rounded-full bg-gold-500/12 px-3 py-1.5 font-mono text-[0.7rem] font-medium text-navy-900 border hairline-gold">
+                        {STATUS_LABELS[d.status] ?? d.status}
+                      </span>
+                      <ArrowRightIcon
+                        width={16}
+                        height={16}
+                        strokeWidth={2}
+                        className="text-slate-400 transition-all group-hover:translate-x-0.5 group-hover:text-gold-700"
+                      />
+                    </div>
+                  </Link>
                 </li>
               ))}
             </ul>

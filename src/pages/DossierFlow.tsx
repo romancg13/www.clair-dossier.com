@@ -7,21 +7,28 @@ import { openWhatsApp } from '../lib/whatsapp';
 import { useAuth } from '../lib/auth';
 import { supabase } from '../lib/supabase';
 
-type Typology =
-  | 'litige-commercial'
-  | 'recouvrement'
+type Profil =
+  | 'artisan'
+  | 'independant'
+  | 'profession-liberale'
+  | 'entreprise-pme'
+  | 'autre';
+
+type Category =
+  | 'dossier-client'
+  | 'facture-paiement'
+  | 'impaye-precontentieux'
   | 'administratif'
-  | 'bail'
-  | 'consommation'
-  | 'prud-hommes'
-  | 'divorce'
-  | 'succession';
+  | 'comptable'
+  | 'rh'
+  | 'autre';
 
 type DraftAnswers = Record<string, string>;
-type Step = 1 | 2 | 3 | 4;
+type Step = 1 | 2 | 3 | 4 | 5;
 
 type Draft = {
-  typology?: Typology;
+  profil?: Profil;
+  typology?: Category;
   answers: DraftAnswers;
   step: Step;
   updatedAt: string;
@@ -30,68 +37,57 @@ type Draft = {
 const STORAGE_KEY = 'clairdossier_draft';
 const TEAM_EMAIL = 'contact.clairdossier@icloud.com';
 
-const TYPOLOGIES: { id: Typology; label: string; description: string }[] = [
-  { id: 'litige-commercial', label: 'Litige commercial', description: 'Contrat non honoré, prestation litigieuse, conflit entre entreprises.' },
-  { id: 'recouvrement', label: 'Recouvrement', description: 'Facture impayée, créance commerciale, mise en demeure.' },
-  { id: 'administratif', label: 'Dossier administratif', description: "URSSAF, impôts, contrôle, recours administratif, demande d'aide." },
-  { id: 'bail', label: 'Bail & immobilier', description: 'Loyer impayé, bail commercial, charges, dépôt de garantie.' },
-  { id: 'consommation', label: 'Litige client / fournisseur', description: 'Produit défectueux, service non rendu, abonnement abusif.' },
-  { id: 'prud-hommes', label: "Prud'hommes", description: 'Licenciement, rupture, harcèlement, heures supplémentaires.' },
-  { id: 'divorce', label: 'Divorce / famille', description: 'Séparation, garde, prestation compensatoire, autorité parentale.' },
-  { id: 'succession', label: 'Succession', description: 'Partage, héritage contesté, donations, indivision.' },
+const PROFILS: { id: Profil; label: string; description: string }[] = [
+  { id: 'artisan', label: 'Artisan', description: 'Bâtiment, métiers de bouche, services à la personne, fabrication.' },
+  { id: 'independant', label: 'Indépendant', description: 'Auto-entrepreneur, freelance, micro-entreprise.' },
+  { id: 'profession-liberale', label: 'Profession libérale', description: 'Santé, conseil, droit, expertise, technique.' },
+  { id: 'entreprise-pme', label: 'Entreprise individuelle / PME', description: 'TPE, PME, société avec quelques salariés.' },
+  { id: 'autre', label: 'Autre', description: 'Association, particulier, autre structure.' },
 ];
 
-const FIELDS: Record<Typology, { id: string; label: string; help?: string; type?: 'text' | 'date' | 'textarea' }[]> = {
-  'litige-commercial': [
-    { id: 'counterparty', label: 'Partie adverse (société)' },
-    { id: 'contractDate', label: 'Date du contrat / de la commande', type: 'date' },
-    { id: 'amount', label: 'Montant en jeu (€)' },
-    { id: 'deadline', label: 'Échéance / date limite', type: 'date', help: 'Pour les relances automatiques à échéance.' },
-    { id: 'situation', label: 'Que s\'est-il passé ?', type: 'textarea' },
-  ],
-  recouvrement: [
-    { id: 'debtor', label: 'Débiteur (particulier ou société)' },
-    { id: 'invoiceDate', label: 'Date de la facture', type: 'date' },
+const CATEGORIES: { id: Category; label: string; description: string }[] = [
+  { id: 'dossier-client', label: 'Dossier client', description: 'Contrat, devis, commande, prestation, suivi d\'un client.' },
+  { id: 'facture-paiement', label: 'Facture / paiement', description: 'Facturation, échéances, acomptes, conditions de règlement.' },
+  { id: 'impaye-precontentieux', label: 'Impayé / pré-contentieux', description: 'Facture non réglée, relances, mise en demeure, litige.' },
+  { id: 'administratif', label: 'Dossier administratif', description: 'URSSAF, impôts, déclaration, contrôle, demande d\'aide.' },
+  { id: 'comptable', label: 'Documents comptables', description: 'Pièces comptables, justificatifs, bilan, TVA.' },
+  { id: 'rh', label: 'Personnel / RH', description: 'Contrat de travail, salarié, congés, fin de collaboration.' },
+  { id: 'autre', label: 'Autre', description: 'Tout dossier qui n\'entre pas dans les cases ci-dessus.' },
+];
+
+type Field = { id: string; label: string; help?: string; type?: 'text' | 'date' | 'textarea' };
+
+const COMMON_FIELDS: Field[] = [
+  { id: 'counterparty', label: 'Personne ou société concernée', help: 'Client, fournisseur, organisme, salarié…' },
+  { id: 'startDate', label: 'Date de référence', type: 'date', help: 'Contrat, facture, échange — la date qui compte.' },
+  { id: 'amount', label: 'Montant en jeu (€)', help: 'Laissez vide si non applicable.' },
+  { id: 'deadline', label: 'Échéance / date limite', type: 'date', help: 'Pour les relances et le suivi des délais.' },
+  { id: 'situation', label: 'Décrivez la situation', type: 'textarea', help: 'Quelques phrases : ce qui s\'est passé, quand, et ce que vous attendez.' },
+];
+
+// Jeu de champs générique, légèrement adapté par catégorie (sans mapping complexe).
+const FIELD_OVERRIDES: Partial<Record<Category, Field[]>> = {
+  'impaye-precontentieux': [
+    { id: 'counterparty', label: 'Débiteur (client ou société)' },
+    { id: 'startDate', label: 'Date de la facture', type: 'date' },
     { id: 'amount', label: 'Montant dû (€)' },
     { id: 'deadline', label: 'Échéance de paiement', type: 'date', help: 'Pour les relances automatiques à échéance.' },
-    { id: 'situation', label: 'Historique des relances', type: 'textarea' },
+    { id: 'situation', label: 'Historique des relances', type: 'textarea', help: 'Relances déjà envoyées, réponses obtenues, suite souhaitée.' },
   ],
-  administratif: [
-    { id: 'organisme', label: 'Organisme concerné', help: 'URSSAF, DGFiP, préfecture, mairie…' },
-    { id: 'refDossier', label: 'Référence du dossier' },
-    { id: 'deadline', label: 'Date limite / échéance', type: 'date', help: 'Pour ne manquer aucun délai.' },
-    { id: 'situation', label: 'Nature de la demande', type: 'textarea' },
-  ],
-  bail: [
-    { id: 'role', label: 'Vous êtes', help: 'Locataire ou bailleur ?' },
-    { id: 'address', label: 'Adresse du local (ville suffit pour le moment)' },
-    { id: 'startDate', label: 'Date d\'entrée dans les lieux', type: 'date' },
-    { id: 'situation', label: 'Litige en cours', type: 'textarea' },
-  ],
-  consommation: [
-    { id: 'merchant', label: 'Vendeur / prestataire / client' },
-    { id: 'purchaseDate', label: 'Date d\'achat ou de souscription', type: 'date' },
-    { id: 'amount', label: 'Montant en jeu (€)' },
-    { id: 'situation', label: 'Que s\'est-il passé ?', type: 'textarea' },
-  ],
-  'prud-hommes': [
-    { id: 'employer', label: "Nom de l'employeur" },
-    { id: 'contractStart', label: "Date d'embauche", type: 'date' },
-    { id: 'ruptureDate', label: 'Date de la rupture', type: 'date', help: 'Si elle a eu lieu — sinon laisser vide.' },
-    { id: 'situation', label: 'Situation actuelle', type: 'textarea', help: "Quelques phrases : ce qui s'est passé, quand, et ce que vous attendez." },
-  ],
-  divorce: [
-    { id: 'marriageDate', label: 'Date du mariage', type: 'date' },
-    { id: 'separationDate', label: 'Date de séparation (de fait)', type: 'date', help: 'Si applicable.' },
-    { id: 'children', label: 'Nombre d\'enfants concernés' },
-    { id: 'situation', label: 'Contexte', type: 'textarea' },
-  ],
-  succession: [
-    { id: 'deathDate', label: 'Date du décès', type: 'date' },
-    { id: 'heirCount', label: 'Nombre d\'héritiers connus' },
-    { id: 'situation', label: 'Nature du désaccord', type: 'textarea' },
+  rh: [
+    { id: 'counterparty', label: 'Salarié concerné' },
+    { id: 'startDate', label: 'Date d\'embauche', type: 'date' },
+    { id: 'deadline', label: 'Échéance / date limite', type: 'date', help: 'Fin de contrat, entretien, délai à respecter.' },
+    { id: 'situation', label: 'Situation actuelle', type: 'textarea', help: 'Quelques phrases : ce qui s\'est passé, quand, et ce que vous attendez.' },
   ],
 };
+
+function fieldsFor(category: Category): Field[] {
+  return FIELD_OVERRIDES[category] ?? COMMON_FIELDS;
+}
+
+const AI_OPTION_TEXT =
+  'Obtenez un premier résumé du dossier, identifiez les pièces utiles et préparez les éléments à faire valider par un professionnel du droit.';
 
 function sanitizeName(name: string): string {
   return name.replace(/[^a-zA-Z0-9._-]+/g, '_').slice(0, 80);
@@ -114,6 +110,7 @@ export function DossierFlow() {
         const parsed = JSON.parse(raw) as Draft;
         if (parsed && typeof parsed === 'object') {
           setDraft({
+            profil: parsed.profil,
             typology: parsed.typology,
             answers: parsed.answers ?? {},
             step: (parsed.step ?? 1) as Step,
@@ -135,18 +132,22 @@ export function DossierFlow() {
     }
   }, [draft]);
 
-  function selectTypology(id: Typology) {
-    setDraft((d) => ({ ...d, typology: id, step: 2, updatedAt: new Date().toISOString() }));
+  function selectProfil(id: Profil) {
+    setDraft((d) => ({ ...d, profil: id, step: 2, updatedAt: new Date().toISOString() }));
   }
 
-  function handleStep2Submit(e: FormEvent<HTMLFormElement>) {
+  function selectCategory(id: Category) {
+    setDraft((d) => ({ ...d, typology: id, step: 3, updatedAt: new Date().toISOString() }));
+  }
+
+  function handleInfoSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const data = new FormData(e.currentTarget);
-    const answers: DraftAnswers = {};
+    const answers: DraftAnswers = { ...(draft.profil ? { profil: draft.profil } : {}) };
     data.forEach((value, key) => {
       answers[key] = String(value);
     });
-    setDraft((d) => ({ ...d, answers, step: 3, updatedAt: new Date().toISOString() }));
+    setDraft((d) => ({ ...d, answers, step: 4, updatedAt: new Date().toISOString() }));
   }
 
   function resetDraft() {
@@ -163,20 +164,24 @@ export function DossierFlow() {
     }
   }
 
-  const typologyMeta = TYPOLOGIES.find((t) => t.id === draft.typology);
-  const fields = draft.typology ? FIELDS[draft.typology] : [];
+  const profilMeta = PROFILS.find((p) => p.id === draft.profil);
+  const categoryMeta = CATEGORIES.find((c) => c.id === draft.typology);
+  const fields = draft.typology ? fieldsFor(draft.typology) : [];
+  const isPreContentieux = draft.typology === 'impaye-precontentieux';
 
   function buildSynthesis(): string {
     const lines = fields
       .map((f) => `• ${f.label} : ${draft.answers[f.id]?.trim() || 'Non renseigné'}`)
       .join('\n');
     const docLine = files.length ? `\nPièces jointes : ${files.length} document(s) déposé(s) dans le compte.` : '';
-    const reviewLine = legalReview
-      ? '\nOption demandée : préavis juridique + résumé de la situation à valider par un professionnel du droit.'
-      : '';
+    const reviewLine =
+      isPreContentieux && legalReview
+        ? `\nOption demandée : question IA préparatoire. ${AI_OPTION_TEXT}`
+        : '';
     return (
       `Bonjour ClairDossier,\n\n` +
-      `Je souhaite transmettre un dossier « ${typologyMeta?.label ?? draft.typology} ».\n\n` +
+      `Profil : ${profilMeta?.label ?? draft.profil ?? 'non précisé'}.\n` +
+      `Je souhaite transmettre un dossier « ${categoryMeta?.label ?? draft.typology} ».\n\n` +
       `Synthèse :\n${lines}${docLine}${reviewLine}\n\n` +
       `Compte : ${user?.email ?? 'non précisé'}\n` +
       `Pouvez-vous me confirmer la prise en charge ? Merci.`
@@ -187,14 +192,18 @@ export function DossierFlow() {
     if (!user || !draft.typology) return;
     setSaveWarning(null);
     try {
+      const answersWithProfil: DraftAnswers = {
+        ...draft.answers,
+        ...(draft.profil ? { profil: draft.profil } : {}),
+      };
       const { data, error } = await supabase
         .from('dossiers')
         .insert({
           user_id: user.id,
           typology: draft.typology,
-          title: typologyMeta?.label ?? draft.typology,
-          answers: draft.answers,
-          legal_review_requested: legalReview,
+          title: categoryMeta?.label ?? draft.typology,
+          answers: answersWithProfil,
+          legal_review_requested: isPreContentieux && legalReview,
           status: 'transmis',
         })
         .select('id')
@@ -229,7 +238,7 @@ export function DossierFlow() {
     if (method === 'whatsapp') {
       openWhatsApp(synthesis);
     } else {
-      const subject = `Nouveau dossier ${typologyMeta?.label ?? ''}`.trim();
+      const subject = `Nouveau dossier ${categoryMeta?.label ?? ''}`.trim();
       const mailto = `mailto:${TEAM_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(synthesis)}`;
       window.location.href = mailto;
     }
@@ -246,7 +255,7 @@ export function DossierFlow() {
     <>
       <Seo
         title="Créer un dossier"
-        description="Créez un dossier administratif ou juridique structuré : typologie, informations, documents, transmission. Sauvegardé dans votre compte."
+        description="Créez un dossier structuré : profil, nature du dossier, informations, documents, transmission. Sauvegardé dans votre compte."
         path="/dossier/nouveau"
         jsonLd={breadcrumbSchema([
           { name: 'Accueil', path: '/' },
@@ -257,17 +266,18 @@ export function DossierFlow() {
       <section className="bg-cream-50">
         <div className="mx-auto max-w-4xl px-5 py-16 sm:px-8 lg:px-12">
           <p className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-700">
-            Création dossier · {done ? 'terminé' : `${draft.step} / 4`}
+            Création dossier · {done ? 'terminé' : `${draft.step} / 5`}
           </p>
           <h1 className="mt-4 font-display text-4xl font-semibold leading-[1.05] text-navy-900 sm:text-5xl">
             {done && 'Dossier transmis.'}
-            {!done && draft.step === 1 && 'Quelle est la nature de votre dossier ?'}
-            {!done && draft.step === 2 && 'Quelques informations pour structurer.'}
-            {!done && draft.step === 3 && 'Ajoutez vos documents.'}
-            {!done && draft.step === 4 && 'Récapitulatif avant transmission.'}
+            {!done && draft.step === 1 && 'Quel est votre profil ?'}
+            {!done && draft.step === 2 && 'Quelle est la nature de votre dossier ?'}
+            {!done && draft.step === 3 && 'Quelques informations pour structurer.'}
+            {!done && draft.step === 4 && 'Ajoutez vos documents.'}
+            {!done && draft.step === 5 && 'Récapitulatif avant transmission.'}
           </h1>
 
-          {restored && draft.step === 1 && draft.typology && !done && (
+          {restored && draft.step === 1 && draft.profil && !done && (
             <div className="mt-5 inline-flex items-center gap-2 rounded-full border hairline-gold bg-cream-50 px-3 py-1.5 text-xs font-medium text-navy-900">
               <span className="h-1 w-1 rounded-full bg-gold-500" />
               Brouillon restauré depuis votre dernière visite
@@ -276,7 +286,7 @@ export function DossierFlow() {
 
           {!done && (
             <div className="mt-8 flex items-center gap-3">
-              {[1, 2, 3, 4].map((n) => (
+              {[1, 2, 3, 4, 5].map((n) => (
                 <div key={n} className="flex flex-1 items-center gap-3">
                   <span
                     className={`grid h-7 w-7 place-items-center rounded-full font-mono text-[0.7rem] font-semibold transition-colors ${
@@ -285,7 +295,7 @@ export function DossierFlow() {
                   >
                     {draft.step > n ? <CheckIcon width={12} height={12} strokeWidth={2.5} /> : n}
                   </span>
-                  {n < 4 && (
+                  {n < 5 && (
                     <span className={`h-px flex-1 transition-colors ${draft.step > n ? 'bg-navy-900' : 'bg-slate-300/40'}`} />
                   )}
                 </div>
@@ -308,35 +318,44 @@ export function DossierFlow() {
                 exit={{ opacity: 0, x: -24 }}
                 transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
               >
-                {draft.step === 1 && <Step1 selected={draft.typology} onSelect={selectTypology} />}
-                {draft.step === 2 && draft.typology && (
-                  <Step2
-                    typology={draft.typology}
-                    defaults={draft.answers}
-                    onSubmit={handleStep2Submit}
+                {draft.step === 1 && <StepProfil selected={draft.profil} onSelect={selectProfil} />}
+                {draft.step === 2 && (
+                  <StepCategory
+                    selected={draft.typology}
+                    onSelect={selectCategory}
                     onBack={() => setDraft((d) => ({ ...d, step: 1 }))}
                   />
                 )}
                 {draft.step === 3 && draft.typology && (
-                  <Step3Documents
-                    files={files}
-                    onAdd={(fl) => setFiles((cur) => [...cur, ...fl])}
-                    onRemove={(i) => setFiles((cur) => cur.filter((_, idx) => idx !== i))}
+                  <StepInfos
+                    category={draft.typology}
+                    defaults={draft.answers}
+                    onSubmit={handleInfoSubmit}
                     onBack={() => setDraft((d) => ({ ...d, step: 2 }))}
-                    onNext={() => setDraft((d) => ({ ...d, step: 4, updatedAt: new Date().toISOString() }))}
                   />
                 )}
                 {draft.step === 4 && draft.typology && (
-                  <Step4Recap
-                    typologyLabel={typologyMeta?.label ?? draft.typology}
+                  <StepDocuments
+                    files={files}
+                    onAdd={(fl) => setFiles((cur) => [...cur, ...fl])}
+                    onRemove={(i) => setFiles((cur) => cur.filter((_, idx) => idx !== i))}
+                    onBack={() => setDraft((d) => ({ ...d, step: 3 }))}
+                    onNext={() => setDraft((d) => ({ ...d, step: 5, updatedAt: new Date().toISOString() }))}
+                  />
+                )}
+                {draft.step === 5 && draft.typology && (
+                  <StepRecap
+                    profilLabel={profilMeta?.label ?? draft.profil ?? '—'}
+                    categoryLabel={categoryMeta?.label ?? draft.typology}
                     fields={fields}
                     answers={draft.answers}
                     fileCount={files.length}
+                    showAiOption={isPreContentieux}
                     legalReview={legalReview}
                     onToggleReview={setLegalReview}
                     submitting={submitting}
                     onSend={finalize}
-                    onEdit={() => setDraft((d) => ({ ...d, step: 2 }))}
+                    onEdit={() => setDraft((d) => ({ ...d, step: 3 }))}
                   />
                 )}
               </motion.div>
@@ -348,21 +367,21 @@ export function DossierFlow() {
   );
 }
 
-function Step1({ selected, onSelect }: { selected?: Typology; onSelect: (id: Typology) => void }) {
+function StepProfil({ selected, onSelect }: { selected?: Profil; onSelect: (id: Profil) => void }) {
   return (
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-      {TYPOLOGIES.map((t) => (
+      {PROFILS.map((p) => (
         <button
-          key={t.id}
+          key={p.id}
           type="button"
-          onClick={() => onSelect(t.id)}
+          onClick={() => onSelect(p.id)}
           className={`group flex h-full flex-col rounded-2xl border p-6 text-left transition-all duration-300 hover:-translate-y-1 ${
-            selected === t.id ? 'border-gold-500 bg-white shadow-card-hover' : 'hairline bg-white hover:border-gold-500 hover:shadow-card'
+            selected === p.id ? 'border-gold-500 bg-white shadow-card-hover' : 'hairline bg-white hover:border-gold-500 hover:shadow-card'
           }`}
         >
-          <p className="font-mono text-[0.7rem] uppercase tracking-[0.16em] text-gold-700">Typologie</p>
-          <h2 className="mt-3 font-display text-xl font-semibold leading-tight text-navy-900 sm:text-2xl">{t.label}</h2>
-          <p className="mt-2 flex-1 text-sm leading-relaxed text-slate-500">{t.description}</p>
+          <p className="font-mono text-[0.7rem] uppercase tracking-[0.16em] text-gold-700">Profil</p>
+          <h2 className="mt-3 font-display text-xl font-semibold leading-tight text-navy-900 sm:text-2xl">{p.label}</h2>
+          <p className="mt-2 flex-1 text-sm leading-relaxed text-slate-500">{p.description}</p>
           <span className="mt-5 inline-flex items-center gap-1.5 self-start text-sm font-medium text-navy-900">
             Choisir
             <ArrowRightIcon width={14} height={14} strokeWidth={2} className="transition-transform group-hover:translate-x-0.5" />
@@ -373,24 +392,64 @@ function Step1({ selected, onSelect }: { selected?: Typology; onSelect: (id: Typ
   );
 }
 
-function Step2({
-  typology,
+function StepCategory({
+  selected,
+  onSelect,
+  onBack,
+}: {
+  selected?: Category;
+  onSelect: (id: Category) => void;
+  onBack: () => void;
+}) {
+  return (
+    <div>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {CATEGORIES.map((c) => (
+          <button
+            key={c.id}
+            type="button"
+            onClick={() => onSelect(c.id)}
+            className={`group flex h-full flex-col rounded-2xl border p-6 text-left transition-all duration-300 hover:-translate-y-1 ${
+              selected === c.id ? 'border-gold-500 bg-white shadow-card-hover' : 'hairline bg-white hover:border-gold-500 hover:shadow-card'
+            }`}
+          >
+            <p className="font-mono text-[0.7rem] uppercase tracking-[0.16em] text-gold-700">Nature</p>
+            <h2 className="mt-3 font-display text-xl font-semibold leading-tight text-navy-900 sm:text-2xl">{c.label}</h2>
+            <p className="mt-2 flex-1 text-sm leading-relaxed text-slate-500">{c.description}</p>
+            <span className="mt-5 inline-flex items-center gap-1.5 self-start text-sm font-medium text-navy-900">
+              Choisir
+              <ArrowRightIcon width={14} height={14} strokeWidth={2} className="transition-transform group-hover:translate-x-0.5" />
+            </span>
+          </button>
+        ))}
+      </div>
+      <div className="mt-6">
+        <button type="button" onClick={onBack} className="rounded-full bg-cream-100 px-5 py-3 text-sm font-medium text-navy-900 transition-colors hover:bg-cream-200">
+          ← Changer de profil
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function StepInfos({
+  category,
   defaults,
   onSubmit,
   onBack,
 }: {
-  typology: Typology;
+  category: Category;
   defaults: DraftAnswers;
   onSubmit: (e: FormEvent<HTMLFormElement>) => void;
   onBack: () => void;
 }) {
-  const fields = FIELDS[typology];
+  const fields = fieldsFor(category);
   const inputCls =
     'mt-2 w-full rounded-xl border hairline bg-cream-50 px-4 py-3 text-sm text-navy-900 focus:border-gold-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-gold-500/20';
   return (
     <form onSubmit={onSubmit} className="rounded-2xl border hairline bg-white p-7 shadow-card sm:p-9" noValidate>
       <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">
-        {TYPOLOGIES.find((t) => t.id === typology)?.label}
+        {CATEGORIES.find((c) => c.id === category)?.label}
       </p>
       <p className="mt-2 text-sm text-slate-500">Quelques champs structurants. Tout est conservé en brouillon.</p>
       <div className="mt-8 space-y-6">
@@ -408,7 +467,7 @@ function Step2({
       </div>
       <div className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t hairline pt-6">
         <button type="button" onClick={onBack} className="rounded-full bg-cream-100 px-5 py-3 text-sm font-medium text-navy-900 transition-colors hover:bg-cream-200">
-          ← Changer la typologie
+          ← Changer la nature
         </button>
         <button type="submit" className="sheen inline-flex items-center gap-2 rounded-full bg-gold-500 px-6 py-3.5 text-sm font-semibold text-navy-900 shadow-gold transition-all duration-200 hover:-translate-y-0.5">
           Ajouter des documents
@@ -419,7 +478,7 @@ function Step2({
   );
 }
 
-function Step3Documents({
+function StepDocuments({
   files,
   onAdd,
   onRemove,
@@ -481,21 +540,25 @@ function Step3Documents({
   );
 }
 
-function Step4Recap({
-  typologyLabel,
+function StepRecap({
+  profilLabel,
+  categoryLabel,
   fields,
   answers,
   fileCount,
+  showAiOption,
   legalReview,
   onToggleReview,
   submitting,
   onSend,
   onEdit,
 }: {
-  typologyLabel: string;
+  profilLabel: string;
+  categoryLabel: string;
   fields: { id: string; label: string }[];
   answers: DraftAnswers;
   fileCount: number;
+  showAiOption: boolean;
   legalReview: boolean;
   onToggleReview: (v: boolean) => void;
   submitting: boolean;
@@ -507,12 +570,16 @@ function Step4Recap({
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-slate-500">Dossier · brouillon</p>
-          <h2 className="mt-2 font-display text-2xl font-semibold leading-tight text-navy-900 sm:text-3xl">{typologyLabel} — synthèse</h2>
+          <h2 className="mt-2 font-display text-2xl font-semibold leading-tight text-navy-900 sm:text-3xl">{categoryLabel} — synthèse</h2>
         </div>
         <span className="shrink-0 rounded-full bg-gold-500/12 px-3 py-1.5 font-mono text-[0.7rem] font-medium text-navy-900 border hairline-gold">Brouillon</span>
       </div>
 
       <dl className="mt-7 divide-y hairline border-y hairline">
+        <div className="flex flex-col gap-1 py-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+          <dt className="text-sm font-medium text-slate-500">Profil</dt>
+          <dd className="max-w-md text-sm text-navy-900 sm:text-right">{profilLabel}</dd>
+        </div>
         {fields.map((f) => (
           <div key={f.id} className="flex flex-col gap-1 py-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
             <dt className="text-sm font-medium text-slate-500">{f.label}</dt>
@@ -527,15 +594,16 @@ function Step4Recap({
         </div>
       </dl>
 
-      {/* Option : revue juridique */}
-      <label className="mt-6 flex cursor-pointer items-start gap-3 rounded-xl bg-cream-100 p-5">
-        <input type="checkbox" checked={legalReview} onChange={(e) => onToggleReview(e.target.checked)} className="mt-1 h-4 w-4 accent-gold-500" />
-        <span className="text-sm leading-relaxed text-navy-900">
-          <span className="font-semibold">Option — préavis juridique</span> : recevoir un préavis
-          juridique et un résumé de la situation, à valider par un professionnel du droit. Vous
-          restez libre de votre suite.
-        </span>
-      </label>
+      {/* Option : question IA préparatoire (impayé / pré-contentieux uniquement) */}
+      {showAiOption && (
+        <label className="mt-6 flex cursor-pointer items-start gap-3 rounded-xl bg-cream-100 p-5">
+          <input type="checkbox" checked={legalReview} onChange={(e) => onToggleReview(e.target.checked)} className="mt-1 h-4 w-4 accent-gold-500" />
+          <span className="text-sm leading-relaxed text-navy-900">
+            <span className="font-semibold">Option — question IA préparatoire</span> : {AI_OPTION_TEXT} Le
+            professionnel du droit reste un validateur optionnel.
+          </span>
+        </label>
+      )}
 
       <div className="mt-7 rounded-xl bg-cream-100 p-5">
         <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">Transmission</p>

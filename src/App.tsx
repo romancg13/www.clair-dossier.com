@@ -27,6 +27,7 @@ const NotFound = named(() => import('./pages/NotFound'), 'NotFound');
 const Signup = named(() => import('./pages/Signup'), 'Signup');
 const Login = named(() => import('./pages/Login'), 'Login');
 const Account = named(() => import('./pages/Account'), 'Account');
+const DossierDetail = named(() => import('./pages/DossierDetail'), 'DossierDetail');
 
 function RouteFallback() {
   return (
@@ -135,6 +136,16 @@ export default function App() {
             <RequireAuth>
               <Suspense fallback={<RouteFallback />}>
                 <Account />
+              </Suspense>
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="compte/dossier/:id"
+          element={
+            <RequireAuth>
+              <Suspense fallback={<RouteFallback />}>
+                <DossierDetail />
               </Suspense>
             </RequireAuth>
           }

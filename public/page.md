@@ -1,12 +1,12 @@
 ---
-title: "ClairDossier — Votre dossier juridique, clair, structuré et suivi"
+title: "ClairDossier — Votre dossier administratif et juridique, clair, structuré et suivi"
 description: "Plateforme legaltech française pour les PME, artisans, entreprises individuelles et professions libérales."
 url: https://www.clair-dossier.com/
 ---
 
 # ClairDossier
 
-**Votre dossier juridique, clair, structuré et suivi.**
+**Votre dossier administratif et juridique, clair, structuré et suivi.**
 
 Créez des dossiers administratifs et juridiques structurés : calendrier, relances à échéance et projets de réponse aux e-mails. Pour les PME, artisans, entreprises individuelles et professions libérales. Option : un préavis juridique et un résumé de la situation à valider par un professionnel du droit.
 
@@ -59,8 +59,7 @@ Tous les dossiers de votre équipe, tous les statuts, toutes les charges. La dir
 - [**Création guidée**](https://www.clair-dossier.com/fonctionnalites/creation-guidee) — Un formulaire intelligent qui s'adapte à la nature du dossier — prud'hommes, bail, recouvrement — et collecte les bonnes informations dès le départ.
 - [**Pièces & OCR**](https://www.clair-dossier.com/fonctionnalites/pieces-ocr) — Déposez vos pièces — contrats, courriers, factures. ClairDossier les renomme, les indexe et extrait les dates clés.
 - [**Chronologie**](https://www.clair-dossier.com/fonctionnalites/chronologie) — Une frise visuelle qui assemble seule les dates clés du dossier à partir des pièces et des réponses du client.
-- [**IA préparatoire**](https://www.clair-dossier.com/fonctionnalites/ia-preparatoire) — Avant la consultation, l'IA prépare un brief : faits saillants, points de droit potentiels, questions à poser. L'avocat valide, ajuste ou rejette.
-- [**Validation pro**](https://www.clair-dossier.com/fonctionnalites/validation-avocat) — En option, un professionnel du droit habilité valide votre dossier, demande une pièce ou émet un préavis motivé. Vous êtes notifié dans la minute.
+- [**Validation pro**](https://www.clair-dossier.com/fonctionnalites/validation-avocat) — En option, un professionnel du droit habilité valide votre dossier, demande une pièce ou émet un préavis motivé.
 - [**Suivi 6 statuts**](https://www.clair-dossier.com/fonctionnalites/suivi-statuts) — Brouillon → Complété → En attente avocat → Validation en cours → Validé → Archivé. Le client voit exactement où en est son dossier.
 - [**Messagerie**](https://www.clair-dossier.com/fonctionnalites/messagerie-securisee) — Les échanges juridiques quittent enfin les SMS et les emails. Chiffrement TLS 1.3 en transit, AES-256 au repos, attribution garantie.
 - [**Coffre-fort RGPD**](https://www.clair-dossier.com/fonctionnalites/coffre-fort) — Vos données vivent en France, hébergées chez OVH, chiffrées au repos. Vous pouvez exporter, supprimer, transférer — à tout moment.

@@ -18,7 +18,7 @@ export function Logo({ size = 40, withWordmark = true }: { size?: number; withWo
           <span className="font-display text-[1.05rem] font-semibold text-navy-900">
             ClairDossier
           </span>
-          <span className="text-[0.7rem] text-slate-500">Dossiers juridiques, clairs.</span>
+          <span className="text-[0.7rem] text-slate-500">Dossiers administratifs et juridiques, clairs.</span>
         </span>
       )}
     </Link>

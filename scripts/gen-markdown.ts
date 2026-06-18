@@ -52,14 +52,14 @@ function footer(path: string): string {
 function generateHome(): void {
   const lines: string[] = [
     '---',
-    'title: "ClairDossier — Votre dossier juridique, clair, structuré et suivi"',
+    'title: "ClairDossier — Votre dossier administratif et juridique, clair, structuré et suivi"',
     'description: "Plateforme legaltech française pour les PME, artisans, entreprises individuelles et professions libérales."',
     `url: ${SITE}/`,
     '---',
     '',
     '# ClairDossier',
     '',
-    '**Votre dossier juridique, clair, structuré et suivi.**',
+    '**Votre dossier administratif et juridique, clair, structuré et suivi.**',
     '',
     "Créez des dossiers administratifs et juridiques structurés : calendrier, relances à échéance et projets de réponse aux e-mails. Pour les PME, artisans, entreprises individuelles et professions libérales. Option : un préavis juridique et un résumé de la situation à valider par un professionnel du droit.",
     '',
@@ -287,13 +287,13 @@ function generateFeaturesIndex(): void {
   const lines: string[] = [
     '---',
     'title: "Fonctionnalités ClairDossier"',
-    'description: "Dix fonctionnalités pour structurer, suivre et traiter vos dossiers administratifs et juridiques."',
+    'description: "Neuf fonctionnalités pour structurer, suivre et traiter vos dossiers administratifs et juridiques."',
     `url: ${SITE}/fonctionnalites`,
     '---',
     '',
     '# Fonctionnalités ClairDossier',
     '',
-    "Dix briques conçues à partir de points de friction identifiés dans des dossiers réels.",
+    "Neuf briques conçues à partir de points de friction identifiés dans des dossiers réels.",
     '',
   ];
   for (const f of features) {

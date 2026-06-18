@@ -101,7 +101,7 @@ export function Security() {
               Sécurité &amp; conformité
             </p>
             <h1 className="mt-4 font-display text-5xl font-semibold leading-[1.05] text-navy-900 sm:text-6xl">
-              La sécurité juridique commence par la sécurité technique.
+              La sécurité administrative et juridique commence par la sécurité technique.
             </h1>
             <p className="mt-5 text-base leading-relaxed text-slate-500 sm:text-lg">
               Pour une legaltech, la conformité n'est pas une case à cocher — c'est la condition

@@ -18,7 +18,7 @@ export function FeaturesIndex() {
     <>
       <Seo
         title="Fonctionnalités"
-        description="Les huit fonctionnalités ClairDossier — création guidée, OCR, chronologie, brief IA, validation avocat, suivi 6 statuts, messagerie sécurisée, coffre-fort RGPD."
+        description="Les neuf fonctionnalités ClairDossier — création guidée, OCR, chronologie, brief IA, validation avocat optionnelle, suivi 6 statuts, messagerie sécurisée, coffre-fort RGPD."
         path="/fonctionnalites"
         jsonLd={[
           breadcrumbSchema([
@@ -37,7 +37,7 @@ export function FeaturesIndex() {
               Fonctionnalités
             </p>
             <h1 className="mt-4 font-display text-5xl font-semibold leading-[1.05] text-navy-900 sm:text-6xl">
-              Huit briques, un dossier juridique propre.
+              Neuf briques, un dossier administratif et juridique propre.
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-relaxed text-slate-500 sm:text-lg">
               Chaque fonctionnalité a été conçue pour traiter un point de friction identifié dans
@@ -48,7 +48,7 @@ export function FeaturesIndex() {
         </div>
       </section>
 
-      {/* Grid 4×2 */}
+      {/* Grid des fonctionnalités */}
       <Reveal as="section" className="bg-cream-50">
         <div className="mx-auto max-w-7xl px-5 pb-14 sm:pb-20 lg:pb-24 sm:px-8 lg:px-12">
           <Stagger inView className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">

@@ -49,13 +49,15 @@ export function Hero() {
               segments={[
                 'Votre',
                 'dossier',
+                'administratif',
+                'et',
                 'juridique,',
                 { node: <MarkerHighlight delay={0.6}>clair,</MarkerHighlight> },
                 { node: <MarkerHighlight delay={0.85}>structuré</MarkerHighlight> },
                 'et',
                 { node: <MarkerHighlight delay={1.1}>suivi.</MarkerHighlight> },
               ]}
-              text="Votre dossier juridique, clair, structuré et suivi."
+              text="Votre dossier administratif et juridique, clair, structuré et suivi."
               stagger={0.06}
               duration={0.85}
             />
@@ -119,14 +121,21 @@ export function Hero() {
             animate={reduce ? {} : { y: [0, -6, 0] }}
             transition={reduce ? undefined : { duration: 8, repeat: Infinity, ease: 'easeInOut' }}
           >
-            <div className="flex items-center justify-between text-[0.7rem] font-mono text-slate-500">
-              <span className="uppercase tracking-[0.18em]">Dossier · #CD-2026-0421</span>
-              <span className="inline-flex items-center gap-1.5">
+            <div className="flex items-center justify-between gap-3">
+              <span className="inline-flex items-center gap-1.5 rounded-full border hairline-gold bg-gold-500/12 px-2.5 py-0.5 font-mono text-[0.7rem] uppercase tracking-[0.16em] text-gold-700">
+                <span className="h-1 w-1 rounded-full bg-gold-500" />
+                Exemple
+              </span>
+              <span className="inline-flex items-center gap-1.5 font-mono text-[0.7rem] text-slate-500">
                 <span className="grid h-2 w-2 place-items-center">
                   <span className="h-1.5 w-1.5 rounded-full bg-gold-500" />
                 </span>
                 Actif
               </span>
+            </div>
+
+            <div className="mt-3 font-mono text-[0.7rem] uppercase tracking-[0.18em] text-slate-500">
+              Aperçu · exemple de dossier · #CD-2026-0421
             </div>
 
             <div className="mt-3 flex items-start justify-between gap-3">

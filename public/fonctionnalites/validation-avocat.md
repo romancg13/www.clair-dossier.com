@@ -1,6 +1,6 @@
 ---
 title: "Validation juridique en option"
-description: "En option, un professionnel du droit habilité valide votre dossier, demande une pièce ou émet un préavis motivé. Vous êtes notifié dans la minute."
+description: "En option, un professionnel du droit habilité valide votre dossier, demande une pièce ou émet un préavis motivé."
 url: https://www.clair-dossier.com/fonctionnalites/validation-avocat
 ---
 

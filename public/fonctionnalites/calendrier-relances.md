@@ -17,7 +17,7 @@ Les relances s'adaptent au type de dossier : un recouvrement relance le débiteu
 ## Concrètement
 
 - Calendrier des échéances par dossier
-- Relances automatiques par email et notification
+- Suivez vos échéances et préparez vos relances au bon moment
 - Rappels multi-paliers (J-7, J-1)
 - Projet de message joint à chaque relance
 

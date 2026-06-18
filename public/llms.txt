@@ -13,8 +13,8 @@ ClairDossier ne se présente ni comme un cabinet d'avocats, ni comme un conseil 
 ## Architecture du site
 
 - /                              : Présentation produit (hero, fonctionnalités, espaces, workflow, sécurité, tarifs, blog, FAQ)
-- /fonctionnalites               : Index des 10 fonctionnalités clés
-- /fonctionnalites/<slug>        : Détail par fonctionnalité (creation-guidee, pieces-ocr, chronologie, ia-preparatoire, validation-avocat, suivi-statuts, messagerie-securisee, coffre-fort, calendrier-relances, reponse-auto-mails)
+- /fonctionnalites               : Index des 9 fonctionnalités clés
+- /fonctionnalites/<slug>        : Détail par fonctionnalité (creation-guidee, pieces-ocr, chronologie, validation-avocat, suivi-statuts, messagerie-securisee, coffre-fort, calendrier-relances, reponse-auto-mails)
 - /tarifs                        : 7 formules (Essentiel, Entrepreneur, Business PME 20, Business PME 50, Business/PME Pro, Business/PME Premium) + offre sur-mesure
 - /securite                      : Architecture, conformité RGPD/RIN/HDS, audit annuel
 - /blog                          : Journal éditorial
@@ -88,7 +88,7 @@ Chaque page importante du site est disponible en markdown brut au même chemin a
 - https://www.clair-dossier.com/securite.md
 - https://www.clair-dossier.com/contact.md
 - https://www.clair-dossier.com/fonctionnalites/index.md
-- https://www.clair-dossier.com/fonctionnalites/<slug>.md (10 fonctionnalités)
+- https://www.clair-dossier.com/fonctionnalites/<slug>.md (9 fonctionnalités)
 - https://www.clair-dossier.com/blog/index.md
 - https://www.clair-dossier.com/blog/<slug>.md (7 articles)
 - https://www.clair-dossier.com/mentions-legales.md

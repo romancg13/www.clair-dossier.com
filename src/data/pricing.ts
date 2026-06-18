@@ -15,6 +15,8 @@ export type Plan = {
   variant: 'light' | 'dark';
   ctaLabel: string;
   ctaHref: string;
+  /** Payment Link annuel (total année −10 %) — utilisé quand la facturation annuelle est sélectionnée. */
+  ctaHrefYearly?: string;
   specs: { dossiers: string; users: string; support: string };
   features: Record<string, FeatureStatus>;
 };
@@ -41,6 +43,7 @@ export const plans: Plan[] = [
     variant: 'light',
     ctaLabel: "S'abonner",
     ctaHref: 'https://buy.stripe.com/00w9AT9Qm7fJ4vbeSibV605',
+    ctaHrefYearly: 'https://buy.stripe.com/dRm9ATbYu6bF9PvfWmbV60b',
     specs: { dossiers: '5 dossiers', users: '1 utilisateur', support: 'Support email' },
     features: {
       messagerie: 'yes',
@@ -63,6 +66,7 @@ export const plans: Plan[] = [
     variant: 'light',
     ctaLabel: "S'abonner",
     ctaHref: 'https://buy.stripe.com/8x214n1jQ2Zt9Pvh0qbV606',
+    ctaHrefYearly: 'https://buy.stripe.com/28EeVd9QmgQj7HndOebV60c',
     specs: { dossiers: '10 dossiers', users: '2 utilisateurs', support: 'Support email prioritaire' },
     features: {
       messagerie: 'yes',
@@ -85,6 +89,7 @@ export const plans: Plan[] = [
     variant: 'dark',
     ctaLabel: "S'abonner",
     ctaHref: 'https://buy.stripe.com/5kQaEX7IeeIb4vb11sbV607',
+    ctaHrefYearly: 'https://buy.stripe.com/14AbJ18MicA3e5L11sbV60d',
     specs: { dossiers: '20 dossiers', users: '5 utilisateurs', support: 'Support prioritaire' },
     features: {
       messagerie: 'yes',
@@ -106,6 +111,7 @@ export const plans: Plan[] = [
     variant: 'light',
     ctaLabel: "S'abonner",
     ctaHref: 'https://buy.stripe.com/28E4gz8Mi9nRaTz25wbV608',
+    ctaHrefYearly: 'https://buy.stripe.com/6oU00j5A69nR3r7bG6bV60e',
     specs: { dossiers: '50 dossiers', users: '5 utilisateurs', support: 'Support prioritaire' },
     features: {
       messagerie: 'yes',
@@ -129,6 +135,7 @@ export const plans: Plan[] = [
     variant: 'dark',
     ctaLabel: "S'abonner",
     ctaHref: 'https://buy.stripe.com/5kQbJ1e6C7fJ6DjdOebV609',
+    ctaHrefYearly: 'https://buy.stripe.com/cNifZh9Qm8jNe5L39AbV60f',
     specs: { dossiers: 'Dossiers illimités', users: '15 utilisateurs', support: 'Support dédié' },
     features: {
       messagerie: 'yes',
@@ -150,6 +157,7 @@ export const plans: Plan[] = [
     variant: 'light',
     ctaLabel: "S'abonner",
     ctaHref: 'https://buy.stripe.com/9B628raUq8jNgdT8tUbV60a',
+    ctaHrefYearly: 'https://buy.stripe.com/28EeVdaUq7fJd1H11sbV60g',
     specs: {
       dossiers: 'Dossiers illimités',
       users: 'Utilisateurs illimités',
