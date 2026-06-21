@@ -7,11 +7,14 @@ import { ArrowRightIcon } from '../components/icons';
 
 type DossierRow = {
   id: string;
+  user_id: string;
   typology: string;
   title: string | null;
   status: string;
   created_at: string;
 };
+
+type ProfileRow = { id: string; company_name: string | null; full_name: string | null };
 
 const STATUS_LABELS: Record<string, string> = {
   brouillon: 'Brouillon',
@@ -27,19 +30,38 @@ export function Account() {
   const [params] = useSearchParams();
   const paidPlan = params.get('paid');
   const [dossiers, setDossiers] = useState<DossierRow[]>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [owners, setOwners] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let active = true;
-    supabase
-      .from('dossiers')
-      .select('id,typology,title,status,created_at')
-      .order('created_at', { ascending: false })
-      .then(({ data }) => {
-        if (!active) return;
-        setDossiers((data as DossierRow[] | null) ?? []);
-        setLoading(false);
-      });
+    (async () => {
+      // Statut admin (renvoie un booléen pour l'appelant courant uniquement).
+      const { data: adminFlag } = await supabase.rpc('is_admin');
+      const admin = adminFlag === true;
+
+      // Les politiques RLS renvoient automatiquement TOUS les dossiers à l'admin,
+      // et uniquement les siens à un utilisateur normal.
+      const { data } = await supabase
+        .from('dossiers')
+        .select('id,user_id,typology,title,status,created_at')
+        .order('created_at', { ascending: false });
+
+      const ownerMap: Record<string, string> = {};
+      if (admin) {
+        const { data: profs } = await supabase.from('profiles').select('id,company_name,full_name');
+        (profs as ProfileRow[] | null)?.forEach((p) => {
+          ownerMap[p.id] = p.company_name || p.full_name || `${p.id.slice(0, 8)}…`;
+        });
+      }
+
+      if (!active) return;
+      setIsAdmin(admin);
+      setOwners(ownerMap);
+      setDossiers((data as DossierRow[] | null) ?? []);
+      setLoading(false);
+    })();
     return () => {
       active = false;
     };
@@ -66,10 +88,22 @@ export function Account() {
             </div>
           )}
 
+          {isAdmin && (
+            <div className="mb-8 rounded-2xl border border-navy-900 bg-navy-900 p-5 text-cream-50">
+              <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-500">
+                Espace administrateur
+              </p>
+              <p className="mt-2 text-sm text-cream-50/85">
+                Vous voyez l'intégralité des dossiers de la plateforme. Cliquez un dossier pour le
+                détail (5 étapes) et le téléchargement des pièces.
+              </p>
+            </div>
+          )}
+
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <p className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-700">
-                Mon compte
+                {isAdmin ? 'Administration' : 'Mon compte'}
               </p>
               <h1 className="mt-3 font-display text-4xl font-semibold leading-[1.05] text-navy-900">
                 Bonjour{user?.email ? `, ${user.email}` : ''}
@@ -85,7 +119,9 @@ export function Account() {
           </div>
 
           <div className="mt-10 flex items-center justify-between gap-4">
-            <h2 className="font-display text-2xl font-semibold text-navy-900">Vos dossiers</h2>
+            <h2 className="font-display text-2xl font-semibold text-navy-900">
+              {isAdmin ? `Tous les dossiers (${dossiers.length})` : 'Vos dossiers'}
+            </h2>
             <Link
               to="/dossier/nouveau"
               className="sheen inline-flex items-center gap-2 rounded-full bg-gold-500 px-5 py-3 text-sm font-semibold text-navy-900 shadow-gold transition-transform hover:-translate-y-0.5"
@@ -100,8 +136,9 @@ export function Account() {
           ) : dossiers.length === 0 ? (
             <div className="mt-6 rounded-2xl border hairline bg-white p-8 text-center shadow-card">
               <p className="text-sm leading-relaxed text-slate-500">
-                Vous n'avez pas encore de dossier. Créez votre premier dossier — typologie,
-                informations, documents, puis transmission.
+                {isAdmin
+                  ? "Aucun dossier sur la plateforme pour le moment."
+                  : "Vous n'avez pas encore de dossier. Créez votre premier dossier — typologie, informations, documents, puis transmission."}
               </p>
             </div>
           ) : (
@@ -117,6 +154,11 @@ export function Account() {
                         {d.title || d.typology}
                       </p>
                       <p className="mt-0.5 font-mono text-[0.7rem] uppercase tracking-[0.14em] text-slate-500">
+                        {isAdmin && (
+                          <span className="text-gold-700">
+                            {owners[d.user_id] ?? `${d.user_id.slice(0, 8)}…`} ·{' '}
+                          </span>
+                        )}
                         {new Date(d.created_at).toLocaleDateString('fr-FR')}
                       </p>
                     </div>
