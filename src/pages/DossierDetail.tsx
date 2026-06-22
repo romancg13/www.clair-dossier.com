@@ -108,6 +108,8 @@ export function DossierDetail() {
   const [dossier, setDossier] = useState<DossierRow | null>(null);
   const [documents, setDocuments] = useState<DocumentRow[]>([]);
   const [links, setLinks] = useState<Record<string, string>>({});
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [ownerEmail, setOwnerEmail] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -127,6 +129,24 @@ export function DossierDetail() {
       if (!active) return;
       const row = (data as DossierRow | null) ?? null;
       setDossier(row);
+
+      // Admin : identité (e-mail) du propriétaire du dossier (réservé à l'admin).
+      const { data: adminFlag } = await supabase.rpc('is_admin');
+      const admin = adminFlag === true;
+      if (!active) return;
+      setIsAdmin(admin);
+      if (admin && row) {
+        if (row.user_id === user?.id) {
+          setOwnerEmail(user?.email ?? null);
+        } else {
+          const { data: em } = await supabase.rpc('admin_user_emails');
+          const found = (em as { id: string; email: string }[] | null)?.find(
+            (e) => e.id === row.user_id
+          );
+          if (!active) return;
+          setOwnerEmail(found?.email ?? null);
+        }
+      }
 
       if (row) {
         const { data: docs } = await supabase
@@ -206,8 +226,12 @@ export function DossierDetail() {
                   </h1>
                   <p className="mt-3 font-mono text-[0.7rem] uppercase tracking-[0.14em] text-slate-500">
                     Catégorie · {TYPOLOGY_LABELS[dossier.typology] ?? dossier.typology}
-                    {user?.email ? ` · ${user.email}` : ''}
                   </p>
+                  {isAdmin && (
+                    <p className="mt-1 font-mono text-[0.7rem] uppercase tracking-[0.14em] text-gold-700">
+                      Propriétaire · {ownerEmail ?? `${dossier.user_id.slice(0, 8)}…`}
+                    </p>
+                  )}
                   <p className="mt-1 font-mono text-[0.7rem] uppercase tracking-[0.14em] text-slate-500">
                     Créé le{' '}
                     {new Date(dossier.created_at).toLocaleDateString('fr-FR', {

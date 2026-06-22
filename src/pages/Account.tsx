@@ -32,6 +32,7 @@ export function Account() {
   const [dossiers, setDossiers] = useState<DossierRow[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [owners, setOwners] = useState<Record<string, string>>({});
+  const [emails, setEmails] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -49,16 +50,24 @@ export function Account() {
         .order('created_at', { ascending: false });
 
       const ownerMap: Record<string, string> = {};
+      const emailMap: Record<string, string> = {};
       if (admin) {
         const { data: profs } = await supabase.from('profiles').select('id,company_name,full_name');
         (profs as ProfileRow[] | null)?.forEach((p) => {
-          ownerMap[p.id] = p.company_name || p.full_name || `${p.id.slice(0, 8)}…`;
+          const name = p.company_name || p.full_name;
+          if (name) ownerMap[p.id] = name;
+        });
+        // Identité (e-mail) du propriétaire — réservé à l'admin (fonction gardée par is_admin()).
+        const { data: em } = await supabase.rpc('admin_user_emails');
+        (em as { id: string; email: string }[] | null)?.forEach((e) => {
+          emailMap[e.id] = e.email;
         });
       }
 
       if (!active) return;
       setIsAdmin(admin);
       setOwners(ownerMap);
+      setEmails(emailMap);
       setDossiers((data as DossierRow[] | null) ?? []);
       setLoading(false);
     })();
@@ -156,7 +165,9 @@ export function Account() {
                       <p className="mt-0.5 font-mono text-[0.7rem] uppercase tracking-[0.14em] text-slate-500">
                         {isAdmin && (
                           <span className="text-gold-700">
-                            {owners[d.user_id] ?? `${d.user_id.slice(0, 8)}…`} ·{' '}
+                            {[owners[d.user_id], emails[d.user_id]].filter(Boolean).join(' · ') ||
+                              `${d.user_id.slice(0, 8)}…`}{' '}
+                            ·{' '}
                           </span>
                         )}
                         {new Date(d.created_at).toLocaleDateString('fr-FR')}
