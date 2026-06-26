@@ -13,26 +13,24 @@ Deno.serve(async (req) => {
     const table: string = payload?.table ?? '';
     const record = payload?.record ?? {};
 
+    // Minimisation RGPD (cahier directeur) : aucune donnée nominative, aucun titre,
+    // aucune typologie/nature de dossier ni montant dans l'objet OU le corps de l'e-mail.
+    // On notifie seulement le TYPE d'activité + un identifiant opaque + un lien vers
+    // l'espace admin (authentifié) où le détail reste consultable en sécurité.
+    const SITE = 'https://www.clair-dossier.com';
+    const ref: string = String(record.id ?? '').slice(0, 8);
     let subject = 'ClairDossier — nouvelle activité';
-    let lines: string[] = [];
+    let intro = '';
+    let link = `${SITE}/compte`;
 
     if (table === 'profiles') {
-      subject = 'ClairDossier — nouveau compte créé';
-      lines = [
-        "Un nouveau compte vient d'être créé sur ClairDossier.",
-        `Structure : ${record.company_name ?? '—'}`,
-        `Type : ${record.company_type ?? '—'}`,
-        `Nom : ${record.full_name ?? '—'}`,
-      ];
+      subject = 'ClairDossier — nouveau compte';
+      intro = 'Un nouveau compte vient d’être créé.';
+      link = `${SITE}/compte`;
     } else if (table === 'dossiers') {
-      subject = `ClairDossier — nouveau dossier : ${record.title ?? record.typology ?? ''}`;
-      lines = [
-        "Un nouveau dossier vient d'être transmis.",
-        `Typologie : ${record.typology ?? '—'}`,
-        `Titre : ${record.title ?? '—'}`,
-        `Statut : ${record.status ?? '—'}`,
-        `Revue juridique demandée : ${record.legal_review_requested ? 'oui' : 'non'}`,
-      ];
+      subject = 'ClairDossier — nouveau dossier';
+      intro = 'Un nouveau dossier vient d’être enregistré.';
+      link = record.id ? `${SITE}/compte/dossier/${record.id}` : `${SITE}/compte`;
     } else {
       return new Response(JSON.stringify({ skipped: true, table }), {
         status: 200,
@@ -42,8 +40,10 @@ Deno.serve(async (req) => {
 
     const html = `<div style="font-family:system-ui,-apple-system,sans-serif;line-height:1.6;color:#0d1b3d">
       <h2 style="font-size:18px;margin:0 0 12px">${subject}</h2>
-      ${lines.map((l) => `<p style="margin:4px 0">${l}</p>`).join('')}
-      <p style="margin-top:16px;font-size:12px;color:#64748b">Notification automatique — ClairDossier.</p>
+      <p style="margin:4px 0">${intro}</p>
+      ${ref ? `<p style="margin:4px 0;color:#64748b">Référence : ${ref}…</p>` : ''}
+      <p style="margin:16px 0 4px"><a href="${link}" style="color:#0d1b3d;font-weight:600">Ouvrir l’espace admin pour consulter le détail →</a></p>
+      <p style="margin-top:16px;font-size:12px;color:#64748b">Notification automatique — ClairDossier. Aucune donnée sensible n’est incluse dans cet e-mail.</p>
     </div>`;
 
     const res = await fetch('https://api.resend.com/emails', {

@@ -31,9 +31,17 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const TYPOLOGY_LABELS: Record<string, string> = {
+  // Catégories actuelles (tunnel de création — profils PME / artisans / indépendants).
+  'dossier-client': 'Dossier client',
+  'facture-paiement': 'Facture / paiement',
+  'impaye-precontentieux': 'Impayé / pré-contentieux',
+  administratif: 'Dossier administratif',
+  comptable: 'Documents comptables',
+  rh: 'Personnel / RH',
+  autre: 'Autre',
+  // Anciennes typologies — conservées pour les dossiers déjà enregistrés.
   'litige-commercial': 'Litige commercial',
   recouvrement: 'Recouvrement',
-  administratif: 'Dossier administratif',
   bail: 'Bail & immobilier',
   consommation: 'Litige client / fournisseur',
   'prud-hommes': "Prud'hommes",
@@ -41,7 +49,8 @@ const TYPOLOGY_LABELS: Record<string, string> = {
   succession: 'Succession',
 };
 
-// Frise de suivi du dossier — réutilise le visuel du stepper de création.
+// Avancement du dossier — 5 étapes métier. Chaque étape est cliquable et ouvre
+// un panneau explicatif (cf. cahier directeur : étapes cliquables + message dynamique).
 const TIMELINE = [
   'Création du dossier',
   'Devis, contrat ou accord',
@@ -49,6 +58,33 @@ const TIMELINE = [
   'Facture et paiement',
   'Option impayé / pré-contentieux',
 ];
+
+// Détail affiché dans le panneau quand on clique une étape (1-indexé via i+1).
+const STEP_PANELS: string[] = [
+  'Le dossier est créé : profil, nature, informations clés et premières pièces sont réunis dans un espace unique.',
+  "Les documents qui fondent la relation (devis, contrat, bon de commande, accord) sont rassemblés et datés.",
+  'Le dossier vit : échanges, relances, pièces complémentaires et échéances sont suivis au même endroit.',
+  'La facturation et les règlements sont tracés : montants, échéances, acomptes et solde restant dû.',
+  "En cas d'impayé, le dossier est prêt : relances, mise en demeure et pièces sont organisées pour être transmises à un professionnel habilité.",
+];
+
+// Message dynamique affiché selon l'étape ATTEINTE par le dossier.
+const STEP_MESSAGES: Record<number, string> = {
+  1: "Votre dossier vient d'être créé. Complétez les informations et déposez vos pièces pour le structurer.",
+  2: "Rassemblez les documents qui fondent l'accord (devis, contrat, commande) pour sécuriser la suite.",
+  3: 'Votre dossier est suivi. Ajoutez les nouveaux échanges et pièces au fur et à mesure.',
+  4: 'Suivez la facturation et les règlements : renseignez les montants et les échéances de paiement.',
+  5: 'Le dossier est prêt à être transmis à un professionnel du droit en cas de contentieux.',
+};
+
+// « Ce que vous devez faire maintenant » — action concrète selon l'étape atteinte.
+const STEP_NEXT_ACTIONS: Record<number, string> = {
+  1: 'Vérifiez les informations du dossier et déposez les premières pièces.',
+  2: 'Ajoutez le devis, le contrat ou l’accord signé au dossier.',
+  3: 'Mettez à jour le suivi : nouveaux courriers, relances, pièces reçues.',
+  4: 'Renseignez la facture, le montant dû et l’échéance de paiement.',
+  5: 'Préparez la transmission à un professionnel habilité si le litige persiste.',
+};
 
 // Mappe un statut de dossier à une étape atteinte dans la frise (1-indexée).
 function currentStep(status: string): number {
@@ -111,6 +147,8 @@ export function DossierDetail() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [ownerEmail, setOwnerEmail] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  // Étape dont le panneau est ouvert (0 = aucune ⇒ on affiche l'étape atteinte).
+  const [openStep, setOpenStep] = useState(0);
 
   useEffect(() => {
     if (!id) {
@@ -183,6 +221,8 @@ export function DossierDetail() {
   const dateEntries = answerEntries.filter(([k]) => isDateKey(k));
   const situation = answers.situation?.trim();
   const step = dossier ? currentStep(dossier.status) : 1;
+  // Panneau affiché : l'étape cliquée, ou par défaut l'étape atteinte par le dossier.
+  const shownStep = openStep || step;
 
   return (
     <>
@@ -246,51 +286,88 @@ export function DossierDetail() {
                 </span>
               </div>
 
-              {/* ── Chronologie ─────────────────────────────────────── */}
+              {/* ── Avancement du dossier (étapes cliquables) ───────── */}
               <div className="mt-10 rounded-2xl border hairline bg-white p-7 shadow-card sm:p-9">
                 <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">
-                  Chronologie du dossier
+                  Avancement du dossier
                 </p>
 
-                <ol className="mt-7 space-y-5 sm:space-y-0 sm:flex sm:items-start sm:gap-2">
+                <ol className="mt-7 space-y-3 sm:space-y-0 sm:flex sm:items-start sm:gap-2">
                   {TIMELINE.map((label, i) => {
                     const n = i + 1;
                     const done = step > n;
                     const active = step === n;
+                    const selected = shownStep === n;
                     return (
-                      <li key={label} className="flex items-start gap-3 sm:flex-1 sm:flex-col sm:items-stretch">
-                        <div className="flex items-center gap-3 sm:w-full">
-                          <span
-                            className={`grid h-7 w-7 shrink-0 place-items-center rounded-full font-mono text-[0.7rem] font-semibold transition-colors ${
-                              done || active
-                                ? 'bg-navy-900 text-cream-50'
-                                : 'border hairline-strong bg-white text-slate-500'
-                            }`}
-                          >
-                            {done ? <CheckIcon width={12} height={12} strokeWidth={2.5} /> : n}
-                          </span>
-                          {i < TIMELINE.length - 1 && (
-                            <span
-                              className={`hidden h-px flex-1 transition-colors sm:block ${
-                                step > n ? 'bg-navy-900' : 'bg-slate-300/40'
-                              }`}
-                            />
-                          )}
-                        </div>
-                        <p
-                          className={`text-sm leading-snug sm:mt-3 ${
-                            done || active ? 'font-medium text-navy-900' : 'text-slate-500'
+                      <li key={label} className="sm:flex-1">
+                        <button
+                          type="button"
+                          onClick={() => setOpenStep(n)}
+                          aria-expanded={selected}
+                          aria-label={`Étape ${n} : ${label}${active ? ' (étape en cours)' : ''}`}
+                          className={`flex w-full items-start gap-3 rounded-xl p-2 text-left transition-colors hover:bg-cream-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500/40 sm:flex-col sm:items-stretch ${
+                            selected ? 'bg-cream-100' : ''
                           }`}
                         >
-                          {label}
-                        </p>
+                          <div className="flex items-center gap-3 sm:w-full">
+                            <span
+                              className={`grid h-7 w-7 shrink-0 place-items-center rounded-full font-mono text-[0.7rem] font-semibold transition-colors ${
+                                done || active
+                                  ? 'bg-navy-900 text-cream-50'
+                                  : 'border hairline-strong bg-white text-slate-500'
+                              }`}
+                            >
+                              {done ? <CheckIcon width={12} height={12} strokeWidth={2.5} /> : n}
+                            </span>
+                            {i < TIMELINE.length - 1 && (
+                              <span
+                                className={`hidden h-px flex-1 transition-colors sm:block ${
+                                  step > n ? 'bg-navy-900' : 'bg-slate-300/40'
+                                }`}
+                              />
+                            )}
+                          </div>
+                          <p
+                            className={`text-sm leading-snug sm:mt-3 ${
+                              done || active ? 'font-medium text-navy-900' : 'text-slate-500'
+                            }`}
+                          >
+                            {label}
+                            {active && (
+                              <span className="mt-0.5 block font-mono text-[0.62rem] uppercase tracking-[0.14em] text-gold-700">
+                                En cours
+                              </span>
+                            )}
+                          </p>
+                        </button>
                       </li>
                     );
                   })}
                 </ol>
 
-                <p className="mt-7 border-t hairline pt-5 text-sm leading-relaxed text-slate-500">
-                  En cas de contentieux, le dossier est prêt à être transmis à un professionnel du droit.
+                {/* Panneau de l'étape sélectionnée */}
+                <div className="mt-7 rounded-xl bg-cream-50 p-5">
+                  <p className="font-mono text-[0.7rem] uppercase tracking-[0.16em] text-slate-500">
+                    Étape {shownStep} · {TIMELINE[shownStep - 1]}
+                  </p>
+                  <p className="mt-2 text-sm leading-relaxed text-navy-900">
+                    {STEP_PANELS[shownStep - 1]}
+                  </p>
+                </div>
+
+                {/* Message dynamique : où en est le dossier */}
+                <p className="mt-5 border-t hairline pt-5 text-sm leading-relaxed text-slate-500">
+                  {STEP_MESSAGES[step]}
+                </p>
+              </div>
+
+              {/* ── Ce que vous devez faire maintenant ──────────────── */}
+              <div className="mt-6 rounded-2xl border hairline-gold bg-gold-500/10 p-7 shadow-card sm:p-9">
+                <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">
+                  Ce que vous devez faire maintenant
+                </p>
+                <p className="mt-3 text-sm leading-relaxed text-navy-900">
+                  {STEP_NEXT_ACTIONS[step]}
                 </p>
               </div>
 
@@ -370,6 +447,18 @@ export function DossierDetail() {
                     Préavis juridique demandé
                   </p>
                 )}
+              </div>
+
+              {/* ── Garanties : validation humaine + aide à la préparation ── */}
+              <div className="mt-6 rounded-2xl border hairline bg-white p-7 shadow-card sm:p-9">
+                <p className="text-sm leading-relaxed text-slate-500">
+                  <span className="font-medium text-navy-900">
+                    Aucun envoi ne sera effectué sans votre confirmation.
+                  </span>{' '}
+                  ClairDossier vous aide à préparer et organiser votre dossier. Toute fonction
+                  d'ordre juridique reste une aide à la préparation et doit pouvoir être vérifiée
+                  ou validée par un professionnel habilité lorsque cela est nécessaire.
+                </p>
               </div>
 
               <div className="mt-8">

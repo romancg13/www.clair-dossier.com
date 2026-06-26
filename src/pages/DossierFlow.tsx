@@ -29,6 +29,7 @@ type Step = 1 | 2 | 3 | 4 | 5;
 type Draft = {
   profil?: Profil;
   typology?: Category;
+  title?: string;
   answers: DraftAnswers;
   step: Step;
   updatedAt: string;
@@ -101,6 +102,7 @@ export function DossierFlow() {
   const [legalReview, setLegalReview] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [saveWarning, setSaveWarning] = useState<string | null>(null);
+  const [nameError, setNameError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
 
   useEffect(() => {
@@ -112,6 +114,7 @@ export function DossierFlow() {
           setDraft({
             profil: parsed.profil,
             typology: parsed.typology,
+            title: parsed.title,
             answers: parsed.answers ?? {},
             step: (parsed.step ?? 1) as Step,
             updatedAt: parsed.updatedAt ?? new Date().toISOString(),
@@ -143,11 +146,19 @@ export function DossierFlow() {
   function handleInfoSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const data = new FormData(e.currentTarget);
+    const title = String(data.get('__dossierName') ?? '').trim();
+    // Nom de dossier OBLIGATOIRE (cf. cahier directeur).
+    if (!title) {
+      setNameError('Donnez un nom à votre dossier pour le retrouver facilement.');
+      return;
+    }
+    setNameError(null);
     const answers: DraftAnswers = { ...(draft.profil ? { profil: draft.profil } : {}) };
     data.forEach((value, key) => {
+      if (key === '__dossierName') return; // le nom est stocké dans title, pas dans answers
       answers[key] = String(value);
     });
-    setDraft((d) => ({ ...d, answers, step: 4, updatedAt: new Date().toISOString() }));
+    setDraft((d) => ({ ...d, title, answers, step: 4, updatedAt: new Date().toISOString() }));
   }
 
   function resetDraft() {
@@ -156,6 +167,7 @@ export function DossierFlow() {
     setLegalReview(false);
     setDone(false);
     setSaveWarning(null);
+    setNameError(null);
     setRestored(false);
     try {
       localStorage.removeItem(STORAGE_KEY);
@@ -181,7 +193,7 @@ export function DossierFlow() {
     return (
       `Bonjour ClairDossier,\n\n` +
       `Profil : ${profilMeta?.label ?? draft.profil ?? 'non précisé'}.\n` +
-      `Je souhaite transmettre un dossier « ${categoryMeta?.label ?? draft.typology} ».\n\n` +
+      `Dossier : « ${draft.title?.trim() || categoryMeta?.label || draft.typology} » (${categoryMeta?.label ?? draft.typology}).\n\n` +
       `Synthèse :\n${lines}${docLine}${reviewLine}\n\n` +
       `Compte : ${user?.email ?? 'non précisé'}\n` +
       `Pouvez-vous me confirmer la prise en charge ? Merci.`
@@ -201,7 +213,7 @@ export function DossierFlow() {
         .insert({
           user_id: user.id,
           typology: draft.typology,
-          title: categoryMeta?.label ?? draft.typology,
+          title: draft.title?.trim() || categoryMeta?.label || draft.typology,
           answers: answersWithProfil,
           legal_review_requested: isPreContentieux && legalReview,
           status: 'transmis',
@@ -330,6 +342,9 @@ export function DossierFlow() {
                   <StepInfos
                     category={draft.typology}
                     defaults={draft.answers}
+                    defaultTitle={draft.title ?? ''}
+                    nameError={nameError}
+                    onClearNameError={() => setNameError(null)}
                     onSubmit={handleInfoSubmit}
                     onBack={() => setDraft((d) => ({ ...d, step: 2 }))}
                   />
@@ -345,6 +360,7 @@ export function DossierFlow() {
                 )}
                 {draft.step === 5 && draft.typology && (
                   <StepRecap
+                    title={draft.title ?? ''}
                     profilLabel={profilMeta?.label ?? draft.profil ?? '—'}
                     categoryLabel={categoryMeta?.label ?? draft.typology}
                     fields={fields}
@@ -435,11 +451,17 @@ function StepCategory({
 function StepInfos({
   category,
   defaults,
+  defaultTitle,
+  nameError,
+  onClearNameError,
   onSubmit,
   onBack,
 }: {
   category: Category;
   defaults: DraftAnswers;
+  defaultTitle: string;
+  nameError: string | null;
+  onClearNameError: () => void;
   onSubmit: (e: FormEvent<HTMLFormElement>) => void;
   onBack: () => void;
 }) {
@@ -452,7 +474,35 @@ function StepInfos({
         {CATEGORIES.find((c) => c.id === category)?.label}
       </p>
       <p className="mt-2 text-sm text-slate-500">Quelques champs structurants. Tout est conservé en brouillon.</p>
-      <div className="mt-8 space-y-6">
+
+      {/* Nom du dossier — obligatoire */}
+      <label className="mt-8 block">
+        <span className="font-mono text-[0.7rem] uppercase tracking-[0.16em] text-slate-500">
+          Nom du dossier <span className="text-gold-700">*</span>
+        </span>
+        <input
+          name="__dossierName"
+          type="text"
+          required
+          defaultValue={defaultTitle}
+          onChange={onClearNameError}
+          aria-invalid={nameError ? true : undefined}
+          aria-describedby={nameError ? 'dossier-name-error' : undefined}
+          placeholder="Ex. Chantier Dupont — solde impayé"
+          className={`${inputCls} ${nameError ? 'border-red-400 focus:border-red-400 focus:ring-red-400/20' : ''}`}
+        />
+        {nameError ? (
+          <span id="dossier-name-error" className="mt-1.5 block text-xs font-medium text-red-600">
+            {nameError}
+          </span>
+        ) : (
+          <span className="mt-1.5 block text-xs italic text-slate-500">
+            Un nom clair pour retrouver ce dossier dans votre compte.
+          </span>
+        )}
+      </label>
+
+      <div className="mt-6 space-y-6">
         {fields.map((f) => (
           <label key={f.id} className="block">
             <span className="font-mono text-[0.7rem] uppercase tracking-[0.16em] text-slate-500">{f.label}</span>
@@ -541,6 +591,7 @@ function StepDocuments({
 }
 
 function StepRecap({
+  title,
   profilLabel,
   categoryLabel,
   fields,
@@ -553,6 +604,7 @@ function StepRecap({
   onSend,
   onEdit,
 }: {
+  title: string;
   profilLabel: string;
   categoryLabel: string;
   fields: { id: string; label: string }[];
@@ -569,13 +621,17 @@ function StepRecap({
     <div className="rounded-2xl border hairline bg-white p-7 shadow-card sm:p-9">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-slate-500">Dossier · brouillon</p>
-          <h2 className="mt-2 font-display text-2xl font-semibold leading-tight text-navy-900 sm:text-3xl">{categoryLabel} — synthèse</h2>
+          <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-slate-500">{categoryLabel} · brouillon</p>
+          <h2 className="mt-2 font-display text-2xl font-semibold leading-tight text-navy-900 sm:text-3xl">{title || `${categoryLabel} — synthèse`}</h2>
         </div>
         <span className="shrink-0 rounded-full bg-gold-500/12 px-3 py-1.5 font-mono text-[0.7rem] font-medium text-navy-900 border hairline-gold">Brouillon</span>
       </div>
 
       <dl className="mt-7 divide-y hairline border-y hairline">
+        <div className="flex flex-col gap-1 py-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+          <dt className="text-sm font-medium text-slate-500">Nom du dossier</dt>
+          <dd className="max-w-md text-sm text-navy-900 sm:text-right">{title || <span className="italic text-slate-500">Non renseigné</span>}</dd>
+        </div>
         <div className="flex flex-col gap-1 py-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
           <dt className="text-sm font-medium text-slate-500">Profil</dt>
           <dd className="max-w-md text-sm text-navy-900 sm:text-right">{profilLabel}</dd>
