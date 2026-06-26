@@ -1,23 +1,23 @@
-import { motion, useReducedMotion } from 'motion/react';
-import { Link } from 'react-router-dom';
-import { MarkerHighlight } from '../primitives/MarkerHighlight';
-import { SplitWords } from '../primitives/SplitWords';
-import { ArrowRightIcon } from '../icons';
+import { motion, useReducedMotion } from "motion/react";
+import { Link } from "react-router-dom";
+import { MarkerHighlight } from "../primitives/MarkerHighlight";
+import { SplitWords } from "../primitives/SplitWords";
+import { ArrowRightIcon } from "../icons";
 
 const heroPanelRows = [
-  { label: 'Statut', value: 'Validation pro (option)', tone: 'gold' as const },
-  { label: 'Pièces déposées', value: '7 / 9' },
-  { label: 'Chronologie', value: '4 évènements datés' },
-  { label: 'Validation', value: 'Sous 24 h ouvrées', tone: 'navy' as const },
+  { label: "Statut", value: "Validation pro (option)", tone: "gold" as const },
+  { label: "Pièces déposées", value: "7 / 9" },
+  { label: "Chronologie", value: "4 évènements datés" },
+  { label: "Validation", value: "Sous 24 h ouvrées", tone: "navy" as const },
 ];
 
 const timelineSteps = [
-  { state: 'done' as const, label: 'Brouillon' },
-  { state: 'done' as const, label: 'Complété' },
-  { state: 'done' as const, label: 'Attente' },
-  { state: 'active' as const, label: 'Validation' },
-  { state: 'pending' as const, label: 'Validé' },
-  { state: 'pending' as const, label: 'Archivé' },
+  { state: "done" as const, label: "Brouillon" },
+  { state: "done" as const, label: "Complété" },
+  { state: "done" as const, label: "Attente" },
+  { state: "active" as const, label: "Validation" },
+  { state: "pending" as const, label: "Validé" },
+  { state: "pending" as const, label: "Archivé" },
 ];
 
 export function Hero() {
@@ -30,7 +30,7 @@ export function Hero() {
         className="pointer-events-none absolute inset-0 -z-10"
         style={{
           backgroundImage:
-            'radial-gradient(60% 50% at 80% 0%, rgba(196,164,86,0.10), transparent 60%), radial-gradient(50% 40% at 0% 100%, rgba(13,27,61,0.06), transparent 70%)',
+            "radial-gradient(60% 50% at 80% 0%, rgba(196,164,86,0.10), transparent 60%), radial-gradient(50% 40% at 0% 100%, rgba(13,27,61,0.06), transparent 70%)",
         }}
       />
       <div className="mx-auto max-w-7xl px-5 pb-14 pt-12 sm:px-8 sm:pb-20 sm:pt-16 lg:grid lg:grid-cols-[1.15fr_0.85fr] lg:gap-16 lg:px-12 lg:pb-32 lg:pt-24">
@@ -47,14 +47,18 @@ export function Hero() {
           <h1 className="mt-5 font-display text-[clamp(2.1rem,7vw,5.4rem)] font-semibold leading-[0.98] tracking-tight text-navy-900 sm:leading-[0.96]">
             <SplitWords
               segments={[
-                'Votre',
-                'dossier',
-                'administratif',
-                'et',
-                'juridique,',
+                "Votre",
+                "dossier",
+                "administratif",
+                "et",
+                "juridique,",
                 { node: <MarkerHighlight delay={0.6}>clair,</MarkerHighlight> },
-                { node: <MarkerHighlight delay={0.85}>structuré</MarkerHighlight> },
-                'et',
+                {
+                  node: (
+                    <MarkerHighlight delay={0.85}>structuré</MarkerHighlight>
+                  ),
+                },
+                "et",
                 { node: <MarkerHighlight delay={1.1}>suivi.</MarkerHighlight> },
               ]}
               text="Votre dossier administratif et juridique, clair, structuré et suivi."
@@ -69,10 +73,10 @@ export function Hero() {
             transition={{ duration: 0.6, delay: 0.5, ease: [0.16, 1, 0.3, 1] }}
             className="mt-6 max-w-2xl text-base leading-relaxed text-slate-500 sm:text-lg"
           >
-            Créez des dossiers administratifs et juridiques structurés : calendrier, relances à
-            échéance et projets de réponse aux e-mails. Pour les PME, artisans, entreprises
-            individuelles et professions libérales. Option : un préavis juridique validé par un
-            professionnel du droit.
+            Créez des dossiers administratifs et juridiques structurés : déposez
+            vos pièces dans un espace privé, suivez l'avancement et vos
+            échéances, puis transmettez quand vous le décidez. Pour les PME,
+            artisans, entreprises individuelles et professions libérales.
           </motion.p>
 
           <motion.div
@@ -86,7 +90,12 @@ export function Hero() {
               className="sheen group inline-flex items-center gap-2 rounded-full bg-gold-500 px-6 py-3.5 text-sm font-semibold text-navy-900 shadow-gold transition-all duration-300 hover:-translate-y-0.5 hover:shadow-gold-strong"
             >
               Créer un dossier
-              <ArrowRightIcon width={14} height={14} strokeWidth={2} className="transition-transform group-hover:translate-x-0.5" />
+              <ArrowRightIcon
+                width={14}
+                height={14}
+                strokeWidth={2}
+                className="transition-transform group-hover:translate-x-0.5"
+              />
             </Link>
             <Link
               to="/contact"
@@ -102,9 +111,9 @@ export function Hero() {
             transition={{ duration: 0.6, delay: 0.9, ease: [0.16, 1, 0.3, 1] }}
             className="mt-8 flex flex-wrap items-center gap-2.5"
           >
-            <FactPill>6 statuts dossier</FactPill>
-            <FactPill>Relances à échéance</FactPill>
-            <FactPill>100 % conforme RGPD</FactPill>
+            <FactPill>Suivi étape par étape</FactPill>
+            <FactPill>Pièces chiffrées</FactPill>
+            <FactPill>Conçu pour le RGPD</FactPill>
           </motion.div>
         </div>
 
@@ -119,7 +128,11 @@ export function Hero() {
           <motion.div
             className="relative rounded-2xl border hairline bg-white p-7 shadow-card"
             animate={reduce ? {} : { y: [0, -6, 0] }}
-            transition={reduce ? undefined : { duration: 8, repeat: Infinity, ease: 'easeInOut' }}
+            transition={
+              reduce
+                ? undefined
+                : { duration: 8, repeat: Infinity, ease: "easeInOut" }
+            }
           >
             <div className="flex items-center justify-between gap-3">
               <span className="inline-flex items-center gap-1.5 rounded-full border hairline-gold bg-gold-500/12 px-2.5 py-0.5 font-mono text-[0.7rem] uppercase tracking-[0.16em] text-gold-700">
@@ -149,11 +162,18 @@ export function Hero() {
 
             <dl className="mt-6 divide-y hairline border-y hairline">
               {heroPanelRows.map((row) => (
-                <div key={row.label} className="flex items-center justify-between gap-4 py-3 text-sm">
+                <div
+                  key={row.label}
+                  className="flex items-center justify-between gap-4 py-3 text-sm"
+                >
                   <dt className="text-slate-500">{row.label}</dt>
                   <dd
                     className={`text-right font-medium ${
-                      row.tone === 'gold' ? 'text-gold-700' : row.tone === 'navy' ? 'text-navy-900' : 'text-navy-900'
+                      row.tone === "gold"
+                        ? "text-gold-700"
+                        : row.tone === "navy"
+                          ? "text-navy-900"
+                          : "text-navy-900"
                     }`}
                   >
                     {row.value}
@@ -169,22 +189,42 @@ export function Hero() {
               <div className="mt-3 flex items-center gap-1.5">
                 {timelineSteps.map((step, i) => (
                   <div key={i} className="flex flex-1 items-center gap-1.5">
-                    {step.state === 'done' && (
-                      <span className="h-2 w-2 shrink-0 rounded-full bg-navy-900" aria-hidden="true" />
-                    )}
-                    {step.state === 'active' && (
-                      <motion.span
-                        className="h-2.5 w-2.5 shrink-0 rounded-full bg-gold-500"
-                        animate={reduce ? {} : { scale: [1, 1.4, 1], opacity: [1, 0.6, 1] }}
-                        transition={reduce ? undefined : { duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
+                    {step.state === "done" && (
+                      <span
+                        className="h-2 w-2 shrink-0 rounded-full bg-navy-900"
                         aria-hidden="true"
                       />
                     )}
-                    {step.state === 'pending' && (
-                      <span className="h-2 w-2 shrink-0 rounded-full border hairline-strong" aria-hidden="true" />
+                    {step.state === "active" && (
+                      <motion.span
+                        className="h-2.5 w-2.5 shrink-0 rounded-full bg-gold-500"
+                        animate={
+                          reduce
+                            ? {}
+                            : { scale: [1, 1.4, 1], opacity: [1, 0.6, 1] }
+                        }
+                        transition={
+                          reduce
+                            ? undefined
+                            : {
+                                duration: 1.8,
+                                repeat: Infinity,
+                                ease: "easeInOut",
+                              }
+                        }
+                        aria-hidden="true"
+                      />
+                    )}
+                    {step.state === "pending" && (
+                      <span
+                        className="h-2 w-2 shrink-0 rounded-full border hairline-strong"
+                        aria-hidden="true"
+                      />
                     )}
                     {i < timelineSteps.length - 1 && (
-                      <span className={`h-px flex-1 ${step.state === 'done' ? 'bg-navy-900/40' : 'bg-slate-300/40'}`} />
+                      <span
+                        className={`h-px flex-1 ${step.state === "done" ? "bg-navy-900/40" : "bg-slate-300/40"}`}
+                      />
                     )}
                   </div>
                 ))}
@@ -192,17 +232,22 @@ export function Hero() {
               {/* Mobile: étape active uniquement (les 6 labels chevauchent à 360px) */}
               <div className="mt-2 flex items-center justify-between text-[0.7rem] font-mono uppercase tracking-[0.16em] text-slate-500 sm:hidden">
                 <span>
-                  Étape {timelineSteps.findIndex((s) => s.state === 'active') + 1} / {timelineSteps.length}
+                  Étape{" "}
+                  {timelineSteps.findIndex((s) => s.state === "active") + 1} /{" "}
+                  {timelineSteps.length}
                 </span>
                 <span className="text-gold-700">
-                  {timelineSteps.find((s) => s.state === 'active')?.label}
+                  {timelineSteps.find((s) => s.state === "active")?.label}
                 </span>
               </div>
 
               {/* Desktop: tous les labels sous chaque point */}
               <div className="mt-2 hidden justify-between text-[0.65rem] font-mono uppercase tracking-[0.14em] text-slate-500 sm:flex">
                 {timelineSteps.map((step) => (
-                  <span key={step.label} className={step.state === 'active' ? 'text-gold-700' : ''}>
+                  <span
+                    key={step.label}
+                    className={step.state === "active" ? "text-gold-700" : ""}
+                  >
                     {step.label}
                   </span>
                 ))}

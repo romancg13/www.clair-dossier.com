@@ -1,12 +1,20 @@
-import { useRef } from 'react';
-import { motion, useReducedMotion, useScroll, useTransform } from 'motion/react';
-import { Reveal } from '../primitives/Reveal';
-import { statuses } from '../../data/statuses';
+import { useRef } from "react";
+import {
+  motion,
+  useReducedMotion,
+  useScroll,
+  useTransform,
+} from "motion/react";
+import { Reveal } from "../primitives/Reveal";
+import { statuses } from "../../data/statuses";
 
 export function Workflow() {
   const ref = useRef<HTMLDivElement>(null);
   const reduce = useReducedMotion();
-  const { scrollYProgress } = useScroll({ target: ref, offset: ['start 80%', 'end 30%'] });
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ["start 80%", "end 30%"],
+  });
   const lineLength = useTransform(scrollYProgress, [0, 1], [0, 1]);
 
   return (
@@ -20,8 +28,9 @@ export function Workflow() {
             Six statuts. Aucun « entre-deux ».
           </h2>
           <p className="mt-4 text-base leading-relaxed text-slate-500">
-            Chaque dossier traverse les mêmes six états. Le client sait où il en est sans
-            avoir à demander, l'avocat sait ce qu'il doit faire sans avoir à chercher.
+            Chaque dossier traverse les mêmes six états. Vous savez où en est
+            votre dossier sans avoir à demander, et ce qu'il reste à faire sans
+            avoir à chercher.
           </p>
         </div>
 
@@ -61,7 +70,9 @@ export function Workflow() {
                 <h3 className="font-display text-xl font-semibold leading-tight text-navy-900">
                   {s.label}
                 </h3>
-                <p className="mt-1 text-sm leading-relaxed text-slate-500">{s.description}</p>
+                <p className="mt-1 text-sm leading-relaxed text-slate-500">
+                  {s.description}
+                </p>
               </div>
             </li>
           ))}
@@ -71,7 +82,13 @@ export function Workflow() {
   );
 }
 
-function WorkflowNode({ index, status }: { index: number; status: (typeof statuses)[number] }) {
+function WorkflowNode({
+  index,
+  status,
+}: {
+  index: number;
+  status: (typeof statuses)[number];
+}) {
   return (
     <li className="relative">
       <div className="relative z-10 grid h-6 w-6 place-items-center rounded-full border hairline bg-white">
@@ -79,12 +96,14 @@ function WorkflowNode({ index, status }: { index: number; status: (typeof status
       </div>
       <div className="mt-5 pr-2">
         <p className="font-mono text-[0.65rem] uppercase tracking-[0.16em] text-slate-500">
-          Étape {String(index + 1).padStart(2, '0')}
+          Étape {String(index + 1).padStart(2, "0")}
         </p>
         <h3 className="mt-1.5 font-display text-lg font-semibold leading-tight text-navy-900">
           {status.label}
         </h3>
-        <p className="mt-2 text-sm leading-relaxed text-slate-500">{status.description}</p>
+        <p className="mt-2 text-sm leading-relaxed text-slate-500">
+          {status.description}
+        </p>
       </div>
     </li>
   );

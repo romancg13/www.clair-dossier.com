@@ -1,25 +1,25 @@
 ---
-title: "Projet de réponse automatisée aux e-mails"
-description: "Un e-mail reçu sur un dossier ? ClairDossier en propose un projet de réponse structuré, à relire et envoyer. Vous gardez la main, vous gagnez le temps de rédaction."
+title: "Récapitulatif avant transmission"
+description: "Avant d'envoyer, ClairDossier vous présente un récapitulatif complet du dossier. Vous relisez, vous corrigez si besoin, puis vous transmettez."
 url: https://www.clair-dossier.com/fonctionnalites/reponse-auto-mails
 ---
 
-# Projet de réponse automatisée aux e-mails
+# Récapitulatif avant transmission
 
-**L'IA rédige le brouillon. Vous validez. Le temps de réponse passe de trente minutes à trois.**
+**On relit avant d'envoyer. ClairDossier réunit tout le dossier dans un récapitulatif clair.**
 
-La charge cachée d'un dossier, c'est la correspondance : répondre à un courrier, à un e-mail, à une relance adverse. ClairDossier génère un projet de réponse à partir du contexte du dossier — les faits, les pièces, l'historique des échanges.
+Avant de transmettre un dossier, il faut être sûr de ce qu'il contient : les informations, les pièces, les échéances. ClairDossier réunit l'ensemble dans une étape de récapitulatif, à la fin du tunnel de création.
 
-Vous recevez un brouillon structuré, dans le bon registre, citant les bons éléments du dossier. Vous relisez, ajustez, envoyez. L'IA prépare, vous décidez : aucune réponse ne part sans votre validation explicite.
+Le récapitulatif affiche le profil, la nature du dossier, les informations saisies et les pièces déposées. Vous relisez le tout d'un seul écran, vous revenez en arrière pour corriger si besoin, puis vous confirmez. Rien n'est transmis tant que vous n'avez pas validé.
 
-Les projets de réponse restent rattachés au dossier et à sa chronologie. Chaque échange envoyé est archivé, horodaté, et conservé selon les obligations légales.
+Une fois le dossier confirmé, vous le transmettez quand vous le décidez, par e-mail ou par WhatsApp, à la personne de votre choix. Vous gardez la main sur le contenu comme sur l'envoi.
 
 ## Concrètement
 
-- Projet de réponse généré depuis le contexte du dossier
-- Registre et ton adaptés au destinataire
-- Validation humaine obligatoire avant envoi
-- Échanges archivés et rattachés à la chronologie
+- Récapitulatif complet à la fin du tunnel de création
+- Profil, nature, informations et pièces réunis sur un écran
+- Retour en arrière possible pour corriger avant de valider
+- Transmission par e-mail ou WhatsApp, déclenchée par vous
 
 
 ---

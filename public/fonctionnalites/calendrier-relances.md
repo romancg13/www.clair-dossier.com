@@ -1,25 +1,25 @@
 ---
-title: "Calendrier et relances à échéance"
-description: "Chaque dossier a ses dates clés. ClairDossier les place dans un calendrier et vous relance avant chaque échéance — délai de réponse, prescription, paiement."
+title: "Échéances renseignées et affichées"
+description: "Chaque dossier a ses dates clés. ClairDossier les conserve et les affiche sur la page d'avancement, sous vos yeux à chaque consultation."
 url: https://www.clair-dossier.com/fonctionnalites/calendrier-relances
 ---
 
-# Calendrier et relances à échéance
+# Échéances renseignées et affichées
 
-**Une échéance manquée peut coûter un dossier. ClairDossier ne les oublie jamais.**
+**Une échéance se garde en vue. ClairDossier l'affiche sur le dossier, là où vous la consultez.**
 
-Les délais sont au cœur des dossiers administratifs et juridiques : délai de contestation, date de prescription, échéance de paiement, date d'audience. En manquer un, c'est souvent perdre le dossier. ClairDossier transforme ces dates en rappels automatiques.
+Les délais sont au cœur des dossiers : délai de contestation, date d'échéance, paiement, rendez-vous. Les garder en vue, c'est déjà éviter de les laisser passer. ClairDossier conserve ces dates avec le dossier auquel elles se rattachent.
 
-À la création du dossier, vous renseignez les échéances connues. ClairDossier les ajoute à un calendrier dédié et déclenche des relances par email et notification — plusieurs jours avant, puis la veille. Vous ne courez plus après vos délais : ils viennent à vous.
+Vous renseignez les échéances connues lors de la création du dossier. Elles sont enregistrées et affichées sur la page d'avancement, à côté des pièces et des étapes. Vous les retrouvez à chaque fois que vous ouvrez le dossier.
 
-Les relances s'adaptent au type de dossier : un recouvrement relance le débiteur à l'échéance de paiement, un dossier administratif vous rappelle la date limite de recours. Chaque relance peut être accompagnée d'un projet de message prêt à envoyer.
+Vous gardez ainsi vos dates importantes réunies au même endroit que le reste du dossier, plutôt que dispersées dans des notes ou des agendas séparés. Vous décidez ensuite quand transmettre le dossier, par e-mail ou par WhatsApp.
 
 ## Concrètement
 
-- Calendrier des échéances par dossier
-- Suivez vos échéances et préparez vos relances au bon moment
-- Rappels multi-paliers (J-7, J-1)
-- Projet de message joint à chaque relance
+- Échéances renseignées à la création du dossier
+- Dates affichées sur la page d'avancement
+- Échéances réunies avec les pièces et les étapes
+- Transmission du dossier décidée et déclenchée par vous
 
 
 ---

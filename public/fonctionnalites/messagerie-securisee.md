@@ -1,27 +1,27 @@
 ---
-title: "Messagerie sécurisée client ↔ pro"
-description: "Les échanges juridiques quittent enfin les SMS et les emails. Chiffrement TLS 1.3 en transit, AES-256 au repos, attribution garantie."
+title: "Espace privé et sécurisé"
+description: "Vos pièces et informations quittent les SMS et les e-mails dispersés pour un espace privé : accès par authentification, chiffrement en transit et au repos."
 url: https://www.clair-dossier.com/fonctionnalites/messagerie-securisee
 ---
 
-# Messagerie sécurisée client ↔ pro
+# Espace privé et sécurisé
 
-**Un échange juridique mérite mieux qu'un fil de SMS. ClairDossier remplace WhatsApp par une messagerie professionnelle.**
+**Un dossier mérite mieux qu'un fil de SMS. ClairDossier le garde dans un espace privé, sous votre compte.**
 
-Combien de cabinets reçoivent encore les pièces de leurs clients par SMS, par email personnel, par WhatsApp ? Les chiffres internes que nous avons recueillis lors de nos entretiens : entre 40 et 70 % selon la taille du cabinet. C'est un risque de confidentialité, un risque RGPD, et une charge mentale pour l'avocat qui doit retrouver les messages.
+Combien de pièces circulent encore par SMS, par e-mail personnel, par WhatsApp ? C'est un risque de confidentialité et une charge mentale dès qu'il faut retrouver le bon document. ClairDossier rassemble pièces et informations dans un espace privé, rattaché à votre dossier.
 
-La messagerie ClairDossier est rattachée à un dossier. Chaque message est horodaté, attribué nominalement, et conservé dans le coffre-fort du dossier — plus jamais à chercher dans 17 fils différents.
+L'accès à votre espace passe par une authentification : vous seul ouvrez vos dossiers. Les échanges en transit se font en HTTPS, et vos données sont chiffrées au repos côté hébergeur.
 
-Le chiffrement est de bout en bout sur le transport (TLS 1.3) et au repos (AES-256). Les pièces jointes héritent automatiquement de la confidentialité du dossier. Si le dossier passe en `Archivé`, les messages le suivent et sont conservés selon les obligations de conservation légales (10 ans pour les pièces civiles, 30 ans pour les pièces familiales).
+Le stockage des pièces est privé : les fichiers ne sont accessibles que via des liens temporaires signés, jamais en accès libre. Vos documents restent rangés là où vous les avez déposés, dossier par dossier.
 
-Pour les cabinets multi-utilisateurs, les messages sont visibles par les collaborateurs autorisés sur le dossier. Le client ne voit qu'un interlocuteur, mais l'équipe interne peut se relayer — sans rupture de fil, sans perte d'information.
+Quand vous le décidez, vous transmettez le dossier par e-mail ou par WhatsApp, à la personne de votre choix. Le partage n'a lieu que sur votre action explicite — rien ne sort de votre espace sans votre validation.
 
 ## Concrètement
 
-- Messagerie rattachée au dossier, jamais éparpillée
-- TLS 1.3 en transit, AES-256 au repos
-- Conservation selon obligations légales (10 / 30 ans)
-- Visibilité multi-utilisateurs pour les équipes cabinet
+- Accès à l'espace par authentification
+- Chiffrement en transit (HTTPS) et au repos côté hébergeur
+- Stockage privé des pièces, liens temporaires signés
+- Partage uniquement sur transmission validée par vous
 
 
 ---

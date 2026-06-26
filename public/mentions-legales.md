@@ -31,7 +31,7 @@ Le directeur de la publication du site clair-dossier.com est Roman Gomes, en sa 
 
 Le site clair-dossier.com est hébergé sur l'infrastructure GitHub Pages, opérée par GitHub Inc. (88 Colin P Kelly Jr St, San Francisco, CA 94107, États-Unis).
 
-Les données client du service ClairDossier — dossiers, pièces, échanges — sont quant à elles hébergées exclusivement en France, dans les datacenters d'OVHcloud à Roubaix (59100) et Strasbourg (67000). Aucune donnée client n'est transférée hors Union européenne.
+Les données client du service ClairDossier — dossiers, pièces, échanges — sont hébergées chez un sous-traitant technique conforme au RGPD, qui assure le chiffrement en transit (HTTPS) et au repos. Les pièces déposées sont stockées dans un espace privé, accessible uniquement par authentification.
 
 ## Propriété intellectuelle
 
@@ -41,7 +41,7 @@ Toute reproduction, représentation, modification, publication, adaptation, tota
 
 ## Limitation de responsabilité
 
-Les informations diffusées sur le site clair-dossier.com sont présentées à titre indicatif. Elles ne constituent en aucun cas un conseil juridique personnalisé. ClairDossier est une plateforme legaltech : nous structurons les dossiers, des avocats habilités les valident. Toute décision juridique doit faire l'objet d'une consultation auprès d'un professionnel du droit.
+Les informations diffusées sur le site clair-dossier.com sont présentées à titre indicatif. Elles ne constituent en aucun cas un conseil juridique personnalisé. ClairDossier est un outil de structuration et de suivi documentaire : il n'est ni un cabinet d'avocats, ni un service de conseil juridique. Toute décision juridique doit faire l'objet d'une consultation auprès d'un professionnel du droit.
 
 ClairDossier ne saurait être tenue responsable des dommages directs ou indirects résultant de l'accès au site, de son utilisation ou de l'utilisation des informations qu'il contient.
 

@@ -1,16 +1,16 @@
-import { Link } from 'react-router-dom';
-import { Seo, breadcrumbSchema } from '../lib/seo';
-import { Reveal, Stagger, StaggerItem } from '../components/primitives/Reveal';
-import { features } from '../data/features';
-import { FEATURE_ICONS, ArrowRightIcon } from '../components/icons';
+import { Link } from "react-router-dom";
+import { Seo, breadcrumbSchema } from "../lib/seo";
+import { Reveal, Stagger, StaggerItem } from "../components/primitives/Reveal";
+import { features } from "../data/features";
+import { FEATURE_ICONS, ArrowRightIcon } from "../components/icons";
 
 const serviceSchemas = features.map((f) => ({
-  '@context': 'https://schema.org',
-  '@type': 'Service',
+  "@context": "https://schema.org",
+  "@type": "Service",
   serviceType: f.title,
   name: f.title,
   description: f.blurb,
-  provider: { '@type': 'Organization', name: 'ClairDossier' },
+  provider: { "@type": "Organization", name: "ClairDossier" },
 }));
 
 export function FeaturesIndex() {
@@ -18,12 +18,12 @@ export function FeaturesIndex() {
     <>
       <Seo
         title="Fonctionnalités"
-        description="Les neuf fonctionnalités ClairDossier — création guidée, OCR, chronologie, brief IA, validation avocat optionnelle, suivi 6 statuts, messagerie sécurisée, coffre-fort RGPD."
+        description="Les neuf briques ClairDossier : création de dossier guidée en 5 étapes, dépôt de pièces sécurisé, suivi de l'avancement, échéances, transmission par e-mail ou WhatsApp validée par vous, espace privé conforme RGPD."
         path="/fonctionnalites"
         jsonLd={[
           breadcrumbSchema([
-            { name: 'Accueil', path: '/' },
-            { name: 'Fonctionnalités', path: '/fonctionnalites' },
+            { name: "Accueil", path: "/" },
+            { name: "Fonctionnalités", path: "/fonctionnalites" },
           ]),
           ...serviceSchemas,
         ]}
@@ -40,9 +40,10 @@ export function FeaturesIndex() {
               Neuf briques, un dossier administratif et juridique propre.
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-relaxed text-slate-500 sm:text-lg">
-              Chaque fonctionnalité a été conçue pour traiter un point de friction identifié dans
-              des dossiers réels — pas pour cocher une case dans un comparatif. Vous pouvez les
-              découvrir dans l'ordre ou attaquer celle qui vous parle d'abord.
+              Chaque fonctionnalité a été conçue pour traiter un point de
+              friction identifié dans des dossiers réels — pas pour cocher une
+              case dans un comparatif. Vous pouvez les découvrir dans l'ordre ou
+              attaquer celle qui vous parle d'abord.
             </p>
           </div>
         </div>
@@ -71,7 +72,12 @@ export function FeaturesIndex() {
                     </p>
                     <span className="mt-6 inline-flex items-center gap-1.5 self-start text-sm font-medium text-navy-900">
                       Lire la fiche
-                      <ArrowRightIcon width={14} height={14} strokeWidth={2} className="transition-transform group-hover:translate-x-0.5" />
+                      <ArrowRightIcon
+                        width={14}
+                        height={14}
+                        strokeWidth={2}
+                        className="transition-transform group-hover:translate-x-0.5"
+                      />
                     </span>
                   </Link>
                 </StaggerItem>
@@ -82,14 +88,17 @@ export function FeaturesIndex() {
       </Reveal>
 
       {/* CTA bas */}
-      <Reveal as="section" className="border-t hairline bg-navy-900 text-cream-50">
+      <Reveal
+        as="section"
+        className="border-t hairline bg-navy-900 text-cream-50"
+      >
         <div className="mx-auto max-w-5xl px-5 py-20 text-center sm:px-8 lg:px-12">
           <h2 className="font-display text-4xl font-semibold leading-tight text-cream-50 sm:text-5xl">
             Plutôt voir en pratique ?
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-cream-50/75">
-            Trente minutes de démo. Pas de slide marketing — on ouvre directement un dossier
-            type avec vous.
+            Trente minutes de démo. Pas de slide marketing — on ouvre
+            directement un dossier type avec vous.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Link

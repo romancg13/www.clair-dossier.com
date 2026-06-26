@@ -1,27 +1,27 @@
 ---
-title: "Chronologie auto-construite"
-description: "Une frise visuelle qui assemble seule les dates clés du dossier à partir des pièces et des réponses du client."
+title: "Avancement du dossier en 5 étapes"
+description: "Une page d'avancement claire qui suit votre dossier à travers 5 étapes métier, avec pièces et échéances réunies au même endroit."
 url: https://www.clair-dossier.com/fonctionnalites/chronologie
 ---
 
-# Chronologie auto-construite
+# Avancement du dossier en 5 étapes
 
-**La chronologie compte plus que les arguments. ClairDossier la construit pendant que le client raconte.**
+**Où en est mon dossier ? Vous l'ouvrez, vous voyez les 5 étapes, vous savez.**
 
-Tout avocat sait que la première chose à faire face à un dossier nouveau, c'est de remettre les faits dans l'ordre. Cinq minutes de chronologie claire évitent deux heures de relecture confuse. ClairDossier transforme cette discipline en automatisme.
+La première chose à faire face à un dossier, c'est de savoir où il en est. ClairDossier répond à cette question avec une page d'avancement dédiée, organisée en cinq étapes métier cliquables.
 
-À chaque réponse du client et à chaque pièce déposée, les dates sont extraites et placées sur une frise visuelle. Le contrat de travail entre à la date de signature ; la lettre de mise en demeure entre à la date d'envoi ; la convocation entre à la date prévue. Le client peut ajouter manuellement des évènements oraux (réunion, appel, refus verbal).
+Chaque dossier ouvre sur sa page « Avancement du dossier ». Les cinq étapes y sont affichées et cliquables : vous suivez la progression d'un coup d'œil, du début jusqu'à la transmission.
 
-La frise reste éditable. L'avocat peut requalifier un évènement, en ajouter, en supprimer, ou créer un point de bascule (rupture du contrat, mise en demeure, saisine du tribunal). Chaque ajustement reste tracé dans le journal d'audit.
+Sur cette même page, vos pièces déposées sont listées et téléchargeables, et vos échéances renseignées sont affichées. Tout ce qui concerne le dossier est réuni en un seul écran, sans avoir à chercher ailleurs.
 
-À l'export, la chronologie devient un document PDF utilisable en pièce 1 du dossier. Lisible par le tribunal, exploitable par l'avocat adverse — et fidèle à ce que le client a transmis.
+La vue reste fidèle à ce que vous avez saisi : les informations, les documents et les dates que vous avez fournis. Vous gardez une image nette de l'état du dossier à tout moment.
 
 ## Concrètement
 
-- Extraction automatique des dates depuis pièces et réponses
-- Frise éditable et requalifiable par l'avocat
-- Journal d'audit complet de toutes les modifications
-- Export PDF prêt à servir de pièce 1 au dossier
+- Page d'avancement à 5 étapes métier cliquables
+- Pièces du dossier consultables et téléchargeables
+- Échéances renseignées affichées sur la page
+- Une vue unique et fidèle aux informations saisies
 
 
 ---

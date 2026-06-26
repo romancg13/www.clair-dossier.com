@@ -1,27 +1,27 @@
 ---
-title: "Suivi des 6 statuts en temps réel"
-description: "Brouillon → Complété → En attente avocat → Validation en cours → Validé → Archivé. Le client voit exactement où en est son dossier."
+title: "Liste de vos dossiers en un espace"
+description: "Tous vos dossiers réunis dans votre espace de compte. D'un coup d'œil, vous voyez lesquels ouvrir et où chacun en est."
 url: https://www.clair-dossier.com/fonctionnalites/suivi-statuts
 ---
 
-# Suivi des 6 statuts en temps réel
+# Liste de vos dossiers en un espace
 
-**Le client ne demande plus « où en est mon dossier ? ». Il ouvre l'app, il voit.**
+**Plus besoin de chercher partout. Vos dossiers sont rassemblés dans un seul espace.**
 
-Les six statuts ne sont pas un gadget visuel. Ils répondent à la première frustration des clients en droit : ne pas savoir où en est leur affaire. Chaque transition de statut déclenche une notification (email + in-app), avec un horodatage et un acteur identifié.
+La première difficulté quand on suit plusieurs affaires, c'est de savoir lesquelles sont en cours et où chacune en est. ClairDossier répond à ce besoin avec une liste claire de vos dossiers, dans votre espace de compte.
 
-Brouillon — le client construit. Complété par client — toutes les informations sont fournies. En attente avocat — un professionnel est saisi. Validation en cours — l'avocat instruit. Validé — le dossier peut être plaidé, négocié, ou suivi. Archivé — l'affaire est close, les données sont conservées selon les règles de prescription.
+Après création de votre compte, gratuite et confirmée par e-mail, vous accédez à votre espace. Chaque dossier que vous créez s'y ajoute, identifié par le nom que vous lui avez donné. Vous ouvrez celui que vous voulez d'un clic.
 
-Le client peut consulter à tout moment l'historique complet : qui a fait quoi, à quelle date, avec quel commentaire. L'avocat peut ajouter des notes internes invisibles au client (pour son propre suivi), ou des notes partagées (visibles).
+Depuis la liste, vous entrez sur la page d'avancement de chaque dossier : ses cinq étapes, ses pièces, ses échéances. Vous passez d'un dossier à l'autre sans rien perdre de vue.
 
-Ce niveau de transparence change la relation client. Le client ne demande plus, il consulte. L'avocat n'explique plus l'avancement à chaque appel, il l'a déjà documenté. Le temps gagné est utilisé pour la stratégie juridique — pas pour le statut administratif.
+Vos dossiers restent isolés : votre espace ne contient que les vôtres. Cette séparation par utilisateur garantit que vos informations ne se mélangent jamais avec celles d'un autre compte.
 
 ## Concrètement
 
-- 6 statuts standardisés, transitions traçables
-- Notification email + in-app à chaque changement
-- Notes internes vs partagées (différenciation explicite)
-- Historique complet consultable par client et avocat
+- Création de compte gratuite, confirmée par e-mail
+- Liste de tous vos dossiers dans votre espace
+- Accès direct à la page d'avancement de chaque dossier
+- Isolation des données par utilisateur
 
 
 ---

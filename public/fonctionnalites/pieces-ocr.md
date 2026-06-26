@@ -1,27 +1,27 @@
 ---
-title: "Pièces jointes avec OCR et indexation"
-description: "Déposez vos pièces — contrats, courriers, factures. ClairDossier les renomme, les indexe et extrait les dates clés."
+title: "Dépôt de pièces dans un espace privé"
+description: "Déposez vos pièces — contrats, courriers, factures — dans un espace privé et sécurisé, rattaché au dossier."
 url: https://www.clair-dossier.com/fonctionnalites/pieces-ocr
 ---
 
-# Pièces jointes avec OCR et indexation
+# Dépôt de pièces dans un espace privé
 
-**Vos pièces ne sont pas un fourre-tout. ClairDossier les lit, les nomme, les classe.**
+**Vos pièces ne sont pas un fourre-tout. ClairDossier les range dans un espace privé, dossier par dossier.**
 
-Un dossier juridique vit ou meurt par ses pièces. Et la première cause de retard, ce sont les pièces mal nommées, sans ordre, sans lien avec la chronologie. Notre OCR adresse ce point précis.
+Un dossier vit par ses pièces. La première cause de désordre, ce sont des documents éparpillés entre l'e-mail, le téléphone et les fichiers locaux. ClairDossier les rassemble en un seul endroit, rattaché au dossier concerné.
 
-Quand vous déposez un document — PDF, scan, photo de courrier — le moteur d'OCR extrait le texte, identifie le type (contrat, courrier, facture, attestation), repère les dates pertinentes et la signature éventuelle. La pièce est alors renommée selon une convention claire : `2024-03-15_courrier_employeur.pdf`. Vous ne reverrez plus jamais un `IMG_0421.jpg` dans un dossier ClairDossier.
+À l'étape de dépôt du tunnel de création, vous ajoutez vos documents — PDF, scans, photos de courriers. Chaque pièce est stockée dans un espace privé propre à votre compte. L'accès passe par des liens temporaires signés : les fichiers ne sont jamais exposés publiquement.
 
-Chaque pièce est ensuite reliée automatiquement à la chronologie du dossier. Une lettre de licenciement datée du 15 mars apparaît sur la timeline à cette date, prête à être consultée en deux clics.
+Une fois déposées, vos pièces apparaissent sur la page d'avancement du dossier. Vous les consultez et les téléchargez à tout moment, depuis la liste des pièces du dossier.
 
-Le moteur reconnaît les principaux formats de pièces juridiques françaises : courriers RAR, citations à comparaître, conclusions adverses, expertises judiciaires, contrats CDI/CDD/freelance. Si le format est inconnu, vous renommez manuellement — votre travail est conservé.
+Le stockage est isolé par utilisateur : un dossier ne voit que ses propres pièces. Vous gardez la maîtrise de ce que vous déposez, et vous le retrouvez toujours au même endroit.
 
 ## Concrètement
 
-- OCR français entraîné sur les pièces juridiques courantes
-- Renommage automatique selon convention `YYYY-MM-DD_type_partie`
-- Reliure automatique à la chronologie du dossier
-- Stockage chiffré AES-256, bucket privé par dossier
+- Dépôt des pièces à l'étape dédiée du tunnel de création
+- Espace de stockage privé, accès par liens temporaires signés
+- Pièces consultables et téléchargeables depuis le dossier
+- Isolation des données par utilisateur
 
 
 ---

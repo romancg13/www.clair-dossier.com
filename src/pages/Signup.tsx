@@ -1,23 +1,23 @@
-import { useState, type FormEvent } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Seo } from '../lib/seo';
-import { useAuth, type CompanyType } from '../lib/auth';
-import { ArrowRightIcon } from '../components/icons';
+import { useState, type FormEvent } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Seo } from "../lib/seo";
+import { useAuth, type CompanyType } from "../lib/auth";
+import { ArrowRightIcon } from "../components/icons";
 
 const COMPANY_TYPES: { value: CompanyType; label: string }[] = [
-  { value: 'pme', label: 'PME / TPE' },
-  { value: 'artisan', label: 'Artisan' },
-  { value: 'entreprise-individuelle', label: 'Entreprise individuelle' },
-  { value: 'profession-liberale', label: 'Profession libérale' },
-  { value: 'particulier', label: 'Particulier' },
-  { value: 'autre', label: 'Autre' },
+  { value: "pme", label: "PME / TPE" },
+  { value: "artisan", label: "Artisan" },
+  { value: "entreprise-individuelle", label: "Entreprise individuelle" },
+  { value: "profession-liberale", label: "Profession libérale" },
+  { value: "particulier", label: "Particulier" },
+  { value: "autre", label: "Autre" },
 ];
 
 export function Signup() {
   const { signUp, configured } = useAuth();
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const next = params.get('next') || '/compte';
+  const next = params.get("next") || "/compte";
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -25,17 +25,21 @@ export function Signup() {
     e.preventDefault();
     setError(null);
     const fd = new FormData(e.currentTarget);
-    const email = String(fd.get('email') || '').trim();
-    const password = String(fd.get('password') || '');
-    const fullName = String(fd.get('fullName') || '').trim();
-    const companyName = String(fd.get('companyName') || '').trim();
-    const companyType = String(fd.get('companyType') || 'autre') as CompanyType;
+    const email = String(fd.get("email") || "").trim();
+    const password = String(fd.get("password") || "");
+    const fullName = String(fd.get("fullName") || "").trim();
+    const companyName = String(fd.get("companyName") || "").trim();
+    const companyType = String(fd.get("companyType") || "autre") as CompanyType;
     if (password.length < 8) {
-      setError('Mot de passe trop court (8 caractères minimum).');
+      setError("Mot de passe trop court (8 caractères minimum).");
       return;
     }
     setLoading(true);
-    const res = await signUp(email, password, { fullName, companyName, companyType });
+    const res = await signUp(email, password, {
+      fullName,
+      companyName,
+      companyType,
+    });
     setLoading(false);
     if (res.error) {
       setError(res.error);
@@ -48,7 +52,7 @@ export function Signup() {
     <>
       <Seo
         title="Créer un compte"
-        description="Créez votre compte ClairDossier en 30 secondes : structurez vos dossiers administratifs et juridiques, suivez les échéances, générez vos projets de réponse."
+        description="Créez gratuitement votre compte ClairDossier : structurez vos dossiers administratifs et juridiques, déposez vos pièces en sécurité et suivez les échéances."
         path="/inscription"
         noindex
       />
@@ -61,11 +65,15 @@ export function Signup() {
             Créer un compte
           </h1>
           <p className="mt-3 text-sm leading-relaxed text-slate-500">
-            Gratuit. Vous pourrez créer vos dossiers immédiatement — un abonnement n'est nécessaire
-            que pour aller plus loin.
+            Gratuit. Vous pourrez créer vos dossiers immédiatement — un
+            abonnement n'est nécessaire que pour aller plus loin.
           </p>
 
-          <form onSubmit={onSubmit} className="mt-8 rounded-2xl border hairline bg-white p-7 shadow-card" noValidate>
+          <form
+            onSubmit={onSubmit}
+            className="mt-8 rounded-2xl border hairline bg-white p-7 shadow-card"
+            noValidate
+          >
             <div className="space-y-5">
               <Field label="Vous êtes">
                 <select
@@ -81,13 +89,29 @@ export function Signup() {
                 </select>
               </Field>
               <Field label="Nom de la structure (optionnel)">
-                <input name="companyName" type="text" autoComplete="organization" className={inputCls} />
+                <input
+                  name="companyName"
+                  type="text"
+                  autoComplete="organization"
+                  className={inputCls}
+                />
               </Field>
               <Field label="Votre nom">
-                <input name="fullName" type="text" autoComplete="name" className={inputCls} />
+                <input
+                  name="fullName"
+                  type="text"
+                  autoComplete="name"
+                  className={inputCls}
+                />
               </Field>
               <Field label="Email">
-                <input name="email" type="email" required autoComplete="email" className={inputCls} />
+                <input
+                  name="email"
+                  type="email"
+                  required
+                  autoComplete="email"
+                  className={inputCls}
+                />
               </Field>
               <Field label="Mot de passe">
                 <input
@@ -102,7 +126,10 @@ export function Signup() {
             </div>
 
             {error && (
-              <p className="mt-5 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+              <p
+                className="mt-5 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700"
+                role="alert"
+              >
                 {error}
               </p>
             )}
@@ -117,15 +144,17 @@ export function Signup() {
               disabled={loading}
               className="sheen mt-6 inline-flex w-full items-center justify-center gap-2 rounded-full bg-gold-500 px-6 py-3.5 text-sm font-semibold text-navy-900 shadow-gold transition-all duration-200 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {loading ? 'Création…' : 'Créer mon compte'}
-              {!loading && <ArrowRightIcon width={14} height={14} strokeWidth={2} />}
+              {loading ? "Création…" : "Créer mon compte"}
+              {!loading && (
+                <ArrowRightIcon width={14} height={14} strokeWidth={2} />
+              )}
             </button>
           </form>
 
           <p className="mt-6 text-center text-sm text-slate-500">
-            Déjà un compte ?{' '}
+            Déjà un compte ?{" "}
             <Link
-              to={`/connexion${next !== '/compte' ? `?next=${encodeURIComponent(next)}` : ''}`}
+              to={`/connexion${next !== "/compte" ? `?next=${encodeURIComponent(next)}` : ""}`}
               className="font-medium text-navy-900 underline decoration-gold-500 underline-offset-4"
             >
               Se connecter
@@ -138,12 +167,20 @@ export function Signup() {
 }
 
 const inputCls =
-  'mt-2 w-full rounded-xl border hairline bg-cream-50 px-4 py-3 text-sm text-navy-900 focus:border-gold-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-gold-500/20';
+  "mt-2 w-full rounded-xl border hairline bg-cream-50 px-4 py-3 text-sm text-navy-900 focus:border-gold-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-gold-500/20";
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
     <label className="block">
-      <span className="font-mono text-[0.7rem] uppercase tracking-[0.16em] text-slate-500">{label}</span>
+      <span className="font-mono text-[0.7rem] uppercase tracking-[0.16em] text-slate-500">
+        {label}
+      </span>
       {children}
     </label>
   );

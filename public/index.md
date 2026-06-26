@@ -22,49 +22,49 @@ Créez des dossiers administratifs et juridiques structurés : calendrier, relan
 
 Vous construisez votre dossier à votre rythme. Vous voyez en permanence où il en est, qui agit, ce qui est attendu de vous.
 
-- Création guidée par typologie (prud'hommes, bail, recouvrement…)
-- Suivi en temps réel des 6 statuts de votre dossier
-- Messagerie sécurisée avec votre interlocuteur
-- Export ZIP intégral à tout moment, sans condition
+- Création guidée en 5 étapes (profil, nature, informations, pièces, récapitulatif)
+- Suivi de l'avancement sur les 5 étapes métier de votre dossier
+- Transmission par e-mail ou WhatsApp, déclenchée par vous
+- Récupération de vos pièces et données sur demande
 
-### Validation — Un préavis juridique, quand vous le décidez.
+### Validation — Une relecture côté support, quand c'est utile.
 
-En option, un professionnel du droit établit un préavis juridique et valide le résumé de votre situation : brief IA préparatoire, chronologie reconstruite, pièces indexées.
+Un administrateur unique peut, côté support, consulter votre dossier et les pièces déposées pour vous accompagner. Vous gardez la main : rien n'est transmis hors de votre espace sans votre accord.
 
-- Brief IA préparatoire avant chaque consultation
-- Validation en un clic, demande de pièce ou refus motivé
-- Notes internes (privées) vs notes partagées (visibles client)
-- Signature électronique horodatée jointe à chaque validation
+- Consultation du dossier et des pièces par l'administrateur support
+- Vue d'ensemble des 5 étapes et des échéances du dossier
+- Accès limité à l'administrateur unique, isolé des autres comptes
+- Pièces accessibles via des liens privés à durée limitée
 
-### Entreprise — Une vue d'ensemble qui ne ment pas.
+### Entreprise — Tous vos dossiers, au même endroit.
 
-Tous les dossiers de votre équipe, tous les statuts, toutes les charges. La direction de l'entreprise sait ce qui se passe — sans demander.
+Artisan, indépendant, profession libérale ou PME : retrouvez la liste de vos dossiers et l'avancement de chacun depuis un seul espace. Chaque compte ne voit que ses propres dossiers.
 
-- Tableau de bord équipe avec attribution des dossiers
-- Suivi de la charge par collaborateur
-- Notes internes partagées entre membres habilités
-- Reporting mensuel automatique (PDF, CSV)
+- Liste de tous vos dossiers avec leur étape en cours
+- Page détail « Avancement du dossier » pour chaque dossier
+- Données isolées par compte : vous ne voyez que les vôtres
+- Transmission par e-mail ou WhatsApp, dossier par dossier
 
 ## Workflow — 6 statuts
 
-1. **Brouillon** — Le client construit son dossier — il complète les informations, dépose les premières pièces. Aucune action côté professionnel.
-2. **Complété par client** — Le client estime que son dossier est prêt à être confié. ClairDossier vérifie l'exhaustivité des champs obligatoires avant de transmettre.
-3. **En attente de validation** — Le dossier attend une validation par un professionnel du droit (option). Aucun délai n'est garanti à ce stade — le professionnel priorise selon sa charge.
-4. **Validation en cours** — Un professionnel du droit instruit le dossier : il lit les pièces, demande des précisions, prépare l'analyse juridique. Vous êtes notifié à chaque action.
-5. **Validé** — Le dossier porte la signature électronique d'un professionnel du droit habilité. Il peut être plaidé, négocié, transmis à une juridiction ou suivi dans la durée.
-6. **Archivé** — L'affaire est close. Les données sont conservées selon les délais légaux de prescription. Le client peut exporter à tout moment.
+1. **Brouillon** — Vous construisez votre dossier dans le tunnel en 5 étapes : profil, nature, informations, dépôt des pièces, récapitulatif. Le nom du dossier est obligatoire. Rien n'est transmis tant que vous ne l'avez pas décidé.
+2. **Complété** — Vous avez renseigné les informations et déposé vos pièces dans l'espace privé sécurisé. Le récapitulatif vous montre le dossier avant toute transmission.
+3. **Transmis** — Vous transmettez le dossier par e-mail ou WhatsApp, à votre initiative. Aucun envoi automatique : rien ne part sans votre validation explicite.
+4. **En cours** — Le dossier suit son avancement sur les 5 étapes métier, cliquables depuis la page détail. Les pièces restent téléchargeables et les échéances affichées.
+5. **Validé** — Le dossier est complet et structuré, prêt à être partagé ou suivi dans la durée. Les pièces sont réunies dans un espace privé, accessibles via des liens signés temporaires.
+6. **Archivé** — L'affaire est close. Vos données restent isolées par compte et conservées selon les délais légaux. Vous pouvez en demander l'accès ou l'export via le contact.
 
 ## Fonctionnalités
 
-- [**Création guidée**](https://www.clair-dossier.com/fonctionnalites/creation-guidee) — Un formulaire intelligent qui s'adapte à la nature du dossier — prud'hommes, bail, recouvrement — et collecte les bonnes informations dès le départ.
-- [**Pièces & OCR**](https://www.clair-dossier.com/fonctionnalites/pieces-ocr) — Déposez vos pièces — contrats, courriers, factures. ClairDossier les renomme, les indexe et extrait les dates clés.
-- [**Chronologie**](https://www.clair-dossier.com/fonctionnalites/chronologie) — Une frise visuelle qui assemble seule les dates clés du dossier à partir des pièces et des réponses du client.
-- [**Validation pro**](https://www.clair-dossier.com/fonctionnalites/validation-avocat) — En option, un professionnel du droit habilité valide votre dossier, demande une pièce ou émet un préavis motivé.
-- [**Suivi 6 statuts**](https://www.clair-dossier.com/fonctionnalites/suivi-statuts) — Brouillon → Complété → En attente avocat → Validation en cours → Validé → Archivé. Le client voit exactement où en est son dossier.
-- [**Messagerie**](https://www.clair-dossier.com/fonctionnalites/messagerie-securisee) — Les échanges juridiques quittent enfin les SMS et les emails. Chiffrement TLS 1.3 en transit, AES-256 au repos, attribution garantie.
-- [**Coffre-fort RGPD**](https://www.clair-dossier.com/fonctionnalites/coffre-fort) — Vos données vivent en France, hébergées chez OVH, chiffrées au repos. Vous pouvez exporter, supprimer, transférer — à tout moment.
-- [**Calendrier & relances**](https://www.clair-dossier.com/fonctionnalites/calendrier-relances) — Chaque dossier a ses dates clés. ClairDossier les place dans un calendrier et vous relance avant chaque échéance — délai de réponse, prescription, paiement.
-- [**Réponse e-mails IA**](https://www.clair-dossier.com/fonctionnalites/reponse-auto-mails) — Un e-mail reçu sur un dossier ? ClairDossier en propose un projet de réponse structuré, à relire et envoyer. Vous gardez la main, vous gagnez le temps de rédaction.
+- [**Création guidée**](https://www.clair-dossier.com/fonctionnalites/creation-guidee) — Un tunnel de création en 5 étapes qui s'adapte à votre profil — artisan, indépendant, profession libérale, PME — et structure votre dossier dès le départ.
+- [**Dépôt de pièces**](https://www.clair-dossier.com/fonctionnalites/pieces-ocr) — Déposez vos pièces — contrats, courriers, factures — dans un espace privé et sécurisé, rattaché au dossier.
+- [**Avancement**](https://www.clair-dossier.com/fonctionnalites/chronologie) — Une page d'avancement claire qui suit votre dossier à travers 5 étapes métier, avec pièces et échéances réunies au même endroit.
+- [**Transmission**](https://www.clair-dossier.com/fonctionnalites/validation-avocat) — Vous transmettez votre dossier par e-mail ou WhatsApp, quand vous le décidez. Rien ne part sans votre validation explicite.
+- [**Mes dossiers**](https://www.clair-dossier.com/fonctionnalites/suivi-statuts) — Tous vos dossiers réunis dans votre espace de compte. D'un coup d'œil, vous voyez lesquels ouvrir et où chacun en est.
+- [**Espace sécurisé**](https://www.clair-dossier.com/fonctionnalites/messagerie-securisee) — Vos pièces et informations quittent les SMS et les e-mails dispersés pour un espace privé : accès par authentification, chiffrement en transit et au repos.
+- [**Données RGPD**](https://www.clair-dossier.com/fonctionnalites/coffre-fort) — Vos données sont isolées par utilisateur, chiffrées au repos côté hébergeur, accessibles par authentification. Accès, export et suppression sur demande.
+- [**Échéances**](https://www.clair-dossier.com/fonctionnalites/calendrier-relances) — Chaque dossier a ses dates clés. ClairDossier les conserve et les affiche sur la page d'avancement, sous vos yeux à chaque consultation.
+- [**Récapitulatif**](https://www.clair-dossier.com/fonctionnalites/reponse-auto-mails) — Avant d'envoyer, ClairDossier vous présente un récapitulatif complet du dossier. Vous relisez, vous corrigez si besoin, puis vous transmettez.
 
 ## Tarifs
 
@@ -82,37 +82,37 @@ Détail complet : https://www.clair-dossier.com/tarifs
 
 ## Questions fréquentes
 
-### Qui valide juridiquement les dossiers sur ClairDossier ?
+### Qui prépare les dossiers sur ClairDossier ?
 
-En option, vous pouvez demander qu'un professionnel du droit — avocat habilité, inscrit au barreau — établisse un préavis juridique et valide le résumé de votre situation. ClairDossier structure le dossier ; cette validation juridique est un service optionnel, jamais imposé. La signature électronique est jointe à la décision, avec horodatage.
+C'est vous. ClairDossier vous guide pour constituer votre dossier en 5 étapes (profil, nature, informations, dépôt des pièces, récapitulatif) et le garder organisé. L'outil structure et conserve votre dossier dans un espace privé ; vous restez seul maître de son contenu et de ce que vous en faites.
 
 ### Mes données sont-elles vraiment sécurisées ?
 
-Hébergement OVH France (Roubaix, Strasbourg). Chiffrement AES-256 au repos, TLS 1.3 en transit. Aucun transfert hors UE, ni pour les sauvegardes ni pour les sous-traitants. Audit de sécurité annuel par tiers indépendant — rapport consultable sur notre page Sécurité.
+Vos échanges passent en HTTPS (chiffrement en transit) et vos données sont chiffrées au repos côté hébergeur. Vos pièces sont déposées dans un stockage privé, accessible uniquement après authentification, via des liens temporaires. Chaque compte est isolé des autres, et nos hébergeurs sous-traitants sont conformes au RGPD.
 
-### Suis-je obligé de prendre un avocat via ClairDossier ?
+### Suis-je obligé de passer par un tiers via ClairDossier ?
 
-Non. Vous pouvez constituer votre dossier, l'exporter en ZIP, et le transmettre à l'avocat de votre choix — ami de famille, conseil d'entreprise, avocat trouvé par recommandation. ClairDossier propose un réseau d'avocats partenaires si vous n'avez personne, mais nous n'imposons rien.
+Non. ClairDossier vous sert à constituer et organiser votre dossier, puis à le transmettre quand vous le décidez — par e-mail ou WhatsApp — au destinataire de votre choix. Rien n'est envoyé sans votre validation explicite, et vous n'êtes obligé de passer par aucun intermédiaire imposé.
 
-### ClairDossier s'intègre-t-il à mes outils existants ?
+### Comment je récupère ou partage mes dossiers ?
 
-Oui. Une API d'intégration (plans Business / PME Pro et Premium) synchronise vos dossiers ClairDossier avec votre CRM, votre outil de gestion ou votre solution maison. L'onboarding sur site (offre sur-mesure) couvre cette intégration.
+Depuis la liste de vos dossiers, ouvrez la page détail « Avancement du dossier » : vous y consultez les 5 étapes, téléchargez chaque pièce et voyez les échéances. Quand vous le souhaitez, vous transmettez le dossier par e-mail ou WhatsApp au destinataire de votre choix, après votre validation.
 
-### Que se passe-t-il si l'avocat refuse de valider mon dossier ?
+### Comment je suis l'avancement de mon dossier ?
 
-L'avocat doit motiver son refus. Vous recevez l'explication par message dans l'app et par email. Trois cas : le dossier est incomplet (vous le complétez), le dossier est hors champ de l'avocat (nous vous orientons vers un autre confrère), le dossier est juridiquement non recevable (vous êtes orienté vers une démarche alternative).
+La page détail « Avancement du dossier » affiche 5 étapes métier cliquables. Vous y voyez où en est votre dossier, les pièces déjà déposées (téléchargeables) et les échéances à venir. Si une pièce manque, vous complétez le dossier directement depuis l'app, puis vous le transmettez quand il est prêt.
 
 ### La facturation est par utilisateur ou par dossier ?
 
 Selon le plan. Les formules Essentiel à Business PME 50 incluent un nombre défini de dossiers et d'utilisateurs ; les plans Pro et Premium passent en dossiers illimités (15 utilisateurs, puis illimité). Vous montez en gamme quand votre volume augmente — jamais pénalisé à l'usage.
 
-### Puis-je exporter mes dossiers (PDF, ZIP) ?
+### Puis-je récupérer mes pièces et mon dossier ?
 
-Oui, à tout moment, sans condition. L'export ZIP contient toutes les pièces, la chronologie en PDF, l'historique des messages et des statuts. Vous pouvez le déposer chez un autre professionnel, l'archiver localement, ou le transmettre à une juridiction.
+Oui. Depuis la page détail du dossier, chaque pièce déposée est téléchargeable. Vous pouvez aussi transmettre le dossier par e-mail ou WhatsApp, au moment où vous le décidez. Pour une copie complète de vos données personnelles, une demande d'export RGPD est possible via le contact (traitement sous 30 jours).
 
-### Conformité RGPD : où sont stockées exactement mes données ?
+### Conformité RGPD : comment exercer mes droits sur mes données ?
 
-Datacenters OVH situés à Roubaix (59) et Strasbourg (67). Sauvegardes redondantes sur ces deux sites, jamais hors de France. Sous-traitants tiers utilisés (mail transactionnel, monitoring) : tous européens, DPA consultables sur la page Sécurité. Vous pouvez exiger la suppression de votre compte à tout moment — anonymisation sous 30 jours.
+Vos données sont chiffrées au repos chez notre hébergeur, conforme au RGPD, et chaque compte est isolé des autres. Vous gardez vos droits d'accès, d'export et de suppression : il suffit d'en faire la demande via le contact ou votre espace. Une demande est traitée dans un délai raisonnable, sous 30 jours.
 
 ## Contact
 

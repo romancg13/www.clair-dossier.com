@@ -21,14 +21,14 @@ Facturation annuelle : 205,20 € HT/an, soit 17,10 € HT/mois (−10 %).
 - **Support** : Support email
 
 Fonctionnalités incluses :
-- Messagerie sécurisée : ✓
-- Calendrier & relances à échéance : limité
-- Résumé IA : limité
-- Rédaction IA (projet de réponse) : ✗
-- Réponse automatisée aux e-mails : ✗
-- IA avancée (GPT-5.5) : ✗
-- Modèles de documents : ✗
-- Dossiers récurrents : ✗
+- Transmission par e-mail ou WhatsApp : ✓
+- Échéances affichées sur le dossier : limité
+- Récapitulatif du dossier : limité
+- Suivi par étapes métier : ✗
+- Dépôt de pièces sécurisé : ✗
+- Espace privé multi-dossiers : ✗
+- Pièces téléchargeables : ✗
+- Plusieurs dossiers en parallèle : ✗
 
 ### Entrepreneur — 39 € HT/mois
 
@@ -41,14 +41,14 @@ Facturation annuelle : 421,20 € HT/an, soit 35,10 € HT/mois (−10 %).
 - **Support** : Support email prioritaire
 
 Fonctionnalités incluses :
-- Messagerie sécurisée : ✓
-- Calendrier & relances à échéance : ✓
-- Résumé IA : ✓
-- Rédaction IA (projet de réponse) : limité
-- Réponse automatisée aux e-mails : ✗
-- IA avancée (GPT-5.5) : ✗
-- Modèles de documents : ✓
-- Dossiers récurrents : ✗
+- Transmission par e-mail ou WhatsApp : ✓
+- Échéances affichées sur le dossier : ✓
+- Récapitulatif du dossier : ✓
+- Suivi par étapes métier : limité
+- Dépôt de pièces sécurisé : ✗
+- Espace privé multi-dossiers : ✗
+- Pièces téléchargeables : ✓
+- Plusieurs dossiers en parallèle : ✗
 
 ### Business PME 20 (mis en avant) — 49 € HT/mois
 
@@ -61,14 +61,14 @@ Facturation annuelle : 529,20 € HT/an, soit 44,10 € HT/mois (−10 %).
 - **Support** : Support prioritaire
 
 Fonctionnalités incluses :
-- Messagerie sécurisée : ✓
-- Calendrier & relances à échéance : ✓
-- Résumé IA : ✓
-- Rédaction IA (projet de réponse) : ✓
-- Réponse automatisée aux e-mails : limité
-- IA avancée (GPT-5.5) : ✗
-- Modèles de documents : ✓
-- Dossiers récurrents : ✓
+- Transmission par e-mail ou WhatsApp : ✓
+- Échéances affichées sur le dossier : ✓
+- Récapitulatif du dossier : ✓
+- Suivi par étapes métier : ✓
+- Dépôt de pièces sécurisé : limité
+- Espace privé multi-dossiers : ✗
+- Pièces téléchargeables : ✓
+- Plusieurs dossiers en parallèle : ✓
 
 ### Business PME 50 — 89 € HT/mois
 
@@ -81,14 +81,14 @@ Facturation annuelle : 961,20 € HT/an, soit 80,10 € HT/mois (−10 %).
 - **Support** : Support prioritaire
 
 Fonctionnalités incluses :
-- Messagerie sécurisée : ✓
-- Calendrier & relances à échéance : ✓
-- Résumé IA : ✓
-- Rédaction IA (projet de réponse) : ✓
-- Réponse automatisée aux e-mails : ✓
-- IA avancée (GPT-5.5) : ✗
-- Modèles de documents : ✓
-- Dossiers récurrents : ✓
+- Transmission par e-mail ou WhatsApp : ✓
+- Échéances affichées sur le dossier : ✓
+- Récapitulatif du dossier : ✓
+- Suivi par étapes métier : ✓
+- Dépôt de pièces sécurisé : ✓
+- Espace privé multi-dossiers : ✗
+- Pièces téléchargeables : ✓
+- Plusieurs dossiers en parallèle : ✓
 
 ### Business / PME Pro (mis en avant) — 169 € HT/mois
 
@@ -101,14 +101,14 @@ Facturation annuelle : 1825,20 € HT/an, soit 152,10 € HT/mois (−10 %).
 - **Support** : Support dédié
 
 Fonctionnalités incluses :
-- Messagerie sécurisée : ✓
-- Calendrier & relances à échéance : ✓
-- Résumé IA : ✓
-- Rédaction IA (projet de réponse) : ✓
-- Réponse automatisée aux e-mails : ✓
-- IA avancée (GPT-5.5) : ✓
-- Modèles de documents : ✓
-- Dossiers récurrents : ✓
+- Transmission par e-mail ou WhatsApp : ✓
+- Échéances affichées sur le dossier : ✓
+- Récapitulatif du dossier : ✓
+- Suivi par étapes métier : ✓
+- Dépôt de pièces sécurisé : ✓
+- Espace privé multi-dossiers : ✓
+- Pièces téléchargeables : ✓
+- Plusieurs dossiers en parallèle : ✓
 
 ### Business / PME Premium — 299 € HT/mois
 
@@ -121,14 +121,14 @@ Facturation annuelle : 3229,20 € HT/an, soit 269,10 € HT/mois (−10 %).
 - **Support** : Support entreprise
 
 Fonctionnalités incluses :
-- Messagerie sécurisée : ✓
-- Calendrier & relances à échéance : ✓
-- Résumé IA : ✓
-- Rédaction IA (projet de réponse) : ✓
-- Réponse automatisée aux e-mails : ✓
-- IA avancée (GPT-5.5) : ✓
-- Modèles de documents : ✓
-- Dossiers récurrents : ✓
+- Transmission par e-mail ou WhatsApp : ✓
+- Échéances affichées sur le dossier : ✓
+- Récapitulatif du dossier : ✓
+- Suivi par étapes métier : ✓
+- Dépôt de pièces sécurisé : ✓
+- Espace privé multi-dossiers : ✓
+- Pièces téléchargeables : ✓
+- Plusieurs dossiers en parallèle : ✓
 
 ### Business / PME personnalisée (mis en avant) — Sur devis
 
@@ -139,14 +139,14 @@ Fonctionnalités incluses :
 - **Support** : Accompagnement dédié
 
 Fonctionnalités incluses :
-- Messagerie sécurisée : ✓
-- Calendrier & relances à échéance : ✓
-- Résumé IA : ✓
-- Rédaction IA (projet de réponse) : ✓
-- Réponse automatisée aux e-mails : ✓
-- IA avancée (GPT-5.5) : ✓
-- Modèles de documents : ✓
-- Dossiers récurrents : ✓
+- Transmission par e-mail ou WhatsApp : ✓
+- Échéances affichées sur le dossier : ✓
+- Récapitulatif du dossier : ✓
+- Suivi par étapes métier : ✓
+- Dépôt de pièces sécurisé : ✓
+- Espace privé multi-dossiers : ✓
+- Pièces téléchargeables : ✓
+- Plusieurs dossiers en parallèle : ✓
 
 ## Devis sur-mesure
 
@@ -154,9 +154,9 @@ Pour structures avec exigences de marque blanche, intégration API, SSO, audit d
 
 ## Engagement
 
-- **Données chiffrées.** Chiffrement de bout en bout, hébergement exclusivement UE.
-- **IA supervisée.** Chaque analyse IA peut être validée par un professionnel du droit, en option, avant transmission.
-- **Sans engagement.** Résiliez à tout moment. Vos données restent exportables.
+- **Données protégées.** Chiffrement en transit (HTTPS) et au repos côté hébergeur, pièces stockées dans un espace privé, accès par authentification.
+- **Vous gardez la main.** Rien ne part sans votre validation : la transmission du dossier, par e-mail ou WhatsApp, est déclenchée par vous.
+- **Sans engagement.** Résiliez à tout moment. Accès, export et suppression de vos données sur demande.
 
 
 ---

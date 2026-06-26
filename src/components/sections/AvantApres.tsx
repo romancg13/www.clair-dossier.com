@@ -1,20 +1,20 @@
-import { Reveal } from '../primitives/Reveal';
-import { ArrowRightIcon, CheckIcon, CrossIcon } from '../icons';
+import { Reveal } from "../primitives/Reveal";
+import { ArrowRightIcon, CheckIcon, CrossIcon } from "../icons";
 
 const AVANT = [
   "Pièces dispersées dans 4 emails, 2 fils WhatsApp et un dossier carton.",
   "Chronologie reconstituée à la main avant chaque consultation, recommencée à chaque rebondissement.",
   "Le client ignore où en est son dossier — il appelle pour demander.",
-  "Les statuts sont dans la tête de l'avocat, pas dans un système.",
+  "L'avancement est dans votre tête ou sur un coin de table, pas dans un système.",
   "Validation par mail informel, signature scannée, conservation aléatoire.",
 ];
 
 const AVEC = [
-  "Pièces déposées une fois, renommées, indexées et reliées à la chronologie.",
-  "Chronologie auto-construite depuis les pièces, éditable, exportable en PDF.",
-  "Le client consulte le statut en temps réel — six statuts standardisés, traçables.",
-  "Tableau de bord équipe, attribution des dossiers, charge par collaborateur visible.",
-  "Validation horodatée, signature électronique, conservation conforme aux délais légaux.",
+  "Pièces déposées une fois dans un espace privé sécurisé, consultables et téléchargeables.",
+  "Avancement suivi sur 5 étapes métier claires, avec les échéances réunies au même endroit.",
+  "Vous consultez l'avancement de votre dossier à tout moment, depuis votre espace.",
+  "Tous vos dossiers réunis dans un espace privé, isolés et accessibles par vous seul.",
+  "Rien ne part sans votre validation : transmission par e-mail ou WhatsApp, quand vous le décidez.",
 ];
 
 export function AvantApres() {
@@ -32,9 +32,17 @@ export function AvantApres() {
             </h2>
             <ul className="mt-7 space-y-4">
               {AVANT.map((item) => (
-                <li key={item} className="flex gap-3 text-sm leading-relaxed text-slate-500">
+                <li
+                  key={item}
+                  className="flex gap-3 text-sm leading-relaxed text-slate-500"
+                >
                   <span className="mt-1 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-navy-900/8">
-                    <CrossIcon width={11} height={11} strokeWidth={2} className="text-navy-700" />
+                    <CrossIcon
+                      width={11}
+                      height={11}
+                      strokeWidth={2}
+                      className="text-navy-700"
+                    />
                   </span>
                   {item}
                 </li>
@@ -46,7 +54,12 @@ export function AvantApres() {
           <div className="hidden items-center lg:flex">
             <div className="flex flex-col items-center gap-3">
               <div className="h-12 w-px bg-gold-500/40" />
-              <ArrowRightIcon width={20} height={20} className="text-gold-700" strokeWidth={1.5} />
+              <ArrowRightIcon
+                width={20}
+                height={20}
+                className="text-gold-700"
+                strokeWidth={1.5}
+              />
               <div className="h-12 w-px bg-gold-500/40" />
             </div>
           </div>
@@ -61,9 +74,17 @@ export function AvantApres() {
             </h2>
             <ul className="mt-7 space-y-4">
               {AVEC.map((item) => (
-                <li key={item} className="flex gap-3 text-sm leading-relaxed text-cream-50/80">
+                <li
+                  key={item}
+                  className="flex gap-3 text-sm leading-relaxed text-cream-50/80"
+                >
                   <span className="mt-1 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-gold-500/20">
-                    <CheckIcon width={12} height={12} strokeWidth={2.2} className="text-gold-700" />
+                    <CheckIcon
+                      width={12}
+                      height={12}
+                      strokeWidth={2.2}
+                      className="text-gold-700"
+                    />
                   </span>
                   {item}
                 </li>

@@ -1,25 +1,25 @@
-import { Link } from 'react-router-dom';
-import { Logo } from './Logo';
+import { Link } from "react-router-dom";
+import { Logo } from "./Logo";
 
 const PRODUIT = [
-  { to: '/fonctionnalites', label: 'Fonctionnalités' },
-  { to: '/tarifs', label: 'Tarifs' },
-  { to: '/securite', label: 'Sécurité' },
-  { to: '/dossier/nouveau', label: 'Créer un dossier' },
+  { to: "/fonctionnalites", label: "Fonctionnalités" },
+  { to: "/tarifs", label: "Tarifs" },
+  { to: "/securite", label: "Sécurité" },
+  { to: "/dossier/nouveau", label: "Créer un dossier" },
 ];
 
 const RESSOURCES = [
-  { to: '/blog', label: 'Journal' },
-  { to: '/contact', label: 'Contact & démo' },
-  { to: '/securite#conformite', label: 'Conformité' },
-  { to: '/securite#dpa', label: 'DPA' },
+  { to: "/blog", label: "Journal" },
+  { to: "/contact", label: "Contact & démo" },
+  { to: "/securite#conformite", label: "Conformité" },
+  { to: "/securite#dpa", label: "DPA" },
 ];
 
 const LEGAL = [
-  { to: '/mentions-legales', label: 'Mentions légales' },
-  { to: '/cgv', label: 'CGV' },
-  { to: '/politique-confidentialite', label: 'Confidentialité' },
-  { to: '/cookies', label: 'Cookies' },
+  { to: "/mentions-legales", label: "Mentions légales" },
+  { to: "/cgv", label: "CGV" },
+  { to: "/politique-confidentialite", label: "Confidentialité" },
+  { to: "/cookies", label: "Cookies" },
 ];
 
 export function Footer() {
@@ -30,8 +30,9 @@ export function Footer() {
           <div>
             <Logo />
             <p className="mt-5 max-w-xs text-sm leading-relaxed text-slate-500">
-              ClairDossier structure vos dossiers administratifs et juridiques — du brouillon à
-              la transmission, avec calendrier, relances à échéance et projets de réponse.
+              ClairDossier structure vos dossiers administratifs et juridiques —
+              du brouillon à la transmission, avec dépôt de pièces sécurisé,
+              suivi de l'avancement et échéances réunies au même endroit.
             </p>
           </div>
 
@@ -45,8 +46,11 @@ export function Footer() {
             © 2026 ClairDossier · Édité par Roman Gomes · SIREN 105 490 734
           </span>
           <span>
-            Hébergement OVH (France) · Données en territoire européen ·{' '}
-            <Link to="/securite" className="border-b hairline-gold hover:text-navy-900">
+            Hébergeur conforme RGPD · Pièces chiffrées au repos ·{" "}
+            <Link
+              to="/securite"
+              className="border-b hairline-gold hover:text-navy-900"
+            >
               Charte de sécurité
             </Link>
           </span>
@@ -56,7 +60,13 @@ export function Footer() {
   );
 }
 
-function FooterCol({ title, items }: { title: string; items: { to: string; label: string }[] }) {
+function FooterCol({
+  title,
+  items,
+}: {
+  title: string;
+  items: { to: string; label: string }[];
+}) {
   return (
     <div>
       <h3 className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-navy-900">

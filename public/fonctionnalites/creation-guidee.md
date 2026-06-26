@@ -1,27 +1,27 @@
 ---
 title: "Création guidée par typologie"
-description: "Un formulaire intelligent qui s'adapte à la nature du dossier — prud'hommes, bail, recouvrement — et collecte les bonnes informations dès le départ."
+description: "Un tunnel de création en 5 étapes qui s'adapte à votre profil — artisan, indépendant, profession libérale, PME — et structure votre dossier dès le départ."
 url: https://www.clair-dossier.com/fonctionnalites/creation-guidee
 ---
 
 # Création guidée par typologie
 
-**Le bon dossier commence par les bonnes questions. ClairDossier en pose 12 — pas 80.**
+**Le bon dossier commence par les bonnes étapes. ClairDossier en propose 5, dans l'ordre.**
 
-La plupart des plateformes juridiques font remplir un formulaire générique de 80 champs. Résultat : 60 % des champs sont laissés vides, 30 % sont mal renseignés, et l'avocat doit recommencer l'instruction. Notre approche est inverse — partir de la typologie pour ne demander que ce qui est strictement utile à l'analyse.
+La plupart des outils font remplir un formulaire générique d'un seul tenant. Résultat : des informations éparses, mal rangées, qu'il faut ensuite reprendre. Notre approche est inverse — guider la création étape par étape pour ne collecter que ce qui est utile, dans le bon ordre.
 
-À l'ouverture, le formulaire détermine la nature du dossier : litige commercial, conflit de travail, problème locatif, contestation administrative. Les questions suivantes sont conditionnelles. Un dossier prud'homal n'a pas besoin du DPE du logement ; un litige locatif n'a pas besoin du contrat de travail.
+Le tunnel se déroule en cinq étapes : votre profil (artisan, indépendant, profession libérale ou PME), la nature du dossier, les informations, le dépôt des documents, puis un récapitulatif avant validation. À la première étape, vous donnez un nom au dossier — c'est obligatoire, pour le retrouver clairement dans votre liste.
 
-Chaque champ contient une micro-aide rédigée par un juriste, qui explique pourquoi cette information est demandée. Quand le client comprend l'utilité, il répond. Quand il répond, l'avocat instruit plus vite.
+Chaque étape ne demande que ce dont elle a besoin. Vous avancez d'un écran à l'autre sans vous perdre, et vous voyez à tout moment où vous en êtes dans la création.
 
-Le formulaire enregistre automatiquement en brouillon toutes les 30 secondes. Vous pouvez quitter, revenir, finir depuis le mobile. Le dossier suit votre rythme — pas l'inverse.
+Le récapitulatif final vous montre l'ensemble de ce que vous avez saisi avant de confirmer. Vous relisez, vous corrigez si besoin, puis vous validez. Rien n'est figé tant que vous n'avez pas confirmé.
 
 ## Concrètement
 
-- 12 typologies juridiques couvertes au lancement
-- Champs conditionnels selon la nature du dossier
-- Micro-aide juridique rédigée par juriste sur chaque champ
-- Sauvegarde brouillon automatique toutes les 30 secondes
+- Tunnel de création en 5 étapes guidées
+- Adaptation au profil : artisan, indépendant, profession libérale, PME
+- Nom de dossier obligatoire pour un repérage clair
+- Récapitulatif complet avant validation finale
 
 
 ---

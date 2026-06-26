@@ -1,5 +1,5 @@
 export type Workspace = {
-  id: 'client' | 'avocat' | 'cabinet';
+  id: "client" | "avocat" | "cabinet";
   label: string;
   title: string;
   description: string;
@@ -8,85 +8,90 @@ export type Workspace = {
   mockup: {
     kicker: string;
     title: string;
-    rows: Array<{ label: string; value: string; tone?: 'normal' | 'gold' | 'navy' }>;
+    rows: Array<{
+      label: string;
+      value: string;
+      tone?: "normal" | "gold" | "navy";
+    }>;
     footnote?: string;
   };
 };
 
 export const workspaces: Workspace[] = [
   {
-    id: 'client',
-    label: 'Vous',
-    title: 'Votre dossier, vos décisions.',
+    id: "client",
+    label: "Vous",
+    title: "Votre dossier, vos décisions.",
     description:
       "Vous construisez votre dossier à votre rythme. Vous voyez en permanence où il en est, qui agit, ce qui est attendu de vous.",
     capabilities: [
-      "Création guidée par typologie (prud'hommes, bail, recouvrement…)",
-      "Suivi en temps réel des 6 statuts de votre dossier",
-      'Messagerie sécurisée avec votre interlocuteur',
-      "Export ZIP intégral à tout moment, sans condition",
+      "Création guidée en 5 étapes (profil, nature, informations, pièces, récapitulatif)",
+      "Suivi de l'avancement sur les 5 étapes métier de votre dossier",
+      "Transmission par e-mail ou WhatsApp, déclenchée par vous",
+      "Récupération de vos pièces et données sur demande",
     ],
     mockup: {
-      kicker: 'Aperçu dossier',
-      title: "Prud'homal — synthèse",
+      kicker: "Aperçu dossier",
+      title: "Avancement du dossier",
       rows: [
-        { label: 'Statut', value: 'Validation pro (option)', tone: 'gold' },
-        { label: 'Pièces déposées', value: '7 / 9' },
-        { label: 'Chronologie', value: '4 évènements datés' },
-        { label: 'Validation', value: 'Sous 24 h ouvrées', tone: 'navy' },
-        { label: 'Dernier message', value: 'il y a 2 h' },
+        { label: "Étape", value: "Dépôt des pièces", tone: "gold" },
+        { label: "Pièces déposées", value: "7 / 9" },
+        { label: "Échéance", value: "affichée sur le dossier" },
+        { label: "Transmission", value: "à votre validation", tone: "navy" },
+        { label: "Stockage", value: "espace privé sécurisé" },
       ],
-      footnote: 'Notification dès qu\'une action est requise.',
+      footnote: "Rien n'est transmis sans votre validation explicite.",
     },
   },
   {
-    id: 'avocat',
-    label: 'Validation',
-    title: 'Un préavis juridique, quand vous le décidez.',
+    id: "avocat",
+    label: "Validation",
+    title: "Une relecture côté support, quand c'est utile.",
     description:
-      "En option, un professionnel du droit établit un préavis juridique et valide le résumé de votre situation : brief IA préparatoire, chronologie reconstruite, pièces indexées.",
+      "Un administrateur unique peut, côté support, consulter votre dossier et les pièces déposées pour vous accompagner. Vous gardez la main : rien n'est transmis hors de votre espace sans votre accord.",
     capabilities: [
-      "Brief IA préparatoire avant chaque consultation",
-      "Validation en un clic, demande de pièce ou refus motivé",
-      "Notes internes (privées) vs notes partagées (visibles client)",
-      "Signature électronique horodatée jointe à chaque validation",
+      "Consultation du dossier et des pièces par l'administrateur support",
+      "Vue d'ensemble des 5 étapes et des échéances du dossier",
+      "Accès limité à l'administrateur unique, isolé des autres comptes",
+      "Pièces accessibles via des liens privés à durée limitée",
     ],
     mockup: {
-      kicker: 'Brief · Préparation consultation',
-      title: 'Aperçu dossier prud\'homal',
+      kicker: "Support · Relecture du dossier",
+      title: "Aperçu du dossier",
       rows: [
-        { label: 'Points de droit', value: 'L1232-1 · L1232-6 CT' },
-        { label: 'Jurisprudence', value: 'Cass. soc. arrêt récent', tone: 'navy' },
-        { label: 'Incohérences', value: '1 datation à clarifier' },
-        { label: 'Pièces à vérifier', value: 'Mise en demeure' },
-        { label: 'Durée estimée', value: '25 minutes', tone: 'gold' },
+        { label: "Profil", value: "Indépendant" },
+        { label: "Nature", value: "renseignée à la création", tone: "navy" },
+        { label: "Pièces", value: "déposées dans l'espace privé" },
+        { label: "Étape en cours", value: "Récapitulatif" },
+        { label: "Accès", value: "administrateur unique", tone: "gold" },
       ],
-      footnote: 'Brief généré par IA. Validation professionnelle requise.',
+      footnote: "Accès support réservé à un administrateur unique.",
     },
   },
   {
-    id: 'cabinet',
-    label: 'Entreprise',
-    title: 'Une vue d\'ensemble qui ne ment pas.',
+    id: "cabinet",
+    label: "Entreprise",
+    title: "Tous vos dossiers, au même endroit.",
     description:
-      "Tous les dossiers de votre équipe, tous les statuts, toutes les charges. La direction de l'entreprise sait ce qui se passe — sans demander.",
+      "Artisan, indépendant, profession libérale ou PME : retrouvez la liste de vos dossiers et l'avancement de chacun depuis un seul espace. Chaque compte ne voit que ses propres dossiers.",
     capabilities: [
-      "Tableau de bord équipe avec attribution des dossiers",
-      "Suivi de la charge par collaborateur",
-      "Notes internes partagées entre membres habilités",
-      "Reporting mensuel automatique (PDF, CSV)",
+      "Liste de tous vos dossiers avec leur étape en cours",
+      "Page détail « Avancement du dossier » pour chaque dossier",
+      "Données isolées par compte : vous ne voyez que les vôtres",
+      "Transmission par e-mail ou WhatsApp, dossier par dossier",
     ],
     mockup: {
-      kicker: 'Vue entreprise · semaine type',
-      title: 'Tableau de bord équipe',
+      kicker: "Vos dossiers · vue d'ensemble",
+      title: "Liste des dossiers",
       rows: [
-        { label: 'Dossiers actifs', value: '47', tone: 'navy' },
-        { label: 'En attente validation', value: '6' },
-        { label: 'Validés cette semaine', value: '12', tone: 'gold' },
-        { label: 'Charge par membre', value: '5,2 dossiers/sem.' },
-        { label: 'Délai moyen validation', value: '38 heures' },
+        { label: "Dossiers du compte", value: "tous regroupés", tone: "navy" },
+        { label: "Avancement", value: "étape affichée par dossier" },
+        { label: "Pièces", value: "téléchargeables par dossier", tone: "gold" },
+        { label: "Échéances", value: "affichées sur chaque dossier" },
+        { label: "Visibilité", value: "limitée à votre compte" },
       ],
-      footnote: 'Rapport hebdomadaire envoyé chaque lundi à 8h.',
+      footnote:
+        "Chaque compte est isolé : aucun accès croisé entre utilisateurs.",
     },
   },
 ];

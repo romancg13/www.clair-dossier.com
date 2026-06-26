@@ -1,5 +1,5 @@
-import { Link } from 'react-router-dom';
-import { Reveal, Stagger, StaggerItem } from '../primitives/Reveal';
+import { Link } from "react-router-dom";
+import { Reveal, Stagger, StaggerItem } from "../primitives/Reveal";
 import {
   HostingFranceIcon,
   EncryptionIcon,
@@ -8,38 +8,38 @@ import {
   BackupIcon,
   AuditIcon,
   ArrowRightIcon,
-} from '../icons';
+} from "../icons";
 
 const TRUST = [
   {
     Icon: HostingFranceIcon,
-    title: 'Hébergement français',
-    body: "Datacenters OVH à Roubaix et Strasbourg. Sauvegardes redondantes uniquement en France. Aucun transfert hors UE.",
+    title: "Hébergeur conforme RGPD",
+    body: "Vos données sont hébergées chez un sous-traitant conforme au RGPD. Aucune lecture ni exploitation automatique de vos pièces.",
   },
   {
     Icon: EncryptionIcon,
-    title: 'Chiffrement AES-256 / TLS 1.3',
-    body: "Au repos pour les pièces et bases de données. En transit pour tous les flux client ↔ serveur.",
+    title: "Chiffrement en transit et au repos",
+    body: "Tous les échanges passent en HTTPS. Vos pièces et données sont chiffrées au repos côté hébergeur.",
   },
   {
     Icon: RgpdIcon,
-    title: 'RGPD natif',
-    body: "Registre des traitements à jour, DPA standard et renforcé, DPIA réalisée et consultable sur demande.",
+    title: "Vos droits RGPD",
+    body: "Accès, export et suppression de vos données sur demande, via le contact ou votre espace. Traitement sous 30 jours.",
   },
   {
     Icon: ComplianceRinIcon,
-    title: 'Conformité RIN',
-    body: "Règlement Intérieur National des avocats : l'IA prépare, l'avocat décide. La frontière est technique, pas seulement contractuelle.",
+    title: "Vous gardez la main",
+    body: "Rien ne quitte votre espace sans votre validation. La transmission d'un dossier par e-mail ou WhatsApp est déclenchée par vous.",
   },
   {
     Icon: BackupIcon,
-    title: 'Sauvegardes 3-2-1',
-    body: "Trois copies de chaque donnée, sur deux supports différents, dont une hors site — restauration testée chaque trimestre.",
+    title: "Stockage privé des pièces",
+    body: "Vos documents sont déposés dans un espace privé. Le téléchargement passe par des liens signés temporaires.",
   },
   {
     Icon: AuditIcon,
-    title: 'Audit annuel par tiers',
-    body: "Un cabinet de sécurité externe indépendant audite l'infrastructure et les configurations. Rapport remis aux clients Entreprise.",
+    title: "Isolation par utilisateur",
+    body: "Chaque compte ne voit que ses propres dossiers. L'accès est protégé par authentification et isolé entre utilisateurs.",
   },
 ];
 
@@ -65,7 +65,10 @@ export function SecurityBlock() {
           </Link>
         </div>
 
-        <Stagger inView className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <Stagger
+          inView
+          className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+        >
           {TRUST.map((item) => (
             <StaggerItem key={item.title}>
               <div className="flex h-full gap-4 rounded-xl border hairline bg-white p-6">
@@ -76,7 +79,9 @@ export function SecurityBlock() {
                   <h3 className="font-display text-lg font-semibold leading-snug text-navy-900">
                     {item.title}
                   </h3>
-                  <p className="mt-2 text-sm leading-relaxed text-slate-500">{item.body}</p>
+                  <p className="mt-2 text-sm leading-relaxed text-slate-500">
+                    {item.body}
+                  </p>
                 </div>
               </div>
             </StaggerItem>

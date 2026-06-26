@@ -1,27 +1,27 @@
 ---
-title: "Coffre-fort numérique RGPD natif"
-description: "Vos données vivent en France, hébergées chez OVH, chiffrées au repos. Vous pouvez exporter, supprimer, transférer — à tout moment."
+title: "Vos données protégées et maîtrisées"
+description: "Vos données sont isolées par utilisateur, chiffrées au repos côté hébergeur, accessibles par authentification. Accès, export et suppression sur demande."
 url: https://www.clair-dossier.com/fonctionnalites/coffre-fort
 ---
 
-# Coffre-fort numérique RGPD natif
+# Vos données protégées et maîtrisées
 
-**Vos données n'appartiennent ni à ClairDossier, ni à votre avocat. Elles vous appartiennent.**
+**Vos données n'appartiennent qu'à vous. Vous pouvez en demander l'accès, l'export ou la suppression.**
 
-Le RGPD n'est pas une case à cocher. Pour une legaltech, c'est la condition d'existence. Chaque décision technique de ClairDossier est traversée par cette exigence — et chaque utilisateur peut le vérifier dans le détail.
+Le RGPD n'est pas une case à cocher. ClairDossier traite vos informations avec le souci de la protection des données, et vous conservez vos droits sur ce qui vous concerne.
 
-Vos données sont hébergées en France, dans les datacenters OVH à Roubaix et Strasbourg. Aucun transfert hors UE n'a lieu, ni pour les sauvegardes, ni pour les sous-traitants. Les rares prestataires tiers que nous utilisons (mail transactionnel, monitoring) sont également européens, et leurs DPA sont consultables sur notre page Sécurité.
+Vos données sont hébergées chez un sous-traitant conforme RGPD, chiffrées au repos côté hébergeur et transmises en HTTPS. L'isolation par utilisateur garantit que vos dossiers restent séparés de ceux des autres comptes ; l'accès se fait par authentification.
 
-Vous pouvez à tout moment exporter l'intégralité de votre dossier — pièces, messages, chronologie, décisions — dans un ZIP structuré, prêt à être déposé chez un autre professionnel. Vous pouvez supprimer votre compte — toutes les données vous appartenant sont effacées sous 30 jours (sauf obligation légale de conservation, auquel cas elles sont anonymisées).
+Vous gardez la main sur vos droits : accès, export et suppression de vos données. Ces demandes se font via le contact ou votre espace, et sont traitées dans un délai raisonnable (jusqu'à 30 jours), sauf obligation légale de conservation.
 
-Le coffre-fort est versionné : si vous modifiez une pièce ou un message, l'ancienne version reste accessible pendant 90 jours. Vous gardez le contrôle, même sur vos propres modifications.
+Tant que vous ne demandez pas de modification, vos données restent là où vous les avez placées, dans votre espace privé. Vous décidez de ce que vous transmettez, et à qui.
 
 ## Concrètement
 
-- Hébergement OVH France (Roubaix, Strasbourg)
-- Export ZIP intégral à tout moment, sans condition
-- Suppression de compte sous 30 jours (anonymisation si obligation légale)
-- Versioning 90 jours sur toutes les pièces et messages
+- Hébergeur sous-traitant conforme RGPD, chiffrement au repos
+- Isolation des données par utilisateur, accès par authentification
+- Accès, export et suppression sur demande
+- Demandes traitées sous 30 jours (sauf obligation légale)
 
 
 ---

@@ -6,51 +6,51 @@ export type FaqEntry = {
 
 export const homeFaq: FaqEntry[] = [
   {
-    id: 'qui-valide',
-    question: "Qui valide juridiquement les dossiers sur ClairDossier ?",
+    id: "qui-valide",
+    question: "Qui prépare les dossiers sur ClairDossier ?",
     answer:
-      "En option, vous pouvez demander qu'un professionnel du droit — avocat habilité, inscrit au barreau — établisse un préavis juridique et valide le résumé de votre situation. ClairDossier structure le dossier ; cette validation juridique est un service optionnel, jamais imposé. La signature électronique est jointe à la décision, avec horodatage.",
+      "C'est vous. ClairDossier vous guide pour constituer votre dossier en 5 étapes (profil, nature, informations, dépôt des pièces, récapitulatif) et le garder organisé. L'outil structure et conserve votre dossier dans un espace privé ; vous restez seul maître de son contenu et de ce que vous en faites.",
   },
   {
-    id: 'donnees-securisees',
+    id: "donnees-securisees",
     question: "Mes données sont-elles vraiment sécurisées ?",
     answer:
-      "Hébergement OVH France (Roubaix, Strasbourg). Chiffrement AES-256 au repos, TLS 1.3 en transit. Aucun transfert hors UE, ni pour les sauvegardes ni pour les sous-traitants. Audit de sécurité annuel par tiers indépendant — rapport consultable sur notre page Sécurité.",
+      "Vos échanges passent en HTTPS (chiffrement en transit) et vos données sont chiffrées au repos côté hébergeur. Vos pièces sont déposées dans un stockage privé, accessible uniquement après authentification, via des liens temporaires. Chaque compte est isolé des autres, et nos hébergeurs sous-traitants sont conformes au RGPD.",
   },
   {
-    id: 'obligation-avocat',
-    question: "Suis-je obligé de prendre un avocat via ClairDossier ?",
+    id: "obligation-avocat",
+    question: "Suis-je obligé de passer par un tiers via ClairDossier ?",
     answer:
-      "Non. Vous pouvez constituer votre dossier, l'exporter en ZIP, et le transmettre à l'avocat de votre choix — ami de famille, conseil d'entreprise, avocat trouvé par recommandation. ClairDossier propose un réseau d'avocats partenaires si vous n'avez personne, mais nous n'imposons rien.",
+      "Non. ClairDossier vous sert à constituer et organiser votre dossier, puis à le transmettre quand vous le décidez — par e-mail ou WhatsApp — au destinataire de votre choix. Rien n'est envoyé sans votre validation explicite, et vous n'êtes obligé de passer par aucun intermédiaire imposé.",
   },
   {
-    id: 'compatible-cabinet',
-    question: "ClairDossier s'intègre-t-il à mes outils existants ?",
+    id: "compatible-cabinet",
+    question: "Comment je récupère ou partage mes dossiers ?",
     answer:
-      "Oui. Une API d'intégration (plans Business / PME Pro et Premium) synchronise vos dossiers ClairDossier avec votre CRM, votre outil de gestion ou votre solution maison. L'onboarding sur site (offre sur-mesure) couvre cette intégration.",
+      "Depuis la liste de vos dossiers, ouvrez la page détail « Avancement du dossier » : vous y consultez les 5 étapes, téléchargez chaque pièce et voyez les échéances. Quand vous le souhaitez, vous transmettez le dossier par e-mail ou WhatsApp au destinataire de votre choix, après votre validation.",
   },
   {
-    id: 'refus-avocat',
-    question: "Que se passe-t-il si l'avocat refuse de valider mon dossier ?",
+    id: "refus-avocat",
+    question: "Comment je suis l'avancement de mon dossier ?",
     answer:
-      "L'avocat doit motiver son refus. Vous recevez l'explication par message dans l'app et par email. Trois cas : le dossier est incomplet (vous le complétez), le dossier est hors champ de l'avocat (nous vous orientons vers un autre confrère), le dossier est juridiquement non recevable (vous êtes orienté vers une démarche alternative).",
+      "La page détail « Avancement du dossier » affiche 5 étapes métier cliquables. Vous y voyez où en est votre dossier, les pièces déjà déposées (téléchargeables) et les échéances à venir. Si une pièce manque, vous complétez le dossier directement depuis l'app, puis vous le transmettez quand il est prêt.",
   },
   {
-    id: 'tarification-cabinet',
+    id: "tarification-cabinet",
     question: "La facturation est par utilisateur ou par dossier ?",
     answer:
       "Selon le plan. Les formules Essentiel à Business PME 50 incluent un nombre défini de dossiers et d'utilisateurs ; les plans Pro et Premium passent en dossiers illimités (15 utilisateurs, puis illimité). Vous montez en gamme quand votre volume augmente — jamais pénalisé à l'usage.",
   },
   {
-    id: 'export-possible',
-    question: "Puis-je exporter mes dossiers (PDF, ZIP) ?",
+    id: "export-possible",
+    question: "Puis-je récupérer mes pièces et mon dossier ?",
     answer:
-      "Oui, à tout moment, sans condition. L'export ZIP contient toutes les pièces, la chronologie en PDF, l'historique des messages et des statuts. Vous pouvez le déposer chez un autre professionnel, l'archiver localement, ou le transmettre à une juridiction.",
+      "Oui. Depuis la page détail du dossier, chaque pièce déposée est téléchargeable. Vous pouvez aussi transmettre le dossier par e-mail ou WhatsApp, au moment où vous le décidez. Pour une copie complète de vos données personnelles, une demande d'export RGPD est possible via le contact (traitement sous 30 jours).",
   },
   {
-    id: 'rgpd-donnees',
-    question: "Conformité RGPD : où sont stockées exactement mes données ?",
+    id: "rgpd-donnees",
+    question: "Conformité RGPD : comment exercer mes droits sur mes données ?",
     answer:
-      "Datacenters OVH situés à Roubaix (59) et Strasbourg (67). Sauvegardes redondantes sur ces deux sites, jamais hors de France. Sous-traitants tiers utilisés (mail transactionnel, monitoring) : tous européens, DPA consultables sur la page Sécurité. Vous pouvez exiger la suppression de votre compte à tout moment — anonymisation sous 30 jours.",
+      "Vos données sont chiffrées au repos chez notre hébergeur, conforme au RGPD, et chaque compte est isolé des autres. Vous gardez vos droits d'accès, d'export et de suppression : il suffit d'en faire la demande via le contact ou votre espace. Une demande est traitée dans un délai raisonnable, sous 30 jours.",
   },
 ];
