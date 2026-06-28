@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
-import { Seo } from '../lib/seo';
-import { useAuth } from '../lib/auth';
-import { supabase } from '../lib/supabase';
-import { ArrowRightIcon, CheckIcon } from '../components/icons';
+import { useEffect, useState } from "react";
+import { Link, useParams } from "react-router-dom";
+import { zipSync } from "fflate";
+import { Seo } from "../lib/seo";
+import { useAuth } from "../lib/auth";
+import { supabase } from "../lib/supabase";
+import { ArrowRightIcon, CheckIcon } from "../components/icons";
 
 type DossierRow = {
   id: string;
@@ -20,51 +21,52 @@ type DocumentRow = {
   id: string;
   file_name: string;
   file_path: string;
+  kind: string; // 'piece' (déposée par le client) | 'deliverable' (livrée par ClairDossier)
 };
 
 const STATUS_LABELS: Record<string, string> = {
-  brouillon: 'Brouillon',
-  transmis: 'Transmis',
-  'en-cours': 'En cours',
-  valide: 'Validé',
-  archive: 'Archivé',
+  brouillon: "Brouillon",
+  transmis: "Transmis",
+  "en-cours": "En cours",
+  valide: "Validé",
+  archive: "Archivé",
 };
 
 const TYPOLOGY_LABELS: Record<string, string> = {
   // Catégories actuelles (tunnel de création — profils PME / artisans / indépendants).
-  'dossier-client': 'Dossier client',
-  'facture-paiement': 'Facture / paiement',
-  'impaye-precontentieux': 'Impayé / pré-contentieux',
-  administratif: 'Dossier administratif',
-  comptable: 'Documents comptables',
-  rh: 'Personnel / RH',
-  autre: 'Autre',
+  "dossier-client": "Dossier client",
+  "facture-paiement": "Facture / paiement",
+  "impaye-precontentieux": "Impayé / pré-contentieux",
+  administratif: "Dossier administratif",
+  comptable: "Documents comptables",
+  rh: "Personnel / RH",
+  autre: "Autre",
   // Anciennes typologies — conservées pour les dossiers déjà enregistrés.
-  'litige-commercial': 'Litige commercial',
-  recouvrement: 'Recouvrement',
-  bail: 'Bail & immobilier',
-  consommation: 'Litige client / fournisseur',
-  'prud-hommes': "Prud'hommes",
-  divorce: 'Divorce / famille',
-  succession: 'Succession',
+  "litige-commercial": "Litige commercial",
+  recouvrement: "Recouvrement",
+  bail: "Bail & immobilier",
+  consommation: "Litige client / fournisseur",
+  "prud-hommes": "Prud'hommes",
+  divorce: "Divorce / famille",
+  succession: "Succession",
 };
 
 // Avancement du dossier — 5 étapes métier. Chaque étape est cliquable et ouvre
 // un panneau explicatif (cf. cahier directeur : étapes cliquables + message dynamique).
 const TIMELINE = [
-  'Création du dossier',
-  'Devis, contrat ou accord',
-  'Suivi du dossier',
-  'Facture et paiement',
-  'Option impayé / pré-contentieux',
+  "Création du dossier",
+  "Devis, contrat ou accord",
+  "Suivi du dossier",
+  "Facture et paiement",
+  "Option impayé / pré-contentieux",
 ];
 
 // Détail affiché dans le panneau quand on clique une étape (1-indexé via i+1).
 const STEP_PANELS: string[] = [
-  'Le dossier est créé : profil, nature, informations clés et premières pièces sont réunis dans un espace unique.',
+  "Le dossier est créé : profil, nature, informations clés et premières pièces sont réunis dans un espace unique.",
   "Les documents qui fondent la relation (devis, contrat, bon de commande, accord) sont rassemblés et datés.",
-  'Le dossier vit : échanges, relances, pièces complémentaires et échéances sont suivis au même endroit.',
-  'La facturation et les règlements sont tracés : montants, échéances, acomptes et solde restant dû.',
+  "Le dossier vit : échanges, relances, pièces complémentaires et échéances sont suivis au même endroit.",
+  "La facturation et les règlements sont tracés : montants, échéances, acomptes et solde restant dû.",
   "En cas d'impayé, le dossier est prêt : relances, mise en demeure et pièces sont organisées pour être transmises à un professionnel habilité.",
 ];
 
@@ -72,31 +74,31 @@ const STEP_PANELS: string[] = [
 const STEP_MESSAGES: Record<number, string> = {
   1: "Votre dossier vient d'être créé. Complétez les informations et déposez vos pièces pour le structurer.",
   2: "Rassemblez les documents qui fondent l'accord (devis, contrat, commande) pour sécuriser la suite.",
-  3: 'Votre dossier est suivi. Ajoutez les nouveaux échanges et pièces au fur et à mesure.',
-  4: 'Suivez la facturation et les règlements : renseignez les montants et les échéances de paiement.',
-  5: 'Le dossier est prêt à être transmis à un professionnel du droit en cas de contentieux.',
+  3: "Votre dossier est suivi. Ajoutez les nouveaux échanges et pièces au fur et à mesure.",
+  4: "Suivez la facturation et les règlements : renseignez les montants et les échéances de paiement.",
+  5: "Le dossier est prêt à être transmis à un professionnel du droit en cas de contentieux.",
 };
 
 // « Ce que vous devez faire maintenant » — action concrète selon l'étape atteinte.
 const STEP_NEXT_ACTIONS: Record<number, string> = {
-  1: 'Vérifiez les informations du dossier et déposez les premières pièces.',
-  2: 'Ajoutez le devis, le contrat ou l’accord signé au dossier.',
-  3: 'Mettez à jour le suivi : nouveaux courriers, relances, pièces reçues.',
-  4: 'Renseignez la facture, le montant dû et l’échéance de paiement.',
-  5: 'Préparez la transmission à un professionnel habilité si le litige persiste.',
+  1: "Vérifiez les informations du dossier et déposez les premières pièces.",
+  2: "Ajoutez le devis, le contrat ou l’accord signé au dossier.",
+  3: "Mettez à jour le suivi : nouveaux courriers, relances, pièces reçues.",
+  4: "Renseignez la facture, le montant dû et l’échéance de paiement.",
+  5: "Préparez la transmission à un professionnel habilité si le litige persiste.",
 };
 
 // Mappe un statut de dossier à une étape atteinte dans la frise (1-indexée).
 function currentStep(status: string): number {
   switch (status) {
-    case 'brouillon':
+    case "brouillon":
       return 1;
-    case 'transmis':
-    case 'en-cours':
+    case "transmis":
+    case "en-cours":
       return 3;
-    case 'valide':
+    case "valide":
       return 4;
-    case 'archive':
+    case "archive":
       return 5;
     default:
       return 1;
@@ -105,27 +107,27 @@ function currentStep(status: string): number {
 
 // Étiquettes lisibles pour les clés d'answers connues (cf. DossierFlow).
 const ANSWER_LABELS: Record<string, string> = {
-  counterparty: 'Partie adverse',
-  contractDate: 'Date du contrat',
-  amount: 'Montant en jeu',
-  deadline: 'Échéance',
-  situation: 'Situation',
-  debtor: 'Débiteur',
-  invoiceDate: 'Date de la facture',
-  organisme: 'Organisme concerné',
-  refDossier: 'Référence du dossier',
-  role: 'Rôle',
-  address: 'Adresse du local',
+  counterparty: "Partie adverse",
+  contractDate: "Date du contrat",
+  amount: "Montant en jeu",
+  deadline: "Échéance",
+  situation: "Situation",
+  debtor: "Débiteur",
+  invoiceDate: "Date de la facture",
+  organisme: "Organisme concerné",
+  refDossier: "Référence du dossier",
+  role: "Rôle",
+  address: "Adresse du local",
   startDate: "Date d'entrée dans les lieux",
-  merchant: 'Vendeur / prestataire / client',
+  merchant: "Vendeur / prestataire / client",
   purchaseDate: "Date d'achat ou de souscription",
   employer: "Nom de l'employeur",
   contractStart: "Date d'embauche",
-  ruptureDate: 'Date de la rupture',
-  marriageDate: 'Date du mariage',
-  separationDate: 'Date de séparation',
+  ruptureDate: "Date de la rupture",
+  marriageDate: "Date du mariage",
+  separationDate: "Date de séparation",
   children: "Nombre d'enfants concernés",
-  deathDate: 'Date du décès',
+  deathDate: "Date du décès",
   heirCount: "Nombre d'héritiers connus",
 };
 
@@ -149,6 +151,9 @@ export function DossierDetail() {
   const [loading, setLoading] = useState(true);
   // Étape dont le panneau est ouvert (0 = aucune ⇒ on affiche l'étape atteinte).
   const [openStep, setOpenStep] = useState(0);
+  const [delivering, setDelivering] = useState(false);
+  const [deliverError, setDeliverError] = useState<string | null>(null);
+  const [zipping, setZipping] = useState(false);
 
   useEffect(() => {
     if (!id) {
@@ -160,16 +165,18 @@ export function DossierDetail() {
     (async () => {
       // La RLS limite déjà la lecture au propriétaire — le filtre id suffit.
       const { data } = await supabase
-        .from('dossiers')
-        .select('id,user_id,typology,title,status,answers,legal_review_requested,created_at')
-        .eq('id', id)
+        .from("dossiers")
+        .select(
+          "id,user_id,typology,title,status,answers,legal_review_requested,created_at",
+        )
+        .eq("id", id)
         .maybeSingle();
       if (!active) return;
       const row = (data as DossierRow | null) ?? null;
       setDossier(row);
 
       // Admin : identité (e-mail) du propriétaire du dossier (réservé à l'admin).
-      const { data: adminFlag } = await supabase.rpc('is_admin');
+      const { data: adminFlag } = await supabase.rpc("is_admin");
       const admin = adminFlag === true;
       if (!active) return;
       setIsAdmin(admin);
@@ -177,9 +184,9 @@ export function DossierDetail() {
         if (row.user_id === user?.id) {
           setOwnerEmail(user?.email ?? null);
         } else {
-          const { data: em } = await supabase.rpc('admin_user_emails');
+          const { data: em } = await supabase.rpc("admin_user_emails");
           const found = (em as { id: string; email: string }[] | null)?.find(
-            (e) => e.id === row.user_id
+            (e) => e.id === row.user_id,
           );
           if (!active) return;
           setOwnerEmail(found?.email ?? null);
@@ -188,10 +195,10 @@ export function DossierDetail() {
 
       if (row) {
         const { data: docs } = await supabase
-          .from('dossier_documents')
-          .select('id,file_name,file_path')
-          .eq('dossier_id', id)
-          .order('created_at', { ascending: true });
+          .from("dossier_documents")
+          .select("id,file_name,file_path,kind")
+          .eq("dossier_id", id)
+          .order("created_at", { ascending: true });
         if (!active) return;
         const list = (docs as DocumentRow[] | null) ?? [];
         setDocuments(list);
@@ -201,10 +208,10 @@ export function DossierDetail() {
         await Promise.all(
           list.map(async (doc) => {
             const { data: url } = await supabase.storage
-              .from('documents')
+              .from("documents")
               .createSignedUrl(doc.file_path, 3600);
             if (url?.signedUrl) signed[doc.id] = url.signedUrl;
-          })
+          }),
         );
         if (!active) return;
         setLinks(signed);
@@ -224,9 +231,109 @@ export function DossierDetail() {
   // Panneau affiché : l'étape cliquée, ou par défaut l'étape atteinte par le dossier.
   const shownStep = openStep || step;
 
+  // Pièces déposées par le client vs travail livré par ClairDossier.
+  const pieces = documents.filter((d) => d.kind !== "deliverable");
+  const deliverables = documents.filter((d) => d.kind === "deliverable");
+
+  // Recharge la liste des documents + URL signées après une livraison.
+  async function reloadDocuments() {
+    if (!id) return;
+    const { data: docs } = await supabase
+      .from("dossier_documents")
+      .select("id,file_name,file_path,kind")
+      .eq("dossier_id", id)
+      .order("created_at", { ascending: true });
+    const list = (docs as DocumentRow[] | null) ?? [];
+    setDocuments(list);
+    const signed: Record<string, string> = {};
+    await Promise.all(
+      list.map(async (doc) => {
+        const { data: url } = await supabase.storage
+          .from("documents")
+          .createSignedUrl(doc.file_path, 3600);
+        if (url?.signedUrl) signed[doc.id] = url.signedUrl;
+      }),
+    );
+    setLinks(signed);
+  }
+
+  // Admin global : dépose le travail réalisé sous le dossier du CLIENT (kind='deliverable'),
+  // de sorte que le client y accède via ses propres politiques RLS (lecture + storage).
+  async function handleDeliver(fileList: FileList | null) {
+    if (!fileList || fileList.length === 0 || !dossier) return;
+    setDeliverError(null);
+    setDelivering(true);
+    try {
+      for (const file of Array.from(fileList)) {
+        const safe = file.name.replace(/[^a-zA-Z0-9._-]+/g, "_").slice(0, 80);
+        const path = `${dossier.user_id}/${dossier.id}/deliverable-${Date.now()}-${safe}`;
+        const up = await supabase.storage
+          .from("documents")
+          .upload(path, file, { upsert: false });
+        if (up.error) throw up.error;
+        const ins = await supabase.from("dossier_documents").insert({
+          dossier_id: dossier.id,
+          user_id: dossier.user_id, // propriété au CLIENT → il y accède via sa policy _own
+          file_path: path,
+          file_name: file.name,
+          size_bytes: file.size,
+          kind: "deliverable",
+        });
+        if (ins.error) throw ins.error;
+      }
+      await reloadDocuments();
+    } catch {
+      setDeliverError("L'envoi du livrable a échoué. Réessayez.");
+    } finally {
+      setDelivering(false);
+    }
+  }
+
+  // Téléchargement groupé : récupère chaque fichier (URL signée) et assemble un .zip côté client.
+  async function downloadZip(docs: DocumentRow[], zipName: string) {
+    if (docs.length === 0) return;
+    setZipping(true);
+    try {
+      const entries: Record<string, Uint8Array> = {};
+      const used = new Set<string>();
+      for (const d of docs) {
+        const href = links[d.id];
+        if (!href) continue;
+        const res = await fetch(href);
+        if (!res.ok) continue;
+        const buf = new Uint8Array(await res.arrayBuffer());
+        let name = d.file_name || d.id;
+        while (used.has(name)) name = `copie-${name}`;
+        used.add(name);
+        entries[name] = buf;
+      }
+      if (Object.keys(entries).length === 0) {
+        setDeliverError("Téléchargement indisponible pour le moment.");
+        return;
+      }
+      const zipped = zipSync(entries, { level: 0 });
+      const blob = new Blob([zipped as BlobPart], { type: "application/zip" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = zipName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } finally {
+      setZipping(false);
+    }
+  }
+
   return (
     <>
-      <Seo title="Détail du dossier" description="Le détail de votre dossier ClairDossier." path="/compte" noindex />
+      <Seo
+        title="Détail du dossier"
+        description="Le détail de votre dossier ClairDossier."
+        path="/compte"
+        noindex
+      />
 
       <section className="bg-cream-50">
         <div className="mx-auto max-w-4xl px-5 py-16 sm:px-8 lg:px-12">
@@ -241,7 +348,9 @@ export function DossierDetail() {
             <p className="mt-10 text-sm text-slate-500">Chargement…</p>
           ) : !dossier ? (
             <div className="mt-8 rounded-2xl border hairline bg-white p-8 text-center shadow-card">
-              <h1 className="font-display text-2xl font-semibold text-navy-900">Dossier introuvable</h1>
+              <h1 className="font-display text-2xl font-semibold text-navy-900">
+                Dossier introuvable
+              </h1>
               <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-slate-500">
                 Ce dossier n'existe pas ou ne fait pas partie de votre compte.
               </p>
@@ -262,22 +371,26 @@ export function DossierDetail() {
                     {TYPOLOGY_LABELS[dossier.typology] ?? dossier.typology}
                   </p>
                   <h1 className="mt-3 font-display text-4xl font-semibold leading-[1.05] text-navy-900">
-                    {dossier.title || TYPOLOGY_LABELS[dossier.typology] || dossier.typology}
+                    {dossier.title ||
+                      TYPOLOGY_LABELS[dossier.typology] ||
+                      dossier.typology}
                   </h1>
                   <p className="mt-3 font-mono text-[0.7rem] uppercase tracking-[0.14em] text-slate-500">
-                    Catégorie · {TYPOLOGY_LABELS[dossier.typology] ?? dossier.typology}
+                    Catégorie ·{" "}
+                    {TYPOLOGY_LABELS[dossier.typology] ?? dossier.typology}
                   </p>
                   {isAdmin && (
                     <p className="mt-1 font-mono text-[0.7rem] uppercase tracking-[0.14em] text-gold-700">
-                      Propriétaire · {ownerEmail ?? `${dossier.user_id.slice(0, 8)}…`}
+                      Propriétaire ·{" "}
+                      {ownerEmail ?? `${dossier.user_id.slice(0, 8)}…`}
                     </p>
                   )}
                   <p className="mt-1 font-mono text-[0.7rem] uppercase tracking-[0.14em] text-slate-500">
-                    Créé le{' '}
-                    {new Date(dossier.created_at).toLocaleDateString('fr-FR', {
-                      day: '2-digit',
-                      month: 'long',
-                      year: 'numeric',
+                    Créé le{" "}
+                    {new Date(dossier.created_at).toLocaleDateString("fr-FR", {
+                      day: "2-digit",
+                      month: "long",
+                      year: "numeric",
                     })}
                   </p>
                 </div>
@@ -304,32 +417,42 @@ export function DossierDetail() {
                           type="button"
                           onClick={() => setOpenStep(n)}
                           aria-expanded={selected}
-                          aria-label={`Étape ${n} : ${label}${active ? ' (étape en cours)' : ''}`}
+                          aria-label={`Étape ${n} : ${label}${active ? " (étape en cours)" : ""}`}
                           className={`flex w-full items-start gap-3 rounded-xl p-2 text-left transition-colors hover:bg-cream-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500/40 sm:flex-col sm:items-stretch ${
-                            selected ? 'bg-cream-100' : ''
+                            selected ? "bg-cream-100" : ""
                           }`}
                         >
                           <div className="flex items-center gap-3 sm:w-full">
                             <span
                               className={`grid h-7 w-7 shrink-0 place-items-center rounded-full font-mono text-[0.7rem] font-semibold transition-colors ${
                                 done || active
-                                  ? 'bg-navy-900 text-cream-50'
-                                  : 'border hairline-strong bg-white text-slate-500'
+                                  ? "bg-navy-900 text-cream-50"
+                                  : "border hairline-strong bg-white text-slate-500"
                               }`}
                             >
-                              {done ? <CheckIcon width={12} height={12} strokeWidth={2.5} /> : n}
+                              {done ? (
+                                <CheckIcon
+                                  width={12}
+                                  height={12}
+                                  strokeWidth={2.5}
+                                />
+                              ) : (
+                                n
+                              )}
                             </span>
                             {i < TIMELINE.length - 1 && (
                               <span
                                 className={`hidden h-px flex-1 transition-colors sm:block ${
-                                  step > n ? 'bg-navy-900' : 'bg-slate-300/40'
+                                  step > n ? "bg-navy-900" : "bg-slate-300/40"
                                 }`}
                               />
                             )}
                           </div>
                           <p
                             className={`text-sm leading-snug sm:mt-3 ${
-                              done || active ? 'font-medium text-navy-900' : 'text-slate-500'
+                              done || active
+                                ? "font-medium text-navy-900"
+                                : "text-slate-500"
                             }`}
                           >
                             {label}
@@ -373,23 +496,45 @@ export function DossierDetail() {
 
               {/* ── Pièces ──────────────────────────────────────────── */}
               <div className="mt-6 rounded-2xl border hairline bg-white p-7 shadow-card sm:p-9">
-                <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">
-                  Pièces du dossier
-                </p>
-                {documents.length === 0 ? (
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">
+                    Pièces du dossier
+                  </p>
+                  {/* Admin : télécharger toutes les pièces du client en une fois (.zip). */}
+                  {isAdmin && pieces.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        downloadZip(
+                          pieces,
+                          `pieces-${dossier.title || dossier.id}.zip`,
+                        )
+                      }
+                      disabled={zipping}
+                      className="shrink-0 rounded-full bg-navy-900 px-4 py-2 text-xs font-semibold text-cream-50 transition-colors hover:bg-navy-800 disabled:opacity-60"
+                    >
+                      {zipping
+                        ? "Préparation…"
+                        : `Télécharger toutes les pièces (${pieces.length})`}
+                    </button>
+                  )}
+                </div>
+                {pieces.length === 0 ? (
                   <p className="mt-4 text-sm leading-relaxed text-slate-500">
                     Aucune pièce n'a encore été déposée sur ce dossier.
                   </p>
                 ) : (
                   <ul className="mt-5 space-y-2">
-                    {documents.map((doc) => {
+                    {pieces.map((doc) => {
                       const href = links[doc.id];
                       return (
                         <li
                           key={doc.id}
                           className="flex items-center justify-between gap-3 rounded-xl border hairline bg-cream-50 px-4 py-3 text-sm"
                         >
-                          <span className="truncate text-navy-900">{doc.file_name}</span>
+                          <span className="truncate text-navy-900">
+                            {doc.file_name}
+                          </span>
                           {href ? (
                             <a
                               href={href}
@@ -400,12 +545,111 @@ export function DossierDetail() {
                               Télécharger
                             </a>
                           ) : (
-                            <span className="shrink-0 text-xs text-slate-500">Lien indisponible</span>
+                            <span className="shrink-0 text-xs text-slate-500">
+                              Lien indisponible
+                            </span>
                           )}
                         </li>
                       );
                     })}
                   </ul>
+                )}
+              </div>
+
+              {/* ── Services réalisés par ClairDossier (travail livré) ── */}
+              <div className="mt-6 rounded-2xl border hairline bg-white p-7 shadow-card sm:p-9">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">
+                    Services réalisés par ClairDossier
+                  </p>
+                  {deliverables.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        downloadZip(
+                          deliverables,
+                          `travail-${dossier.title || dossier.id}.zip`,
+                        )
+                      }
+                      disabled={zipping}
+                      className="shrink-0 rounded-full bg-navy-900 px-4 py-2 text-xs font-semibold text-cream-50 transition-colors hover:bg-navy-800 disabled:opacity-60"
+                    >
+                      {zipping ? "Préparation…" : "Tout télécharger"}
+                    </button>
+                  )}
+                </div>
+
+                {deliverables.length === 0 ? (
+                  <p className="mt-4 text-sm leading-relaxed text-slate-500">
+                    {isAdmin
+                      ? "Aucun livrable pour l'instant. Déposez le travail réalisé ci-dessous : le client y accédera depuis son espace."
+                      : "Le travail réalisé par ClairDossier apparaîtra ici une fois livré."}
+                  </p>
+                ) : (
+                  <ul className="mt-5 space-y-2">
+                    {deliverables.map((doc) => {
+                      const href = links[doc.id];
+                      return (
+                        <li
+                          key={doc.id}
+                          className="flex items-center justify-between gap-3 rounded-xl border hairline-gold bg-gold-500/5 px-4 py-3 text-sm"
+                        >
+                          <span className="truncate text-navy-900">
+                            {doc.file_name}
+                          </span>
+                          {href ? (
+                            <a
+                              href={href}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="shrink-0 font-medium text-navy-900 border-b hairline-gold pb-0.5 transition-colors hover:text-gold-700"
+                            >
+                              Télécharger
+                            </a>
+                          ) : (
+                            <span className="shrink-0 text-xs text-slate-500">
+                              Lien indisponible
+                            </span>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+
+                {/* Admin : livrer le travail effectué sur le compte du client. */}
+                {isAdmin && (
+                  <div className="mt-6 border-t hairline pt-5">
+                    <label className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-gold-500 px-5 py-2.5 text-sm font-semibold text-navy-900 shadow-gold transition-transform hover:-translate-y-0.5">
+                      {delivering ? "Envoi…" : "Livrer le travail au client"}
+                      {!delivering && (
+                        <ArrowRightIcon
+                          width={14}
+                          height={14}
+                          strokeWidth={2}
+                        />
+                      )}
+                      <input
+                        type="file"
+                        multiple
+                        className="hidden"
+                        disabled={delivering}
+                        onChange={(e) => {
+                          handleDeliver(e.target.files);
+                          e.currentTarget.value = "";
+                        }}
+                      />
+                    </label>
+                    <p className="mt-2 text-xs leading-relaxed text-slate-500">
+                      Les fichiers déposés ici sont visibles et téléchargeables
+                      par le client depuis son espace.
+                    </p>
+                    {deliverError && (
+                      <p className="mt-2 text-xs font-medium text-red-600">
+                        {deliverError}
+                      </p>
+                    )}
+                  </div>
                 )}
               </div>
 
@@ -422,8 +666,12 @@ export function DossierDetail() {
                         key={key}
                         className="flex flex-col gap-1 py-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6"
                       >
-                        <dt className="text-sm font-medium text-slate-500">{labelFor(key)}</dt>
-                        <dd className="max-w-md text-sm text-navy-900 sm:text-right">{value}</dd>
+                        <dt className="text-sm font-medium text-slate-500">
+                          {labelFor(key)}
+                        </dt>
+                        <dd className="max-w-md text-sm text-navy-900 sm:text-right">
+                          {value}
+                        </dd>
                       </div>
                     ))}
                   </dl>
@@ -438,7 +686,9 @@ export function DossierDetail() {
                     <p className="font-mono text-[0.7rem] uppercase tracking-[0.16em] text-slate-500">
                       Situation
                     </p>
-                    <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-navy-900">{situation}</p>
+                    <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-navy-900">
+                      {situation}
+                    </p>
                   </div>
                 )}
 
@@ -454,10 +704,11 @@ export function DossierDetail() {
                 <p className="text-sm leading-relaxed text-slate-500">
                   <span className="font-medium text-navy-900">
                     Aucun envoi ne sera effectué sans votre confirmation.
-                  </span>{' '}
-                  ClairDossier vous aide à préparer et organiser votre dossier. Toute fonction
-                  d'ordre juridique reste une aide à la préparation et doit pouvoir être vérifiée
-                  ou validée par un professionnel habilité lorsque cela est nécessaire.
+                  </span>{" "}
+                  ClairDossier vous aide à préparer et organiser votre dossier.
+                  Toute fonction d'ordre juridique reste une aide à la
+                  préparation et doit pouvoir être vérifiée ou validée par un
+                  professionnel habilité lorsque cela est nécessaire.
                 </p>
               </div>
 
