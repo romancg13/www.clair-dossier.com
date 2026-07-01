@@ -140,6 +140,78 @@ function isDateKey(key: string): boolean {
   return /date|deadline|echeance|échéance/i.test(key);
 }
 
+// Onglets de la page dossier — les pièces vivent dans UN seul onglet (cf. cahier),
+// plus d'empilement de sections les unes après les autres.
+const TABS = [
+  { id: "apercu", label: "Vue d'ensemble" },
+  { id: "pieces", label: "Pièces" },
+  { id: "echeances", label: "Échéances" },
+  { id: "dashboard", label: "DashBoard ClairDossier" },
+] as const;
+type TabId = (typeof TABS)[number]["id"];
+
+// Ligne de document : Visualiser (aperçu en ligne) + Télécharger + (admin) Supprimer.
+function DocLine({
+  doc,
+  viewHref,
+  onDelete,
+  deleting,
+}: {
+  doc: DocumentRow;
+  viewHref?: string;
+  onDelete?: () => void;
+  deleting?: boolean;
+}) {
+  // Même URL signée, forcée en téléchargement via le paramètre ?download de Supabase.
+  const dlHref = viewHref
+    ? `${viewHref}${viewHref.includes("?") ? "&" : "?"}download=${encodeURIComponent(doc.file_name)}`
+    : undefined;
+  const isDeliverable = doc.kind === "deliverable";
+  return (
+    <li
+      className={`flex flex-wrap items-center justify-between gap-3 rounded-xl border px-4 py-3 text-sm ${
+        isDeliverable ? "hairline-gold bg-gold-500/5" : "hairline bg-cream-50"
+      }`}
+    >
+      <span className="min-w-0 flex-1 truncate text-navy-900">
+        {doc.file_name}
+      </span>
+      <div className="flex shrink-0 items-center gap-3">
+        {viewHref ? (
+          <>
+            <a
+              href={viewHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-navy-900 border-b hairline-gold pb-0.5 transition-colors hover:text-gold-700"
+            >
+              Visualiser
+            </a>
+            <a
+              href={dlHref}
+              className="font-medium text-navy-900 border-b hairline-gold pb-0.5 transition-colors hover:text-gold-700"
+            >
+              Télécharger
+            </a>
+          </>
+        ) : (
+          <span className="text-xs text-slate-500">Lien indisponible</span>
+        )}
+        {onDelete && (
+          <button
+            type="button"
+            onClick={onDelete}
+            disabled={deleting}
+            className="text-xs font-medium text-red-600 transition-colors hover:text-red-700 disabled:opacity-50"
+          >
+            {deleting ? "…" : "Supprimer"}
+          </button>
+        )}
+      </div>
+    </li>
+  );
+}
+
 export function DossierDetail() {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
@@ -154,6 +226,8 @@ export function DossierDetail() {
   const [delivering, setDelivering] = useState(false);
   const [deliverError, setDeliverError] = useState<string | null>(null);
   const [zipping, setZipping] = useState(false);
+  const [activeTab, setActiveTab] = useState<TabId>("apercu");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) {
@@ -326,6 +400,31 @@ export function DossierDetail() {
     }
   }
 
+  // Admin : supprimer un livrable envoyé (fichier storage + ligne DB), avec confirmation.
+  async function handleDelete(doc: DocumentRow) {
+    if (
+      !window.confirm(
+        `Supprimer « ${doc.file_name} » ? Cette action est définitive.`,
+      )
+    )
+      return;
+    setDeletingId(doc.id);
+    setDeliverError(null);
+    try {
+      await supabase.storage.from("documents").remove([doc.file_path]);
+      const del = await supabase
+        .from("dossier_documents")
+        .delete()
+        .eq("id", doc.id);
+      if (del.error) throw del.error;
+      await reloadDocuments();
+    } catch {
+      setDeliverError("La suppression a échoué. Réessayez.");
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
   return (
     <>
       <Seo
@@ -399,305 +498,301 @@ export function DossierDetail() {
                 </span>
               </div>
 
-              {/* ── Avancement du dossier (étapes cliquables) ───────── */}
-              <div className="mt-10 rounded-2xl border hairline bg-white p-7 shadow-card sm:p-9">
-                <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">
-                  Avancement du dossier
-                </p>
+              {/* ── Onglets (une pièce = un onglet, plus d'empilement) ── */}
+              <div
+                className="mt-8 flex flex-wrap gap-1 border-b hairline"
+                role="tablist"
+              >
+                {TABS.map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={activeTab === t.id}
+                    onClick={() => setActiveTab(t.id)}
+                    className={`-mb-px rounded-t-lg px-4 py-2.5 text-sm font-medium transition-colors ${
+                      activeTab === t.id
+                        ? "border-b-2 border-gold-500 text-navy-900"
+                        : "text-slate-500 hover:text-navy-900"
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
 
-                <ol className="mt-7 space-y-3 sm:space-y-0 sm:flex sm:items-start sm:gap-2">
-                  {TIMELINE.map((label, i) => {
-                    const n = i + 1;
-                    const done = step > n;
-                    const active = step === n;
-                    const selected = shownStep === n;
-                    return (
-                      <li key={label} className="sm:flex-1">
-                        <button
-                          type="button"
-                          onClick={() => setOpenStep(n)}
-                          aria-expanded={selected}
-                          aria-label={`Étape ${n} : ${label}${active ? " (étape en cours)" : ""}`}
-                          className={`flex w-full items-start gap-3 rounded-xl p-2 text-left transition-colors hover:bg-cream-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500/40 sm:flex-col sm:items-stretch ${
-                            selected ? "bg-cream-100" : ""
-                          }`}
-                        >
-                          <div className="flex items-center gap-3 sm:w-full">
-                            <span
-                              className={`grid h-7 w-7 shrink-0 place-items-center rounded-full font-mono text-[0.7rem] font-semibold transition-colors ${
-                                done || active
-                                  ? "bg-navy-900 text-cream-50"
-                                  : "border hairline-strong bg-white text-slate-500"
+              {activeTab === "apercu" && (
+                <>
+                  {/* ── Avancement du dossier (étapes cliquables) ───────── */}
+                  <div className="mt-10 rounded-2xl border hairline bg-white p-7 shadow-card sm:p-9">
+                    <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">
+                      Avancement du dossier
+                    </p>
+
+                    <ol className="mt-7 space-y-3 sm:space-y-0 sm:flex sm:items-start sm:gap-2">
+                      {TIMELINE.map((label, i) => {
+                        const n = i + 1;
+                        const done = step > n;
+                        const active = step === n;
+                        const selected = shownStep === n;
+                        return (
+                          <li key={label} className="sm:flex-1">
+                            <button
+                              type="button"
+                              onClick={() => setOpenStep(n)}
+                              aria-expanded={selected}
+                              aria-label={`Étape ${n} : ${label}${active ? " (étape en cours)" : ""}`}
+                              className={`flex w-full items-start gap-3 rounded-xl p-2 text-left transition-colors hover:bg-cream-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500/40 sm:flex-col sm:items-stretch ${
+                                selected ? "bg-cream-100" : ""
                               }`}
                             >
-                              {done ? (
-                                <CheckIcon
-                                  width={12}
-                                  height={12}
-                                  strokeWidth={2.5}
-                                />
-                              ) : (
-                                n
-                              )}
-                            </span>
-                            {i < TIMELINE.length - 1 && (
-                              <span
-                                className={`hidden h-px flex-1 transition-colors sm:block ${
-                                  step > n ? "bg-navy-900" : "bg-slate-300/40"
+                              <div className="flex items-center gap-3 sm:w-full">
+                                <span
+                                  className={`grid h-7 w-7 shrink-0 place-items-center rounded-full font-mono text-[0.7rem] font-semibold transition-colors ${
+                                    done || active
+                                      ? "bg-navy-900 text-cream-50"
+                                      : "border hairline-strong bg-white text-slate-500"
+                                  }`}
+                                >
+                                  {done ? (
+                                    <CheckIcon
+                                      width={12}
+                                      height={12}
+                                      strokeWidth={2.5}
+                                    />
+                                  ) : (
+                                    n
+                                  )}
+                                </span>
+                                {i < TIMELINE.length - 1 && (
+                                  <span
+                                    className={`hidden h-px flex-1 transition-colors sm:block ${
+                                      step > n
+                                        ? "bg-navy-900"
+                                        : "bg-slate-300/40"
+                                    }`}
+                                  />
+                                )}
+                              </div>
+                              <p
+                                className={`text-sm leading-snug sm:mt-3 ${
+                                  done || active
+                                    ? "font-medium text-navy-900"
+                                    : "text-slate-500"
                                 }`}
-                              />
-                            )}
-                          </div>
-                          <p
-                            className={`text-sm leading-snug sm:mt-3 ${
-                              done || active
-                                ? "font-medium text-navy-900"
-                                : "text-slate-500"
-                            }`}
-                          >
-                            {label}
-                            {active && (
-                              <span className="mt-0.5 block font-mono text-[0.62rem] uppercase tracking-[0.14em] text-gold-700">
-                                En cours
-                              </span>
-                            )}
-                          </p>
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ol>
+                              >
+                                {label}
+                                {active && (
+                                  <span className="mt-0.5 block font-mono text-[0.62rem] uppercase tracking-[0.14em] text-gold-700">
+                                    En cours
+                                  </span>
+                                )}
+                              </p>
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ol>
 
-                {/* Panneau de l'étape sélectionnée */}
-                <div className="mt-7 rounded-xl bg-cream-50 p-5">
-                  <p className="font-mono text-[0.7rem] uppercase tracking-[0.16em] text-slate-500">
-                    Étape {shownStep} · {TIMELINE[shownStep - 1]}
-                  </p>
-                  <p className="mt-2 text-sm leading-relaxed text-navy-900">
-                    {STEP_PANELS[shownStep - 1]}
-                  </p>
-                </div>
-
-                {/* Message dynamique : où en est le dossier */}
-                <p className="mt-5 border-t hairline pt-5 text-sm leading-relaxed text-slate-500">
-                  {STEP_MESSAGES[step]}
-                </p>
-              </div>
-
-              {/* ── Ce que vous devez faire maintenant ──────────────── */}
-              <div className="mt-6 rounded-2xl border hairline-gold bg-gold-500/10 p-7 shadow-card sm:p-9">
-                <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">
-                  Ce que vous devez faire maintenant
-                </p>
-                <p className="mt-3 text-sm leading-relaxed text-navy-900">
-                  {STEP_NEXT_ACTIONS[step]}
-                </p>
-              </div>
-
-              {/* ── Pièces ──────────────────────────────────────────── */}
-              <div className="mt-6 rounded-2xl border hairline bg-white p-7 shadow-card sm:p-9">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">
-                    Pièces du dossier
-                  </p>
-                  {/* Admin : télécharger toutes les pièces du client en une fois (.zip). */}
-                  {isAdmin && pieces.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        downloadZip(
-                          pieces,
-                          `pieces-${dossier.title || dossier.id}.zip`,
-                        )
-                      }
-                      disabled={zipping}
-                      className="shrink-0 rounded-full bg-navy-900 px-4 py-2 text-xs font-semibold text-cream-50 transition-colors hover:bg-navy-800 disabled:opacity-60"
-                    >
-                      {zipping
-                        ? "Préparation…"
-                        : `Télécharger toutes les pièces (${pieces.length})`}
-                    </button>
-                  )}
-                </div>
-                {pieces.length === 0 ? (
-                  <p className="mt-4 text-sm leading-relaxed text-slate-500">
-                    Aucune pièce n'a encore été déposée sur ce dossier.
-                  </p>
-                ) : (
-                  <ul className="mt-5 space-y-2">
-                    {pieces.map((doc) => {
-                      const href = links[doc.id];
-                      return (
-                        <li
-                          key={doc.id}
-                          className="flex items-center justify-between gap-3 rounded-xl border hairline bg-cream-50 px-4 py-3 text-sm"
-                        >
-                          <span className="truncate text-navy-900">
-                            {doc.file_name}
-                          </span>
-                          {href ? (
-                            <a
-                              href={href}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="shrink-0 font-medium text-navy-900 border-b hairline-gold pb-0.5 transition-colors hover:text-gold-700"
-                            >
-                              Télécharger
-                            </a>
-                          ) : (
-                            <span className="shrink-0 text-xs text-slate-500">
-                              Lien indisponible
-                            </span>
-                          )}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-              </div>
-
-              {/* ── Services réalisés par ClairDossier (travail livré) ── */}
-              <div className="mt-6 rounded-2xl border hairline bg-white p-7 shadow-card sm:p-9">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">
-                    Services réalisés par ClairDossier
-                  </p>
-                  {deliverables.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        downloadZip(
-                          deliverables,
-                          `travail-${dossier.title || dossier.id}.zip`,
-                        )
-                      }
-                      disabled={zipping}
-                      className="shrink-0 rounded-full bg-navy-900 px-4 py-2 text-xs font-semibold text-cream-50 transition-colors hover:bg-navy-800 disabled:opacity-60"
-                    >
-                      {zipping ? "Préparation…" : "Tout télécharger"}
-                    </button>
-                  )}
-                </div>
-
-                {deliverables.length === 0 ? (
-                  <p className="mt-4 text-sm leading-relaxed text-slate-500">
-                    {isAdmin
-                      ? "Aucun livrable pour l'instant. Déposez le travail réalisé ci-dessous : le client y accédera depuis son espace."
-                      : "Le travail réalisé par ClairDossier apparaîtra ici une fois livré."}
-                  </p>
-                ) : (
-                  <ul className="mt-5 space-y-2">
-                    {deliverables.map((doc) => {
-                      const href = links[doc.id];
-                      return (
-                        <li
-                          key={doc.id}
-                          className="flex items-center justify-between gap-3 rounded-xl border hairline-gold bg-gold-500/5 px-4 py-3 text-sm"
-                        >
-                          <span className="truncate text-navy-900">
-                            {doc.file_name}
-                          </span>
-                          {href ? (
-                            <a
-                              href={href}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="shrink-0 font-medium text-navy-900 border-b hairline-gold pb-0.5 transition-colors hover:text-gold-700"
-                            >
-                              Télécharger
-                            </a>
-                          ) : (
-                            <span className="shrink-0 text-xs text-slate-500">
-                              Lien indisponible
-                            </span>
-                          )}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-
-                {/* Admin : livrer le travail effectué sur le compte du client. */}
-                {isAdmin && (
-                  <div className="mt-6 border-t hairline pt-5">
-                    <label className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-gold-500 px-5 py-2.5 text-sm font-semibold text-navy-900 shadow-gold transition-transform hover:-translate-y-0.5">
-                      {delivering ? "Envoi…" : "Livrer le travail au client"}
-                      {!delivering && (
-                        <ArrowRightIcon
-                          width={14}
-                          height={14}
-                          strokeWidth={2}
-                        />
-                      )}
-                      <input
-                        type="file"
-                        multiple
-                        className="hidden"
-                        disabled={delivering}
-                        onChange={(e) => {
-                          handleDeliver(e.target.files);
-                          e.currentTarget.value = "";
-                        }}
-                      />
-                    </label>
-                    <p className="mt-2 text-xs leading-relaxed text-slate-500">
-                      Les fichiers déposés ici sont visibles et téléchargeables
-                      par le client depuis son espace.
-                    </p>
-                    {deliverError && (
-                      <p className="mt-2 text-xs font-medium text-red-600">
-                        {deliverError}
+                    {/* Panneau de l'étape sélectionnée */}
+                    <div className="mt-7 rounded-xl bg-cream-50 p-5">
+                      <p className="font-mono text-[0.7rem] uppercase tracking-[0.16em] text-slate-500">
+                        Étape {shownStep} · {TIMELINE[shownStep - 1]}
                       </p>
+                      <p className="mt-2 text-sm leading-relaxed text-navy-900">
+                        {STEP_PANELS[shownStep - 1]}
+                      </p>
+                    </div>
+
+                    {/* Message dynamique : où en est le dossier */}
+                    <p className="mt-5 border-t hairline pt-5 text-sm leading-relaxed text-slate-500">
+                      {STEP_MESSAGES[step]}
+                    </p>
+                  </div>
+
+                  {/* ── Ce que vous devez faire maintenant ──────────────── */}
+                  <div className="mt-6 rounded-2xl border hairline-gold bg-gold-500/10 p-7 shadow-card sm:p-9">
+                    <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">
+                      Ce que vous devez faire maintenant
+                    </p>
+                    <p className="mt-3 text-sm leading-relaxed text-navy-900">
+                      {STEP_NEXT_ACTIONS[step]}
+                    </p>
+                  </div>
+                </>
+              )}
+
+              {activeTab === "pieces" && (
+                <div className="mt-6 rounded-2xl border hairline bg-white p-7 shadow-card sm:p-9">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">
+                      Pièces du dossier
+                    </p>
+                    {/* Admin : télécharger toutes les pièces du client en une fois (.zip). */}
+                    {isAdmin && pieces.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          downloadZip(
+                            pieces,
+                            `pieces-${dossier.title || dossier.id}.zip`,
+                          )
+                        }
+                        disabled={zipping}
+                        className="shrink-0 rounded-full bg-navy-900 px-4 py-2 text-xs font-semibold text-cream-50 transition-colors hover:bg-navy-800 disabled:opacity-60"
+                      >
+                        {zipping
+                          ? "Préparation…"
+                          : `Télécharger toutes les pièces (${pieces.length})`}
+                      </button>
                     )}
                   </div>
-                )}
-              </div>
+                  {pieces.length === 0 ? (
+                    <p className="mt-4 text-sm leading-relaxed text-slate-500">
+                      Aucune pièce n'a encore été déposée sur ce dossier.
+                    </p>
+                  ) : (
+                    <ul className="mt-5 space-y-2">
+                      {pieces.map((doc) => (
+                        <DocLine
+                          key={doc.id}
+                          doc={doc}
+                          viewHref={links[doc.id]}
+                        />
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
 
-              {/* ── Échéances & suivi ───────────────────────────────── */}
-              <div className="mt-6 rounded-2xl border hairline bg-white p-7 shadow-card sm:p-9">
-                <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">
-                  Échéances & suivi
-                </p>
-
-                {dateEntries.length > 0 ? (
-                  <dl className="mt-5 divide-y hairline border-y hairline">
-                    {dateEntries.map(([key, value]) => (
-                      <div
-                        key={key}
-                        className="flex flex-col gap-1 py-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6"
+              {activeTab === "dashboard" && (
+                <div className="mt-6 rounded-2xl border hairline bg-white p-7 shadow-card sm:p-9">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">
+                      DashBoard ClairDossier
+                    </p>
+                    {deliverables.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          downloadZip(
+                            deliverables,
+                            `travail-${dossier.title || dossier.id}.zip`,
+                          )
+                        }
+                        disabled={zipping}
+                        className="shrink-0 rounded-full bg-navy-900 px-4 py-2 text-xs font-semibold text-cream-50 transition-colors hover:bg-navy-800 disabled:opacity-60"
                       >
-                        <dt className="text-sm font-medium text-slate-500">
-                          {labelFor(key)}
-                        </dt>
-                        <dd className="max-w-md text-sm text-navy-900 sm:text-right">
-                          {value}
-                        </dd>
-                      </div>
-                    ))}
-                  </dl>
-                ) : (
-                  <p className="mt-4 text-sm leading-relaxed text-slate-500">
-                    Aucune échéance renseignée sur ce dossier.
-                  </p>
-                )}
-
-                {situation && (
-                  <div className="mt-6 rounded-xl bg-cream-100 p-5">
-                    <p className="font-mono text-[0.7rem] uppercase tracking-[0.16em] text-slate-500">
-                      Situation
-                    </p>
-                    <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-navy-900">
-                      {situation}
-                    </p>
+                        {zipping ? "Préparation…" : "Tout télécharger"}
+                      </button>
+                    )}
                   </div>
-                )}
 
-                {dossier.legal_review_requested && (
-                  <p className="mt-6 inline-flex items-center gap-2 rounded-full border hairline-gold bg-gold-500/10 px-4 py-2 font-mono text-[0.7rem] uppercase tracking-[0.14em] text-gold-700">
-                    Préavis juridique demandé
+                  {deliverables.length === 0 ? (
+                    <p className="mt-4 text-sm leading-relaxed text-slate-500">
+                      {isAdmin
+                        ? "Aucun livrable pour l'instant. Déposez le travail réalisé ci-dessous : le client y accédera depuis son espace."
+                        : "Le travail réalisé par ClairDossier apparaîtra ici une fois livré."}
+                    </p>
+                  ) : (
+                    <ul className="mt-5 space-y-2">
+                      {deliverables.map((doc) => (
+                        <DocLine
+                          key={doc.id}
+                          doc={doc}
+                          viewHref={links[doc.id]}
+                          onDelete={
+                            isAdmin ? () => handleDelete(doc) : undefined
+                          }
+                          deleting={deletingId === doc.id}
+                        />
+                      ))}
+                    </ul>
+                  )}
+
+                  {/* Admin : livrer le travail effectué sur le compte du client. */}
+                  {isAdmin && (
+                    <div className="mt-6 border-t hairline pt-5">
+                      <label className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-gold-500 px-5 py-2.5 text-sm font-semibold text-navy-900 shadow-gold transition-transform hover:-translate-y-0.5">
+                        {delivering ? "Envoi…" : "Livrer le travail au client"}
+                        {!delivering && (
+                          <ArrowRightIcon
+                            width={14}
+                            height={14}
+                            strokeWidth={2}
+                          />
+                        )}
+                        <input
+                          type="file"
+                          multiple
+                          className="hidden"
+                          disabled={delivering}
+                          onChange={(e) => {
+                            handleDeliver(e.target.files);
+                            e.currentTarget.value = "";
+                          }}
+                        />
+                      </label>
+                      <p className="mt-2 text-xs leading-relaxed text-slate-500">
+                        Les fichiers déposés ici sont visibles et
+                        téléchargeables par le client depuis son espace.
+                      </p>
+                      {deliverError && (
+                        <p className="mt-2 text-xs font-medium text-red-600">
+                          {deliverError}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeTab === "echeances" && (
+                <div className="mt-6 rounded-2xl border hairline bg-white p-7 shadow-card sm:p-9">
+                  <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">
+                    Échéances & suivi
                   </p>
-                )}
-              </div>
+
+                  {dateEntries.length > 0 ? (
+                    <dl className="mt-5 divide-y hairline border-y hairline">
+                      {dateEntries.map(([key, value]) => (
+                        <div
+                          key={key}
+                          className="flex flex-col gap-1 py-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6"
+                        >
+                          <dt className="text-sm font-medium text-slate-500">
+                            {labelFor(key)}
+                          </dt>
+                          <dd className="max-w-md text-sm text-navy-900 sm:text-right">
+                            {value}
+                          </dd>
+                        </div>
+                      ))}
+                    </dl>
+                  ) : (
+                    <p className="mt-4 text-sm leading-relaxed text-slate-500">
+                      Aucune échéance renseignée sur ce dossier.
+                    </p>
+                  )}
+
+                  {situation && (
+                    <div className="mt-6 rounded-xl bg-cream-100 p-5">
+                      <p className="font-mono text-[0.7rem] uppercase tracking-[0.16em] text-slate-500">
+                        Situation
+                      </p>
+                      <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-navy-900">
+                        {situation}
+                      </p>
+                    </div>
+                  )}
+
+                  {dossier.legal_review_requested && (
+                    <p className="mt-6 inline-flex items-center gap-2 rounded-full border hairline-gold bg-gold-500/10 px-4 py-2 font-mono text-[0.7rem] uppercase tracking-[0.14em] text-gold-700">
+                      Préavis juridique demandé
+                    </p>
+                  )}
+                </div>
+              )}
 
               {/* ── Garanties : validation humaine + aide à la préparation ── */}
               <div className="mt-6 rounded-2xl border hairline bg-white p-7 shadow-card sm:p-9">

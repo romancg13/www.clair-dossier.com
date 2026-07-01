@@ -245,37 +245,40 @@ export function DossierFlow() {
     }));
   }
 
+  // Sélection d'une catégorie prédéfinie — reste sur l'étape 2 (le client nomme
+  // ensuite son dossier juste en dessous des catégories).
   function selectCategory(id: Category) {
     setDraft((d) => ({
       ...d,
       typology: id,
-      step: 3,
       updatedAt: new Date().toISOString(),
     }));
   }
 
-  function handleInfoSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const data = new FormData(e.currentTarget);
-    const title = String(data.get("__dossierName") ?? "").trim();
-    // Nom de dossier OBLIGATOIRE (cf. cahier directeur).
-    if (!title) {
+  // Nom du dossier OBLIGATOIRE, saisi sous les catégories (cf. cahier directeur).
+  function confirmCategory() {
+    if (!draft.typology) return;
+    if (!draft.title?.trim()) {
       setNameError(
         "Donnez un nom à votre dossier pour le retrouver facilement.",
       );
       return;
     }
     setNameError(null);
+    setDraft((d) => ({ ...d, step: 3, updatedAt: new Date().toISOString() }));
+  }
+
+  function handleInfoSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const data = new FormData(e.currentTarget);
     const answers: DraftAnswers = {
       ...(draft.profil ? { profil: draft.profil } : {}),
     };
     data.forEach((value, key) => {
-      if (key === "__dossierName") return; // le nom est stocké dans title, pas dans answers
       answers[key] = String(value);
     });
     setDraft((d) => ({
       ...d,
-      title,
       answers,
       step: 4,
       updatedAt: new Date().toISOString(),
@@ -480,7 +483,14 @@ export function DossierFlow() {
                 {draft.step === 2 && (
                   <StepCategory
                     selected={draft.typology}
+                    title={draft.title ?? ""}
+                    nameError={nameError}
                     onSelect={selectCategory}
+                    onTitleChange={(v) => {
+                      setNameError(null);
+                      setDraft((d) => ({ ...d, title: v }));
+                    }}
+                    onContinue={confirmCategory}
                     onBack={() => setDraft((d) => ({ ...d, step: 1 }))}
                   />
                 )}
@@ -488,9 +498,6 @@ export function DossierFlow() {
                   <StepInfos
                     category={draft.typology}
                     defaults={draft.answers}
-                    defaultTitle={draft.title ?? ""}
-                    nameError={nameError}
-                    onClearNameError={() => setNameError(null)}
                     onSubmit={handleInfoSubmit}
                     onBack={() => setDraft((d) => ({ ...d, step: 2 }))}
                   />
@@ -583,11 +590,19 @@ function StepProfil({
 
 function StepCategory({
   selected,
+  title,
+  nameError,
   onSelect,
+  onTitleChange,
+  onContinue,
   onBack,
 }: {
   selected?: Category;
+  title: string;
+  nameError: string | null;
   onSelect: (id: Category) => void;
+  onTitleChange: (v: string) => void;
+  onContinue: () => void;
   onBack: () => void;
 }) {
   return (
@@ -598,6 +613,7 @@ function StepCategory({
             key={c.id}
             type="button"
             onClick={() => onSelect(c.id)}
+            aria-pressed={selected === c.id}
             className={`group flex h-full flex-col rounded-2xl border p-6 text-left transition-all duration-300 hover:-translate-y-1 ${
               selected === c.id
                 ? "border-gold-500 bg-white shadow-card-hover"
@@ -614,24 +630,73 @@ function StepCategory({
               {c.description}
             </p>
             <span className="mt-5 inline-flex items-center gap-1.5 self-start text-sm font-medium text-navy-900">
-              Choisir
-              <ArrowRightIcon
-                width={14}
-                height={14}
-                strokeWidth={2}
-                className="transition-transform group-hover:translate-x-0.5"
-              />
+              {selected === c.id ? "Sélectionné" : "Choisir"}
+              {selected === c.id ? (
+                <CheckIcon width={14} height={14} strokeWidth={2.5} />
+              ) : (
+                <ArrowRightIcon
+                  width={14}
+                  height={14}
+                  strokeWidth={2}
+                  className="transition-transform group-hover:translate-x-0.5"
+                />
+              )}
             </span>
           </button>
         ))}
       </div>
-      <div className="mt-6">
+
+      {/* Sous-catégorie : le client nomme son dossier (obligatoire). */}
+      <div className="mt-4 rounded-2xl border hairline bg-white p-6 shadow-card sm:p-7">
+        <label className="block">
+          <span className="font-mono text-[0.7rem] uppercase tracking-[0.16em] text-slate-500">
+            Nom de votre dossier <span className="text-gold-700">*</span>
+          </span>
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => onTitleChange(e.target.value)}
+            aria-invalid={nameError ? true : undefined}
+            aria-describedby={nameError ? "dossier-name-error" : undefined}
+            placeholder="Ex. Chantier Dupont — solde impayé"
+            className={`mt-2 w-full rounded-xl border hairline bg-cream-50 px-4 py-3 text-sm text-navy-900 focus:border-gold-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-gold-500/20 ${
+              nameError
+                ? "border-red-400 focus:border-red-400 focus:ring-red-400/20"
+                : ""
+            }`}
+          />
+          {nameError ? (
+            <span
+              id="dossier-name-error"
+              className="mt-1.5 block text-xs font-medium text-red-600"
+            >
+              {nameError}
+            </span>
+          ) : (
+            <span className="mt-1.5 block text-xs italic text-slate-500">
+              Une sous-catégorie à vous : donnez un nom clair pour retrouver ce
+              dossier dans votre compte.
+            </span>
+          )}
+        </label>
+      </div>
+
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
         <button
           type="button"
           onClick={onBack}
           className="rounded-full bg-cream-100 px-5 py-3 text-sm font-medium text-navy-900 transition-colors hover:bg-cream-200"
         >
           ← Changer de profil
+        </button>
+        <button
+          type="button"
+          onClick={onContinue}
+          disabled={!selected}
+          className="sheen inline-flex items-center gap-2 rounded-full bg-gold-500 px-6 py-3.5 text-sm font-semibold text-navy-900 shadow-gold transition-all duration-200 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Continuer
+          <ArrowRightIcon width={14} height={14} strokeWidth={2} />
         </button>
       </div>
     </div>
@@ -641,17 +706,11 @@ function StepCategory({
 function StepInfos({
   category,
   defaults,
-  defaultTitle,
-  nameError,
-  onClearNameError,
   onSubmit,
   onBack,
 }: {
   category: Category;
   defaults: DraftAnswers;
-  defaultTitle: string;
-  nameError: string | null;
-  onClearNameError: () => void;
   onSubmit: (e: FormEvent<HTMLFormElement>) => void;
   onBack: () => void;
 }) {
@@ -671,37 +730,7 @@ function StepInfos({
         Quelques champs structurants. Tout est conservé en brouillon.
       </p>
 
-      {/* Nom du dossier — obligatoire */}
-      <label className="mt-8 block">
-        <span className="font-mono text-[0.7rem] uppercase tracking-[0.16em] text-slate-500">
-          Nom du dossier <span className="text-gold-700">*</span>
-        </span>
-        <input
-          name="__dossierName"
-          type="text"
-          required
-          defaultValue={defaultTitle}
-          onChange={onClearNameError}
-          aria-invalid={nameError ? true : undefined}
-          aria-describedby={nameError ? "dossier-name-error" : undefined}
-          placeholder="Ex. Chantier Dupont — solde impayé"
-          className={`${inputCls} ${nameError ? "border-red-400 focus:border-red-400 focus:ring-red-400/20" : ""}`}
-        />
-        {nameError ? (
-          <span
-            id="dossier-name-error"
-            className="mt-1.5 block text-xs font-medium text-red-600"
-          >
-            {nameError}
-          </span>
-        ) : (
-          <span className="mt-1.5 block text-xs italic text-slate-500">
-            Un nom clair pour retrouver ce dossier dans votre compte.
-          </span>
-        )}
-      </label>
-
-      <div className="mt-6 space-y-6">
+      <div className="mt-8 space-y-6">
         {fields.map((f) => (
           <label key={f.id} className="block">
             <span className="font-mono text-[0.7rem] uppercase tracking-[0.16em] text-slate-500">
