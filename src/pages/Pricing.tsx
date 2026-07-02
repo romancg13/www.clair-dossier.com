@@ -226,7 +226,7 @@ export function Pricing() {
       </Reveal>
 
       {/* Devis sur-mesure */}
-      <Reveal as="section" className="bg-navy-900 text-cream-50">
+      <Reveal as="section" className="premium-tech-section bg-navy-900 text-cream-50">
         <div className="mx-auto max-w-7xl px-5 py-14 sm:py-20 lg:py-24 sm:px-8 lg:px-12">
           <div className="grid gap-12 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
             {/* Left — copy + capabilities */}
@@ -407,7 +407,7 @@ export function Pricing() {
       </Reveal>
 
       {/* CTA finale */}
-      <Reveal as="section" className="bg-navy-900 text-cream-50">
+      <Reveal as="section" className="premium-tech-section bg-navy-900 text-cream-50">
         <div className="mx-auto max-w-5xl px-5 py-16 text-center sm:py-20 sm:px-8 lg:px-12">
           <h2 className="font-display text-3xl font-semibold leading-tight text-cream-50 sm:text-4xl lg:text-5xl">
             Une dernière question avant de signer ?
@@ -456,7 +456,7 @@ function PlanCard({ plan, billing }: { plan: Plan; billing: Billing }) {
     : 'border hairline bg-white text-navy-900 hover:border-navy-900 hover:bg-cream-100/60';
 
   return (
-    <article className={`${cardBase} ${cardSkin}`}>
+    <article className={`premium-card ${isDark ? 'premium-recommended-plan' : ''} ${cardBase} ${cardSkin}`}>
       {plan.badge && (
         <span
           className={`absolute -top-3 left-1/2 -translate-x-1/2 rounded-full px-3 py-1 font-mono text-[0.68rem] font-semibold uppercase tracking-[0.18em] ${

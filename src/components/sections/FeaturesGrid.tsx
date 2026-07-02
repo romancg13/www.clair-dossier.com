@@ -30,7 +30,7 @@ export function FeaturesGrid() {
                 <motion.div
                   whileHover={reduce ? {} : { y: -4 }}
                   transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-                  className="group relative flex h-full flex-col rounded-xl border hairline bg-white p-6 transition-colors duration-300 hover:border-gold-500"
+                  className="premium-card group relative flex h-full flex-col rounded-xl border hairline bg-white p-6 transition-colors duration-300 hover:border-gold-500"
                 >
                   <span className="grid h-11 w-11 place-items-center rounded-lg bg-cream-100 text-navy-900 transition-colors group-hover:bg-gold-500/15 group-hover:text-gold-700">
                     <Icon />

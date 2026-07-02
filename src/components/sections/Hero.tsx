@@ -23,7 +23,7 @@ const timelineSteps = [
 export function Hero() {
   const reduce = useReducedMotion();
   return (
-    <section className="relative isolate overflow-hidden">
+    <section className="premium-hero-shell relative isolate overflow-hidden">
       {/* Background subtle */}
       <div
         aria-hidden="true"
@@ -126,7 +126,7 @@ export function Hero() {
           transition={{ duration: 0.7, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
         >
           <motion.div
-            className="relative rounded-2xl border hairline bg-white p-7 shadow-card"
+            className="premium-card premium-preview-card relative rounded-2xl border hairline bg-white p-7 shadow-card"
             animate={reduce ? {} : { y: [0, -6, 0] }}
             transition={
               reduce

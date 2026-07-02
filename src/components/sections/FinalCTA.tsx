@@ -4,7 +4,7 @@ import { ArrowRightIcon } from '../icons';
 
 export function FinalCTA() {
   return (
-    <Reveal as="section" className="relative isolate overflow-hidden bg-navy-900 text-cream-50">
+    <Reveal as="section" className="premium-tech-section relative isolate overflow-hidden bg-navy-900 text-cream-50">
       <div
         aria-hidden="true"
         className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-gold-500/60 to-transparent"

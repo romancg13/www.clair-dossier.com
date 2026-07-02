@@ -168,6 +168,171 @@ h1, h2, h3, h4, h5, h6 {
   --marker-scale: 1;
 }
 
+/* ─── Premium visual layer ───────────────────────────────────
+   Presentation-only: no routes, forms, auth, payments or API calls. */
+.premium-hero-shell::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -10;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 16% 18%, rgba(196, 164, 86, 0.13), transparent 28%),
+    radial-gradient(circle at 82% 14%, rgba(179, 210, 239, 0.22), transparent 33%),
+    linear-gradient(120deg, transparent 20%, rgba(255, 255, 255, 0.30) 50%, transparent 80%);
+  background-size: 100% 100%, 100% 100%, 220% 220%;
+  animation: premium-ambient-sweep 18s var(--ease-out-soft) infinite alternate;
+}
+
+.premium-tech-section {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.premium-tech-section::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.24;
+  background-image:
+    linear-gradient(rgba(230, 201, 125, 0.16) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(230, 201, 125, 0.11) 1px, transparent 1px),
+    radial-gradient(circle at 28% 30%, rgba(196, 164, 86, 0.18), transparent 34%),
+    radial-gradient(circle at 74% 18%, rgba(179, 210, 239, 0.12), transparent 30%);
+  background-position: 0 0, 0 0, center, center;
+  background-size: 56px 56px, 56px 56px, 100% 100%, 100% 100%;
+  animation: premium-grid-drift 28s linear infinite;
+}
+
+.premium-card {
+  isolation: isolate;
+  transform: translateZ(0);
+  transition:
+    transform 360ms var(--ease-out-expo),
+    border-color 360ms var(--ease-out-soft),
+    background-color 360ms var(--ease-out-soft),
+    box-shadow 360ms var(--ease-out-expo),
+    filter 360ms var(--ease-out-expo);
+  will-change: transform;
+}
+
+.premium-card::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  z-index: -1;
+  pointer-events: none;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(196, 164, 86, 0.22), transparent 32%, rgba(179, 210, 239, 0.15));
+  opacity: 0;
+  transition: opacity 360ms var(--ease-out-soft);
+}
+
+.premium-card svg {
+  transition:
+    transform 360ms var(--ease-out-expo),
+    color 360ms var(--ease-out-soft);
+  transform-origin: center;
+}
+
+.premium-recommended-plan {
+  box-shadow:
+    0 18px 60px rgba(13, 27, 61, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.premium-preview-card {
+  backface-visibility: hidden;
+}
+
+header nav a {
+  position: relative;
+}
+
+header nav a::after {
+  content: "";
+  position: absolute;
+  right: 0.85rem;
+  bottom: 0.38rem;
+  left: 0.85rem;
+  height: 1px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, rgba(196, 164, 86, 0.82), transparent);
+  opacity: 0;
+  transform: scaleX(0.42);
+  transform-origin: center;
+  transition:
+    opacity 180ms var(--ease-out-soft),
+    transform 360ms var(--ease-out-expo);
+}
+
+.sheen {
+  transition:
+    transform 180ms var(--ease-out-expo),
+    box-shadow 360ms var(--ease-out-expo),
+    filter 360ms var(--ease-out-soft);
+}
+
+form input,
+form textarea,
+form select {
+  transition:
+    border-color 180ms var(--ease-out-soft),
+    background-color 180ms var(--ease-out-soft),
+    box-shadow 180ms var(--ease-out-soft);
+}
+
+form label:focus-within > span:first-child {
+  color: var(--color-gold-700);
+}
+
+form input:focus,
+form textarea:focus,
+form select:focus {
+  box-shadow:
+    0 0 0 3px rgba(196, 164, 86, 0.16),
+    0 12px 30px rgba(13, 27, 61, 0.06);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .premium-card:hover {
+    transform: translate3d(0, -6px, 0);
+    box-shadow: var(--shadow-card-hover);
+    filter: saturate(1.03);
+  }
+
+  .premium-card:hover::after {
+    opacity: 1;
+  }
+
+  .premium-card:hover svg {
+    transform: translate3d(1px, -1px, 0) scale(1.035);
+  }
+
+  header nav a:hover::after,
+  header nav a[aria-current="page"]::after {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+
+  .sheen:hover {
+    filter: saturate(1.05);
+  }
+}
+
+@keyframes premium-ambient-sweep {
+  0% { background-position: center, center, 0% 50%; }
+  100% { background-position: center, center, 100% 50%; }
+}
+
+@keyframes premium-grid-drift {
+  0% { background-position: 0 0, 0 0, center, center; }
+  100% { background-position: 56px 56px, 56px 56px, center, center; }
+}
+
 /* ─── Drop cap (article blog) ──────────────────────────────── */
 .drop-cap > p:first-of-type::first-letter {
   font-family: var(--font-display);
@@ -198,4 +363,13 @@ h1, h2, h3, h4, h5, h6 {
   }
   .sheen::before { display: none; }
   .marker-track::before { transform: scaleX(1); }
+  .premium-hero-shell::after,
+  .premium-tech-section::before {
+    animation: none;
+  }
+  .premium-card,
+  .premium-card:hover,
+  .premium-card:hover svg {
+    transform: none;
+  }
 }
