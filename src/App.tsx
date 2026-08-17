@@ -28,6 +28,8 @@ const Signup = named(() => import('./pages/Signup'), 'Signup');
 const Login = named(() => import('./pages/Login'), 'Login');
 const Account = named(() => import('./pages/Account'), 'Account');
 const DossierDetail = named(() => import('./pages/DossierDetail'), 'DossierDetail');
+// Outil interne : pas de lien dans la navigation publique, page en noindex.
+const LdiConsole = named(() => import('./pages/LdiConsole'), 'LdiConsole');
 
 function RouteFallback() {
   return (
@@ -146,6 +148,16 @@ export default function App() {
             <RequireAuth>
               <Suspense fallback={<RouteFallback />}>
                 <DossierDetail />
+              </Suspense>
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="ldi"
+          element={
+            <RequireAuth>
+              <Suspense fallback={<RouteFallback />}>
+                <LdiConsole />
               </Suspense>
             </RequireAuth>
           }

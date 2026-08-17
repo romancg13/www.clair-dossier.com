@@ -6,6 +6,9 @@
   "scripts": {
     "dev": "vite",
     "gen:md": "tsx scripts/gen-markdown.ts",
+    "ldi": "tsx scripts/ldi.ts",
+    "ldi:sync-prompt": "cp src/ldi/prompt.ts supabase/functions/ldi-analyze/prompt.ts",
+    "test:ldi": "tsx --test src/ldi/__tests__/*.test.ts",
     "build": "npm run gen:md && tsc -p tsconfig.json && vite build",
     "preview": "vite preview --port 4173",
     "typecheck": "tsc -p tsconfig.json --noEmit"

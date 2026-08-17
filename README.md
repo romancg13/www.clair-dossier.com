@@ -42,6 +42,20 @@ npm run typecheck  # tsc --noEmit
 | `/contact` | Formulaire 4 topics avec état submitted simulé |
 | `/dossier/nouveau` | Flow 3 étapes avec persistance localStorage |
 
+## LDI — moteur d'analyse de dossier pénal
+
+Sous-système indépendant du site vitrine (`src/ldi/`). Noyau déterministe qui
+reconstruit une chronologie, détecte les contradictions, déroule dix points de
+contrôle procéduraux du CPP et produit une note stratégique — sans appel réseau.
+
+```bash
+npm run ldi -- analyse examples/dossier-exemple.json
+npm run test:ldi
+```
+
+Documentation complète, politique de sourçage et écarts assumés avec le cahier
+des charges : [`docs/LDI.md`](docs/LDI.md).
+
 ## Architecture
 
 ```

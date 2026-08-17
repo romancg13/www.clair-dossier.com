@@ -1,0 +1,165 @@
+/**
+ * Edge Function : ldi-analyze
+ *
+ * Étage génératif de LDI. Volontairement mince : elle ne calcule rien, elle ne
+ * voit jamais le dossier brut.
+ *
+ * ┌─ RÉPARTITION DES RÔLES ─────────────────────────────────────────────────┐
+ * │ Le noyau déterministe (src/ldi) s'exécute chez l'appelant — navigateur   │
+ * │ ou CLI. Lui seul touche aux pièces. Il produit un rapport markdown déjà  │
+ * │ pseudonymisé (src/ldi/confidentialite.ts), et c'est CE rapport qui est   │
+ * │ transmis ici.                                                            │
+ * │                                                                          │
+ * │ Cette fonction ne reçoit donc pas le dossier : elle reçoit une synthèse  │
+ * │ minimisée, et détient la seule chose qui ne peut pas vivre côté client — │
+ * │ la clé d'API.                                                            │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ *
+ * Secrets attendus :
+ *   ANTHROPIC_API_KEY   clé d'API (obligatoire)
+ *   LDI_MODEL           identifiant de modèle (défaut : claude-opus-5)
+ *   SUPABASE_URL        injecté par la plateforme
+ *   SUPABASE_ANON_KEY   injecté par la plateforme
+ */
+import Anthropic from 'npm:@anthropic-ai/sdk@0.117.1';
+import { createClient } from 'npm:@supabase/supabase-js@2';
+
+import { INVITE_SYSTEME, construireMessage } from './prompt.ts';
+
+const MODELE = Deno.env.get('LDI_MODEL') ?? 'claude-opus-5';
+const CLE_API = Deno.env.get('ANTHROPIC_API_KEY') ?? '';
+
+/** Le rapport déterministe reste borné : au-delà, l'appelant doit le réduire. */
+const TAILLE_MAX_RAPPORT = 200_000;
+const TAILLE_MAX_QUESTION = 4_000;
+
+const CORS = {
+  'Access-Control-Allow-Origin': 'https://www.clair-dossier.com',
+  'Access-Control-Allow-Headers': 'authorization, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+};
+
+function json(charge: unknown, status = 200): Response {
+  return new Response(JSON.stringify(charge), {
+    status,
+    headers: { ...CORS, 'Content-Type': 'application/json' },
+  });
+}
+
+/**
+ * Vérifie que l'appel émane d'un utilisateur authentifié.
+ * Sans cette barrière, la fonction serait un proxy ouvert vers une clé d'API
+ * facturée.
+ */
+async function utilisateurAuthentifie(req: Request): Promise<boolean> {
+  const entete = req.headers.get('Authorization') ?? '';
+  if (!entete.startsWith('Bearer ')) return false;
+
+  const url = Deno.env.get('SUPABASE_URL');
+  const cle = Deno.env.get('SUPABASE_ANON_KEY');
+  if (!url || !cle) return false;
+
+  const client = createClient(url, cle, {
+    global: { headers: { Authorization: entete } },
+    auth: { persistSession: false },
+  });
+
+  const { data, error } = await client.auth.getUser();
+  return !error && Boolean(data.user);
+}
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
+  if (req.method !== 'POST') return json({ error: 'Méthode non autorisée.' }, 405);
+
+  if (!CLE_API) {
+    return json({ error: "Le service d'analyse n'est pas configuré." }, 503);
+  }
+  if (!(await utilisateurAuthentifie(req))) {
+    return json({ error: 'Authentification requise.' }, 401);
+  }
+
+  let corps: { rapport?: unknown; question?: unknown; sources?: unknown };
+  try {
+    corps = await req.json();
+  } catch {
+    return json({ error: 'Corps de requête illisible.' }, 400);
+  }
+
+  const rapport = typeof corps.rapport === 'string' ? corps.rapport : '';
+  const question = typeof corps.question === 'string' ? corps.question.trim() : '';
+  const sources = typeof corps.sources === 'string' ? corps.sources : '';
+
+  if (!rapport) return json({ error: 'Rapport d’analyse manquant.' }, 400);
+  if (!question) return json({ error: 'Question manquante.' }, 400);
+  if (rapport.length > TAILLE_MAX_RAPPORT) {
+    return json({ error: 'Rapport trop volumineux : le réduire côté client.' }, 413);
+  }
+  if (question.length > TAILLE_MAX_QUESTION) {
+    return json({ error: 'Question trop longue.' }, 413);
+  }
+
+  const client = new Anthropic({ apiKey: CLE_API });
+
+  try {
+    const reponse = await client.beta.messages.create({
+      model: MODELE,
+      max_tokens: 16000,
+      // Réflexion adaptative : sur ce type d'analyse, le raisonnement compte
+      // davantage que la latence.
+      thinking: { type: 'adaptive' },
+      output_config: { effort: 'high' },
+      // Repli côté serveur : une analyse pénale peut déclencher un refus de
+      // classification. Plutôt qu'une réponse vide renvoyée à l'avocat, la
+      // requête est rejouée sur un modèle de repli dans le même appel.
+      betas: ['server-side-fallback-2026-07-01'],
+      fallbacks: 'default',
+      system: [{ type: 'text', text: INVITE_SYSTEME, cache_control: { type: 'ephemeral' } }],
+      messages: [{ role: 'user', content: construireMessage({ rapport, sources, question }) }],
+    });
+
+    if (reponse.stop_reason === 'refusal') {
+      return json(
+        {
+          error: "L'analyse n'a pas pu être produite pour cette demande.",
+          detail: reponse.stop_details ?? null,
+        },
+        422
+      );
+    }
+
+    const texte = reponse.content
+      .filter((bloc): bloc is Anthropic.Beta.BetaTextBlock => bloc.type === 'text')
+      .map((bloc) => bloc.text)
+      .join('\n');
+
+    return json({
+      analyse: texte,
+      modele: reponse.model,
+      usage: {
+        entree: reponse.usage.input_tokens,
+        sortie: reponse.usage.output_tokens,
+        cache_lu: reponse.usage.cache_read_input_tokens ?? 0,
+      },
+      // Rappelé à chaque réponse : la sortie d'un modèle de langage n'est pas
+      // une source. Elle doit être relue et recoupée avant tout usage.
+      avertissement:
+        "Analyse produite par un modèle de langage à partir du rapport déterministe. Toute référence citée doit être vérifiée sur sa source officielle avant d'être reprise dans un acte.",
+    });
+  } catch (e) {
+    if (e instanceof Anthropic.RateLimitError) {
+      return json({ error: 'Service momentanément saturé. Réessayer dans quelques instants.' }, 429);
+    }
+    if (e instanceof Anthropic.AuthenticationError) {
+      return json({ error: "Le service d'analyse est mal configuré." }, 503);
+    }
+    if (e instanceof Anthropic.APIError) {
+      // Le message d'erreur amont n'est pas renvoyé au client : il peut
+      // contenir des fragments de la requête.
+      console.error('[ldi-analyze] erreur API', e.status, e.message);
+      return json({ error: "L'analyse a échoué." }, 502);
+    }
+    console.error('[ldi-analyze] erreur inattendue', e);
+    return json({ error: "L'analyse a échoué." }, 500);
+  }
+});
