@@ -13,6 +13,8 @@
  * 3. Aucun numéro de pourvoi n'est inséré par le module. La jurisprudence est
  *    ajoutée par l'avocat, depuis le module 2 et ses sources officielles.
  */
+import { verifierCitations } from '../citations';
+import { CORPUS } from '../corpus/references';
 import type {
   AnalyseDossier,
   DocumentJuridique,
@@ -208,11 +210,26 @@ ${strategie.risques.map((r) => `- ${r}`).join('\n')}
     pied(),
   ].join('\n');
 
+  // Contrôle après génération : le squelette ne peut pas sortir en portant une
+  // référence qu'aucune source du contexte n'appuie, même si c'est le module
+  // lui-même qui l'a écrite.
+  const verification = verifierCitations(corps, {
+    // Index complet : les rappels de régime du module citent des articles qui
+    // ne sont pas fondements d'un axe mais figurent bien à l'index sourcé.
+    references: [...dedupliquer(discussion.refs), ...CORPUS],
+    decisions: [],
+  });
+
   return {
     type,
     titre: TITRES[type],
-    corps,
-    aCompleter: [...new Set(corps.match(MARQUEUR) ?? [])],
+    corps: verification.texte,
+    aCompleter: [...new Set(verification.texte.match(MARQUEUR) ?? [])],
     referencesCitees: dedupliquer(discussion.refs),
+    verification: {
+      conforme: verification.conforme,
+      citationsNonVerifiees: verification.inconnues,
+      rapport: verification.rapport,
+    },
   };
 }

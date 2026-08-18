@@ -24,6 +24,13 @@ export { analyserPiece, analyserPieces, SEUILS_DETECTION } from './modules/detec
 export { construireStrategie, REGLES_SOLIDITE } from './modules/strategie';
 export { genererDocument } from './modules/documents';
 export {
+  extraireCitations,
+  verifierCitations,
+  type Citations,
+  type ContexteVerification,
+  type ResultatVerification,
+} from './citations';
+export {
   rechercher,
   rechercherJurisprudence,
   verifierTexte,

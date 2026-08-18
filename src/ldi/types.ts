@@ -323,6 +323,12 @@ export type DocumentJuridique = {
   aCompleter: string[];
   /** Références citées dans le corps, avec leur statut de vérification. */
   referencesCitees: EnonceJuridique[];
+  /** Résultat du contrôle de citations exécuté après génération. */
+  verification: {
+    conforme: boolean;
+    citationsNonVerifiees: string[];
+    rapport: string;
+  };
 };
 
 // ---------------------------------------------------------------------------

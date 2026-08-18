@@ -7,12 +7,12 @@
     "dev": "vite",
     "gen:md": "tsx scripts/gen-markdown.ts",
     "ldi": "tsx scripts/ldi.ts",
-    "ldi:sync-prompt": "node -e \"require('node:fs').copyFileSync('src/ldi/prompt.ts','supabase/functions/ldi-analyze/prompt.ts')\"",
     "test:ldi": "tsx --test \"src/ldi/__tests__/*.test.ts\"",
     "build": "npm run gen:md && tsc -p tsconfig.json && vite build",
     "preview": "vite preview --port 4173",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "ldi:artifact": "node scripts/build-artifact.mjs"
+    "ldi:artifact": "node scripts/build-artifact.mjs",
+    "ldi:sync-edge": "node -e \"for (const f of ['prompt.ts','citations.ts']) require('node:fs').copyFileSync('src/ldi/'+f,'supabase/functions/ldi-analyze/'+f)\""
   },
   "dependencies": {
     "@fontsource/cormorant-garamond": "^5.2.5",
