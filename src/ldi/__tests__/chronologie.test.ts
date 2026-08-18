@@ -249,3 +249,53 @@ describe('detecterIrregularites', () => {
     }
   });
 });
+
+/**
+ * Signalé en revue externe sur `9e4286a`, et confirmé : le même dossier
+ * produisait une contradiction critique « la fin précède le début » ET un
+ * GAV-05 « conforme — durée compatible ». Le point de contrôle ne consultait
+ * que les contradictions de type `duree-legale` et ne mesurait pas lui-même
+ * le signe de l'écart.
+ */
+describe("GAV-05 quand la fin de garde à vue précède son début", () => {
+  function dossierInverse(): Dossier {
+    return {
+      reference: 'TEST-GAV05-INVERSE',
+      qualifications: ['CP, art. 222-37'],
+      regime: 'droit-commun',
+      pieces: [
+        { id: 'P1', nature: 'proces-verbal', intitule: 'PV placement', date: '2026-03-14' },
+        { id: 'P3', nature: 'proces-verbal', intitule: 'PV fin', date: '2026-03-14' },
+      ],
+      evenements: [
+        evenement({ id: 'E1', nature: 'debut-garde-a-vue', horodatage: '2026-03-14T18:00', sourcePieceId: 'P1' }),
+        evenement({ id: 'E2', nature: 'notification-droits', horodatage: '2026-03-14T18:05', sourcePieceId: 'P1' }),
+        evenement({ id: 'E7', nature: 'fin-garde-a-vue', horodatage: '2026-03-14T09:00', sourcePieceId: 'P3' }),
+      ],
+    };
+  }
+
+  it('relève bien la contradiction chronologique', () => {
+    const analyse = analyserDossier(dossierInverse());
+    const c = analyse.contradictions.find((x) => x.type === 'chronologie');
+    assert.ok(c, 'la contradiction doit être détectée');
+    assert.equal(c.severite, 'critique');
+  });
+
+  it('ne conclut jamais « conforme » sur une durée négative', () => {
+    const dossier = dossierInverse();
+    const analyse = analyserDossier(dossier);
+    const point = detecterIrregularites(dossier, analyse).points.find((p) => p.id === 'GAV-05');
+    assert.ok(point);
+    assert.notEqual(point.resultat, 'conforme');
+    // Une durée négative est un défaut d'ordre, pas une simple impossibilité
+    // de mesurer : elle doit être signalée comme telle.
+    assert.equal(point.resultat, 'anomalie');
+  });
+
+  it("compte ce point parmi les anomalies du rapport", () => {
+    const dossier = dossierInverse();
+    const n = detecterIrregularites(dossier, analyserDossier(dossier));
+    assert.ok(n.anomalies.some((a) => a.id === 'GAV-05'));
+  });
+});

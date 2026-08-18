@@ -233,6 +233,19 @@ const DEFINITIONS: Definition[] = [
           constat: "L'heure de début ou de fin de la mesure manque : la durée n'a pas pu être mesurée.",
         };
       }
+
+      // Fin antérieure au début. Le détecteur de chronologie le relève déjà,
+      // mais sous le type `chronologie` : ce point ne lisait que les
+      // contradictions `duree-legale` et concluait « durée compatible » sur une
+      // durée négative. Un même dossier portait donc une contradiction critique
+      // et un point de contrôle conforme. La durée est désormais mesurée ici.
+      if (iFin.minutes < iDebut.minutes) {
+        return {
+          resultat: 'anomalie',
+          constat: `La fin de la mesure (${fin.horodatage}) est antérieure à son début (${debut.horodatage}) : la durée ne peut pas être appréciée et l'ordre des actes est lui-même en cause.`,
+        };
+      }
+
       return {
         resultat: 'conforme',
         constat: `Durée compatible avec le régime « ${ctx.analyse.regime} » (plafond ${regime?.heures ?? '?'} h) et les prolongations actées.`,
