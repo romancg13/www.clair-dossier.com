@@ -198,3 +198,25 @@ describe('minimisation', () => {
     assert.ok(alertes.some((a) => a.includes('capitalisés')));
   });
 });
+
+/**
+ * Fuite signalée en revue externe sur `9e4286a`, confirmée par exécution.
+ */
+describe('patronyme déclaré présent dans une adresse électronique', () => {
+  const SOURCE = 'Écrire à jean.dupont@exemple.fr pour la suite.';
+
+  it('ne laisse pas le domaine partir en clair', () => {
+    const { texte } = minimiser(SOURCE, ['Dupont']);
+    assert.ok(!texte.includes('exemple.fr'), `domaine en clair : ${texte}`);
+  });
+
+  it("pseudonymise l'adresse entière plutôt que de la couper en deux", () => {
+    const { texte } = minimiser(SOURCE, ['Dupont']);
+    assert.ok(!texte.includes('@'), `adresse coupée : ${texte}`);
+  });
+
+  it('reste réversible', () => {
+    const { texte, correspondances } = minimiser(SOURCE, ['Dupont']);
+    assert.equal(restaurer(texte, correspondances), SOURCE);
+  });
+});

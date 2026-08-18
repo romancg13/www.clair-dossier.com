@@ -79,7 +79,21 @@ export function minimiser(texte: string, noms: string[] = []): ResultatMinimisat
   const compteurs = new Map<string, number>();
   let resultat = texte;
 
-  // Les noms déclarés d'abord : ils peuvent contenir des motifs génériques.
+  // ┌─ ORDRE DES DEUX PASSES ────────────────────────────────────────────────┐
+  // │ Les identifiants directs D'ABORD. L'ordre inverse fuyait : un patronyme │
+  // │ déclaré peut figurer dans une adresse électronique, et les bornes       │
+  // │ lexicales traitent le point comme une frontière. `jean.dupont@x.fr`     │
+  // │ avec « Dupont » déclaré devenait `jean.[PERSONNE_1]@x.fr` — le motif    │
+  // │ EMAIL ne reconnaissait plus rien, et le domaine partait EN CLAIR chez   │
+  // │ le fournisseur. La restauration était perdue par la même occasion.      │
+  // │                                                                         │
+  // │ En pseudonymisant les identifiants en premier, une adresse est déjà un  │
+  // │ jeton opaque quand les patronymes sont traités : plus rien à couper.    │
+  // └─────────────────────────────────────────────────────────────────────────┘
+  for (const motif of MOTIFS) {
+    resultat = pseudonymiser(resultat, motif, correspondances, compteurs);
+  }
+
   const parLongueur = [...noms].filter((n) => n.trim().length > 1).sort((a, b) => b.length - a.length);
   parLongueur.forEach((nom, index) => {
     const pseudo = `[PERSONNE_${index + 1}]`;
@@ -96,10 +110,6 @@ export function minimiser(texte: string, noms: string[] = []): ResultatMinimisat
       resultat = resultat.replace(regex, pseudo);
     }
   });
-
-  for (const motif of MOTIFS) {
-    resultat = pseudonymiser(resultat, motif, correspondances, compteurs);
-  }
 
   return { texte: resultat, correspondances };
 }
