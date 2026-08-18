@@ -3,6 +3,13 @@
 *Audit conduit sur `claude/legal-defense-intelligence-os-ko41pt`, commit `e191a75`.
 Lecture seule : aucune ligne de code n'a été modifiée pendant l'audit.*
 
+> **État après la phase 3 de corrections.** Les trois P0 sont fermés — par du
+> code exécuté, non par une consigne d'invite : P0-01 (`5c7d73e`), P0-02
+> (`5f62c5f`), P0-03 (`6399450`), plus P1-04 (`ec2b512`). Sept P1 restent
+> ouverts. Les notes ci-dessous sont celles de l'audit initial et ne sont pas
+> réévaluées : elles documentent l'état constaté, pas l'état courant. La suite
+> proposée figure dans `docs/FEUILLE-DE-ROUTE.md`.
+
 ---
 
 ## Synthèse
