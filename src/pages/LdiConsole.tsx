@@ -175,6 +175,9 @@ export function LdiConsole() {
             dossier n'est transmise tant que vous ne demandez pas explicitement une analyse
             rédigée — et, dans ce cas, seul le rapport pseudonymisé est envoyé.
           </p>
+          <p className="mt-4 max-w-3xl border-l-2 border-gold-500 bg-cream-100 px-4 py-3 text-sm text-navy-900">
+            <strong>Périmètre.</strong> Points de contrôle couverts : garde à vue, contrôle d'identité, perquisition en enquête préliminaire, traçabilité des scellés, prescription. NON couverts : l'instruction, la détention provisoire, les interceptions, les expertises au fond, la procédure d'audience et les voies de recours. Un rapport sans anomalie ne signifie donc PAS que la procédure est régulière : il signifie que les dix points contrôlés n'ont rien révélé.
+          </p>
 
           <div className="mt-10 grid gap-8 lg:grid-cols-[minmax(0,420px)_1fr]">
             {/* Saisie */}

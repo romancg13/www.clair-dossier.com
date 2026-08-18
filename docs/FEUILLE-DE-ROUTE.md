@@ -122,8 +122,11 @@ existant. Chaque module marqué « à redéfinir » l'est pour cette raison.
 - [x] **Pièce contenant une instruction cachée → sans effet sur le
       comportement.** Cloisonnement `<donnees_dossier>`, tentative d'évasion
       neutralisée, 6 tests.
-- [x] **Périmètre exclu affiché.** Dans `docs/LDI.md` et en pied de la page
-      publique.
+- [x] **Périmètre exclu affiché.** Rapport déterministe (en tête des limites),
+      console, page publique et README. *Cette case était initialement cochée à
+      tort : le périmètre ne figurait que dans `docs/LDI.md`. Corrigé — c'était
+      la lecture erronée la plus coûteuse, un rapport sans anomalie pris pour un
+      satisfecit de régularité.*
 - [x] **Mention de responsabilité de l'avocat sur chaque export.** Pied de tout
       document généré.
 - [ ] **`git clone` → premier dossier traité en moins de 10 minutes.** Faisable

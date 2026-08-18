@@ -17,6 +17,9 @@ import type { Dossier, RapportLdi } from './types';
 
 /** Limites applicables à tout rapport produit par ce pipeline. */
 const LIMITES_STRUCTURELLES = [
+  // En tête, parce que c'est la lecture erronée la plus coûteuse : prendre
+  // l'absence d'anomalie pour un satisfecit de régularité.
+  "Points de contrôle couverts : garde à vue, contrôle d'identité, perquisition en enquête préliminaire, traçabilité des scellés, prescription. NON couverts : l'instruction, la détention provisoire, les interceptions, les expertises au fond, la procédure d'audience et les voies de recours. Un rapport sans anomalie ne signifie donc PAS que la procédure est régulière : il signifie que les dix points contrôlés n'ont rien révélé.",
   "L'analyse ne porte que sur les éléments saisis dans le dossier fourni. Une pièce non saisie est invisible pour le système, et son absence n'est pas signalée.",
   "Les statuts de vérification des textes sont ceux de l'index interne. Sans accès à Légifrance pendant l'exécution, toutes les références sont marquées « à vérifier » et doivent être confrontées à leur source avant citation dans un acte.",
   "Aucune jurisprudence n'est produite par le pipeline déterministe : la recherche de décisions relève du module 2 et de ses sources officielles.",

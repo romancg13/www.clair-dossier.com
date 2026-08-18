@@ -54,6 +54,8 @@ npm run test:ldi
 npm run ldi:artifact   # page HTML autonome, hors ligne
 ```
 
+**Périmètre.** Points de contrôle couverts : garde à vue, contrôle d'identité, perquisition en enquête préliminaire, traçabilité des scellés, prescription. NON couverts : l'instruction, la détention provisoire, les interceptions, les expertises au fond, la procédure d'audience et les voies de recours. Un rapport sans anomalie ne signifie donc PAS que la procédure est régulière : il signifie que les dix points contrôlés n'ont rien révélé.
+
 Documentation complète, politique de sourçage et écarts assumés avec le cahier
 des charges : [`docs/LDI.md`](docs/LDI.md).
 
