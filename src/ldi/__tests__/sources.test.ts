@@ -200,8 +200,35 @@ describe('minimisation', () => {
 });
 
 /**
- * Fuite signalée en revue externe sur `9e4286a`, confirmée par exécution.
+ * Deux fabrications signalées en revue externe sur `9e4286a`, toutes deux
+ * confirmées : elles portent sur les deux promesses centrales du système —
+ * ne rien inventer, et ne rien laisser sortir de la machine.
  */
+describe('juridiction absente de la réponse officielle', () => {
+  const SOURCE = { editeur: 'Judilibre', url: 'https://exemple.test', consulteLe: '2026-08-17' };
+
+  it("ne nomme aucune juridiction que la source n'a pas renvoyée", () => {
+    const d = versDecision({ number: '21-80.642', decision_date: '2021-09-07', solution: 'Rejet' }, SOURCE);
+    assert.ok(
+      d === null || !/chambre criminelle/i.test(d.juridiction),
+      "une juridiction par défaut est une provenance fabriquée sur une décision marquée « vérifiée »"
+    );
+  });
+
+  it("dit explicitement que la juridiction manque, plutôt que de la taire", () => {
+    const d = versDecision({ number: '21-80.642', decision_date: '2021-09-07', solution: 'Rejet' }, SOURCE);
+    if (d !== null) assert.match(d.juridiction, /non restitu/i);
+  });
+
+  it('conserve la juridiction quand la source la renvoie', () => {
+    const d = versDecision(
+      { number: '21-80.642', decision_date: '2021-09-07', jurisdiction: "Cour d'appel de Douai" },
+      SOURCE
+    );
+    assert.equal(d?.juridiction, "Cour d'appel de Douai");
+  });
+});
+
 describe('patronyme déclaré présent dans une adresse électronique', () => {
   const SOURCE = 'Écrire à jean.dupont@exemple.fr pour la suite.';
 

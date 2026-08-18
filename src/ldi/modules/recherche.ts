@@ -110,8 +110,15 @@ export function versDecision(brut: unknown, source: SourceOfficielle): DecisionJ
   const date = champ(brut, 'decision_date', 'date', 'dateDecision');
   if (!numero || !date) return null;
 
+  // Aucune valeur par défaut. Nommer une juridiction que la source n'a pas
+  // renvoyée, sur une décision par ailleurs marquée « vérifiée », c'est
+  // fabriquer exactement la provenance que ce module existe pour garantir : un
+  // arrêt de cour d'appel se serait présenté comme un arrêt de la chambre
+  // criminelle. Même règle que pour `solution` juste en dessous — l'absence
+  // s'écrit, elle ne se comble pas.
   const juridiction =
-    champ(brut, 'jurisdiction', 'juridiction') ?? 'Cour de cassation, chambre criminelle';
+    champ(brut, 'jurisdiction', 'juridiction') ??
+    'Juridiction non restituée par la source : lire la décision intégrale.';
   const solution =
     champ(brut, 'solution', 'summary', 'sommaire', 'text') ??
     'Solution non restituée par la source : lire la décision intégrale.';
