@@ -100,3 +100,37 @@ describe('verifierCitations — ce qui ne doit jamais passer', () => {
     assert.deepEqual(r.inconnues, ['19-84.111']);
   });
 });
+
+/**
+ * Signalé en revue externe sur `9e4286a`. L'annotation se faisait par
+ * `split(inconnue).join(...)` sur des numéros nus comme « 63 » : toute
+ * occurrence contenant ce numéro était annotée, y compris un article
+ * PARFAITEMENT autorisé — « 63-4-2 » devenait
+ * « 63 [CITATION NON VÉRIFIÉE]-4-2 ». Le contrôle anti-hallucination
+ * dégradait donc les citations qu'il était censé valider.
+ */
+describe('annotation des citations non vérifiées', () => {
+  const SORTIE = "Les art. 63 et 63-4-2 CPP. Le pourvoi n° 21-80.642 du 2021-09-07.";
+
+  it("n'altère pas un article autorisé qui contient le numéro rejeté", () => {
+    const r = verifierCitations(SORTIE, { references: [{ reference: 'CPP, art. 63-4-2' }], decisions: [] });
+    assert.ok(r.texte.includes('63-4-2 CPP'), `« 63-4-2 » a été coupé : ${r.texte}`);
+  });
+
+  it('annote une seule fois chaque citation rejetée', () => {
+    const r = verifierCitations(SORTIE, { references: [{ reference: 'CPP, art. 63-4-2' }], decisions: [] });
+    const marques = r.texte.split('[CITATION NON VÉRIFIÉE').length - 1;
+    assert.equal(marques, 2, `attendu 2 marques (63 et le pourvoi), obtenu ${marques}`);
+  });
+
+  it("n'annote pas une date qui contient le numéro rejeté", () => {
+    const r = verifierCitations('Art. 7 CPP, décision du 2021-09-07.', { references: [], decisions: [] });
+    assert.ok(r.texte.includes('2021-09-07.'), `la date a été altérée : ${r.texte}`);
+  });
+
+  it('laisse le texte intact quand tout est autorisé', () => {
+    const r = verifierCitations('Art. 63-4-2 CPP.', { references: [{ reference: 'CPP, art. 63-4-2' }], decisions: [] });
+    assert.equal(r.conforme, true);
+    assert.equal(r.texte, 'Art. 63-4-2 CPP.');
+  });
+});

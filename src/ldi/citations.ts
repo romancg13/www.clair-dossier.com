@@ -93,6 +93,33 @@ function numerosAutorises(references: ReferenceCitable[]): Set<string> {
   return out;
 }
 
+/** Emplacement exact d'une citation dans un texte. */
+type Zone = { valeur: string; debut: number; fin: number };
+
+/**
+ * Repère chaque citation avec son décalage. La valeur retournée est celle que
+ * `extraireCitations` produit — numéro d'article capturé, pourvoi ou ECLI
+ * entier — pour que la comparaison avec l'ensemble rejeté porte sur la même
+ * chose des deux côtés.
+ */
+function zonesDesCitations(texte: string): Zone[] {
+  const zones: Zone[] = [];
+
+  for (const m of texte.matchAll(RE_ARTICLE)) {
+    // Le numéro seul, pas le « art. » qui le précède : l'annotation se pose
+    // après le numéro.
+    const debut = m.index + m[0].length - m[1].length;
+    zones.push({ valeur: m[1], debut, fin: debut + m[1].length });
+  }
+  for (const re of [RE_POURVOI, RE_ECLI]) {
+    for (const m of texte.matchAll(re)) {
+      zones.push({ valeur: m[0], debut: m.index, fin: m.index + m[0].length });
+    }
+  }
+
+  return zones;
+}
+
 export function verifierCitations(
   sortie: string,
   contexte: ContexteVerification
@@ -113,16 +140,31 @@ export function verifierCitations(
     return { conforme: true, inconnues: [], texte: sortie, rapport: '' };
   }
 
+  const rejetees = new Set(inconnues);
+
   // Annotation sur place : la mention reste collée à la citation, elle ne peut
   // pas être perdue en recopiant un paragraphe.
+  //
+  // Par DÉCALAGE, jamais par sous-chaîne. Un numéro rejeté est souvent nu
+  // (« 63 ») et se retrouve dans des références parfaitement autorisées :
+  // annoter toutes ses occurrences transformait « 63-4-2 » en
+  // « 63 [CITATION NON VÉRIFIÉE]-4-2 ». Le contrôle abîmait ainsi les citations
+  // qu'il venait de valider, et l'avocat lisait une alerte au milieu d'un
+  // article régulier.
+  const aAnnoter = zonesDesCitations(sortie).filter((z) => rejetees.has(z.valeur));
+
+  // De la fin vers le début : chaque insertion décale ce qui suit.
   let texte = sortie;
-  for (const inconnue of inconnues) {
-    texte = texte.split(inconnue).join(`${inconnue} [CITATION NON VÉRIFIÉE — retirée du contexte]`);
+  for (const zone of [...aAnnoter].sort((a, b) => b.fin - a.fin)) {
+    texte = `${texte.slice(0, zone.fin)} [CITATION NON VÉRIFIÉE — retirée du contexte]${texte.slice(zone.fin)}`;
   }
 
-  const duDossier = contexte.texteDuDossier
-    ? inconnues.filter((i) => contexte.texteDuDossier!.includes(i))
-    : [];
+  // Même exigence de précision pour l'attribution au dossier : « 63 » présent
+  // dans « 63-4-2 » d'une pièce ne prouve pas que « 63 » vienne de cette pièce.
+  const citationsDuDossier = contexte.texteDuDossier
+    ? new Set(zonesDesCitations(contexte.texteDuDossier).map((z) => z.valeur))
+    : new Set<string>();
+  const duDossier = inconnues.filter((i) => citationsDuDossier.has(i));
 
   const lignes = [
     `${inconnues.length} citation(s) ne sont appuyées par aucune source interrogée : ${inconnues.join(', ')}.`,
