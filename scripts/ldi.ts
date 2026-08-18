@@ -10,11 +10,12 @@
  *   npm run ldi -- document requete-nullite dossier.json
  *   npm run ldi -- minimise notes.txt --noms "Jean Dupont,SARL Martin"
  */
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 
 import { minimiser, alertesResiduelles } from '../src/ldi/confidentialite';
 import { genererDocument } from '../src/ldi/modules/documents';
 import { analyser, rendreMarkdown } from '../src/ldi/pipeline';
+import { journaliser, rejouer } from '../src/ldi/journal';
 import { sourcerRapport } from '../src/ldi/sourcage';
 import type { ConfigRecherche } from '../src/ldi/modules/recherche';
 import type { Dossier, TypeDocument } from '../src/ldi/types';
@@ -33,6 +34,13 @@ const USAGE = `LDI — analyse de dossier pénal (exécution locale)
   npm run ldi -- document <type> <dossier.json>
   npm run ldi -- minimise <fichier.txt> [--noms "Nom 1,Nom 2"]
   npm run ldi -- sourcer <dossier.json>
+  npm run ldi -- analyse <dossier.json> --journal <journal.json>
+  npm run ldi -- rejouer <journal.json> <dossier.json>
+
+« --journal » écrit un enregistrement d'exécution : empreinte du dossier,
+version du moteur, et pour chaque constat les éléments qui l'ont produit.
+« rejouer » confronte cet enregistrement au dossier actuel et dit ce qui a
+bougé — le dossier, ou le moteur. Le journal ne recopie pas les pièces.
 
 « sourcer » interroge les sources officielles pour les références du rapport.
 Identifiants lus dans l'environnement : LDI_JUDILIBRE_URL, LDI_JUDILIBRE_ENTETE,
@@ -94,7 +102,15 @@ async function main(): Promise<void> {
       const chemin = args.find((a) => !a.startsWith('--'));
       if (!chemin) echec('chemin du dossier manquant.');
 
-      const rapport = analyser(lireDossier(chemin));
+      const dossier = lireDossier(chemin);
+      const rapport = analyser(dossier);
+
+      const cheminJournal = optionValeur(args, '--journal');
+      if (cheminJournal) {
+        writeFileSync(cheminJournal, `${JSON.stringify(journaliser(dossier, rapport), null, 2)}\n`, 'utf-8');
+        process.stderr.write(`Journal écrit : ${cheminJournal}\n`);
+      }
+
       if (args.includes('--json')) {
         process.stdout.write(`${JSON.stringify(rapport, null, 2)}\n`);
       } else {
@@ -143,6 +159,32 @@ async function main(): Promise<void> {
         process.stderr.write('\nRisque résiduel de ré-identification :\n');
         for (const alerte of alertes) process.stderr.write(`  - ${alerte}\n`);
       }
+      return;
+    }
+
+    case 'rejouer': {
+      const [cheminJournal, cheminDossier] = args.filter((a) => !a.startsWith('--'));
+      if (!cheminJournal || !cheminDossier) echec('usage : rejouer <journal.json> <dossier.json>');
+
+      let journal;
+      try {
+        journal = JSON.parse(readFileSync(cheminJournal, 'utf-8'));
+      } catch (e) {
+        echec(`journal illisible : ${(e as Error).message}`);
+      }
+
+      const controle = rejouer(journal, lireDossier(cheminDossier));
+      if (controle.identique) {
+        process.stdout.write(
+          `Conforme au journal du ${journal.executeLe} — dossier et moteur inchangés.\n` +
+            `Les ${journal.constats.length} constats enregistrés restent reproductibles.\n`
+        );
+        return;
+      }
+
+      process.stdout.write('Écart avec le journal :\n');
+      for (const ecart of controle.ecarts) process.stdout.write(`  - ${ecart}\n`);
+      process.exitCode = 4;
       return;
     }
 
