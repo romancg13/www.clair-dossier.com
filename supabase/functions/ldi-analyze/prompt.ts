@@ -136,9 +136,17 @@ const BALISE = 'donnees_dossier';
  * Sans cela, une pièce contenant « </donnees_dossier> » sortirait du
  * cloisonnement et la suite de son texte serait lue au même niveau que
  * l'invite.
+ *
+ * Le motif est délibérément TOLÉRANT — espaces, attributs, casse. La forme
+ * exacte seule ne suffisait pas : « </donnees_dossier > » traversait intact.
+ * Ce texte n'est pas lu par un analyseur strict mais par un modèle de langage,
+ * qui n'a pas à décider si une variante ferme ou non le cloisonnement.
  */
 function neutraliser(texte: string): string {
-  return texte.replace(new RegExp(`</?${BALISE}>`, 'gi'), (t) => t.replace(/[<>]/g, ''));
+  return texte.replace(
+    new RegExp(`<\\s*/?\\s*${BALISE}\\b[^>]*>`, 'gi'),
+    (t) => t.replace(/[<>]/g, '')
+  );
 }
 
 export function construireMessage(ctx: ContexteInvite): string {
