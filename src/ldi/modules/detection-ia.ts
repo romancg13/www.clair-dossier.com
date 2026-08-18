@@ -106,7 +106,13 @@ export function tauxRepetitionQuadrigrammes(mots: string[]): number {
 const REGEX_CONNECTEURS = CONNECTEURS.map(
   (c) =>
     new RegExp(
-      `(?<![\p{L}\p{N}])${c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![\p{L}\p{N}])`,
+      // String.raw est indispensable : dans un littéral de gabarit ordinaire,
+      // « \p » se réduit à « p ». Les bornes devenaient la classe littérale
+      // [p{L}p{N}], et « de plus » était alors compté dans « de plusieurs » —
+      // une densité de connecteurs surévaluée, remontée telle quelle à
+      // l'avocat. Le même piège avait été corrigé dans confidentialite.ts,
+      // par concaténation ; il était resté ici.
+      String.raw`(?<![\p{L}\p{N}])${c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![\p{L}\p{N}])`,
       'giu'
     )
 );

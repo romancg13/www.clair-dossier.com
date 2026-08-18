@@ -223,3 +223,29 @@ describe('texte de dossier inséré dans un tableau markdown', () => {
     }
   });
 });
+
+/**
+ * Signalé en revue externe sur `9e4286a`, confirmé. Le même piège que dans
+ * `confidentialite.ts`, corrigé là-bas et pas ici : dans un littéral de
+ * gabarit non balisé, « \p » se réduit à « p ». Les bornes lexicales
+ * devenaient la classe littérale [p{L}p{N}], si bien que « de plus » était
+ * compté dans « de plusieurs ». La mesure remontait alors à l'avocat.
+ */
+describe('bornes lexicales des connecteurs (module 4)', () => {
+  function piece(texte: string): Piece {
+    return { id: 'P1', nature: 'proces-verbal', intitule: 'PV', date: '2026-03-14', texte };
+  }
+
+  const densite = (contenu: string) =>
+    analyserPiece(piece(contenu)).signaux.find((s) => s.id === 'densite-connecteurs')!.valeur;
+
+  it('ne compte pas un connecteur trouvé à l’intérieur d’un mot', () => {
+    const base = 'il y a de plusieurs éléments au dossier et cela reste à confirmer. '.repeat(12);
+    assert.equal(densite(base), 0, '« de plusieurs » ne contient pas le connecteur « de plus »');
+  });
+
+  it('compte le connecteur lorsqu’il est réellement présent', () => {
+    const base = 'il y a de plusieurs éléments au dossier et cela reste à confirmer. '.repeat(12);
+    assert.ok(densite(`${base}De plus, le témoin a parlé. `.repeat(1)) > 0);
+  });
+});
