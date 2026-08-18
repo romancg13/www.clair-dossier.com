@@ -54,6 +54,14 @@ npm run test:ldi
 npm run ldi:artifact   # page HTML autonome, hors ligne
 ```
 
+**Atelier** (`/ldi`, compte requis). Interface de travail sur plusieurs dossiers :
+tableau de bord chiffré, classement par état d'analyse / régime procédural /
+qualification, chronologie, points de contrôle, axes de défense et trames
+d'actes. L'analyse s'exécute intégralement dans le navigateur ; les dossiers ne
+sont écrits sur le disque que si la conservation est activée dans Paramètres,
+et la désactiver purge. Quatre dossiers fictifs peuplent l'atelier au premier
+lancement pour qu'il soit lisible sans charger de procédure réelle.
+
 **Périmètre.** Points de contrôle couverts : garde à vue, contrôle d'identité, perquisition en enquête préliminaire, traçabilité des scellés, prescription. NON couverts : l'instruction, la détention provisoire, les interceptions, les expertises au fond, la procédure d'audience et les voies de recours. Un rapport sans anomalie ne signifie donc PAS que la procédure est régulière : il signifie que les dix points contrôlés n'ont rien révélé.
 
 Documentation complète, politique de sourçage et écarts assumés avec le cahier

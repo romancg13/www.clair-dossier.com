@@ -29,7 +29,7 @@ const Login = named(() => import('./pages/Login'), 'Login');
 const Account = named(() => import('./pages/Account'), 'Account');
 const DossierDetail = named(() => import('./pages/DossierDetail'), 'DossierDetail');
 // Outil interne : pas de lien dans la navigation publique, page en noindex.
-const LdiConsole = named(() => import('./pages/LdiConsole'), 'LdiConsole');
+const LdiAtelier = named(() => import('./pages/LdiAtelier'), 'LdiAtelier');
 
 function RouteFallback() {
   return (
@@ -48,6 +48,24 @@ function RouteFallback() {
 export default function App() {
   return (
     <Routes>
+      {/*
+        L'atelier LDI est hors du `Layout` public : c'est une application de
+        travail, pas une page du site. Lui superposer la navigation commerciale
+        et le pied de page volerait de la hauteur d'écran à un outil qui affiche
+        des chronologies, et brouillerait la frontière entre la vitrine et
+        l'espace où transitent des pièces de procédure.
+      */}
+      <Route
+        path="ldi"
+        element={
+          <RequireAuth>
+            <Suspense fallback={<RouteFallback />}>
+              <LdiAtelier />
+            </Suspense>
+          </RequireAuth>
+        }
+      />
+
       <Route element={<Layout />}>
         <Route index element={<Home />} />
         <Route
@@ -148,16 +166,6 @@ export default function App() {
             <RequireAuth>
               <Suspense fallback={<RouteFallback />}>
                 <DossierDetail />
-              </Suspense>
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="ldi"
-          element={
-            <RequireAuth>
-              <Suspense fallback={<RouteFallback />}>
-                <LdiConsole />
               </Suspense>
             </RequireAuth>
           }

@@ -58,11 +58,44 @@ npm run ldi -- minimise notes.txt --noms "Jean Dupont"    # pseudonymisation
 `analyse` sort en code 2 lorsqu'au moins une anomalie est relevée, pour un
 enchaînement en script.
 
-### Console web
+### Atelier web (`/ldi`)
 
-`/ldi`, derrière authentification, absente de la navigation publique et en
-`noindex`. L'analyse tourne dans le navigateur ; l'appel au service de rédaction
-est un geste distinct et explicite.
+Interface multi-dossiers, réservée aux comptes authentifiés et servie hors du
+gabarit public du site. Huit vues : tableau de bord, dossiers, chronologie,
+points de contrôle, axes de défense, actes à préparer, minimisation, paramètres.
+
+**Classement.** Trois axes, chacun reposant sur quelque chose de vérifiable :
+
+| Axe | Origine de la valeur |
+|---|---|
+| État d'analyse | **mesuré** par les points de contrôle |
+| Régime procédural | **déclaré** dans le dossier |
+| Qualification | reprise **verbatim** du dossier |
+
+Il n'existe volontairement pas d'axe « matière » : il supposerait une taxonomie
+que personne n'a validée, et un dossier rangé dans la mauvaise case est un
+dossier qu'on cherche là où il n'est pas. Sur l'axe qualification, un dossier
+qui en porte plusieurs apparaît dans plusieurs groupes — c'est la réalité du
+dossier, pas un doublon.
+
+**Indicateurs.** Des comptes entiers, jamais des ratios ni des scores : pièces,
+événements datés, contradictions, points en anomalie, points non établis. Un
+test interdit qu'un indicateur devienne un ratio, parce que la frontière avec le
+pronostic chiffré est vite franchie sur un tableau de bord.
+
+**Conservation.** Désactivée par défaut : l'atelier repart vide à chaque
+rechargement. Une fois activée, l'état est affiché (nombre de dossiers, taille,
+date de dernière écriture) et la désactiver **purge** au lieu de simplement
+cesser d'écrire. Rien n'est chiffré, et l'écran le dit : sur un poste partagé,
+la réponse est la ligne de commande.
+
+**Cache.** Une analyse est mémorisée par empreinte de dossier — la clé qu'utilise
+déjà le journal. Ajouter un dossier à un atelier qui en contient vingt ne
+réanalyse que le nouveau. Le cache est borné à 32 entrées : sans limite, il
+garderait en mémoire tous les états successifs de tous les dossiers ouverts.
+
+**Périmètre non couvert.** Affiché en permanence dans la barre latérale, avec sa
+raison — dont l'écart assumé sur la détection d'IA (§ 7.2).
 
 ### Page autonome (hors ligne)
 
@@ -381,7 +414,7 @@ un taux de change que le module n'a pas.
 ## 10. Tests
 
 ```bash
-npm run test:ldi     # 104 tests
+npm run test:ldi     # 175 tests
 npm run typecheck
 ```
 
