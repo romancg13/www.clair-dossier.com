@@ -14,7 +14,13 @@ Lecture seule : aucune ligne de code n'a été modifiée pendant l'audit.*
 > décision de produit non prise. Le cumul reste déclaré par l'appelant : c'est
 > un garde-fou contre une boucle, pas contre un client hostile.
 >
-> Restent ouverts : P1-06, P1-07, P1-08, P1-11, et les trois P2.
+> Restent ouverts : P1-06, P1-07, P1-08, P1-11, les trois P2, et P1-12
+> ci-dessous, ouvert après coup par une revue externe.
+>
+> Corrigés hors nomenclature d'audit, sur signalement de cette même revue :
+> REVUE-01 (`6bd0580`, GAV-05 concluait `conforme` sur une durée négative) et
+> REVUE-02 (`dc163e6`, une description multiligne tronquait une ligne de
+> tableau et lui faisait perdre sa référence de pièce).
 >
 > Les notes ci-dessous sont celles de l'audit initial et ne sont pas
 > réévaluées : elles documentent l'état constaté, pas l'état courant. La suite
@@ -214,6 +220,40 @@ que les défauts :
 - **Correctif :** compteur par utilisateur, plafond par dossier, arrêt propre au
   dépassement, alerte sur les valeurs `usage` déjà retournées.
 - **Effort :** S
+
+### [P1-12] L'ensemble des citations autorisées est fourni par le client
+
+*Défaut ouvert après l'audit initial, sur revue externe du commit `9e4286a`.
+Confirmé par lecture du code, non corrigé : sa correction suppose une décision
+sur le lieu du sourçage.*
+
+- **Fichier :** `supabase/functions/ldi-analyze/index.ts`
+- **Constat :** `referencesAutorisees` et `pourvoisAutorises` sont lus dans le
+  corps de la requête, puis transmis à `verifierCitations()` comme ensemble
+  autorisé. Le serveur ne détient aucune preuve de provenance.
+- **Impact :** un appelant authentifié qui poste directement, sans la console,
+  peut déclarer `pourvoisAutorises: ["19-84.111"]`. Si le modèle reprend ce
+  numéro, le vérificateur le déclare conforme sans qu'aucune réponse Judilibre
+  n'ait existé. L'invariant central du projet — aucune jurisprudence hors
+  réponse d'une API officielle — est donc contournable sur le chemin génératif.
+- **Portée réelle :** aucun appelant légitime n'envoie aujourd'hui de pourvoi.
+  La console transmet toujours `[]`, faute de clé PISTE côté navigateur, et la
+  CLI n'appelle pas cette fonction. La faille est structurelle, pas exploitée.
+  Elle le deviendrait dès que l'étage génératif serait réellement activé, ou
+  dès qu'un second utilisateur partagerait le déploiement.
+- **Correctif recommandé, sans perte de fonctionnalité :** refuser
+  `pourvoisAutorises` du corps — le serveur n'autorise aucun pourvoi qu'il n'a
+  pas obtenu lui-même — et intersecter `referencesAutorisees` avec un index
+  d'articles détenu côté serveur, de sorte qu'un client puisse restreindre
+  l'ensemble sans jamais l'élargir.
+- **Correctif robuste :** sourçage officiel exécuté par la fonction elle-même,
+  avec identifiants PISTE côté serveur. Suppose ces identifiants et l'activation
+  de l'étage génératif.
+- **Effort :** S pour le premier, M pour le second.
+
+**En attendant, la documentation ne doit pas présenter cette garantie comme
+structurelle sur ce chemin.** Elle l'est dans le noyau déterministe, qui ne
+produit aucune jurisprudence ; elle ne l'est pas dans la fonction edge.
 
 ### [P1-11] Aucune reprise après interruption
 

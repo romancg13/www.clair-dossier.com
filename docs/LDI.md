@@ -161,7 +161,24 @@ capable d'en fabriquer. Six tests verrouillent cette propriété
 
 **3. L'invite système interdit la citation de mémoire.** Le modèle ne cite que
 ce qui figure dans le contexte fourni, et doit écrire explicitement qu'aucune
-jurisprudence n'a été versée lorsque c'est le cas.
+jurisprudence n'a été versée lorsque c'est le cas. Une invite n'étant pas un
+garde-fou, `citations.ts` recontrôle la sortie produite (§ 9.1).
+
+> **Où la garantie s'arrête.** Les règles 1 et 2 sont tenues par le noyau
+> déterministe : il n'existe aucun chemin de code capable de fabriquer une
+> décision, et six tests le verrouillent. La règle 3 est plus faible qu'elle
+> n'en a l'air sur le chemin génératif : `verifierCitations()` compare la sortie
+> du modèle à un ensemble autorisé que la **fonction edge reçoit de son
+> appelant** (`referencesAutorisees`, `pourvoisAutorises`). Le serveur ne
+> détient aucune preuve de provenance ; un appelant authentifié qui poste
+> directement peut donc déclarer citable un pourvoi qui n'existe pas.
+>
+> Aucun appelant légitime ne le fait aujourd'hui — la console transmet toujours
+> une liste de pourvois vide, faute de clé PISTE côté navigateur, et la CLI
+> n'appelle pas cette fonction. La faille est structurelle, pas exploitée. Elle
+> est consignée en `[P1-12]` dans `AUDIT.md`, avec les deux voies de correction.
+> Tant qu'elle est ouverte : sur le chemin génératif, l'ensemble citable vaut ce
+> que vaut l'appelant.
 
 ### Configurer les sources officielles
 
