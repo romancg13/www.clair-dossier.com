@@ -26,6 +26,7 @@ import Anthropic from 'npm:@anthropic-ai/sdk@0.117.1';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
 import { verifierCitations } from './citations.ts';
+import { identifiantsDirectsResiduels } from './confidentialite.ts';
 import { INVITE_SYSTEME, construireMessage } from './prompt.ts';
 import {
   PLAFOND_DOSSIER_DOLLARS,
@@ -44,6 +45,40 @@ const PLAFOND = (() => {
   const brut = Number(Deno.env.get('LDI_PLAFOND_DOSSIER_DOLLARS'));
   return Number.isFinite(brut) && brut > 0 ? brut : PLAFOND_DOSSIER_DOLLARS;
 })();
+
+/**
+ * Tarifs employés pour l'estimation de coût.
+ *
+ * Les valeurs par défaut sont DÉCLARÉES dans le code et n'ont été confrontées
+ * à aucune grille officielle — c'est pourquoi `verifieLe` vaut `null`. Plutôt
+ * que de remplacer un chiffre non vérifié par un autre chiffre non vérifié,
+ * l'exploitant les fixe lui-même, et l'estimation porte alors la date à
+ * laquelle il l'a fait :
+ *   LDI_TARIF_ENTREE, LDI_TARIF_SORTIE, LDI_TARIF_CACHE_LU,
+ *   LDI_TARIF_CACHE_ECRIT (dollars par million de jetons)
+ *   LDI_TARIFS_VERIFIE_LE (date ISO du relevé)
+ */
+const TARIFS = (() => {
+  const nombre = (nom: string, defaut: number) => {
+    const brut = Number(Deno.env.get(nom));
+    return Number.isFinite(brut) && brut >= 0 ? brut : defaut;
+  };
+  const verifieLe = Deno.env.get('LDI_TARIFS_VERIFIE_LE') ?? null;
+  return {
+    ...TARIFS_PAR_MILLION,
+    entree: nombre('LDI_TARIF_ENTREE', TARIFS_PAR_MILLION.entree),
+    sortie: nombre('LDI_TARIF_SORTIE', TARIFS_PAR_MILLION.sortie),
+    cacheLu: nombre('LDI_TARIF_CACHE_LU', TARIFS_PAR_MILLION.cacheLu),
+    cacheEcrit: nombre('LDI_TARIF_CACHE_ECRIT', TARIFS_PAR_MILLION.cacheEcrit),
+    verifieLe,
+    source: verifieLe
+      ? `Tarifs fixés par l'exploitant, relevés le ${verifieLe}.`
+      : TARIFS_PAR_MILLION.source,
+  };
+})();
+
+/** Délai au-delà duquel la vérification d'identité est abandonnée. */
+const DELAI_AUTH_MS = 8_000;
 
 /** Le rapport déterministe reste borné : au-delà, l'appelant doit le réduire. */
 const TAILLE_MAX_RAPPORT = 200_000;
@@ -75,13 +110,33 @@ async function utilisateurAuthentifie(req: Request): Promise<boolean> {
   const cle = Deno.env.get('SUPABASE_ANON_KEY');
   if (!url || !cle) return false;
 
+  // `getUser()` n'expose ni délai ni signal d'annulation. Un `Promise.race`
+  // rendrait la main sans rien arrêter : la requête resterait en vol et
+  // continuerait de consommer l'horloge d'invocation. Le délai est donc posé
+  // sur le `fetch` lui-même, avec un contrôleur qui l'interrompt réellement.
   const client = createClient(url, cle, {
-    global: { headers: { Authorization: entete } },
+    global: {
+      headers: { Authorization: entete },
+      fetch: (entree, init) => {
+        const controleur = new AbortController();
+        const minuterie = setTimeout(() => controleur.abort(), DELAI_AUTH_MS);
+        return fetch(entree, { ...init, signal: controleur.signal }).finally(() =>
+          clearTimeout(minuterie)
+        );
+      },
+    },
     auth: { persistSession: false },
   });
 
-  const { data, error } = await client.auth.getUser();
-  return !error && Boolean(data.user);
+  try {
+    const { data, error } = await client.auth.getUser();
+    return !error && Boolean(data.user);
+  } catch {
+    // Abandon, réseau coupé, réponse illisible : l'authentification échoue.
+    // Elle ne s'ouvre jamais sur une erreur — c'est la seule barrière avant
+    // une clé d'API facturée.
+    return false;
+  }
 }
 
 Deno.serve(async (req) => {
@@ -127,6 +182,25 @@ Deno.serve(async (req) => {
   }
   if (question.length > TAILLE_MAX_QUESTION) {
     return json({ error: 'Question trop longue.' }, 413);
+  }
+
+  // Minimisation — contrôlée ici parce que c'est le seul endroit que l'appelant
+  // ne peut pas contourner. Le noyau pseudonymise côté client ; un client
+  // modifié, un appel direct ou un bug d'interface enverrait sinon le rapport
+  // en clair chez le fournisseur. Refus, pas nettoyage silencieux : masquer
+  // à la volée laisserait croire à une minimisation qui n'a pas eu lieu, et
+  // l'avocat n'aurait aucun moyen de s'en apercevoir.
+  const residuels = identifiantsDirectsResiduels(rapport);
+  if (residuels.length > 0) {
+    console.warn('[ldi-analyze] identifiants directs résiduels', residuels);
+    return json(
+      {
+        error:
+          "Le rapport transmis contient des identifiants directs en clair : l'appel est refusé. Minimiser le rapport avant envoi.",
+        identifiantsDetectes: residuels,
+      },
+      422
+    );
   }
 
   // Plafond de dépense — contrôlé AVANT l'appel, seul moment où le contrôle
@@ -242,7 +316,7 @@ Deno.serve(async (req) => {
 
     // Le plafond est appliqué sur la part restante : ce qui compte est le
     // cumul du dossier, pas le coût du seul appel qui vient de s'exécuter.
-    const cout = estimerCout(jetons, TARIFS_PAR_MILLION, PLAFOND - coutEngage);
+    const cout = estimerCout(jetons, TARIFS, PLAFOND - coutEngage);
     if (cout.plafondDepasse) {
       console.warn('[ldi-analyze] plafond dépassé', { coutEngage, appel: cout.dollars, PLAFOND });
     }
@@ -279,7 +353,7 @@ Deno.serve(async (req) => {
         ...cout,
         cumule: Number((coutEngage + cout.dollars).toFixed(6)),
         plafondDollars: PLAFOND,
-        tarifsVerifieLe: TARIFS_PAR_MILLION.verifieLe,
+        tarifsVerifieLe: TARIFS.verifieLe,
       },
       // Rappelé à chaque réponse : la sortie d'un modèle de langage n'est pas
       // une source. Elle doit être relue et recoupée avant tout usage.

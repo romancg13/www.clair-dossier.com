@@ -12,6 +12,7 @@ import { genererDocument } from './modules/documents';
 import { analyser, rendreMarkdown } from './pipeline';
 import { VERSION_LDI } from './prompt';
 import type { Dossier } from './types';
+import { validerDossier } from './validation';
 
 const { _avertissement, ...exemple } = dossierExemple as Dossier & { _avertissement?: string };
 
@@ -23,6 +24,11 @@ export const LDI = {
   genererDocument,
   minimiser,
   alertesResiduelles,
+  // Le même contrat d'entrée que la CLI et l'atelier. Sans lui, la page
+  // autonome acceptait des dossiers que les deux autres interfaces refusent —
+  // un régime inconnu, par exemple, et donc un plafond de garde à vue qui
+  // n'est pas celui du régime déclaré.
+  validerDossier,
 };
 
 declare global {

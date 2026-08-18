@@ -226,7 +226,22 @@ export async function verifierTexte(
   }
 
   const texte = champ(charge, 'texte', 'text', 'content');
-  if (!texte) return base;
+  if (!texte) {
+    // Retourner `base` tel quel rendait ce cas indiscernable d'une source
+    // jamais configurée : même statut, même note vide. Or les deux appellent
+    // des gestes différents — vérifier ses identifiants, ou aller lire la
+    // référence à la main. C'est la distinction que `interrogee` restaure
+    // déjà côté jurisprudence.
+    return {
+      ...base,
+      note: [
+        base.note,
+        "La source officielle a répondu, mais sans texte exploitable pour cette référence : statut maintenu à « à vérifier », lecture manuelle nécessaire.",
+      ]
+        .filter(Boolean)
+        .join(' '),
+    };
+  }
 
   // Un énoncé « vérifié » sans URL est invérifiable par le lecteur : le statut
   // ne peut pas être promu sans provenance résoluble.

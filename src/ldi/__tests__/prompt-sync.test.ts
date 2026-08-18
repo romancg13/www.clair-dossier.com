@@ -20,7 +20,7 @@ const ici = dirname(fileURLToPath(import.meta.url));
 const RACINE = join(ici, '..', '..', '..');
 
 const EDGE = join(RACINE, 'supabase', 'functions', 'ldi-analyze');
-const PARTAGES = ['prompt.ts', 'citations.ts', 'reponse.ts'];
+const PARTAGES = ['prompt.ts', 'citations.ts', 'reponse.ts', 'confidentialite.ts'];
 const CANONIQUE = join(RACINE, 'src', 'ldi', 'prompt.ts');
 
 describe('fichiers partagés avec la fonction edge', () => {
@@ -100,6 +100,16 @@ describe('fonction edge — invariants structurels', () => {
     assert.ok(controle !== -1, 'la structure doit être contrôlée');
     assert.ok(retour !== -1, 'le résultat doit figurer dans la réponse');
     assert.ok(controle < retour);
+  });
+
+  it('refuse un rapport portant des identifiants directs, avant tout appel', () => {
+    const controle = source.indexOf('identifiantsDirectsResiduels(rapport)');
+    const appel = source.indexOf('messages.create');
+    assert.ok(controle !== -1, 'la minimisation doit être contrôlée côté serveur');
+    assert.ok(controle < appel, "le contrôle doit précéder l'envoi au fournisseur");
+    // Refus, pas nettoyage : masquer à la volée ferait croire à une
+    // minimisation qui n'a pas eu lieu.
+    assert.match(source, /l'appel est refusé/);
   });
 
   it('contrôle le plafond de dépense avant tout appel facturé', () => {

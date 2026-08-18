@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { alertesResiduelles, minimiser } from '../../ldi/confidentialite';
 import { rendreMarkdown } from '../../ldi/pipeline';
@@ -32,6 +32,10 @@ export function VueConfidentialite({ rapport }: { rapport: RapportLdi | null }) 
   const [question, setQuestion] = useState('');
   const [redigee, setRedigee] = useState<EtatRedigee>({ statut: 'inactif' });
   const [coutEngage, setCoutEngage] = useState(0);
+  // Surcharge délibérée des alertes résiduelles. Se remet à faux dès que le
+  // texte change : une confirmation donnée sur un rapport ne vaut pas pour le
+  // suivant.
+  const [alertesAssumees, setAlertesAssumees] = useState(false);
 
   const markdown = useMemo(() => (rapport ? rendreMarkdown(rapport) : ''), [rapport]);
 
@@ -41,6 +45,9 @@ export function VueConfidentialite({ rapport }: { rapport: RapportLdi | null }) 
     const { texte } = minimiser(markdown, liste);
     return { texte, alertes: alertesResiduelles(texte) };
   }, [markdown, noms]);
+
+  // Le rapport a changé : toute confirmation antérieure devient caduque.
+  useEffect(() => setAlertesAssumees(false), [minimise?.texte]);
 
   if (!rapport || !minimise) {
     return (
@@ -174,11 +181,37 @@ export function VueConfidentialite({ rapport }: { rapport: RapportLdi | null }) 
             className="mt-2 w-full rounded-lg border hairline bg-cream-50 p-3 text-sm text-navy-900 focus:border-gold-500 focus:outline-none"
           />
 
+          {minimise.alertes.length > 0 && (
+            <label className="mt-4 flex items-start gap-3 rounded-lg border border-red-300 bg-red-50 p-3">
+              <input
+                type="checkbox"
+                checked={alertesAssumees}
+                onChange={(e) => setAlertesAssumees(e.target.checked)}
+                className="mt-0.5 h-4 w-4 shrink-0 accent-red-700"
+              />
+              <span className="text-xs leading-relaxed text-red-900">
+                J’ai lu les {minimise.alertes.length} alerte(s) ci-dessus et je confirme que ce
+                rapport peut être transmis. <strong>Un envoi est irréversible</strong> : ce qui
+                part ne peut pas être rappelé.
+              </span>
+            </label>
+          )}
+
           <button
             type="button"
             onClick={() => void demander()}
+            /*
+              Blocage tant que les alertes ne sont pas assumées. Ni laisser-passer
+              — l'écran signalait un risque de ré-identification et laissait
+              cliquer — ni blocage sec : sans issue, l'avocat pressé exporterait
+              le rapport pour le coller ailleurs, hors de tout contrôle. Une
+              surcharge explicite laisse la trace du geste.
+            */
             disabled={
-              !isSupabaseConfigured || !question.trim() || redigee.statut === 'encours'
+              !isSupabaseConfigured ||
+              !question.trim() ||
+              redigee.statut === 'encours' ||
+              (minimise.alertes.length > 0 && !alertesAssumees)
             }
             className="mt-4 rounded-lg bg-navy-900 px-5 py-2.5 text-sm text-cream-50 transition-colors hover:bg-navy-800 disabled:cursor-not-allowed disabled:opacity-40"
           >

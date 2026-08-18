@@ -157,3 +157,74 @@ describe('états de classement', () => {
     assert.match(LIBELLES_ETAT['a-verifier'].explication, /non établis|dix points|contrôle/i);
   });
 });
+
+// ── #8 et #9 — sourçage ───────────────────────────────────────────────────
+
+describe('sourçage : ce que le silence d’une source signifie', () => {
+  it('distingue une source injoignable d’une source sans texte exploitable', async () => {
+    const { verifierTexte } = await import('../modules/recherche');
+    const config = {
+      legifrance: { urlBase: 'https://exemple.test/', enteteAuth: 'KeyId', valeurAuth: 'x' },
+    };
+
+    // Réponse HTTP correcte, mais sans champ de texte : la source a répondu.
+    const repondSansTexte = async () =>
+      new Response(JSON.stringify({ id: 'X' }), { status: 200, headers: { 'content-type': 'application/json' } });
+    const injoignable = async () => {
+      throw new Error('réseau coupé');
+    };
+
+    const original = globalThis.fetch;
+    try {
+      globalThis.fetch = repondSansTexte as typeof fetch;
+      const sansTexte = await verifierTexte('CPP, art. 63', config);
+
+      globalThis.fetch = injoignable as typeof fetch;
+      const coupee = await verifierTexte('CPP, art. 63', config);
+
+      assert.equal(sansTexte.statut, 'a-verifier');
+      assert.equal(coupee.statut, 'a-verifier');
+      assert.notEqual(
+        sansTexte.note,
+        coupee.note,
+        'les deux situations doivent être distinguables par le lecteur'
+      );
+      assert.match(sansTexte.note ?? '', /sans texte exploitable|n'a pas retourné/i);
+    } finally {
+      globalThis.fetch = original;
+    }
+  });
+});
+
+describe('sourçage : concurrence bornée', () => {
+  it("n'ouvre jamais plus d'un petit nombre de requêtes simultanées", async () => {
+    const { sourcerRapport } = await import('../sourcage');
+    const { analyser: analyserPipeline } = await import('../pipeline');
+
+    let enCours = 0;
+    let pic = 0;
+    const original = globalThis.fetch;
+    try {
+      globalThis.fetch = (async () => {
+        enCours += 1;
+        pic = Math.max(pic, enCours);
+        await new Promise((r) => setTimeout(r, 1));
+        enCours -= 1;
+        return new Response('{}', { status: 200, headers: { 'content-type': 'application/json' } });
+      }) as typeof fetch;
+
+      await sourcerRapport(analyserPipeline(dossier()), {
+        legifrance: { urlBase: 'https://exemple.test/', enteteAuth: 'KeyId', valeurAuth: 'x' },
+        judilibre: { urlBase: 'https://exemple.test/', enteteAuth: 'KeyId', valeurAuth: 'x' },
+      });
+
+      // Les API officielles appliquent des quotas par seconde : un dossier de
+      // cinquante références ouvrait cent requêtes d'un coup, et les rejets
+      // ressemblaient alors à une source injoignable.
+      assert.ok(pic > 0, 'le test doit réellement passer par fetch');
+      assert.ok(pic <= 8, `pic de ${pic} requêtes simultanées : la concurrence n'est pas bornée`);
+    } finally {
+      globalThis.fetch = original;
+    }
+  });
+});

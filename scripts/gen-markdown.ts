@@ -18,12 +18,7 @@ import type { BlogContentBlock, BlogPost } from '../src/data/blog/types';
 import { homeFaq } from '../src/data/faq';
 import { features, type Feature } from '../src/data/features';
 import { legalPages, type LegalPage } from '../src/data/legal';
-import {
-  COMPARISON_FEATURES,
-  TRUST_PILLARS,
-  plans,
-  type Plan,
-} from '../src/data/pricing';
+import { COMPARISON_FEATURES, TRUST_PILLARS, plans } from '../src/data/pricing';
 import { statuses } from '../src/data/statuses';
 import { workspaces } from '../src/data/workspaces';
 

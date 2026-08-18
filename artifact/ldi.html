@@ -719,12 +719,16 @@
       showError('JSON invalide — ' + e.message);
       return;
     }
-    if (!dossier || !dossier.reference || !Array.isArray(dossier.evenements) || !Array.isArray(dossier.pieces)) {
-      showError('Le dossier doit comporter « reference », « evenements » et « pieces ».');
+    // Validation partagée avec la CLI et l'atelier : une page autonome plus
+    // permissive que les autres interfaces accepterait des dossiers dont
+    // l'analyse serait fausse sans que rien ne le signale.
+    var validation = LDI.validerDossier(dossier);
+    if (!validation.ok) {
+      showError(validation.message);
       return;
     }
     try {
-      rapport = LDI.analyser(dossier);
+      rapport = LDI.analyser(validation.dossier);
     } catch (e) {
       showError("L'analyse a échoué — " + e.message);
       return;
