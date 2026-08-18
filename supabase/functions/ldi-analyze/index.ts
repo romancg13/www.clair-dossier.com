@@ -24,6 +24,7 @@
 import Anthropic from 'npm:@anthropic-ai/sdk@0.117.1';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
+import { verifierCitations } from './citations.ts';
 import { INVITE_SYSTEME, construireMessage } from './prompt.ts';
 
 const MODELE = Deno.env.get('LDI_MODEL') ?? 'claude-opus-5';
@@ -79,7 +80,13 @@ Deno.serve(async (req) => {
     return json({ error: 'Authentification requise.' }, 401);
   }
 
-  let corps: { rapport?: unknown; question?: unknown; sources?: unknown };
+  let corps: {
+    rapport?: unknown;
+    question?: unknown;
+    sources?: unknown;
+    referencesAutorisees?: unknown;
+    pourvoisAutorises?: unknown;
+  };
   try {
     corps = await req.json();
   } catch {
@@ -89,6 +96,13 @@ Deno.serve(async (req) => {
   const rapport = typeof corps.rapport === 'string' ? corps.rapport : '';
   const question = typeof corps.question === 'string' ? corps.question.trim() : '';
   const sources = typeof corps.sources === 'string' ? corps.sources : '';
+
+  // Ensemble citable, calculé par l'appelant à partir du sourçage officiel.
+  // Vide par défaut : en l'absence de sourçage, RIEN n'est citable.
+  const chaines = (v: unknown): string[] =>
+    Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string').slice(0, 500) : [];
+  const referencesAutorisees = chaines(corps.referencesAutorisees);
+  const pourvoisAutorises = chaines(corps.pourvoisAutorises);
 
   if (!rapport) return json({ error: 'Rapport d’analyse manquant.' }, 400);
   if (!question) return json({ error: 'Question manquante.' }, 400);
@@ -133,8 +147,27 @@ Deno.serve(async (req) => {
       .map((bloc) => bloc.text)
       .join('\n');
 
+    // Contrôle après génération, sur le texte produit. C'est ici, et nulle part
+    // ailleurs, que la règle « aucune référence hors source officielle » devient
+    // exécutée plutôt que demandée. Le texte du dossier n'entre pas dans
+    // l'ensemble autorisé : une référence recopiée dans une pièce est du
+    // contenu, pas une source.
+    const verification = verifierCitations(texte, {
+      references: referencesAutorisees.map((reference) => ({ reference })),
+      decisions: pourvoisAutorises.map((numero) => ({ numero })),
+    });
+
+    if (!verification.conforme) {
+      console.warn('[ldi-analyze] citations non vérifiées', verification.inconnues);
+    }
+
     return json({
-      analyse: texte,
+      analyse: verification.texte,
+      verification: {
+        conforme: verification.conforme,
+        citationsNonVerifiees: verification.inconnues,
+        rapport: verification.rapport,
+      },
       modele: reponse.model,
       usage: {
         entree: reponse.usage.input_tokens,

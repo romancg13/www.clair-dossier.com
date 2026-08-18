@@ -13,6 +13,7 @@ import { Card } from '../components/ui/Card';
 import { alertesResiduelles, minimiser } from '../ldi/confidentialite';
 import { analyser, rendreMarkdown } from '../ldi/pipeline';
 import { validerDossier } from '../ldi/validation';
+import { referencesDuRapport } from '../ldi/sourcage';
 import type { RapportLdi, Severite } from '../ldi/types';
 import { Seo } from '../lib/seo';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
@@ -111,14 +112,28 @@ export function LdiConsole() {
     setRedigee({ statut: 'encours' });
 
     try {
+      // Ensemble citable transmis explicitement. Le navigateur ne détient aucune
+      // clé PISTE : il ne peut donc autoriser aucun pourvoi, et c'est exact —
+      // sans interrogation de Judilibre, aucune décision n'est citable. Le
+      // sourçage des décisions passe par la CLI (`npm run ldi -- sourcer`).
       const { data, error } = await supabase.functions.invoke('ldi-analyze', {
-        body: { rapport: minimise.texte, question: question.trim() },
+        body: {
+          rapport: minimise.texte,
+          question: question.trim(),
+          referencesAutorisees: rapport ? referencesDuRapport(rapport) : [],
+          pourvoisAutorises: [],
+        },
       });
       if (error) {
         setRedigee({ statut: 'erreur', message: error.message });
         return;
       }
-      const charge = data as { analyse?: string; avertissement?: string; error?: string };
+      const charge = data as {
+        analyse?: string;
+        avertissement?: string;
+        error?: string;
+        verification?: { conforme: boolean; citationsNonVerifiees: string[]; rapport: string };
+      };
       if (charge.error || !charge.analyse) {
         setRedigee({ statut: 'erreur', message: charge.error ?? 'Réponse vide.' });
         return;
@@ -126,7 +141,12 @@ export function LdiConsole() {
       setRedigee({
         statut: 'ok',
         texte: charge.analyse,
-        avertissement: charge.avertissement ?? '',
+        // Le résultat du contrôle de citations passe devant l'avertissement
+        // générique : c'est l'information qui décide si le texte est utilisable.
+        avertissement:
+          charge.verification && !charge.verification.conforme
+            ? `⚠ ${charge.verification.rapport}`
+            : (charge.avertissement ?? ''),
       });
     } catch (e) {
       setRedigee({ statut: 'erreur', message: (e as Error).message });

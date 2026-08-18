@@ -18,6 +18,7 @@ export * from './types';
 
 export { analyser, rendreMarkdown } from './pipeline';
 export { validerDossier, type Validation } from './validation';
+export { sourcerRapport, referencesDuRapport, type Sourcage } from './sourcage';
 export { analyserDossier, parseHorodatage, trierChronologie, SEUILS } from './modules/chronologie';
 export { detecterIrregularites } from './modules/nullites';
 export { analyserPiece, analyserPieces, SEUILS_DETECTION } from './modules/detection-ia';

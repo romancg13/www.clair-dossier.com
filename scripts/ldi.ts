@@ -15,6 +15,8 @@ import { readFileSync } from 'node:fs';
 import { minimiser, alertesResiduelles } from '../src/ldi/confidentialite';
 import { genererDocument } from '../src/ldi/modules/documents';
 import { analyser, rendreMarkdown } from '../src/ldi/pipeline';
+import { sourcerRapport } from '../src/ldi/sourcage';
+import type { ConfigRecherche } from '../src/ldi/modules/recherche';
 import type { Dossier, TypeDocument } from '../src/ldi/types';
 import { validerDossier } from '../src/ldi/validation';
 
@@ -30,6 +32,12 @@ const USAGE = `LDI — analyse de dossier pénal (exécution locale)
   npm run ldi -- analyse <dossier.json> [--json]
   npm run ldi -- document <type> <dossier.json>
   npm run ldi -- minimise <fichier.txt> [--noms "Nom 1,Nom 2"]
+  npm run ldi -- sourcer <dossier.json>
+
+« sourcer » interroge les sources officielles pour les références du rapport.
+Identifiants lus dans l'environnement : LDI_JUDILIBRE_URL, LDI_JUDILIBRE_ENTETE,
+LDI_JUDILIBRE_CLE (idem LDI_LEGIFRANCE_*). Sans eux, aucune décision n'est
+retournée et le rapport le dit.
 
 Types de document : ${TYPES_DOCUMENT.join(', ')}
 `;
@@ -67,7 +75,18 @@ function optionValeur(args: string[], nom: string): string | undefined {
   return valeur && !valeur.startsWith('--') ? valeur : undefined;
 }
 
-function main(): void {
+/** Configuration des sources, lue dans l'environnement — jamais dans le code. */
+function configSources(): ConfigRecherche {
+  const source = (prefixe: string) => {
+    const urlBase = process.env[`${prefixe}_URL`];
+    const valeurAuth = process.env[`${prefixe}_CLE`];
+    if (!urlBase || !valeurAuth) return undefined;
+    return { urlBase, enteteAuth: process.env[`${prefixe}_ENTETE`] ?? 'KeyId', valeurAuth };
+  };
+  return { judilibre: source('LDI_JUDILIBRE'), legifrance: source('LDI_LEGIFRANCE') };
+}
+
+async function main(): Promise<void> {
   const [commande, ...args] = process.argv.slice(2);
 
   switch (commande) {
@@ -127,10 +146,26 @@ function main(): void {
       return;
     }
 
+    case 'sourcer': {
+      const chemin = args.find((a) => !a.startsWith('--'));
+      if (!chemin) echec('chemin du dossier manquant.');
+
+      const sourcage = await sourcerRapport(analyser(lireDossier(chemin)), configSources());
+      process.stdout.write(`# Sources officielles\n\n${sourcage.bloc}\n`);
+      process.stderr.write(`\n${sourcage.avertissement}\n`);
+      process.stderr.write(
+        `${sourcage.textes.length} texte(s), ${sourcage.decisions.length} décision(s), ` +
+          `${sourcage.pourvoisAutorises.length} pourvoi(s) citable(s).\n`
+      );
+      // Aucune décision obtenue : le signaler au script appelant.
+      process.exitCode = sourcage.decisions.length === 0 ? 3 : 0;
+      return;
+    }
+
     default:
       process.stdout.write(USAGE);
       process.exitCode = commande ? 1 : 0;
   }
 }
 
-main();
+void main();
