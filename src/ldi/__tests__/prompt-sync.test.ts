@@ -22,7 +22,6 @@ const RACINE = join(ici, '..', '..', '..');
 const EDGE = join(RACINE, 'supabase', 'functions', 'ldi-analyze');
 const PARTAGES = ['prompt.ts', 'citations.ts'];
 const CANONIQUE = join(RACINE, 'src', 'ldi', 'prompt.ts');
-const COPIE = join(EDGE, 'prompt.ts');
 
 describe('fichiers partagés avec la fonction edge', () => {
   it('restent identiques entre la source et la copie', () => {
