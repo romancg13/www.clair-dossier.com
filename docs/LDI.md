@@ -64,6 +64,19 @@ enchaînement en script.
 `noindex`. L'analyse tourne dans le navigateur ; l'appel au service de rédaction
 est un geste distinct et explicite.
 
+### Page autonome (hors ligne)
+
+```bash
+npm run ldi:artifact          # → artifact/dist/ldi.html
+```
+
+Construit une page HTML unique qui embarque le noyau déterministe (bundle
+esbuild en IIFE injecté dans `artifact/ldi.html`). Aucun script externe, aucune
+requête : la page ne sait pas faire de réseau, seules les fontes Google restent
+chargées depuis leur hôte. C'est la forme partageable de l'outil — elle n'expose
+que ce qui se calcule hors ligne, jamais le module de recherche ni l'étage
+génératif.
+
 ### Comme bibliothèque
 
 ```ts
@@ -303,6 +316,10 @@ npm run ldi:sync-prompt
 npm run test:ldi     # 47 tests
 npm run typecheck
 ```
+
+Ces trois vérifications — plus `npm run build` et un contrôle que `gen:md` n'a
+pas divergé — tournent sur chaque pull request via `.github/workflows/ci.yml`.
+Le workflow `deploy.yml` ne se déclenche, lui, que sur `push` vers `main`.
 
 Les suites couvrent notamment : l'indépendance au fuseau horaire des
 horodatages, un **témoin négatif** (une procédure régulière ne doit déclencher

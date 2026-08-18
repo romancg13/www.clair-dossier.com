@@ -11,7 +11,8 @@
     "test:ldi": "tsx --test src/ldi/__tests__/*.test.ts",
     "build": "npm run gen:md && tsc -p tsconfig.json && vite build",
     "preview": "vite preview --port 4173",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "ldi:artifact": "node scripts/build-artifact.mjs"
   },
   "dependencies": {
     "@fontsource/cormorant-garamond": "^5.2.5",

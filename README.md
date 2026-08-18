@@ -51,6 +51,7 @@ contrôle procéduraux du CPP et produit une note stratégique — sans appel r�
 ```bash
 npm run ldi -- analyse examples/dossier-exemple.json
 npm run test:ldi
+npm run ldi:artifact   # page HTML autonome, hors ligne
 ```
 
 Documentation complète, politique de sourçage et écarts assumés avec le cahier
