@@ -8,7 +8,6 @@ import { CAPACITES_PREVUES, NAVIGATION, entreePour, type Vue } from './navigatio
 export const TON_ETAT: Record<FicheDossier['etat'], string> = {
   anomalie: 'bg-red-500',
   'a-verifier': 'bg-gold-500',
-  'sans-anomalie': 'bg-emerald-500',
   vide: 'bg-slate-300',
 };
 

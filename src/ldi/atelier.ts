@@ -27,11 +27,20 @@ import type { RapportLdi, RegimeProcedural, Severite } from './types';
 /**
  * État d'un dossier au regard des seuls contrôles exécutés.
  *
- * `sans-anomalie` ne dit pas « la procédure est régulière » : il dit que les
- * dix points contrôlés n'ont rien révélé. La nuance est portée par
- * `LIBELLES_ETAT` pour qu'elle survive à l'affichage.
+ * ┌─ POURQUOI IL N'Y A PAS D'ÉTAT « RIEN RELEVÉ » ──────────────────────────┐
+ * │ Il a existé, et il était MORT. Deux des dix points de contrôle —          │
+ * │ GAV-01 (motivation du placement) et PRESC-01 (prescription) — ne          │
+ * │ retournent jamais que `non-etabli` : ils demandent une lecture humaine    │
+ * │ que le moteur ne fait pas. `nonEtablis` vaut donc au moins 2 pour tout    │
+ * │ dossier pourvu d'une pièce, et un état exigeant `nonEtablis === 0`       │
+ * │ n'était atteignable par AUCUNE entrée possible.                          │
+ * │                                                                          │
+ * │ Un état mort dans un type n'est pas neutre : il se lit comme une         │
+ * │ promesse — « ce dossier pourrait être déclaré sans anomalie » — que le   │
+ * │ système ne peut pas tenir. Trois états suffisent, et chacun se produit.  │
+ * └──────────────────────────────────────────────────────────────────────────┘
  */
-export type EtatDossier = 'anomalie' | 'a-verifier' | 'sans-anomalie' | 'vide';
+export type EtatDossier = 'anomalie' | 'a-verifier' | 'vide';
 
 export const LIBELLES_ETAT: Record<EtatDossier, { court: string; explication: string }> = {
   anomalie: {
@@ -41,12 +50,7 @@ export const LIBELLES_ETAT: Record<EtatDossier, { court: string; explication: st
   'a-verifier': {
     court: 'À vérifier',
     explication:
-      "Aucun écart relevé, mais des points restent non établis : le dossier ne contient pas de quoi les trancher.",
-  },
-  'sans-anomalie': {
-    court: 'Rien relevé',
-    explication:
-      "Les points contrôlés n'ont rien révélé. Cela ne signifie pas que la procédure est régulière : le contrôle ne porte que sur dix points.",
+      "Aucun écart relevé, mais des points restent non établis : le dossier ne contient pas de quoi les trancher. Cela ne signifie pas que la procédure est régulière — le contrôle ne porte que sur dix points, dont deux qu'aucune analyse automatique ne peut établir.",
   },
   vide: {
     court: 'Aucune pièce',
@@ -112,8 +116,9 @@ export function etatDossier(rapport: RapportLdi): EtatDossier {
   const i = indicateurs(rapport);
   if (i.pieces === 0) return 'vide';
   if (i.anomalies > 0 || i.contradictionsCritiques > 0) return 'anomalie';
-  if (i.nonEtablis > 0) return 'a-verifier';
-  return 'sans-anomalie';
+  // `nonEtablis` est toujours ≥ 2 (GAV-01 et PRESC-01 ne concluent jamais) :
+  // cette branche est celle de tout dossier qui n'a pas d'anomalie.
+  return 'a-verifier';
 }
 
 /** Bornes de la chronologie, sur les seuls horodatages lisibles. */
@@ -160,7 +165,7 @@ export type Groupe = {
 };
 
 /** Ordre d'affichage des états : ce qui appelle une action passe devant. */
-const ORDRE_ETAT: EtatDossier[] = ['anomalie', 'a-verifier', 'sans-anomalie', 'vide'];
+const ORDRE_ETAT: EtatDossier[] = ['anomalie', 'a-verifier', 'vide'];
 const ORDRE_REGIME: RegimeProcedural[] = ['terrorisme', 'criminalite-organisee', 'droit-commun'];
 
 /**

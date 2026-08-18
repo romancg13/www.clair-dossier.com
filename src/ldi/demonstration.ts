@@ -10,11 +10,10 @@
  * │ à vérifier, aucune pièce. Le tableau de bord est ainsi lisible dès la    │
  * │ première ouverture, sans qu'un dossier réel ait à être chargé.           │
  * │                                                                          │
- * │ Le quatrième état, « rien relevé », n'est PAS représenté — et il ne      │
- * │ pouvait pas l'être : il suppose que les dix points de contrôle passent   │
- * │ tous à `conforme`, ce qu'un dossier réaliste n'atteint jamais, les       │
- * │ points restant `non-etabli` faute de pièces qui les établissent. Cet     │
- * │ état existe dans le type ; il est quasi théorique en pratique.           │
+ * │ Il exista un quatrième état, « rien relevé ». Il a été RETIRÉ du type,   │
+ * │ parce qu'aucune entrée ne pouvait l'atteindre : GAV-01 et PRESC-01 ne    │
+ * │ concluent jamais autrement que `non-etabli`. J'avais d'abord écrit ici   │
+ * │ qu'il était « quasi théorique » — il était strictement impossible.       │
  * │                                                                          │
  * │ Le préfixe « DEMO- » n'est pas décoratif : il doit rester visible dans   │
  * │ toutes les vues, pour qu'aucune capture d'écran ne puisse être prise     │
@@ -115,8 +114,8 @@ const DOSSIER_OUVERT: Dossier = {
 };
 
 /**
- * Les quatre dossiers fictifs, dans l'ordre où ils rendent le classement
- * lisible : un par état atteignable.
+ * Les quatre dossiers fictifs. Ils couvrent les trois états du classement —
+ * anomalie relevée, à vérifier (deux dossiers), aucune pièce.
  */
 export const DOSSIERS_DEMONSTRATION: Dossier[] = [
   GARDE_A_VUE_IRREGULIERE,

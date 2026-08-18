@@ -22,7 +22,7 @@
  * │ de sérieux, pas une garantie de version en vigueur.                     │
  * └─────────────────────────────────────────────────────────────────────────┘
  */
-import type { EnonceJuridique } from '../types';
+import type { EnonceJuridique, RegimeProcedural } from '../types';
 
 const LEGIFRANCE = 'Légifrance';
 const CEDH = "Cour européenne des droits de l'homme";
@@ -309,7 +309,11 @@ export function trouverReference(reference: string): EntreeCorpus | undefined {
  * correspond à aucun régime du CPP et n'est pas reprise ici.
  */
 export const DUREE_MAX_GAV_HEURES: Record<
-  string,
+  // Clé typée par le régime, et non par `string` : un régime ajouté au type
+  // sans durée déclarée devient une erreur de compilation. Auparavant, il
+  // recevait silencieusement le plafond de repli de 48 h — soit une échéance
+  // légale qui n'était pas celle de l'article cité juste à côté.
+  RegimeProcedural,
   { heures: number; fondement: EnonceJuridique; note?: string }
 > = {
   'droit-commun': { heures: 48, fondement: CPP_63 },

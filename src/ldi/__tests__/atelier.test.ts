@@ -106,9 +106,15 @@ describe('etatDossier', () => {
   });
 
   it("n'affirme jamais la régularité de la procédure", () => {
-    // Le libellé le plus favorable que le système puisse produire doit rappeler
-    // que le contrôle est partiel. C'est la lecture erronée la plus coûteuse.
-    assert.match(LIBELLES_ETAT['sans-anomalie'].explication, /ne signifie pas que la procédure est régulière/i);
+    // « À vérifier » est le libellé le plus favorable que le système puisse
+    // produire — l'état « Rien relevé » a été retiré, parce qu'aucune donnée
+    // ne pouvait l'atteindre. C'est donc lui qui doit porter la réserve : la
+    // lecture erronée la plus coûteuse est de prendre l'absence d'anomalie
+    // pour un satisfecit de régularité.
+    assert.match(
+      LIBELLES_ETAT['a-verifier'].explication,
+      /ne signifie pas que la procédure est régulière/i
+    );
     for (const libelle of Object.values(LIBELLES_ETAT)) {
       assert.ok(!/conforme|régulier\b|valide/i.test(libelle.court), libelle.court);
     }

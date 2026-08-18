@@ -80,15 +80,24 @@ function instantDe(e: Evenement): Instant | null {
 }
 
 /** Trie les événements par horodatage. Les horodatages illisibles ferment la marche. */
+/**
+ * Départage deux identifiants par point de code. `localeCompare` dépend de la
+ * locale : deux exécutions du même dossier pouvaient ordonner différemment
+ * deux événements non datés, et l'empreinte du dossier avec elles.
+ */
+function comparerIdentifiants(a: string, b: string): number {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
 export function trierChronologie(evenements: Evenement[]): Evenement[] {
   return [...evenements].sort((a, b) => {
     const ia = instantDe(a);
     const ib = instantDe(b);
-    if (!ia && !ib) return a.id.localeCompare(b.id);
+    if (!ia && !ib) return comparerIdentifiants(a.id, b.id);
     if (!ia) return 1;
     if (!ib) return -1;
     if (ia.minutes !== ib.minutes) return ia.minutes - ib.minutes;
-    return a.id.localeCompare(b.id);
+    return comparerIdentifiants(a.id, b.id);
   });
 }
 

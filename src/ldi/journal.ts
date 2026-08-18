@@ -15,6 +15,7 @@
  * pièces multiplie les endroits où le secret professionnel doit être protégé,
  * pour un gain nul : l'original est déjà sur la machine de l'avocat.
  */
+import { analyser } from './pipeline';
 import { VERSION_LDI } from './prompt';
 import { referencesDuRapport } from './sourcage';
 import type { Dossier, RapportLdi } from './types';
@@ -66,14 +67,21 @@ export function empreinte(valeur: unknown): string {
   return h.toString(16).padStart(16, '0');
 }
 
-/** Sérialisation à clés ordonnées : deux objets équivalents donnent le même texte. */
+/**
+ * Sérialisation à clés ordonnées : deux objets équivalents donnent le même texte.
+ *
+ * L'ordre est celui des POINTS DE CODE, pas l'ordre linguistique.
+ * `localeCompare` dépend de la locale et des données ICU du runtime : la même
+ * empreinte pouvait différer entre le navigateur et la ligne de commande, et
+ * `rejouer` aurait alors signalé un dossier modifié qui ne l'était pas.
+ */
 function stableStringify(valeur: unknown): string {
   if (valeur === null || typeof valeur !== 'object') return JSON.stringify(valeur) ?? 'null';
   if (Array.isArray(valeur)) return `[${valeur.map(stableStringify).join(',')}]`;
 
   const entrees = Object.entries(valeur as Record<string, unknown>)
     .filter(([, v]) => v !== undefined)
-    .sort(([a], [b]) => a.localeCompare(b))
+    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
     .map(([k, v]) => `${JSON.stringify(k)}:${stableStringify(v)}`);
   return `{${entrees.join(',')}}`;
 }
@@ -110,7 +118,7 @@ export function journaliser(dossier: Dossier, rapport: RapportLdi): Journal {
     references: referencesDuRapport(rapport),
     // L'horodatage de génération est retiré : il change à chaque exécution et
     // rendrait toute comparaison impossible.
-    rapportEmpreinte: empreinte({ ...rapport, genereLe: '' }),
+    rapportEmpreinte: empreinteRapport(rapport),
   };
 }
 
@@ -125,6 +133,18 @@ export type ControleRejeu = {
  * se contenter d'un booléen : sur une procédure, savoir que c'est le dossier
  * qui a changé — et non le moteur — est l'information utile.
  */
+/**
+ * Empreinte d'un rapport, heure de génération neutralisée.
+ *
+ * `genereLe` change à chaque exécution : l'inclure ferait échouer tout rejeu.
+ * Une seule fonction pour la journalisation ET le rejeu — deux normalisations
+ * séparées auraient fini par diverger, et le contrôle aurait alors signalé un
+ * écart qui n'existe pas.
+ */
+function empreinteRapport(rapport: RapportLdi): string {
+  return empreinte({ ...rapport, genereLe: '' });
+}
+
 export function rejouer(journal: Journal, dossier: Dossier): ControleRejeu {
   const ecarts: string[] = [];
 
@@ -132,6 +152,18 @@ export function rejouer(journal: Journal, dossier: Dossier): ControleRejeu {
   if (actuelle !== journal.dossier.empreinte) {
     ecarts.push(
       `Le dossier a changé depuis la journalisation (empreinte ${journal.dossier.empreinte} → ${actuelle}).`
+    );
+  }
+
+  // Le rapport lui-même est recalculé et confronté à l'empreinte enregistrée.
+  // Sans cela, `rejouer` déclarait « identique » sur la seule foi du dossier et
+  // du numéro de version : un changement de moteur à version constante — une
+  // correction de seuil, un libellé de constat — passait inaperçu, alors que
+  // c'est exactement ce qu'un contrôle de reproductibilité doit attraper.
+  const rapportActuel = empreinteRapport(analyser(dossier));
+  if (rapportActuel !== journal.rapportEmpreinte) {
+    ecarts.push(
+      `Le rapport produit aujourd'hui diffère de celui journalisé (empreinte ${journal.rapportEmpreinte} → ${rapportActuel}), à dossier inchangé : le moteur a changé de comportement.`
     );
   }
 
