@@ -20,7 +20,7 @@ const ici = dirname(fileURLToPath(import.meta.url));
 const RACINE = join(ici, '..', '..', '..');
 
 const EDGE = join(RACINE, 'supabase', 'functions', 'ldi-analyze');
-const PARTAGES = ['prompt.ts', 'citations.ts', 'reponse.ts', 'confidentialite.ts'];
+const PARTAGES = ['prompt.ts', 'citations.ts', 'reponse.ts', 'confidentialite.ts', 'tracabilite.ts'];
 const CANONIQUE = join(RACINE, 'src', 'ldi', 'prompt.ts');
 
 describe('fichiers partagés avec la fonction edge', () => {
@@ -55,6 +55,43 @@ describe('fichiers partagés avec la fonction edge', () => {
  * ses invariants structurels : une régression qui les supprimerait passerait
  * autrement la CI au vert.
  */
+/**
+ * L'autorité de citation du serveur est DÉRIVÉE du corpus. Une divergence
+ * serait silencieuse et coûteuse dans les deux sens : un article légitime
+ * cesserait d'être citable sans explication, ou un article retiré du corpus
+ * resterait autorisé côté serveur.
+ */
+describe('autorité de citation de la fonction edge', () => {
+  it('correspond exactement au corpus courant', async () => {
+    const { CORPUS } = await import('../corpus/references');
+    const genere = readFileSync(join(EDGE, 'corpus-autorite.ts'), 'utf-8');
+
+    const attendues = CORPUS.map((e) => e.reference).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+    for (const reference of attendues) {
+      assert.ok(
+        genere.includes(JSON.stringify(reference)),
+        `${reference} absente de l'autorité — exécuter \`npm run ldi:gen-corpus-edge\``
+      );
+    }
+
+    const comptees = (genere.match(/^\s{2}"/gm) ?? []).length;
+    assert.equal(comptees, attendues.length, "l'autorité contient des entrées hors corpus");
+  });
+
+  it("n'autorise aucun numéro de pourvoi", () => {
+    // Le serveur n'interroge aucune source de jurisprudence : il ne peut donc
+    // en autoriser aucune, et l'autorité ne doit pas en contenir par accident.
+    const genere = readFileSync(join(EDGE, 'corpus-autorite.ts'), 'utf-8');
+    const lignes = genere.split('\n').filter((l) => /^\s{2}"/.test(l));
+    for (const ligne of lignes) {
+      assert.ok(
+        !/\b\d{2}-\d{2}\.\d{3}\b|\b\d{2}-\d{5}\b/.test(ligne),
+        `numéro de pourvoi dans l'autorité : ${ligne.trim()}`
+      );
+    }
+  });
+});
+
 describe('fonction edge — invariants structurels', () => {
   const source = readFileSync(join(EDGE, 'index.ts'), 'utf-8');
 
@@ -81,10 +118,22 @@ describe('fonction edge — invariants structurels', () => {
     assert.ok(!/error:\s*e\.message/.test(source), "le message amont ne doit pas être renvoyé");
   });
 
-  it("n'autorise aucune citation par défaut", () => {
-    // Sans ensemble transmis, `chaines()` retourne [] : rien n'est citable.
-    assert.match(source, /referencesAutorisees = chaines/);
-    assert.match(source, /pourvoisAutorises = chaines/);
+  it("ne prend jamais l'appelant pour autorité de citation (P1-12)", () => {
+    // L'ensemble proposé passe par une intersection avec l'autorité serveur :
+    // l'appelant restreint, il n'élargit pas.
+    assert.match(source, /intersecter\(proposees, new Set\(REFERENCES_AUTORITE\)\)/);
+    // Les listes du corps ne doivent plus alimenter directement le vérificateur.
+    assert.ok(
+      !/pourvoisAutorises = chaines\(corps/.test(source),
+      'les pourvois ne peuvent pas venir du corps de requête'
+    );
+    assert.match(source, /const pourvoisAutorises: string\[\] = \[\]/);
+  });
+
+  it("annonce la provenance de l'ensemble citable dans la réponse", () => {
+    // « conforme » ne doit jamais se lire comme « vérifié auprès d'une source ».
+    assert.match(source, /origine: 'corpus détenu par le serveur'/);
+    assert.match(source, /referencesEcartees/);
   });
 
   it('borne le nombre de tentatives par la constante partagée', () => {

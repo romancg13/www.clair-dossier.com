@@ -12,7 +12,8 @@
     "preview": "vite preview --port 4173",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "ldi:artifact": "node scripts/build-artifact.mjs",
-    "ldi:sync-edge": "node -e \"for (const f of ['prompt.ts','citations.ts','reponse.ts','confidentialite.ts']) require('node:fs').copyFileSync('src/ldi/'+f,'supabase/functions/ldi-analyze/'+f)\""
+    "ldi:gen-corpus-edge": "tsx scripts/gen-corpus-edge.ts",
+    "ldi:sync-edge": "node -e \"for (const f of ['prompt.ts','citations.ts','reponse.ts','confidentialite.ts','tracabilite.ts']) require('node:fs').copyFileSync('src/ldi/'+f,'supabase/functions/ldi-analyze/'+f)\""
   },
   "dependencies": {
     "@fontsource/cormorant-garamond": "^5.2.5",

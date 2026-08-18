@@ -27,6 +27,8 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 
 import { verifierCitations } from './citations.ts';
 import { identifiantsDirectsResiduels } from './confidentialite.ts';
+import { REFERENCES_AUTORITE } from './corpus-autorite.ts';
+import { intersecter } from './tracabilite.ts';
 import { INVITE_SYSTEME, construireMessage } from './prompt.ts';
 import {
   PLAFOND_DOSSIER_DOLLARS,
@@ -168,12 +170,26 @@ Deno.serve(async (req) => {
   const question = typeof corps.question === 'string' ? corps.question.trim() : '';
   const sources = typeof corps.sources === 'string' ? corps.sources : '';
 
-  // Ensemble citable, calculé par l'appelant à partir du sourçage officiel.
-  // Vide par défaut : en l'absence de sourçage, RIEN n'est citable.
+  // ┌─ P1-12 — L'AUTORITÉ N'EST JAMAIS DÉCLARÉE PAR L'APPELANT ──────────────┐
+  // │ Ce qui arrive dans le corps de requête est un ALLÉGUÉ, quoi qu'il      │
+  // │ prétende. L'ensemble proposé est intersecté avec l'autorité détenue    │
+  // │ par le serveur : l'appelant peut RESTREINDRE ce qui est citable, il ne │
+  // │ peut pas l'élargir.                                                    │
+  // │                                                                        │
+  // │ Les pourvois sont refusés en bloc. Le serveur n'interroge aucune       │
+  // │ source de jurisprudence : il ne dispose donc d'aucune autorité pour en │
+  // │ autoriser un, et une autorité vide n'autorise rien. Auparavant, un     │
+  // │ appelant authentifié pouvait faire bénir un pourvoi inexistant en le   │
+  // │ déclarant lui-même — c'était la faille.                                │
+  // └────────────────────────────────────────────────────────────────────────┘
   const chaines = (v: unknown): string[] =>
     Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string').slice(0, 500) : [];
-  const referencesAutorisees = chaines(corps.referencesAutorisees);
-  const pourvoisAutorises = chaines(corps.pourvoisAutorises);
+
+  const proposees = chaines(corps.referencesAutorisees);
+  const referencesAutorisees = intersecter(proposees, new Set(REFERENCES_AUTORITE));
+  const referencesEcartees = proposees.filter((r) => !referencesAutorisees.includes(r));
+  // Aucune source de jurisprudence côté serveur ⇒ autorité vide ⇒ rien.
+  const pourvoisAutorises: string[] = [];
 
   if (!rapport) return json({ error: 'Rapport d’analyse manquant.' }, 400);
   if (!question) return json({ error: 'Question manquante.' }, 400);
@@ -327,6 +343,15 @@ Deno.serve(async (req) => {
         conforme: verification.conforme,
         citationsNonVerifiees: verification.inconnues,
         rapport: verification.rapport,
+        // Provenance de l'ensemble citable, pour que « conforme » ne soit
+        // jamais lu comme « vérifié auprès d'une source ».
+        autorite: {
+          origine: 'corpus détenu par le serveur',
+          referencesAutorisees: referencesAutorisees.length,
+          referencesEcartees,
+          pourvoisAutorises: 0,
+          note: "Aucun numéro de pourvoi n'est citable : le serveur n'interroge aucune source de jurisprudence. Les décisions se sourcent par la ligne de commande.",
+        },
       },
       // Une structure restée incomplète après la relance n'est PAS une erreur :
       // le texte reste utile à l'avocat. Elle est renvoyée telle quelle, pour
