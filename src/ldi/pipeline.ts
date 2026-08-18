@@ -12,6 +12,7 @@ import { analyserDossier } from './modules/chronologie';
 import { analyserPieces } from './modules/detection-ia';
 import { detecterIrregularites } from './modules/nullites';
 import { construireStrategie } from './modules/strategie';
+import { celluleMarkdown } from './markdown';
 import { VERSION_LDI } from './prompt';
 import type { Dossier, RapportLdi } from './types';
 
@@ -89,7 +90,7 @@ ${
 | Point | Résultat | Constat |
 |---|---|---|
 ${nullites.points
-  .map((p) => `| ${p.id} — ${p.intitule} | ${p.resultat} | ${p.constat.replace(/\|/g, '\\|')} |`)
+  .map((p) => `| ${p.id} — ${p.intitule} | ${p.resultat} | ${celluleMarkdown(p.constat)} |`)
   .join('\n')}
 
 **Anomalies : ${nullites.anomalies.length} · Points non établis : ${nullites.nonEtablis.length}**

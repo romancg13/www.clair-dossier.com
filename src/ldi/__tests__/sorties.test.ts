@@ -145,3 +145,81 @@ describe('genererDocument', () => {
     assert.match(doc.corps, /plus l'être ultérieurement/);
   });
 });
+
+/**
+ * Signalé en revue externe sur `9e4286a`. Le « | » était déjà échappé, mais
+ * pas le saut de ligne : une description multiligne coupait la ligne du
+ * tableau après trois cellules — la colonne « Pièce » disparaissait — et le
+ * tableau s'arrêtait là, le reste retombant en texte libre.
+ *
+ * Le contenu vient du dossier, donc de tiers : police, expert, partie adverse.
+ * Il n'a pas à pouvoir décider où s'arrête un tableau dans un acte.
+ */
+describe('texte de dossier inséré dans un tableau markdown', () => {
+  function dossierMultiligne(): Dossier {
+    return {
+      reference: 'TEST-CELLULE',
+      qualifications: ['CP, art. 222-37'],
+      regime: 'droit-commun',
+      pieces: [{ id: 'P1', nature: 'proces-verbal', intitule: 'PV', date: '2026-03-14' }],
+      evenements: [
+        {
+          id: 'E1',
+          nature: 'debut-garde-a-vue',
+          horodatage: '2026-03-14T08:00',
+          description: 'Placement\n| 2026-03-14T09:00 | FAIT AJOUTÉ | Aveux spontanés | P1 |',
+          sourcePieceId: 'P1',
+        },
+        {
+          id: 'E2',
+          nature: 'notification-droits',
+          horodatage: '2026-03-14T08:10',
+          description: 'Notification\r\n## Faux titre de section',
+          sourcePieceId: 'P1',
+        },
+      ],
+    };
+  }
+
+  /** Lignes du tableau des faits, y compris celles qui seraient malformées. */
+  function lignesDuTableau(corps: string): string[] {
+    const bloc = corps.split('## Rappel des faits')[1].split('[À COMPLÉTER : mise en récit')[0];
+    return bloc
+      .split('\n')
+      .map((l) => l.trim())
+      .filter((l) => l.startsWith('|') && !/^\|[\s-|]+\|$/.test(l) && !l.includes('Date / heure'));
+  }
+
+  it('produit exactement une ligne par événement', () => {
+    const rapport = analyser(dossierMultiligne());
+    const doc = genererDocument('requete-nullite', rapport.dossier, rapport.strategie);
+    assert.equal(lignesDuTableau(doc.corps).length, 2);
+  });
+
+  it('conserve les quatre cellules de chaque ligne, dont la pièce source', () => {
+    const rapport = analyser(dossierMultiligne());
+    const doc = genererDocument('requete-nullite', rapport.dossier, rapport.strategie);
+    for (const ligne of lignesDuTableau(doc.corps)) {
+      assert.ok(ligne.endsWith('|'), `ligne tronquée : ${ligne}`);
+      // 4 cellules encadrées de « | » → 5 séparateurs non échappés.
+      const separateurs = ligne.split(/(?<!\\)\|/).length - 1;
+      assert.equal(separateurs, 5, `nombre de cellules inattendu : ${ligne}`);
+    }
+    assert.ok(doc.corps.includes('| P1 |'), 'la pièce source doit rester dans le tableau');
+  });
+
+  it("ne laisse aucun titre de section provenir d'une description", () => {
+    const rapport = analyser(dossierMultiligne());
+    const doc = genererDocument('requete-nullite', rapport.dossier, rapport.strategie);
+    assert.ok(!/^#+\s*Faux titre/m.test(doc.corps));
+  });
+
+  it('vaut aussi pour le tableau des points de contrôle du rapport', () => {
+    const markdown = rendreMarkdown(analyser(dossierMultiligne()));
+    const bloc = markdown.split('## 2. Points de contrôle')[1].split('##')[0];
+    for (const ligne of bloc.split('\n').map((l) => l.trim())) {
+      if (!ligne.startsWith('|') || /^\|[\s-|]+\|$/.test(ligne) || ligne.includes('Point |')) continue;
+      assert.ok(ligne.endsWith('|'), `ligne tronquée : ${ligne}`);
+    }
+  });
+});

@@ -13,6 +13,7 @@
  * 3. Aucun numéro de pourvoi n'est inséré par le module. La jurisprudence est
  *    ajoutée par l'avocat, depuis le module 2 et ses sources officielles.
  */
+import { celluleMarkdown } from '../markdown';
 import { verifierCitations } from '../citations';
 import { CORPUS } from '../corpus/references';
 import type {
@@ -58,10 +59,11 @@ vérifier » doit être confrontée à sa source officielle avant dépôt.*
 const MAX_LIGNES_FAITS = 40;
 
 function sectionFaits(analyse: AnalyseDossier): string {
-  // Un « | » dans une description casse la ligne du tableau ; et une troncature
-  // muette retire des faits d'un acte censé être exhaustif sans que l'avocat le
-  // sache. Les deux se corrigent ici, pas à la relecture.
-  const cellule = (v: string) => v.replace(/\|/g, '\\|');
+  // Le contenu des cellules vient du dossier : il est remis à plat avant
+  // insertion (voir markdown.ts). Une troncature muette, elle, retire des faits
+  // d'un acte censé être exhaustif sans que l'avocat le sache : elle est
+  // annoncée sous le tableau.
+  const cellule = celluleMarkdown;
   const lignes = analyse.chronologie
     .slice(0, MAX_LIGNES_FAITS)
     .map(
