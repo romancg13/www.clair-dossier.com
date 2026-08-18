@@ -47,7 +47,7 @@ type EtatAnalyseRedigee =
   | { statut: 'inactif' }
   | { statut: 'encours' }
   | { statut: 'erreur'; message: string }
-  | { statut: 'ok'; texte: string; avertissement: string };
+  | { statut: 'ok'; texte: string; alertes: string[]; avertissement: string };
 
 export function LdiConsole() {
   const [saisie, setSaisie] = useState(GABARIT);
@@ -133,20 +133,26 @@ export function LdiConsole() {
         avertissement?: string;
         error?: string;
         verification?: { conforme: boolean; citationsNonVerifiees: string[]; rapport: string };
+        structure?: { conforme: boolean; sectionsManquantes: string[]; rapport: string };
       };
       if (charge.error || !charge.analyse) {
         setRedigee({ statut: 'erreur', message: charge.error ?? 'Réponse vide.' });
         return;
       }
+      // Les deux contrôles serveur sont cumulés, jamais substitués : une
+      // réponse peut à la fois citer une référence non vérifiée et omettre la
+      // section des risques, et masquer l'un derrière l'autre serait perdre la
+      // moitié de l'information qui décide si le texte est utilisable.
+      const alertes = [
+        charge.verification && !charge.verification.conforme ? charge.verification.rapport : '',
+        charge.structure && !charge.structure.conforme ? charge.structure.rapport : '',
+      ].filter(Boolean);
+
       setRedigee({
         statut: 'ok',
         texte: charge.analyse,
-        // Le résultat du contrôle de citations passe devant l'avertissement
-        // générique : c'est l'information qui décide si le texte est utilisable.
-        avertissement:
-          charge.verification && !charge.verification.conforme
-            ? `⚠ ${charge.verification.rapport}`
-            : (charge.avertissement ?? ''),
+        alertes,
+        avertissement: charge.avertissement ?? '',
       });
     } catch (e) {
       setRedigee({ statut: 'erreur', message: (e as Error).message });
@@ -418,6 +424,18 @@ export function LdiConsole() {
 
                     {redigee.statut === 'ok' && (
                       <div className="mt-4">
+                        {redigee.alertes.length > 0 && (
+                          <ul role="alert" className="mb-3 space-y-2">
+                            {redigee.alertes.map((alerte) => (
+                              <li
+                                key={alerte}
+                                className="rounded-lg border border-red-300 bg-red-50 p-3 text-xs text-red-900"
+                              >
+                                ⚠ {alerte}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
                         <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
                           {redigee.avertissement}
                         </p>

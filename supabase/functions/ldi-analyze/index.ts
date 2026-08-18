@@ -26,6 +26,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 
 import { verifierCitations } from './citations.ts';
 import { INVITE_SYSTEME, construireMessage } from './prompt.ts';
+import { TENTATIVES_MAX, validerStructure } from './reponse.ts';
 
 const MODELE = Deno.env.get('LDI_MODEL') ?? 'claude-opus-5';
 const CLE_API = Deno.env.get('ANTHROPIC_API_KEY') ?? '';
@@ -119,33 +120,71 @@ Deno.serve(async (req) => {
   const client = new Anthropic({ apiKey: CLE_API, timeout: 120_000, maxRetries: 1 });
 
   try {
-    const reponse = await client.beta.messages.create({
-      model: MODELE,
-      max_tokens: 16000,
-      // Réflexion adaptative : sur ce type d'analyse, le raisonnement compte
-      // davantage que la latence.
-      thinking: { type: 'adaptive' },
-      output_config: { effort: 'high' },
-      // Repli côté serveur : une analyse pénale peut déclencher un refus de
-      // classification. Plutôt qu'une réponse vide renvoyée à l'avocat, la
-      // requête est rejouée sur un modèle de repli dans le même appel.
-      betas: ['server-side-fallback-2026-07-01'],
-      fallbacks: 'default',
-      system: [{ type: 'text', text: INVITE_SYSTEME, cache_control: { type: 'ephemeral' } }],
-      messages: [{ role: 'user', content: construireMessage({ rapport, sources, question }) }],
-    });
+    // Le fil est conservé d'une tentative à l'autre : la relance corrective
+    // s'ajoute à la conversation au lieu de repartir de zéro, sinon le modèle
+    // perdrait l'analyse déjà produite et en écrirait une autre.
+    const messages: Anthropic.Beta.BetaMessageParam[] = [
+      { role: 'user', content: construireMessage({ rapport, sources, question }) },
+    ];
 
-    if (reponse.stop_reason === 'refusal') {
-      // `stop_details` vient du fournisseur et peut contenir des fragments de la
-      // requête : il est journalisé côté serveur, jamais renvoyé au client.
-      console.error('[ldi-analyze] refus de classification', reponse.stop_details ?? null);
-      return json({ error: "L'analyse n'a pas pu être produite pour cette demande." }, 422);
+    let texte = '';
+    let modeleServi = MODELE;
+    let structure = validerStructure('');
+    const jetons = { entree: 0, sortie: 0, cacheLu: 0, cacheEcrit: 0 };
+
+    for (let tentative = 1; tentative <= TENTATIVES_MAX; tentative += 1) {
+      const reponse = await client.beta.messages.create({
+        model: MODELE,
+        max_tokens: 16000,
+        // Réflexion adaptative : sur ce type d'analyse, le raisonnement compte
+        // davantage que la latence.
+        thinking: { type: 'adaptive' },
+        output_config: { effort: 'high' },
+        // Repli côté serveur : une analyse pénale peut déclencher un refus de
+        // classification. Plutôt qu'une réponse vide renvoyée à l'avocat, la
+        // requête est rejouée sur un modèle de repli dans le même appel.
+        betas: ['server-side-fallback-2026-07-01'],
+        fallbacks: 'default',
+        system: [{ type: 'text', text: INVITE_SYSTEME, cache_control: { type: 'ephemeral' } }],
+        messages,
+      });
+
+      // Comptabilisé tentative par tentative : une relance est un second appel
+      // facturé, et le coût affiché doit être celui de la demande entière.
+      jetons.entree += reponse.usage.input_tokens;
+      jetons.sortie += reponse.usage.output_tokens;
+      jetons.cacheLu += reponse.usage.cache_read_input_tokens ?? 0;
+      jetons.cacheEcrit += reponse.usage.cache_creation_input_tokens ?? 0;
+
+      if (reponse.stop_reason === 'refusal') {
+        // `stop_details` vient du fournisseur et peut contenir des fragments de
+        // la requête : il est journalisé côté serveur, jamais renvoyé au client.
+        console.error('[ldi-analyze] refus de classification', reponse.stop_details ?? null);
+        return json({ error: "L'analyse n'a pas pu être produite pour cette demande." }, 422);
+      }
+
+      texte = reponse.content
+        .filter((bloc): bloc is Anthropic.Beta.BetaTextBlock => bloc.type === 'text')
+        .map((bloc) => bloc.text)
+        .join('\n');
+      modeleServi = reponse.model;
+
+      structure = validerStructure(texte);
+      if (structure.conforme) break;
+
+      // Une réponse tronquée par la limite de jetons n'est pas un défaut de
+      // structure : la relancer produirait la même troncature, en double.
+      if (reponse.stop_reason === 'max_tokens') {
+        console.warn('[ldi-analyze] réponse tronquée', structure.sectionsManquantes);
+        break;
+      }
+
+      if (tentative < TENTATIVES_MAX) {
+        console.warn('[ldi-analyze] structure incomplète, relance', structure.sectionsManquantes);
+        messages.push({ role: 'assistant', content: texte });
+        messages.push({ role: 'user', content: structure.consigneCorrective });
+      }
     }
-
-    const texte = reponse.content
-      .filter((bloc): bloc is Anthropic.Beta.BetaTextBlock => bloc.type === 'text')
-      .map((bloc) => bloc.text)
-      .join('\n');
 
     // Contrôle après génération, sur le texte produit. C'est ici, et nulle part
     // ailleurs, que la règle « aucune référence hors source officielle » devient
@@ -168,11 +207,23 @@ Deno.serve(async (req) => {
         citationsNonVerifiees: verification.inconnues,
         rapport: verification.rapport,
       },
-      modele: reponse.model,
+      // Une structure restée incomplète après la relance n'est PAS une erreur :
+      // le texte reste utile à l'avocat. Elle est renvoyée telle quelle, pour
+      // qu'il sache quelles rubriques manquent — au premier rang desquelles les
+      // risques et les limites, dont l'absence se lit à tort comme un feu vert.
+      structure: {
+        conforme: structure.conforme,
+        sectionsManquantes: structure.sectionsManquantes,
+        rapport: structure.conforme
+          ? ''
+          : `Réponse incomplète après relance : ${structure.sectionsManquantes.join(', ')} ${structure.sectionsManquantes.length === 1 ? 'est absente' : 'sont absentes'}. Ce qui n'est pas écrit n'a pas été examiné.`,
+      },
+      modele: modeleServi,
       usage: {
-        entree: reponse.usage.input_tokens,
-        sortie: reponse.usage.output_tokens,
-        cache_lu: reponse.usage.cache_read_input_tokens ?? 0,
+        entree: jetons.entree,
+        sortie: jetons.sortie,
+        cache_lu: jetons.cacheLu,
+        cache_ecrit: jetons.cacheEcrit,
       },
       // Rappelé à chaque réponse : la sortie d'un modèle de langage n'est pas
       // une source. Elle doit être relue et recoupée avant tout usage.

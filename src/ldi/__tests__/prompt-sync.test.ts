@@ -20,7 +20,7 @@ const ici = dirname(fileURLToPath(import.meta.url));
 const RACINE = join(ici, '..', '..', '..');
 
 const EDGE = join(RACINE, 'supabase', 'functions', 'ldi-analyze');
-const PARTAGES = ['prompt.ts', 'citations.ts'];
+const PARTAGES = ['prompt.ts', 'citations.ts', 'reponse.ts'];
 const CANONIQUE = join(RACINE, 'src', 'ldi', 'prompt.ts');
 
 describe('fichiers partagés avec la fonction edge', () => {
@@ -85,5 +85,28 @@ describe('fonction edge — invariants structurels', () => {
     // Sans ensemble transmis, `chaines()` retourne [] : rien n'est citable.
     assert.match(source, /referencesAutorisees = chaines/);
     assert.match(source, /pourvoisAutorises = chaines/);
+  });
+
+  it('borne le nombre de tentatives par la constante partagée', () => {
+    // Une boucle bornée par un littéral se désynchroniserait de TENTATIVES_MAX
+    // sans que rien ne le signale : la relance corrective doit lire la source.
+    assert.match(source, /tentative <= TENTATIVES_MAX/);
+    assert.ok(!/tentative <= \d/.test(source), 'la borne ne doit pas être un littéral');
+  });
+
+  it('renvoie le résultat du contrôle de structure au lieu de le taire', () => {
+    const controle = source.indexOf('validerStructure(texte)');
+    const retour = source.indexOf('conforme: structure.conforme');
+    assert.ok(controle !== -1, 'la structure doit être contrôlée');
+    assert.ok(retour !== -1, 'le résultat doit figurer dans la réponse');
+    assert.ok(controle < retour);
+  });
+
+  it("additionne l'usage de toutes les tentatives", () => {
+    // Une relance est un second appel facturé. Un « = » à la place d'un « += »
+    // ferait disparaître le coût de la première tentative.
+    for (const champ of ['entree', 'sortie', 'cacheLu', 'cacheEcrit']) {
+      assert.match(source, new RegExp(`jetons\\.${champ} \\+=`), `jetons.${champ} doit être cumulé`);
+    }
   });
 });
