@@ -66,7 +66,7 @@ export function rendreMarkdown(rapport: RapportLdi): string {
 
 **Qualifications poursuivies :** ${dossier.qualifications.join(' · ') || 'non renseignées'}
 **Régime procédural retenu :** ${dossier.regime}
-**Pièces au dossier :** ${dossier.piecesOrphelines.length} non rattachée(s) à la chronologie`);
+**Pièces au dossier :** ${dossier.piecesTotal}, dont ${dossier.piecesOrphelines.length} non rattachée(s) à la chronologie`);
 
   sections.push(`## 1. Contradictions relevées
 

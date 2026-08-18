@@ -25,6 +25,7 @@
 import type { EnonceJuridique } from '../types';
 
 const LEGIFRANCE = 'Légifrance';
+const CEDH = "Cour européenne des droits de l'homme";
 
 /** Date du contrôle manuel des énoncés ci-dessous (ISO-8601). */
 export const CONTROLE_MANUEL = '2026-08-17';
@@ -38,16 +39,26 @@ function entree(
   reference: string,
   enonce: string,
   url: string,
-  options: { note?: string; controleManuel?: string | null } = {}
+  options: { note?: string; controleManuel?: string | null; editeur?: string } = {}
 ): EntreeCorpus {
+  // `null` signifie « jamais relu » : il ne doit pas retomber sur la date de
+  // contrôle collective, sans quoi l'entrée affiche une provenance fictive.
+  const controleManuel =
+    options.controleManuel === undefined ? CONTROLE_MANUEL : options.controleManuel;
+
   return {
     reference,
     enonce,
     // Statut initial systématique : rien n'est « vérifié » avant lecture de la source.
     statut: 'a-verifier',
-    source: { editeur: LEGIFRANCE, url, consulteLe: options.controleManuel ?? CONTROLE_MANUEL },
+    source: {
+      editeur: options.editeur ?? LEGIFRANCE,
+      url,
+      // Pas de date de consultation quand aucun contrôle manuel n'a eu lieu.
+      ...(controleManuel === null ? {} : { consulteLe: controleManuel }),
+    },
     note: options.note,
-    controleManuel: options.controleManuel === undefined ? CONTROLE_MANUEL : options.controleManuel,
+    controleManuel,
   };
 }
 
@@ -246,14 +257,14 @@ export const CEDH_6 = entree(
   'CEDH, art. 6',
   "Droit à un procès équitable : cause entendue équitablement, publiquement et dans un délai raisonnable, par un tribunal indépendant et impartial ; présomption d'innocence ; droits de la défense, dont l'assistance d'un défenseur.",
   'https://www.echr.coe.int/documents/d/echr/convention_FRA',
-  { controleManuel: null }
+  { controleManuel: null, editeur: CEDH }
 );
 
 export const CEDH_8 = entree(
   'CEDH, art. 8',
   "Droit au respect de la vie privée et familiale, du domicile et de la correspondance ; toute ingérence doit être prévue par la loi, poursuivre un but légitime et être nécessaire dans une société démocratique.",
   'https://www.echr.coe.int/documents/d/echr/convention_FRA',
-  { controleManuel: null }
+  { controleManuel: null, editeur: CEDH }
 );
 
 // ---------------------------------------------------------------------------

@@ -1,7 +1,11 @@
 <title>Registre LDI</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<!--
+  Aucune fonte distante : un dossier pénal est couvert par le secret
+  professionnel, et une requête de fonte divulgue l'adresse IP, l'agent
+  utilisateur et le référent du lecteur à un tiers, à chaque ouverture.
+  La page annonce « aucun appel réseau » — elle doit donc n'en faire aucun.
+  Les piles de repli locales ci-dessous portent la typographie.
+-->
 
 <style>
   /* Palette claire complète — tokens définis sur :root nu, jamais dans un bloc
@@ -74,7 +78,7 @@
     margin: 0;
     background: var(--ground);
     color: var(--ink);
-    font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     font-size: 16px;
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
@@ -83,7 +87,7 @@
   .wrap { max-width: 1240px; margin: 0 auto; padding: 0 20px; }
 
   h1, h2, h3 {
-    font-family: "Cormorant Garamond", ui-serif, Georgia, serif;
+    font-family: ui-serif, Georgia, "Times New Roman", serif;
     font-weight: 600;
     text-wrap: balance;
     margin: 0;
@@ -91,7 +95,7 @@
   }
 
   .eyebrow {
-    font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-family: ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, Consolas, monospace;
     font-size: 0.7rem;
     text-transform: uppercase;
     letter-spacing: 0.19em;
@@ -100,7 +104,7 @@
   }
 
   .mono {
-    font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-family: ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, Consolas, monospace;
     font-variant-numeric: tabular-nums;
   }
 
@@ -130,7 +134,7 @@
   .claims { display: flex; flex-wrap: wrap; gap: 10px; }
 
   .claim {
-    font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-family: ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, Consolas, monospace;
     font-size: 0.7rem;
     text-transform: uppercase;
     letter-spacing: 0.12em;
@@ -171,7 +175,7 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
-    font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-family: ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, Consolas, monospace;
     font-size: 0.68rem;
     text-transform: uppercase;
     letter-spacing: 0.16em;
@@ -184,7 +188,7 @@
     color: var(--ink);
     border: 1px solid var(--rule-strong);
     padding: 11px 12px;
-    font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-family: ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, Consolas, monospace;
     font-size: 0.78rem;
     line-height: 1.65;
     resize: vertical;
@@ -200,7 +204,7 @@
   .actions { display: flex; flex-wrap: wrap; gap: 9px; }
 
   button {
-    font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+    font-family: ui-sans-serif, system-ui, sans-serif;
     font-size: 0.83rem;
     font-weight: 600;
     padding: 9px 15px;
@@ -234,7 +238,7 @@
   .tile { background: var(--surface); padding: 16px 18px; display: flex; flex-direction: column; gap: 3px; }
 
   .tile .num {
-    font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-family: ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, Consolas, monospace;
     font-variant-numeric: tabular-nums;
     font-size: 1.85rem;
     line-height: 1;
@@ -245,7 +249,7 @@
   .tile .num.warn { color: var(--majeure); }
 
   .tile .cap {
-    font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-family: ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, Consolas, monospace;
     font-size: 0.63rem;
     text-transform: uppercase;
     letter-spacing: 0.13em;
@@ -282,7 +286,7 @@
   .entry:last-child { border-bottom: 0; }
 
   .entry .gutter {
-    font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-family: ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, Consolas, monospace;
     font-variant-numeric: tabular-nums;
     font-size: 0.72rem;
     color: var(--muted);
@@ -293,7 +297,7 @@
   .entry .nature { font-size: 0.94rem; color: var(--ink); }
 
   .entry .kind {
-    font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-family: ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, Consolas, monospace;
     font-size: 0.63rem;
     text-transform: uppercase;
     letter-spacing: 0.12em;
@@ -319,7 +323,7 @@
   .finding.critique, .finding.majeure { padding-right: 14px; }
 
   .chip {
-    font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-family: ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, Consolas, monospace;
     font-size: 0.62rem;
     text-transform: uppercase;
     letter-spacing: 0.13em;
@@ -350,7 +354,7 @@
   th, td { text-align: left; padding: 10px 12px 10px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
 
   th {
-    font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-family: ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, Consolas, monospace;
     font-size: 0.62rem;
     text-transform: uppercase;
     letter-spacing: 0.13em;
@@ -369,7 +373,7 @@
 
   .axis { padding: 15px 0; border-bottom: 1px solid var(--rule); }
   .axis:last-child { border-bottom: 0; }
-  .axis h3 { font-family: Inter, sans-serif; font-size: 0.98rem; font-weight: 600; display: flex; flex-wrap: wrap; gap: 9px; align-items: baseline; }
+  .axis h3 { font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.98rem; font-weight: 600; display: flex; flex-wrap: wrap; gap: 9px; align-items: baseline; }
   .axis .rule-note { color: var(--muted); font-size: 0.83rem; margin: 5px 0 0; }
   .axis ul { margin: 9px 0 0; padding-left: 18px; font-size: 0.9rem; }
   .axis li { margin-bottom: 4px; }
@@ -382,7 +386,7 @@
     border: 1px solid var(--rule);
     padding: 15px;
     overflow-x: auto;
-    font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-family: ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, Consolas, monospace;
     font-size: 0.73rem;
     line-height: 1.7;
     white-space: pre-wrap;
@@ -400,7 +404,7 @@
 
   footer.colophon { border-top: 1px solid var(--rule); background: var(--surface); margin-top: 20px; }
   .colophon-inner { padding: 34px 0 46px; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 30px; }
-  .colophon h3 { font-family: Inter, sans-serif; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.15em; color: var(--muted); font-weight: 600; }
+  .colophon h3 { font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.15em; color: var(--muted); font-weight: 600; }
   .colophon p, .colophon li { font-size: 0.87rem; color: var(--ink-soft); }
   .colophon p { margin: 9px 0 0; }
   .colophon ul { margin: 9px 0 0; padding-left: 17px; }
@@ -558,7 +562,7 @@
     [
       { n: critiques, c: 'Contradictions critiques', k: critiques > 0 ? 'alert' : '' },
       { n: r.nullites.anomalies.length, c: 'Anomalies procédurales', k: r.nullites.anomalies.length > 0 ? 'alert' : '' },
-      { n: r.nullites.nonEtablis.length, c: 'Points non établis', k: 'warn' },
+      { n: r.nullites.nonEtablis.length, c: 'Points non établis', k: r.nullites.nonEtablis.length > 0 ? 'warn' : '' },
       { n: r.strategie.axes.length, c: 'Axes de défense', k: '' },
       { n: r.dossier.chronologie.length, c: 'Actes au registre', k: '' }
     ].forEach(function (t) {

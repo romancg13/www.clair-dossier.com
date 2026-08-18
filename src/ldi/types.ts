@@ -26,8 +26,12 @@ export type SourceOfficielle = {
   /** Ex. « Légifrance », « Judilibre », « Cour de cassation ». */
   editeur: string;
   url: string;
-  /** ISO-8601 (YYYY-MM-DD) — date à laquelle le texte a été relu. */
-  consulteLe: string;
+  /**
+   * ISO-8601 (YYYY-MM-DD) — date à laquelle le texte a été effectivement relu.
+   * ABSENT tant que personne ne l'a lu : affirmer une date de consultation pour
+   * un texte jamais ouvert, c'est fabriquer la provenance qu'on prétend garantir.
+   */
+  consulteLe?: string;
 };
 
 /**
@@ -163,6 +167,8 @@ export type AnalyseDossier = {
   regime: RegimeProcedural;
   chronologie: Evenement[];
   contradictions: Contradiction[];
+  /** Nombre total de pièces versées au dossier. */
+  piecesTotal: number;
   /** Événements sans pièce de rattachement : rien ne les établit. */
   evenementsNonSources: string[];
   /** Pièces jamais invoquées par un événement de la chronologie. */

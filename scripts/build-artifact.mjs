@@ -42,5 +42,26 @@ const page = html.replace(JETON, () => code);
 mkdirSync(dirname(sortie), { recursive: true });
 writeFileSync(sortie, page, 'utf-8');
 
-const ko = (n) => `${(n / 1024).toFixed(1)} ko`;
-process.stdout.write(`${sortie}\n  bundle ${ko(code.length)} · page ${ko(page.length)}\n`);
+// Deux sorties, parce que les deux usages n'ont pas les mêmes besoins :
+//  — `ldi.html` sans squelette : la plateforme d'artefacts fournit elle-même
+//    doctype, <head> et <body> ; les ajouter produirait un document imbriqué ;
+//  — `ldi.standalone.html` complet : ouvert depuis le disque ou auto-hébergé,
+//    un fichier sans doctype bascule le navigateur en mode quirks, ce qui change
+//    le modèle de boîte et la mise en page des tableaux dont dépend la feuille
+//    de style. `lang="fr"` sert aussi la synthèse vocale.
+const autonome = `<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+${page}
+</body>
+</html>
+`;
+const sortieAutonome = sortie.replace(/\.html$/, '.standalone.html');
+writeFileSync(sortieAutonome, autonome, 'utf-8');
+
+const ko = (t) => `${(Buffer.byteLength(t, 'utf-8') / 1024).toFixed(1)} ko`;
+process.stdout.write(
+  `${sortie}\n  bundle ${ko(code)} · page ${ko(page)}\n${sortieAutonome}\n  autonome ${ko(autonome)}\n`
+);

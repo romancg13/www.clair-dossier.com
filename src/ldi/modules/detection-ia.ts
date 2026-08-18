@@ -98,15 +98,23 @@ export function tauxRepetitionQuadrigrammes(mots: string[]): number {
   return comptes.size === 0 ? 0 : repetes / comptes.size;
 }
 
+/**
+ * Un comptage par sous-chaîne gonfle la mesure : « de plusieurs » compterait
+ * comme « de plus », « en effets » comme « en effet ». Le module publie ce
+ * nombre comme une mesure brute et reproductible — il doit compter des mots.
+ */
+const REGEX_CONNECTEURS = CONNECTEURS.map(
+  (c) =>
+    new RegExp(
+      `(?<![\p{L}\p{N}])${c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![\p{L}\p{N}])`,
+      'giu'
+    )
+);
+
 function densiteConnecteurs(texte: string, nbMots: number): number {
-  const minuscule = texte.toLowerCase();
   let total = 0;
-  for (const connecteur of CONNECTEURS) {
-    let index = minuscule.indexOf(connecteur);
-    while (index !== -1) {
-      total += 1;
-      index = minuscule.indexOf(connecteur, index + connecteur.length);
-    }
+  for (const regex of REGEX_CONNECTEURS) {
+    total += (texte.match(regex) ?? []).length;
   }
   return nbMots === 0 ? 0 : (total / nbMots) * 100;
 }

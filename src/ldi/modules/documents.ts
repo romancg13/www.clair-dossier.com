@@ -53,17 +53,27 @@ vérifier » doit être confrontée à sa source officielle avant dépôt.*
 `;
 }
 
+const MAX_LIGNES_FAITS = 40;
+
 function sectionFaits(analyse: AnalyseDossier): string {
+  // Un « | » dans une description casse la ligne du tableau ; et une troncature
+  // muette retire des faits d'un acte censé être exhaustif sans que l'avocat le
+  // sache. Les deux se corrigent ici, pas à la relecture.
+  const cellule = (v: string) => v.replace(/\|/g, '\\|');
   const lignes = analyse.chronologie
-    .slice(0, 40)
-    .map((e) => `| ${e.horodatage} | ${e.nature} | ${e.description} | ${e.sourcePieceId ?? '—'} |`);
+    .slice(0, MAX_LIGNES_FAITS)
+    .map(
+      (e) =>
+        `| ${cellule(e.horodatage)} | ${cellule(e.nature)} | ${cellule(e.description)} | ${e.sourcePieceId ?? '—'} |`
+    );
+  const omis = analyse.chronologie.length - lignes.length;
 
   return `## Rappel des faits et de la procédure
 
 | Date / heure | Nature | Constat | Pièce |
 |---|---|---|---|
 ${lignes.join('\n')}
-
+${omis > 0 ? `\n> [À COMPLÉTER : ${omis} événement(s) de la chronologie ne figurent pas dans ce tableau, tronqué à ${MAX_LIGNES_FAITS} lignes. Les reprendre avant dépôt.]\n` : ''}
 [À COMPLÉTER : mise en récit des faits, en propre]
 `;
 }

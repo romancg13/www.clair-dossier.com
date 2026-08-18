@@ -46,6 +46,9 @@ const AVERTISSEMENT_NON_CONFIGURE =
 const AVERTISSEMENT_INJOIGNABLE =
   "La source officielle n'a pas pu être interrogée. Aucune décision n'est retournée : l'absence de résultat ne signifie pas l'absence de jurisprudence.";
 
+const AVERTISSEMENT_AUCUN_RESULTAT =
+  "La source officielle a répondu sans aucune décision pour cette référence. Une recherche manuelle sur Judilibre reste nécessaire avant toute citation.";
+
 function aujourdhui(): string {
   return new Date().toISOString().slice(0, 10);
 }
@@ -59,7 +62,11 @@ async function appeler(
   const doFetch = config.fetchImpl ?? (typeof fetch === 'function' ? fetch : undefined);
   if (!doFetch) return null;
 
-  const url = new URL(chemin, source.urlBase);
+  // Sans barre finale, `new URL('search', '…/v1.0')` remplace le dernier segment
+  // au lieu de s'y ajouter : la requête partirait sur un chemin inexistant et le
+  // module conclurait à tort que la source est injoignable.
+  const base = source.urlBase.endsWith('/') ? source.urlBase : `${source.urlBase}/`;
+  const url = new URL(chemin, base);
   for (const [cle, valeur] of Object.entries(parametres)) url.searchParams.set(cle, valeur);
 
   const controleur = new AbortController();
@@ -134,6 +141,17 @@ function listeDeResultats(charge: unknown): unknown[] {
 // API du module
 // ---------------------------------------------------------------------------
 
+export type ResultatJurisprudence = {
+  decisions: DecisionJurisprudentielle[];
+  /**
+   * `false` lorsque la source n'a pas répondu (réseau, délai, statut non 2xx).
+   * Distinguer ce cas d'une réponse vide est essentiel : dire « source
+   * injoignable » alors que Judilibre a répondu « aucune décision » est une
+   * affirmation fausse, dans un rapport dont l'avocat se sert.
+   */
+  interrogee: boolean;
+};
+
 /**
  * Recherche la jurisprudence associée à une référence de texte.
  * Le paramètre `config` est explicite : aucun secret n'est lu depuis
@@ -143,15 +161,15 @@ function listeDeResultats(charge: unknown): unknown[] {
 export async function rechercherJurisprudence(
   reference: string,
   config: ConfigRecherche = {}
-): Promise<DecisionJurisprudentielle[]> {
-  if (!config.judilibre) return [];
+): Promise<ResultatJurisprudence> {
+  if (!config.judilibre) return { decisions: [], interrogee: false };
 
   const charge = await appeler(config, config.judilibre, 'search', {
     query: reference,
     field: 'text',
     resolve_references: 'true',
   });
-  if (charge === null) return [];
+  if (charge === null) return { decisions: [], interrogee: false };
 
   const source: SourceOfficielle = {
     editeur: 'Judilibre',
@@ -159,9 +177,12 @@ export async function rechercherJurisprudence(
     consulteLe: aujourdhui(),
   };
 
-  return listeDeResultats(charge)
-    .map((brut) => versDecision(brut, source))
-    .filter((d): d is DecisionJurisprudentielle => d !== null);
+  return {
+    decisions: listeDeResultats(charge)
+      .map((brut) => versDecision(brut, source))
+      .filter((d): d is DecisionJurisprudentielle => d !== null),
+    interrogee: true,
+  };
 }
 
 /**
@@ -200,12 +221,24 @@ export async function verifierTexte(
   const texte = champ(charge, 'texte', 'text', 'content');
   if (!texte) return base;
 
+  // Un énoncé « vérifié » sans URL est invérifiable par le lecteur : le statut
+  // ne peut pas être promu sans provenance résoluble.
+  const urlSource = entree.source?.url;
+  if (!urlSource) {
+    return {
+      ...base,
+      note: [base.note, "Aucune URL de source n'est associée à cette référence : statut maintenu à « à vérifier »."]
+        .filter(Boolean)
+        .join(' '),
+    };
+  }
+
   return {
     ...base,
     // L'énoncé retenu est celui de la source, pas celui de l'index.
     enonce: texte,
     statut: 'verifie',
-    source: { editeur: 'Légifrance', url: entree.source?.url ?? '', consulteLe: aujourdhui() },
+    source: { editeur: 'Légifrance', url: urlSource, consulteLe: aujourdhui() },
   };
 }
 
@@ -214,14 +247,15 @@ export async function rechercher(
   reference: string,
   config: ConfigRecherche = {}
 ): Promise<ResultatRecherche> {
-  const [texte, decisions] = await Promise.all([
+  const [texte, jurisprudence] = await Promise.all([
     verifierTexte(reference, config),
     rechercherJurisprudence(reference, config),
   ]);
 
   let avertissement: string | undefined;
   if (!config.judilibre) avertissement = AVERTISSEMENT_NON_CONFIGURE;
-  else if (decisions.length === 0) avertissement = AVERTISSEMENT_INJOIGNABLE;
+  else if (!jurisprudence.interrogee) avertissement = AVERTISSEMENT_INJOIGNABLE;
+  else if (jurisprudence.decisions.length === 0) avertissement = AVERTISSEMENT_AUCUN_RESULTAT;
 
-  return { reference, texte, decisions, avertissement };
+  return { reference, texte, decisions: jurisprudence.decisions, avertissement };
 }

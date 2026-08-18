@@ -114,6 +114,12 @@ const DEFINITIONS: Definition[] = [
       }
 
       const ecart = iNotif.minutes - iDebut.minutes;
+      if (ecart < 0) {
+        return {
+          resultat: 'anomalie',
+          constat: `Les droits sont notifiés ${-ecart} minutes AVANT le placement acté : l'heure de départ de la mesure est à vérifier.`,
+        };
+      }
       if (ecart > SEUILS.notificationDroitsMinutes) {
         return {
           resultat: 'anomalie',
@@ -152,6 +158,12 @@ const DEFINITIONS: Definition[] = [
       const iAvis = parseHorodatage(avis.horodatage);
       if (iDemande?.avecHeure && iAvis?.avecHeure) {
         const ecart = iAvis.minutes - iDemande.minutes;
+        if (ecart < 0) {
+          return {
+            resultat: 'anomalie',
+            constat: `L'avis à avocat est daté ${-ecart} minutes AVANT la demande qu'il est censé suivre.`,
+          };
+        }
         if (ecart > 60) {
           return { resultat: 'anomalie', constat: `${ecart} minutes séparent la demande d'avocat de l'avis donné.` };
         }
@@ -181,6 +193,15 @@ const DEFINITIONS: Definition[] = [
       if (!avis || !audition) {
         return { resultat: 'non-etabli', constat: "Avis à avocat ou première audition non renseignés." };
       }
+      // Sans les deux heures, le délai n'a pas été mesuré : ne pas conclure.
+      const iAvis = parseHorodatage(avis.horodatage);
+      const iAudition = parseHorodatage(audition.horodatage);
+      if (!iAvis?.avecHeure || !iAudition?.avecHeure) {
+        return {
+          resultat: 'non-etabli',
+          constat: "L'heure de l'avis à avocat ou celle de la première audition manque : le délai de deux heures n'est pas contrôlable.",
+        };
+      }
       return { resultat: 'conforme', constat: "Le délai de deux heures n'apparaît pas méconnu au vu des heures renseignées." };
     },
   },
@@ -203,6 +224,14 @@ const DEFINITIONS: Definition[] = [
       const fin = has(ctx, 'fin-garde-a-vue') ?? has(ctx, 'presentation-magistrat');
       if (!fin) {
         return { resultat: 'non-etabli', constat: "La fin de la mesure n'est pas renseignée : durée non contrôlable." };
+      }
+      const iDebut = parseHorodatage(debut.horodatage);
+      const iFin = parseHorodatage(fin.horodatage);
+      if (!iDebut?.avecHeure || !iFin?.avecHeure) {
+        return {
+          resultat: 'non-etabli',
+          constat: "L'heure de début ou de fin de la mesure manque : la durée n'a pas pu être mesurée.",
+        };
       }
       return {
         resultat: 'conforme',
@@ -318,11 +347,15 @@ const DEFINITIONS: Definition[] = [
       if (dates.length === 0) {
         return { resultat: 'non-etabli', constat: 'Aucune date exploitable dans la chronologie.' };
       }
+      // Pas d'horloge murale ici : le pipeline garantit qu'une même entrée
+      // produit une même sortie. Un « il y a 0,4 an » changerait de valeur à
+      // chaque exécution et ferait diverger un rapport archivé de sa relecture.
+      // Le calcul du délai écoulé appartient à l'avocat, à la date de dépôt.
       const plusAncien = Math.min(...dates);
-      const anneesEcoulees = (Date.now() / 60_000 - plusAncien) / (365.25 * 24 * 60);
+      const datePlusAncienne = new Date(plusAncien * 60_000).toISOString().slice(0, 10);
       return {
         resultat: 'non-etabli',
-        constat: `Le fait le plus ancien de la chronologie remonte à environ ${anneesEcoulees.toFixed(1)} an(s). Délais de droit commun : six ans pour les délits (art. 8 CPP), vingt ans pour les crimes (art. 7 CPP), sous réserve des actes interruptifs et de l'art. 9-1 CPP.`,
+        constat: `Le fait le plus ancien de la chronologie est daté du ${datePlusAncienne}. Délais de droit commun : six ans pour les délits (art. 8 CPP), vingt ans pour les crimes (art. 7 CPP), sous réserve des actes interruptifs et de l'art. 9-1 CPP. Le calcul du délai écoulé se fait à la date de dépôt.`,
       };
     },
   },

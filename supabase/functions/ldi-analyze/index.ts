@@ -99,7 +99,10 @@ Deno.serve(async (req) => {
     return json({ error: 'Question trop longue.' }, 413);
   }
 
-  const client = new Anthropic({ apiKey: CLE_API });
+  // La fonction a une horloge d'invocation : sans borne explicite, un appel
+  // amont bloqué la consomme entièrement et l'appelant reçoit une erreur de
+  // plateforme au lieu d'un message utile.
+  const client = new Anthropic({ apiKey: CLE_API, timeout: 120_000, maxRetries: 1 });
 
   try {
     const reponse = await client.beta.messages.create({
@@ -119,13 +122,10 @@ Deno.serve(async (req) => {
     });
 
     if (reponse.stop_reason === 'refusal') {
-      return json(
-        {
-          error: "L'analyse n'a pas pu être produite pour cette demande.",
-          detail: reponse.stop_details ?? null,
-        },
-        422
-      );
+      // `stop_details` vient du fournisseur et peut contenir des fragments de la
+      // requête : il est journalisé côté serveur, jamais renvoyé au client.
+      console.error('[ldi-analyze] refus de classification', reponse.stop_details ?? null);
+      return json({ error: "L'analyse n'a pas pu être produite pour cette demande." }, 422);
     }
 
     const texte = reponse.content

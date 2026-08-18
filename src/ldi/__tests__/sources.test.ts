@@ -27,29 +27,33 @@ const CONFIG_JUDILIBRE = {
 
 describe('rechercherJurisprudence — garantie anti-fabrication', () => {
   it('ne retourne aucune décision sans source configurée', async () => {
-    assert.deepEqual(await rechercherJurisprudence('CPP, art. 63'), []);
+    const r = await rechercherJurisprudence('CPP, art. 63');
+    assert.deepEqual(r.decisions, []);
+    assert.equal(r.interrogee, false);
   });
 
   it('ne retourne aucune décision lorsque la source est injoignable', async () => {
-    const decisions = await rechercherJurisprudence('CPP, art. 63', {
+    const r = await rechercherJurisprudence('CPP, art. 63', {
       judilibre: CONFIG_JUDILIBRE,
       fetchImpl: (async () => {
         throw new Error('réseau indisponible');
       }) as unknown as typeof fetch,
     });
-    assert.deepEqual(decisions, []);
+    assert.deepEqual(r.decisions, []);
+    assert.equal(r.interrogee, false, 'un échec de transport doit rester distinct d’une réponse vide');
   });
 
   it('ne retourne aucune décision lorsque la source répond en erreur', async () => {
-    const decisions = await rechercherJurisprudence('CPP, art. 63', {
+    const r = await rechercherJurisprudence('CPP, art. 63', {
       judilibre: CONFIG_JUDILIBRE,
       fetchImpl: fauxFetch({ results: [{ number: '22-80.000', decision_date: '2023-01-25' }] }, false),
     });
-    assert.deepEqual(decisions, []);
+    assert.deepEqual(r.decisions, []);
+    assert.equal(r.interrogee, false);
   });
 
   it('écarte les entrées auxquelles il manque un élément d’identification', async () => {
-    const decisions = await rechercherJurisprudence('CPP, art. 63', {
+    const r = await rechercherJurisprudence('CPP, art. 63', {
       judilibre: CONFIG_JUDILIBRE,
       fetchImpl: fauxFetch({
         results: [
@@ -59,11 +63,12 @@ describe('rechercherJurisprudence — garantie anti-fabrication', () => {
         ],
       }),
     });
-    assert.deepEqual(decisions, []);
+    assert.deepEqual(r.decisions, []);
+    assert.equal(r.interrogee, true);
   });
 
   it('restitue une décision complète en la marquant vérifiée et sourcée', async () => {
-    const decisions = await rechercherJurisprudence('CPP, art. 171', {
+    const { decisions } = await rechercherJurisprudence('CPP, art. 171', {
       judilibre: CONFIG_JUDILIBRE,
       fetchImpl: fauxFetch({
         results: [
@@ -98,6 +103,24 @@ describe('rechercher', () => {
     const resultat = await rechercher('CPP, art. 63');
     assert.deepEqual(resultat.decisions, []);
     assert.match(resultat.avertissement ?? '', /Aucune source officielle/);
+  });
+
+  it('ne prétend pas la source injoignable quand elle a répondu sans résultat', async () => {
+    const resultat = await rechercher('CPP, art. 63', {
+      judilibre: CONFIG_JUDILIBRE,
+      fetchImpl: fauxFetch({ results: [] }),
+    });
+    assert.deepEqual(resultat.decisions, []);
+    assert.match(resultat.avertissement ?? '', /a répondu sans aucune décision/);
+    assert.doesNotMatch(resultat.avertissement ?? '', /n'a pas pu être interrogée/);
+  });
+
+  it('signale une source réellement injoignable', async () => {
+    const resultat = await rechercher('CPP, art. 63', {
+      judilibre: CONFIG_JUDILIBRE,
+      fetchImpl: fauxFetch({}, false),
+    });
+    assert.match(resultat.avertissement ?? '', /n'a pas pu être interrogée/);
   });
 });
 
@@ -145,10 +168,27 @@ describe('minimisation', () => {
     assert.equal(restaurer(texte, correspondances), source);
   });
 
-  it('attribue un pseudonyme stable à une même valeur répétée', () => {
-    const { texte } = minimiser('Écrire à a@b.fr puis relancer a@b.fr.');
-    assert.equal(texte.match(/\[EMAIL_1\]/g)?.length, 2);
-    assert.ok(!texte.includes('EMAIL_2'));
+  it('attribue un pseudonyme stable à une même valeur répétée, ponctuation adjacente comprise', () => {
+    const source = 'Écrire à a@b.fr, puis relancer a@b.fr.';
+    const { texte, correspondances } = minimiser(source);
+
+    assert.equal(texte, 'Écrire à [EMAIL_1], puis relancer [EMAIL_1].');
+    assert.ok(!texte.includes('EMAIL_2'), 'la ponctuation adjacente ne doit pas créer une seconde entrée');
+    assert.equal(restaurer(texte, correspondances), source);
+  });
+
+  it("ne reconnaît pas un nom déclaré à l'intérieur d'un mot", () => {
+    const source = 'Roy travaille au Royaume et signe Roy.';
+    const { texte, correspondances } = minimiser(source, ['Roy']);
+
+    assert.ok(texte.includes('Royaume'), '« Royaume » doit rester intact');
+    assert.equal(texte.match(/\[PERSONNE_1\]/g)?.length, 2);
+    assert.equal(restaurer(texte, correspondances), source);
+  });
+
+  it("ne masque qu'un fragment d'aucune suite de chiffres plus longue", () => {
+    const { texte } = minimiser('Référence interne 0612345678999 à conserver.');
+    assert.ok(texte.includes('0612345678999'), 'aucun pseudonyme partiel ne doit apparaître');
   });
 
   it('signale le risque résiduel plutôt que de laisser croire à une anonymisation', () => {

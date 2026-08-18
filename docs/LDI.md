@@ -71,11 +71,21 @@ npm run ldi:artifact          # → artifact/dist/ldi.html
 ```
 
 Construit une page HTML unique qui embarque le noyau déterministe (bundle
-esbuild en IIFE injecté dans `artifact/ldi.html`). Aucun script externe, aucune
-requête : la page ne sait pas faire de réseau, seules les fontes Google restent
-chargées depuis leur hôte. C'est la forme partageable de l'outil — elle n'expose
-que ce qui se calcule hors ligne, jamais le module de recherche ni l'étage
-génératif.
+esbuild en IIFE injecté dans `artifact/ldi.html`). **Aucune requête sortante,
+sans exception** : ni script, ni feuille de style, ni fonte distante. La
+typographie repose sur des piles locales — une requête de fonte divulguerait
+l'adresse IP, l'agent utilisateur et le référent du lecteur à un tiers, à chaque
+ouverture d'un outil qui traite du secret professionnel.
+
+Deux fichiers sont produits :
+
+| Fichier | Usage |
+|---|---|
+| `ldi.html` | publication sur une plateforme qui fournit elle-même `<!doctype>`, `<head>` et `<body>` |
+| `ldi.standalone.html` | ouverture depuis le disque ou auto-hébergement — document complet, `lang="fr"`, mode standards |
+
+C'est la forme partageable de l'outil : elle n'expose que ce qui se calcule hors
+ligne, jamais le module de recherche ni l'étage génératif.
 
 ### Comme bibliothèque
 

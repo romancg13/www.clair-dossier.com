@@ -12,7 +12,8 @@ import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { alertesResiduelles, minimiser } from '../ldi/confidentialite';
 import { analyser, rendreMarkdown } from '../ldi/pipeline';
-import type { Dossier, RapportLdi, Severite } from '../ldi/types';
+import { validerDossier } from '../ldi/validation';
+import type { RapportLdi, Severite } from '../ldi/types';
 import { Seo } from '../lib/seo';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
@@ -66,21 +67,43 @@ export function LdiConsole() {
 
   function lancerAnalyse() {
     setRedigee({ statut: 'inactif' });
-    let dossier: Dossier;
+
+    let brut: unknown;
     try {
-      dossier = JSON.parse(saisie) as Dossier;
+      brut = JSON.parse(saisie);
     } catch (e) {
       setErreur(`JSON invalide — ${(e as Error).message}`);
       setRapport(null);
       return;
     }
-    if (!dossier.reference || !Array.isArray(dossier.evenements) || !Array.isArray(dossier.pieces)) {
-      setErreur('Le dossier doit comporter « reference », « evenements » et « pieces ».');
+
+    const validation = validerDossier(brut);
+    if (!validation.ok) {
+      setErreur(validation.message);
       setRapport(null);
       return;
     }
-    setErreur(null);
-    setRapport(analyser(dossier));
+
+    // L'analyse elle-même doit rester dans le chemin d'erreur visible : une
+    // exception non rattrapée laisserait l'écran inchangé, sans rien dire.
+    try {
+      setRapport(analyser(validation.dossier));
+      setErreur(null);
+    } catch (e) {
+      setErreur(`L'analyse a échoué — ${(e as Error).message}`);
+      setRapport(null);
+    }
+  }
+
+  function copier(texte: string, succes: string) {
+    if (!navigator.clipboard?.writeText) {
+      setErreur("Le presse-papier n'est pas disponible dans ce navigateur.");
+      return;
+    }
+    navigator.clipboard.writeText(texte).then(
+      () => setErreur(null),
+      () => setErreur(`${succes} : copie refusée par le navigateur.`)
+    );
   }
 
   async function demanderAnalyseRedigee() {
@@ -165,10 +188,14 @@ export function LdiConsole() {
               </Card>
 
               <Card variant="cream">
-                <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-slate-500">
+                <label
+                  htmlFor="noms"
+                  className="block font-mono text-[0.7rem] uppercase tracking-[0.18em] text-slate-500"
+                >
                   Noms à pseudonymiser
-                </p>
+                </label>
                 <input
+                  id="noms"
                   value={noms}
                   onChange={(e) => setNoms(e.target.value)}
                   placeholder="Jean Dupont, SARL Martin"
@@ -305,7 +332,7 @@ export function LdiConsole() {
                     <div className="mt-6">
                       <Button
                         variant="outline"
-                        onClick={() => void navigator.clipboard?.writeText(markdown)}
+                        onClick={() => copier(markdown, 'Rapport')}
                       >
                         Copier le rapport (markdown)
                       </Button>

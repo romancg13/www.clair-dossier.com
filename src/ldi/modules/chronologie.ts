@@ -10,6 +10,7 @@
  * porte la vérification à opérer au dossier, parce qu'une incohérence
  * apparente est souvent une erreur de saisie plutôt qu'une irrégularité.
  */
+import { DUREE_MAX_GAV_HEURES } from '../corpus/references';
 import type {
   AnalyseDossier,
   Contradiction,
@@ -56,6 +57,21 @@ export function parseHorodatage(valeur: string): Instant | null {
 
   const ms = Date.UTC(annee, mois - 1, jour, heures, minutes);
   if (Number.isNaN(ms)) return null;
+
+  // Date.UTC ne signale pas les dates impossibles : elle les reporte
+  // silencieusement (« 2026-02-30 » devient le 2 mars). L'événement resterait
+  // dans la chronologie à un instant qui n'est pas celui du document, et tous
+  // les calculs de durée porteraient sur cette date décalée. Aller-retour de
+  // contrôle : ce qui ne revient pas identique est illisible, pas corrigeable.
+  const controle = new Date(ms);
+  if (
+    controle.getUTCFullYear() !== annee ||
+    controle.getUTCMonth() !== mois - 1 ||
+    controle.getUTCDate() !== jour
+  ) {
+    return null;
+  }
+
   return { minutes: Math.floor(ms / 60_000), avecHeure };
 }
 
@@ -186,8 +202,12 @@ function detecterDureeGardeAVue(
   const fin =
     premier(evenements, 'fin-garde-a-vue') ?? premier(evenements, 'presentation-magistrat');
 
-  // Nombre de prolongations que le régime autorise (art. 63 CPP, art. 706-88 CPP).
-  const maxProlongations = regime === 'droit-commun' ? 1 : regime === 'criminalite-organisee' ? 3 : 5;
+  // Nombre de prolongations que le régime autorise, DÉDUIT du plafond horaire du
+  // corpus : dupliquer la limite ici, c'est prendre le risque que ce module
+  // constate un dépassement au regard d'un plafond et que le module 3 en
+  // annonce un autre.
+  const plafondHeures = DUREE_MAX_GAV_HEURES[regime]?.heures ?? 48;
+  const maxProlongations = Math.max(0, Math.round(plafondHeures / 24) - 1);
   if (prolongations.length > maxProlongations) {
     out.push({
       type: 'duree-legale',
@@ -323,11 +343,18 @@ function detecterSequenceProcedurale(evenements: Evenement[]): Contradiction[] {
     if (iAvis?.avecHeure && iAudition?.avecHeure && !avocatPresent) {
       const ecart = iAudition.minutes - iAvis.minutes;
       if (ecart < SEUILS.carenceAvocatMinutes) {
+        // Un écart négatif signifie que l'audition a précédé l'avis : le dire
+        // « après » inverserait le fait, dans un constat que le module 3 et la
+        // requête en nullité reprennent mot pour mot.
+        const constat =
+          ecart < 0
+            ? `La première audition débute le ${premiereAudition.horodatage}, soit ${heures(ecart)} AVANT l'avis à avocat (${avis.horodatage}), hors présence de l'avocat.`
+            : `La première audition débute ${heures(ecart)} après l'avis à avocat, hors sa présence, alors que l'art. 63-4-2 CPP impose d'attendre deux heures.`;
         out.push({
           type: 'sequence-procedurale',
           regle: 'carence-avocat-63-4-2',
           severite: 'critique',
-          constat: `La première audition débute ${heures(ecart)} après l'avis à avocat, hors sa présence, alors que l'art. 63-4-2 CPP impose d'attendre deux heures.`,
+          constat,
           elements: [avis.id, premiereAudition.id],
           verificationSuggeree:
             "Vérifier si une décision de report de l'intervention de l'avocat figure au dossier, par quelle autorité et sur quel motif. À défaut, le grief est caractérisé.",
@@ -368,6 +395,7 @@ export function analyserDossier(dossier: Dossier): AnalyseDossier {
     regime,
     chronologie,
     contradictions,
+    piecesTotal: dossier.pieces.length,
     evenementsNonSources: chronologie.filter((e) => !e.sourcePieceId).map((e) => e.id),
     piecesOrphelines: dossier.pieces.filter((p) => !piecesCitees.has(p.id)).map((p) => p.id),
   };

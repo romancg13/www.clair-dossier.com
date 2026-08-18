@@ -16,6 +16,7 @@ import { minimiser, alertesResiduelles } from '../src/ldi/confidentialite';
 import { genererDocument } from '../src/ldi/modules/documents';
 import { analyser, rendreMarkdown } from '../src/ldi/pipeline';
 import type { Dossier, TypeDocument } from '../src/ldi/types';
+import { validerDossier } from '../src/ldi/validation';
 
 const TYPES_DOCUMENT: TypeDocument[] = [
   'requete-nullite',
@@ -46,22 +47,24 @@ function lireDossier(chemin: string): Dossier {
     echec(`fichier introuvable : ${chemin}`);
   }
 
-  let dossier: Dossier;
+  let parse: unknown;
   try {
-    dossier = JSON.parse(brut) as Dossier;
+    parse = JSON.parse(brut);
   } catch (e) {
     echec(`JSON invalide dans ${chemin} — ${(e as Error).message}`);
   }
 
-  if (!dossier.reference) echec('le dossier doit porter une « reference ».');
-  if (!Array.isArray(dossier.evenements)) echec('le dossier doit contenir un tableau « evenements ».');
-  if (!Array.isArray(dossier.pieces)) echec('le dossier doit contenir un tableau « pieces ».');
-  return dossier;
+  const validation = validerDossier(parse);
+  if (!validation.ok) echec(validation.message);
+  return validation.dossier;
 }
 
 function optionValeur(args: string[], nom: string): string | undefined {
   const index = args.indexOf(nom);
-  return index === -1 ? undefined : args[index + 1];
+  if (index === -1) return undefined;
+  // `--noms --json` ne doit pas pseudonymiser la chaîne « --json ».
+  const valeur = args[index + 1];
+  return valeur && !valeur.startsWith('--') ? valeur : undefined;
 }
 
 function main(): void {
@@ -106,7 +109,12 @@ function main(): void {
         .map((n) => n.trim())
         .filter(Boolean);
 
-      const source = readFileSync(chemin, 'utf-8');
+      let source: string;
+      try {
+        source = readFileSync(chemin, 'utf-8');
+      } catch {
+        echec(`fichier introuvable ou illisible : ${chemin}`);
+      }
       const { texte, correspondances } = minimiser(source, noms);
       process.stdout.write(`${texte}\n`);
 

@@ -40,7 +40,10 @@ const MOTIFS: Motif[] = [
   // NIR : 13 chiffres + clé sur 2 chiffres, avec séparateurs facultatifs.
   { nom: 'NIR', regex: /\b[12]\s?\d{2}\s?\d{2}\s?\d{2,3}\s?\d{2,3}\s?\d{2,3}\s?\d{2}\b/g },
   { nom: 'IMMATRICULATION', regex: /\b[A-Z]{2}-\d{3}-[A-Z]{2}\b/g },
-  { nom: 'TELEPHONE', regex: /(?:\+33|0)\s?[1-9](?:[\s.-]?\d{2}){4}\b/g },
+  // Borne gauche indispensable : sans elle, le moteur peut démarrer sur un « 0 »
+  // au milieu d'une suite de chiffres et ne pseudonymiser qu'un fragment, en
+  // laissant le reste du numéro en clair.
+  { nom: 'TELEPHONE', regex: /(?<![\d+])(?:\+33|0)\s?[1-9](?:[\s.-]?\d{2}){4}\b/g },
 ];
 
 function pseudonymiser(
@@ -80,7 +83,14 @@ export function minimiser(texte: string, noms: string[] = []): ResultatMinimisat
   const parLongueur = [...noms].filter((n) => n.trim().length > 1).sort((a, b) => b.length - a.length);
   parLongueur.forEach((nom, index) => {
     const pseudo = `[PERSONNE_${index + 1}]`;
-    const regex = new RegExp(echapper(nom.trim()), 'gi');
+    // Bornes lexicales : sans elles, un nom court est reconnu à l'intérieur d'un
+    // mot (« Roy » dans « Royaume »), et `restaurer` réinjecte ensuite le nom au
+    // milieu de ce mot — le document rendu est corrompu sans que rien ne le dise.
+    // `\\p` doit rester échappé : dans un littéral de gabarit, `\p` se réduit à `p`.
+    const regex = new RegExp(
+      '(?<![\\p{L}\\p{N}])' + echapper(nom.trim()) + '(?![\\p{L}\\p{N}])',
+      'giu'
+    );
     if (regex.test(resultat)) {
       correspondances.set(pseudo, nom.trim());
       resultat = resultat.replace(regex, pseudo);

@@ -106,15 +106,36 @@ describe('analyserDossier — détecteurs', () => {
     assert.match(contradiction!.constat, /50 h/);
   });
 
-  it("accepte 48 h lorsqu'une prolongation est actée", () => {
+  it("accepte exactement 48 h lorsqu'une prolongation est actée", () => {
     const dossier = dossierConforme();
+    // Départ 2026-03-14T08:00 → 48 h pile = 2026-03-16T08:00. La borne se teste
+    // à la borne, sinon un décalage d'une heure passerait inaperçu.
     dossier.evenements = [
-      ...dossier.evenements.map((e) => (e.id === 'E7' ? { ...e, horodatage: '2026-03-16T07:00' } : e)),
+      ...dossier.evenements.map((e) => (e.id === 'E7' ? { ...e, horodatage: '2026-03-16T08:00', sourcePieceId: undefined } : e)),
       evenement({ id: 'E8', nature: 'prolongation-garde-a-vue', horodatage: '2026-03-15T07:00', sourcePieceId: 'P1' }),
     ];
 
     const contradictions = analyserDossier(dossier).contradictions.filter((c) => c.type === 'duree-legale');
     assert.deepEqual(contradictions, []);
+  });
+
+  it('relève le dépassement une minute après la borne de 48 h', () => {
+    const dossier = dossierConforme();
+    dossier.evenements = [
+      ...dossier.evenements.map((e) => (e.id === 'E7' ? { ...e, horodatage: '2026-03-16T08:01', sourcePieceId: undefined } : e)),
+      evenement({ id: 'E8', nature: 'prolongation-garde-a-vue', horodatage: '2026-03-15T07:00', sourcePieceId: 'P1' }),
+    ];
+
+    const contradiction = analyserDossier(dossier).contradictions.find((c) => c.type === 'duree-legale');
+    assert.ok(contradiction, 'une minute au-delà du plafond doit être relevée');
+  });
+
+  it('rejette une date de calendrier impossible au lieu de la reporter', () => {
+    // Date.UTC transforme le 30 février en 2 mars sans rien signaler : l'acte
+    // resterait dans la chronologie à un instant qui n'est pas le sien.
+    assert.equal(parseHorodatage('2026-02-30T10:00'), null);
+    assert.equal(parseHorodatage('2026-04-31'), null);
+    assert.ok(parseHorodatage('2024-02-29') !== null, 'une année bissextile reste valide');
   });
 
   it('relève deux prolongations en droit commun', () => {

@@ -23,6 +23,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Les étapes suivantes exécutent du code venu de la PR : elles n'ont
+          # aucun besoin d'un jeton git utilisable.
+          persist-credentials: false
 
       - uses: actions/setup-node@v4
         with:
