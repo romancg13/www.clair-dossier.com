@@ -14,8 +14,16 @@ Lecture seule : aucune ligne de code n'a été modifiée pendant l'audit.*
 > décision de produit non prise. Le cumul reste déclaré par l'appelant : c'est
 > un garde-fou contre une boucle, pas contre un client hostile.
 >
-> Restent ouverts : P1-06, P1-07, P1-08, P1-11, les trois P2, et P1-12
-> ci-dessous, ouvert après coup par une revue externe.
+> **P1-12 est clos** (`3cf88a5`) : l'autorité de citation est désormais
+> détenue par le serveur et l'appelant ne peut que la restreindre. Quatre états
+> de provenance, export bloqué sur `allegue` et `introuvable`. Voir
+> `docs/LDI.md` § 9.1.
+>
+> **P1-11 est clos** par la conservation locale opt-in ; **P1-07** l'est par le
+> contrôle serveur des identifiants directs résiduels (`49c7799`).
+>
+> Restent ouverts : P1-06 (jeu d'évaluation), P1-08 (extraction automatique des
+> patronymes), et les trois P2.
 >
 > Corrigés hors nomenclature d'audit, sur signalement de cette même revue :
 > REVUE-01 (`6bd0580`, GAV-05 concluait `conforme` sur une durée négative) et

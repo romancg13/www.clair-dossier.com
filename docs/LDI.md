@@ -58,6 +58,21 @@ npm run ldi -- minimise notes.txt --noms "Jean Dupont"    # pseudonymisation
 `analyse` sort en code 2 lorsqu'au moins une anomalie est relevée, pour un
 enchaînement en script.
 
+#### Codes de sortie
+
+| Code | Signification |
+|---|---|
+| `0` | Terminé, rien à signaler |
+| `1` | Erreur d'usage, fichier introuvable ou dossier invalide |
+| `2` | **Analyse réussie, au moins une anomalie relevée** |
+| `3` | `sourcer` : aucune décision obtenue des sources officielles |
+| `4` | `rejouer` : écart entre le journal et l'état actuel |
+
+Le code `2` n'est pas une erreur : c'est le résultat qu'un script doit pouvoir
+tester. Sur `examples/dossier-exemple.json`, il est attendu — ce dossier est
+construit pour déclencher des détecteurs, et un `0` y signalerait une
+régression.
+
 ### Atelier web (`/ldi`)
 
 Interface multi-dossiers, réservée aux comptes authentifiés et servie hors du
@@ -82,6 +97,14 @@ dossier, pas un doublon.
 événements datés, contradictions, points en anomalie, points non établis. Un
 test interdit qu'un indicateur devienne un ratio, parce que la frontière avec le
 pronostic chiffré est vite franchie sur un tableau de bord.
+
+**Ce qui sort du poste.** L'atelier est servi derrière authentification : la
+page émet donc deux appels réseau au chargement (`getSession`,
+`onAuthStateChange`). La formulation « l'atelier tourne intégralement hors
+ligne » serait fausse. L'affirmation exacte est : **aucun contenu de dossier ne
+quitte le poste, sauf par l'action explicite « Demander une analyse »**. Le
+noyau déterministe, lui, et la ligne de commande hors `sourcer`, n'émettent
+aucune requête.
 
 **Conservation.** Désactivée par défaut : l'atelier repart vide à chaque
 rechargement. Une fois activée, l'état est affiché (nombre de dossiers, taille,
@@ -370,7 +393,37 @@ extension depuis `src/`. La source canonique est celle de `src/ldi/` ; le test
 npm run ldi:sync-edge
 ```
 
-### 9.1 Contrôles appliqués à la réponse du modèle
+### 9.1 Provenance des citations (P1-12)
+
+L'autorité d'une citation n'est **jamais** déclarée par l'appelant. Quatre
+états, dans `src/ldi/tracabilite.ts` :
+
+| État | Origine | Citable |
+|---|---|---|
+| `allegue` | corps de requête, pièce, sortie de modèle | non |
+| `introuvable` | source interrogée, référence absente | non |
+| `verifie-avocat` | contrôle manuel, nommé et horodaté | oui |
+| `verifie-api` | réponse d'une source officielle | oui |
+
+La fonction edge détient sa propre autorité — `corpus-autorite.ts`, généré
+depuis le corpus par `npm run ldi:gen-corpus-edge`. L'ensemble proposé par
+l'appelant est **intersecté** avec elle : il peut le restreindre, jamais
+l'élargir. Les numéros de pourvoi sont refusés en bloc, parce que le serveur
+n'interroge aucune source de jurisprudence : son autorité est vide, et une
+autorité vide n'autorise rien. Le sourçage des décisions passe par la ligne de
+commande.
+
+> **Pourquoi un état « vérifié par l'avocat ».** Le mandat n'en prévoyait que
+> trois. Sans le quatrième, l'avocat qui a lu l'article dans son code papier
+> n'a aucune issue : l'outil refuse d'exporter une référence qu'il sait exacte,
+> il rédige donc ailleurs, et la règle contournée ne protège plus rien. L'état
+> reste distinct de `verifie-api`, il nomme la personne et il est horodaté.
+
+L'export d'un acte est refusé si une référence est `allegue` ou `introuvable`.
+Le second cas est le plus dangereux : une référence que la source a dit ne pas
+connaître a l'apparence d'avoir été contrôlée.
+
+### 9.2 Contrôles appliqués à la réponse du modèle
 
 Trois contrôles s'exécutent côté serveur, dans cet ordre. Ils ne sont pas des
 consignes d'invite : ce sont du code, donc vérifiables et testés.
@@ -414,7 +467,7 @@ un taux de change que le module n'a pas.
 ## 10. Tests
 
 ```bash
-npm run test:ldi     # 175 tests
+npm run test:ldi     # 210 tests
 npm run typecheck
 ```
 

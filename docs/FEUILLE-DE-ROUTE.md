@@ -144,10 +144,11 @@ existant. Chaque module marqué « à redéfinir » l'est pour cette raison.
       une facture réelle.
 - [ ] **Projet de conclusions complet relu, corrections consignées.** Suppose
       M14, lui-même à redéfinir (voir l'avertissement de périmètre).
-- [ ] **Zéro P0, zéro P1 restant.** 3 P0 corrigés sur 3. 4 P1 corrigés sur 8.
-      Restent : P1-06, P1-07, P1-08, P1-11 (P1-05, P1-09 et P1-10 fermés,
-      ce dernier partiellement : plafond par dossier oui, quota par
-      utilisateur non).
+- [ ] **Zéro P0, zéro P1 restant.** 3 P0 corrigés sur 3. 7 P1 corrigés sur 9
+      (P1-12 inclus, ouvert après l'audit).
+      Restent : P1-06 (jeu d'évaluation) et P1-08 (extraction automatique
+      des patronymes). P1-10 reste partiel : plafond par dossier oui, quota
+      par utilisateur non.
 
 **Verdict.** Le système n'est pas validable au sens de la phase 6, et il serait
 malhonnête de cocher davantage. Ce qui a changé en phase 3 est toutefois
