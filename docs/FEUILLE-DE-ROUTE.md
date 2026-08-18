@@ -137,12 +137,17 @@ existant. Chaque module marqué « à redéfinir » l'est pour cette raison.
 - [ ] **Pseudonymisation vérifiée par capture des données réellement
       transmises.** Impossible ici : aucun appel LLM n'a été exécuté, faute de
       clé configurée dans cet environnement.
-- [ ] **Coût par dossier mesuré.** Même raison. Aucun chiffre ne sera produit
-      sans mesure.
+- [ ] **Coût par dossier mesuré.** Une estimation est désormais calculée et
+      renvoyée à chaque appel (P1-10), mais sur des tarifs saisis à la main et
+      jamais confrontés à leur grille : c'est un ordre de grandeur, pas une
+      mesure. La case reste décochée tant que le chiffre n'est pas relevé sur
+      une facture réelle.
 - [ ] **Projet de conclusions complet relu, corrections consignées.** Suppose
       M14, lui-même à redéfinir (voir l'avertissement de périmètre).
-- [ ] **Zéro P0, zéro P1 restant.** 3 P0 corrigés sur 3. 1 P1 corrigé sur 8.
-      Restent : P1-05, P1-06, P1-07, P1-08, P1-09, P1-10, P1-11.
+- [ ] **Zéro P0, zéro P1 restant.** 3 P0 corrigés sur 3. 4 P1 corrigés sur 8.
+      Restent : P1-06, P1-07, P1-08, P1-11 (P1-05, P1-09 et P1-10 fermés,
+      ce dernier partiellement : plafond par dossier oui, quota par
+      utilisateur non).
 
 **Verdict.** Le système n'est pas validable au sens de la phase 6, et il serait
 malhonnête de cocher davantage. Ce qui a changé en phase 3 est toutefois

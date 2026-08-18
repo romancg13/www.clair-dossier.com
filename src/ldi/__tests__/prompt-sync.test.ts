@@ -102,6 +102,14 @@ describe('fonction edge — invariants structurels', () => {
     assert.ok(controle < retour);
   });
 
+  it('contrôle le plafond de dépense avant tout appel facturé', () => {
+    const controle = source.indexOf('controlerAvantAppel(coutEngage, PLAFOND)');
+    const appel = source.indexOf('messages.create');
+    assert.ok(controle !== -1, 'le plafond doit être contrôlé');
+    assert.ok(controle < appel, "le contrôle du plafond doit précéder l'appel facturé");
+    assert.match(source, /if \(!plafond\.autorise\)/);
+  });
+
   it("additionne l'usage de toutes les tentatives", () => {
     // Une relance est un second appel facturé. Un « = » à la place d'un « += »
     // ferait disparaître le coût de la première tentative.

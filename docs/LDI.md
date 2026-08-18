@@ -301,7 +301,8 @@ Le dossier pénal est couvert par le secret professionnel.
 
 ```bash
 supabase secrets set ANTHROPIC_API_KEY=sk-ant-…
-supabase secrets set LDI_MODEL=claude-opus-5        # facultatif
+supabase secrets set LDI_MODEL=claude-opus-5             # facultatif
+supabase secrets set LDI_PLAFOND_DOSSIER_DOLLARS=5       # facultatif, défaut 5
 supabase functions deploy ldi-analyze
 ```
 
@@ -310,20 +311,60 @@ Le repli côté serveur (`fallbacks: "default"`) est activé : si la requête
 déclenche un refus de classification, elle est rejouée sur un modèle de repli
 dans le même appel, plutôt que de renvoyer une réponse vide à l'avocat.
 
-L'invite système existe en deux exemplaires — `src/ldi/prompt.ts` (canonique) et
-`supabase/functions/ldi-analyze/prompt.ts` (importée par Deno). Le test
-`prompt-sync.test.ts` interdit toute divergence ; pour resynchroniser :
+Trois fichiers existent en deux exemplaires — `prompt.ts`, `citations.ts` et
+`reponse.ts` — parce que Deno ne peut pas importer un module TypeScript sans
+extension depuis `src/`. La source canonique est celle de `src/ldi/` ; le test
+`prompt-sync.test.ts` interdit toute divergence. Pour resynchroniser :
 
 ```bash
-npm run ldi:sync-prompt
+npm run ldi:sync-edge
 ```
+
+### 9.1 Contrôles appliqués à la réponse du modèle
+
+Trois contrôles s'exécutent côté serveur, dans cet ordre. Ils ne sont pas des
+consignes d'invite : ce sont du code, donc vérifiables et testés.
+
+| Contrôle | Moment | Effet |
+|---|---|---|
+| Plafond de dépense | **avant** l'appel | l'appel n'est pas lancé (HTTP 429) |
+| Structure de la réponse | après génération | une relance corrective, puis constat renvoyé |
+| Citations | sur le texte final | annotation sur place et rapport à l'avocat |
+
+**Structure.** L'invite impose huit sections. `validerStructure()` nomme celles
+qui manquent et produit la consigne corrective. La fonction relance **une fois**
+(`TENTATIVES_MAX = 2` : chaque tentative est un appel facturé), en conservant le
+fil de conversation. Une réponse tronquée par `max_tokens` n'est pas relancée —
+la relance produirait la même troncature, en double. Si la structure reste
+incomplète, ce n'est pas une erreur : le texte est renvoyé avec la liste des
+rubriques absentes, parce que l'absence de « ⚠️ RISQUES POUR LE CLIENT » ou de
+« LIMITES » se lit à tort comme un feu vert.
+
+**Plafond de dépense.** Contrôlé avant l'appel — seul moment où le contrôle
+évite une dépense. Le cumul du dossier est tenu par l'appelant et renvoyé à
+chaque requête (`coutEngage`) ; le serveur ne détient aucun compteur.
+
+> **Ce que ce plafond n'est pas.** Un quota. Il borne une boucle qui s'emballe,
+> pas un client hostile : le cumul est déclaratif. Un vrai quota suppose un
+> compteur par utilisateur en base — décision de produit, non prise ici. La
+> console web ne le persiste d'ailleurs pas d'une session à l'autre, car il
+> faudrait le rattacher à une référence de dossier, donnée couverte par le
+> secret professionnel.
+
+**Tarifs.** `TARIFS_PAR_MILLION` est une **valeur déclarée**, saisie à la main
+dans `src/ldi/reponse.ts` (`verifieLe: null`). Aucune API n'est interrogée : le
+programme ne sait pas ce qu'un appel coûte réellement, et le modèle servi peut
+différer du modèle demandé (repli côté serveur). L'estimation est un ordre de
+grandeur destiné à borner une boucle, jamais un montant opposable — la
+facturation fait foi. Aucune conversion en euros n'est faite : elle supposerait
+un taux de change que le module n'a pas.
 
 ---
 
 ## 10. Tests
 
 ```bash
-npm run test:ldi     # 47 tests
+npm run test:ldi     # 104 tests
 npm run typecheck
 ```
 

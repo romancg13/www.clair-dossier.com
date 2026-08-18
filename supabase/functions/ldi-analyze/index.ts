@@ -18,6 +18,7 @@
  * Secrets attendus :
  *   ANTHROPIC_API_KEY   clé d'API (obligatoire)
  *   LDI_MODEL           identifiant de modèle (défaut : claude-opus-5)
+ *   LDI_PLAFOND_DOSSIER_DOLLARS  plafond de dépense par dossier (défaut : 5)
  *   SUPABASE_URL        injecté par la plateforme
  *   SUPABASE_ANON_KEY   injecté par la plateforme
  */
@@ -26,10 +27,23 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 
 import { verifierCitations } from './citations.ts';
 import { INVITE_SYSTEME, construireMessage } from './prompt.ts';
-import { TENTATIVES_MAX, validerStructure } from './reponse.ts';
+import {
+  PLAFOND_DOSSIER_DOLLARS,
+  TARIFS_PAR_MILLION,
+  TENTATIVES_MAX,
+  controlerAvantAppel,
+  estimerCout,
+  validerStructure,
+} from './reponse.ts';
 
 const MODELE = Deno.env.get('LDI_MODEL') ?? 'claude-opus-5';
 const CLE_API = Deno.env.get('ANTHROPIC_API_KEY') ?? '';
+
+/** Plafond de dépense par dossier. Une valeur d'environnement illisible est ignorée. */
+const PLAFOND = (() => {
+  const brut = Number(Deno.env.get('LDI_PLAFOND_DOSSIER_DOLLARS'));
+  return Number.isFinite(brut) && brut > 0 ? brut : PLAFOND_DOSSIER_DOLLARS;
+})();
 
 /** Le rapport déterministe reste borné : au-delà, l'appelant doit le réduire. */
 const TAILLE_MAX_RAPPORT = 200_000;
@@ -87,6 +101,7 @@ Deno.serve(async (req) => {
     sources?: unknown;
     referencesAutorisees?: unknown;
     pourvoisAutorises?: unknown;
+    coutEngage?: unknown;
   };
   try {
     corps = await req.json();
@@ -112,6 +127,17 @@ Deno.serve(async (req) => {
   }
   if (question.length > TAILLE_MAX_QUESTION) {
     return json({ error: 'Question trop longue.' }, 413);
+  }
+
+  // Plafond de dépense — contrôlé AVANT l'appel, seul moment où le contrôle
+  // évite quelque chose. Le cumul est tenu par l'appelant : le serveur ne
+  // dispose d'aucun compteur (voir controlerAvantAppel, § LIMITE À CONNAÎTRE).
+  // Une valeur absente vaut zéro ; une valeur présente mais non numérique est
+  // refusée plutôt que ramenée à zéro.
+  const coutEngage = corps.coutEngage === undefined ? 0 : Number(corps.coutEngage);
+  const plafond = controlerAvantAppel(coutEngage, PLAFOND);
+  if (!plafond.autorise) {
+    return json({ error: plafond.message, plafondDollars: PLAFOND, coutEngage }, 429);
   }
 
   // La fonction a une horloge d'invocation : sans borne explicite, un appel
@@ -200,6 +226,13 @@ Deno.serve(async (req) => {
       console.warn('[ldi-analyze] citations non vérifiées', verification.inconnues);
     }
 
+    // Le plafond est appliqué sur la part restante : ce qui compte est le
+    // cumul du dossier, pas le coût du seul appel qui vient de s'exécuter.
+    const cout = estimerCout(jetons, TARIFS_PAR_MILLION, PLAFOND - coutEngage);
+    if (cout.plafondDepasse) {
+      console.warn('[ldi-analyze] plafond dépassé', { coutEngage, appel: cout.dollars, PLAFOND });
+    }
+
     return json({
       analyse: verification.texte,
       verification: {
@@ -224,6 +257,15 @@ Deno.serve(async (req) => {
         sortie: jetons.sortie,
         cache_lu: jetons.cacheLu,
         cache_ecrit: jetons.cacheEcrit,
+      },
+      // Estimation, pas facture : tarifs déclarés en dur, et modèle servi
+      // possiblement différent du modèle demandé (repli côté serveur).
+      // `cumule` est ce que l'appelant doit renvoyer au prochain appel.
+      cout: {
+        ...cout,
+        cumule: Number((coutEngage + cout.dollars).toFixed(6)),
+        plafondDollars: PLAFOND,
+        tarifsVerifieLe: TARIFS_PAR_MILLION.verifieLe,
       },
       // Rappelé à chaque réponse : la sortie d'un modèle de langage n'est pas
       // une source. Elle doit être relue et recoupée avant tout usage.

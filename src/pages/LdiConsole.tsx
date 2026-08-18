@@ -47,7 +47,14 @@ type EtatAnalyseRedigee =
   | { statut: 'inactif' }
   | { statut: 'encours' }
   | { statut: 'erreur'; message: string }
-  | { statut: 'ok'; texte: string; alertes: string[]; avertissement: string };
+  | {
+      statut: 'ok';
+      texte: string;
+      alertes: string[];
+      /** Estimation en dollars — tarifs déclarés, jamais une facture. */
+      cout: { appel: number; cumule: number } | null;
+      avertissement: string;
+    };
 
 export function LdiConsole() {
   const [saisie, setSaisie] = useState(GABARIT);
@@ -56,6 +63,12 @@ export function LdiConsole() {
   const [noms, setNoms] = useState('');
   const [question, setQuestion] = useState('');
   const [redigee, setRedigee] = useState<EtatAnalyseRedigee>({ statut: 'inactif' });
+  // Cumul de dépense du dossier en cours, en dollars estimés. Tenu en mémoire
+  // seulement : il n'est pas persisté, parce qu'il faudrait le rattacher à une
+  // référence de dossier, donnée couverte par le secret professionnel. Il
+  // repart donc de zéro à chaque chargement de la page — le plafond serveur
+  // borne une boucle, il ne tient pas la comptabilité.
+  const [coutEngage, setCoutEngage] = useState(0);
 
   const markdown = useMemo(() => (rapport ? rendreMarkdown(rapport) : ''), [rapport]);
 
@@ -68,6 +81,8 @@ export function LdiConsole() {
 
   function lancerAnalyse() {
     setRedigee({ statut: 'inactif' });
+    // Dossier différent : le cumul du précédent ne le concerne pas.
+    setCoutEngage(0);
 
     let brut: unknown;
     try {
@@ -122,6 +137,7 @@ export function LdiConsole() {
           question: question.trim(),
           referencesAutorisees: rapport ? referencesDuRapport(rapport) : [],
           pourvoisAutorises: [],
+          coutEngage,
         },
       });
       if (error) {
@@ -134,6 +150,7 @@ export function LdiConsole() {
         error?: string;
         verification?: { conforme: boolean; citationsNonVerifiees: string[]; rapport: string };
         structure?: { conforme: boolean; sectionsManquantes: string[]; rapport: string };
+        cout?: { dollars: number; cumule: number; plafondDepasse: boolean; avertissement: string };
       };
       if (charge.error || !charge.analyse) {
         setRedigee({ statut: 'erreur', message: charge.error ?? 'Réponse vide.' });
@@ -146,12 +163,16 @@ export function LdiConsole() {
       const alertes = [
         charge.verification && !charge.verification.conforme ? charge.verification.rapport : '',
         charge.structure && !charge.structure.conforme ? charge.structure.rapport : '',
+        charge.cout?.plafondDepasse ? charge.cout.avertissement : '',
       ].filter(Boolean);
+
+      if (typeof charge.cout?.cumule === 'number') setCoutEngage(charge.cout.cumule);
 
       setRedigee({
         statut: 'ok',
         texte: charge.analyse,
         alertes,
+        cout: charge.cout ? { appel: charge.cout.dollars, cumule: charge.cout.cumule } : null,
         avertissement: charge.avertissement ?? '',
       });
     } catch (e) {
@@ -442,6 +463,13 @@ export function LdiConsole() {
                         <pre className="mt-3 max-h-[32rem] overflow-auto whitespace-pre-wrap rounded-lg bg-white p-4 font-sans text-sm leading-relaxed text-navy-900">
                           {redigee.texte}
                         </pre>
+                        {redigee.cout && (
+                          <p className="mt-2 font-mono text-[0.7rem] text-slate-500">
+                            Coût estimé — cet appel {redigee.cout.appel} USD, dossier{' '}
+                            {redigee.cout.cumule} USD. Estimation sur tarifs déclarés dans le code,
+                            non vérifiés : la facturation réelle fait foi.
+                          </p>
+                        )}
                       </div>
                     )}
                   </Card>

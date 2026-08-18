@@ -5,8 +5,18 @@ Lecture seule : aucune ligne de code n'a été modifiée pendant l'audit.*
 
 > **État après la phase 3 de corrections.** Les trois P0 sont fermés — par du
 > code exécuté, non par une consigne d'invite : P0-01 (`5c7d73e`), P0-02
-> (`5f62c5f`), P0-03 (`6399450`), plus P1-04 (`ec2b512`). Sept P1 restent
-> ouverts. Les notes ci-dessous sont celles de l'audit initial et ne sont pas
+> (`5f62c5f`), P0-03 (`6399450`). Fermés ensuite : P1-04 (`ec2b512`, `5251e21`),
+> P1-05 (`0ab34aa`), P1-09 (`9bfb094`), P1-10.
+>
+> **P1-10 est fermé partiellement, et il faut le dire.** Le plafond par dossier
+> existe et s'applique avant l'appel ; le **quota par utilisateur** décrit dans
+> le correctif n'est pas implémenté — il suppose un compteur en base, donc une
+> décision de produit non prise. Le cumul reste déclaré par l'appelant : c'est
+> un garde-fou contre une boucle, pas contre un client hostile.
+>
+> Restent ouverts : P1-06, P1-07, P1-08, P1-11, et les trois P2.
+>
+> Les notes ci-dessous sont celles de l'audit initial et ne sont pas
 > réévaluées : elles documentent l'état constaté, pas l'état courant. La suite
 > proposée figure dans `docs/FEUILLE-DE-ROUTE.md`.
 
