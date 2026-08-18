@@ -134,7 +134,17 @@ Deno.serve(async (req) => {
   // dispose d'aucun compteur (voir controlerAvantAppel, § LIMITE À CONNAÎTRE).
   // Une valeur absente vaut zéro ; une valeur présente mais non numérique est
   // refusée plutôt que ramenée à zéro.
-  const coutEngage = corps.coutEngage === undefined ? 0 : Number(corps.coutEngage);
+  //
+  // Le contrôle porte sur le TYPE, pas sur la conversion : `Number(null)`,
+  // `Number('')` et `Number([])` valent tous les trois 0. Convertir d'abord
+  // aurait donc rendu ce commentaire faux — un compteur corrompu serait passé
+  // pour un compteur à zéro, et l'appel aurait été autorisé.
+  const coutEngage =
+    corps.coutEngage === undefined
+      ? 0
+      : typeof corps.coutEngage === 'number'
+        ? corps.coutEngage
+        : Number.NaN;
   const plafond = controlerAvantAppel(coutEngage, PLAFOND);
   if (!plafond.autorise) {
     return json({ error: plafond.message, plafondDollars: PLAFOND, coutEngage }, 429);
@@ -207,7 +217,11 @@ Deno.serve(async (req) => {
 
       if (tentative < TENTATIVES_MAX) {
         console.warn('[ldi-analyze] structure incomplète, relance', structure.sectionsManquantes);
-        messages.push({ role: 'assistant', content: texte });
+        // Les blocs sont renvoyés TELS QUELS, dans leur ordre d'origine. Ne
+        // remonter que le texte retirerait les blocs de réflexion, que l'API
+        // exige de recevoir inchangés : la relance échouerait en 400, et le
+        // garde-fou de structure serait inopérant précisément quand il sert.
+        messages.push({ role: 'assistant', content: reponse.content });
         messages.push({ role: 'user', content: structure.consigneCorrective });
       }
     }

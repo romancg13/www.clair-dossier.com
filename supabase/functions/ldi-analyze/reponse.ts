@@ -92,10 +92,28 @@ export function validerStructure(texte: string): ControleStructure {
   // Inclusion et non égalité : « ### ANALYSE JURIDIQUE » remplit la section
   // ANALYSE. Le contrôle porte sur la présence de la rubrique, pas sur la
   // reproduction littérale de son intitulé.
-  const sectionsManquantes = SECTIONS_IMPOSEES.filter((section) => {
-    const attendu = normaliserTitre(section);
-    return !titres.some((t) => t.includes(attendu));
-  });
+  //
+  // Mais un titre ne vaut que pour UNE rubrique. Cherchées indépendamment,
+  // « ANALYSE » et « RISQUES POUR LE CLIENT » étaient toutes deux satisfaites
+  // par le seul titre « ANALYSE DES RISQUES POUR LE CLIENT » : la réponse
+  // passait sans section de risques distincte, c'est-à-dire précisément
+  // l'omission que ce contrôle existe pour attraper.
+  const disponibles = [...titres];
+
+  /** Consomme un titre et le retire du lot ; `false` si aucun ne convient. */
+  const consommer = (attendu: string): boolean => {
+    // Correspondance exacte d'abord : sans cela, « ANALYSE » pourrait s'emparer
+    // du titre « ANALYSE DES RISQUES… » alors qu'un titre « ANALYSE » existe.
+    let i = disponibles.findIndex((t) => t === attendu);
+    if (i === -1) i = disponibles.findIndex((t) => t.includes(attendu));
+    if (i === -1) return false;
+    disponibles.splice(i, 1);
+    return true;
+  };
+
+  const sectionsManquantes = SECTIONS_IMPOSEES.filter(
+    (section) => !consommer(normaliserTitre(section))
+  );
 
   if (sectionsManquantes.length === 0) {
     return { conforme: true, sectionsManquantes: [], consigneCorrective: '' };
@@ -188,12 +206,16 @@ function arrondir(valeur: number): number {
  * Estime le coût d'un appel à partir des jetons consommés et des tarifs
  * déclarés. Fonction pure : ni horloge, ni réseau, ni état.
  *
- * @param plafond Plafond en dollars pour le dossier. Omis : aucun contrôle.
+ * @param budgetRestant Part du plafond ENCORE DISPONIBLE pour ce dossier, en
+ *        dollars — l'appelant en a déjà retiré le cumul engagé. Ce n'est donc
+ *        pas le plafond du dossier, et le message ne doit pas le présenter
+ *        comme tel : un dossier plafonné à 5 USD dont 3 sont engagés annonçait
+ *        « un plafond de 2 USD » à l'avocat. Omis : aucun contrôle.
  */
 export function estimerCout(
   usage: UsageJetons,
   tarifs: Tarifs,
-  plafond?: number
+  budgetRestant?: number
 ): EstimationCout {
   const parMillion = (jetons: number, tarif: number) => (jetons / 1_000_000) * tarif;
 
@@ -204,7 +226,7 @@ export function estimerCout(
       parMillion(usage.cacheEcrit ?? 0, tarifs.cacheEcrit)
   );
 
-  const plafondDepasse = typeof plafond === 'number' && dollars > plafond;
+  const plafondDepasse = typeof budgetRestant === 'number' && dollars > budgetRestant;
 
   return {
     dollars,
@@ -212,7 +234,7 @@ export function estimerCout(
     plafondDepasse,
     devise: tarifs.devise,
     avertissement: plafondDepasse
-      ? `Plafond de dépense atteint pour ce dossier : ${dollars} ${tarifs.devise} estimés pour un plafond de ${plafond} ${tarifs.devise}. Estimation calculée sur des tarifs déclarés, non vérifiés — la facturation réelle fait foi.`
+      ? `Plafond de dépense dépassé pour ce dossier : ${dollars} ${tarifs.devise} estimés pour cet appel, alors qu'il restait ${budgetRestant} ${tarifs.devise} sur le plafond du dossier. Estimation calculée sur des tarifs déclarés, non vérifiés — la facturation réelle fait foi.`
       : '',
   };
 }

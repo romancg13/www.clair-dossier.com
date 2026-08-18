@@ -77,6 +77,23 @@ describe('validerStructure', () => {
     assert.equal(validerStructure(gras).conforme, true);
   });
 
+  it("n'accepte pas qu'un seul titre remplisse deux rubriques imposées", () => {
+    // « ANALYSE DES RISQUES POUR LE CLIENT » contient les deux intitulés. Le
+    // contrôle les cherchait indépendamment : la réponse passait sans aucune
+    // section de risques distincte — l'omission même que ce module traque.
+    const r = validerStructure('### ANALYSE DES RISQUES POUR LE CLIENT\nx');
+    assert.ok(
+      r.sectionsManquantes.includes('ANALYSE') ||
+        r.sectionsManquantes.includes('RISQUES POUR LE CLIENT'),
+      'un titre ne peut pas valider deux rubriques à la fois'
+    );
+  });
+
+  it('apparie chaque rubrique à un titre distinct sur une réponse conforme', () => {
+    const r = validerStructure(CONFORME);
+    assert.equal(r.conforme, true, r.sectionsManquantes.join(', '));
+  });
+
   it("n'accepte pas une section seulement évoquée dans un paragraphe", () => {
     // Le mot « LIMITES » écrit au fil du texte ne remplace pas la rubrique.
     const r = validerStructure(CONFORME.replace('### LIMITES\nx', 'Voir plus haut les LIMITES.'));
@@ -108,6 +125,18 @@ describe('estimerCout', () => {
     const c = estimerCout({ entree: 1_000_000, sortie: 1_000_000, cacheLu: 0 }, TARIFS_PAR_MILLION, 1);
     assert.equal(c.plafondDepasse, true);
     assert.match(c.avertissement, /plafond/i);
+  });
+
+  it("n'annonce pas le budget restant comme s'il était le plafond du dossier", () => {
+    // L'appelant passe la part ENCORE DISPONIBLE (plafond − cumul engagé). Le
+    // message présentait ce reste comme « le plafond », si bien qu'un dossier
+    // plafonné à 5 USD dont 3 sont engagés affichait « un plafond de 2 USD ».
+    const c = estimerCout({ entree: 1_000_000, sortie: 0, cacheLu: 0 }, TARIFS_PAR_MILLION, 2);
+    assert.ok(
+      !/plafond de 2 /.test(c.avertissement),
+      `le reste est présenté comme le plafond : ${c.avertissement}`
+    );
+    assert.match(c.avertissement, /restait/i);
   });
 
   it('ne signale rien sous le plafond', () => {

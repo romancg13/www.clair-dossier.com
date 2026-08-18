@@ -110,6 +110,22 @@ describe('fonction edge — invariants structurels', () => {
     assert.match(source, /if \(!plafond\.autorise\)/);
   });
 
+  it('renvoie les blocs du modèle tels quels lors de la relance', () => {
+    // Ne remonter que le texte retirerait les blocs de réflexion, que l'API
+    // exige inchangés : la relance échouerait là où elle doit protéger.
+    assert.match(source, /content: reponse\.content/);
+  });
+
+  it('refuse un cumul de dépense non numérique au lieu de le convertir', () => {
+    // `Number(null)`, `Number('')` et `Number([])` valent 0 : une conversion
+    // seule laisserait passer un compteur corrompu.
+    assert.ok(
+      !/Number\(corps\.coutEngage\)/.test(source),
+      'le cumul doit être contrôlé par son type, pas converti'
+    );
+    assert.match(source, /typeof corps\.coutEngage === 'number'/);
+  });
+
   it("additionne l'usage de toutes les tentatives", () => {
     // Une relance est un second appel facturé. Un « = » à la place d'un « += »
     // ferait disparaître le coût de la première tentative.
