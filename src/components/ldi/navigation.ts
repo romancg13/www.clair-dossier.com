@@ -19,6 +19,7 @@ export type Vue =
   | 'depot'
   | 'dossiers'
   | 'chronologie'
+  | 'recherche'
   | 'controles'
   | 'strategie'
   | 'documents'
@@ -79,6 +80,12 @@ export const NAVIGATION: SectionNavigation[] = [
         resume: 'Les dix contrôles procéduraux, leur résultat et leur fondement.',
       },
       {
+        vue: 'recherche',
+        intitule: 'Recherche juridique',
+        etat: 'actif',
+        resume: 'Jurisprudence Judilibre sur les articles mis en jeu, via un relais authentifié.',
+      },
+      {
         vue: 'strategie',
         intitule: 'Axes de défense',
         etat: 'actif',
@@ -116,11 +123,6 @@ export const NAVIGATION: SectionNavigation[] = [
  * Listées en clair dans la barre latérale plutôt que passées sous silence.
  */
 export const CAPACITES_PREVUES: { intitule: string; pourquoi: string }[] = [
-  {
-    intitule: 'Recherche juridique',
-    pourquoi:
-      "Le moteur interroge Légifrance et Judilibre, mais uniquement depuis la ligne de commande : le navigateur ne détient aucune clé PISTE.",
-  },
   {
     intitule: 'Personnes & relations',
     pourquoi: "Aucun module ne construit de graphe d'acteurs à ce jour.",

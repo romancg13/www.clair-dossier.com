@@ -12,6 +12,9 @@
  * vérifiable » contre « affirmation décorative ».
  */
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
 
 import {
@@ -84,21 +87,26 @@ describe('périmètre non couvert', () => {
 
 describe('vues couvertes par le rendu', () => {
   /**
-   * Liste tenue à la main, en miroir du `switch` de `LdiAtelier`. Si une vue est
-   * ajoutée au plan sans être rendue, ce test échoue — ce qui est exactement le
-   * moment où l'oubli coûte le moins cher.
+   * Vues réellement rendues, LUES dans la page plutôt que recopiées.
+   *
+   * Une liste tenue à la main dérive dans les deux sens : une vue ajoutée au
+   * plan sans être rendue mène à un écran vide, et une vue rendue sans être au
+   * plan devient inatteignable. Extraire les conditions du composant supprime
+   * les deux dérives au lieu d'en surveiller une seule.
    */
-  const RENDUES: Vue[] = [
-    'tableau-de-bord',
-    'depot',
-    'dossiers',
-    'chronologie',
-    'controles',
-    'strategie',
-    'documents',
-    'confidentialite',
-    'parametres',
-  ];
+  const RENDUES: Vue[] = (() => {
+    const source = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'pages', 'LdiAtelier.tsx'),
+      'utf-8'
+    );
+    return [...source.matchAll(/vue === '([a-z-]+)'/g)].map((m) => m[1] as Vue);
+  })();
+
+  it('lit bien les vues rendues dans la page', () => {
+    // Si l'extraction ne trouve rien, les deux tests suivants passeraient à
+    // vide : ils compareraient une liste absente à une liste non vide.
+    assert.ok(RENDUES.length >= 5, `${RENDUES.length} vue(s) extraite(s) de LdiAtelier.tsx`);
+  });
 
   it('rend toutes les vues déclarées actives', () => {
     for (const e of ENTREES) {
