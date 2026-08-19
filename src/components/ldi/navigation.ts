@@ -16,6 +16,7 @@
 /** Identifiants de vue — repris tels quels dans l'URL (`?vue=`). */
 export type Vue =
   | 'tableau-de-bord'
+  | 'depot'
   | 'dossiers'
   | 'chronologie'
   | 'controles'
@@ -47,6 +48,12 @@ export const NAVIGATION: SectionNavigation[] = [
         intitule: 'Tableau de bord',
         etat: 'actif',
         resume: "Comptes de l'atelier et accès au dossier actif.",
+      },
+      {
+        vue: 'depot',
+        intitule: 'Dépôt de pièces',
+        etat: 'actif',
+        resume: 'Glisser-déposer des fichiers ou un répertoire ; extraction locale et mise en état.',
       },
       {
         vue: 'dossiers',

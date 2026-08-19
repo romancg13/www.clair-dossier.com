@@ -153,33 +153,52 @@ export function natureProposee(
  * La cote est proposée par numérotation d'ordre — `D1`, `D2`… — parce qu'aucune
  * lecture ne permet de deviner la cotation d'un cabinet. Elle est donc
  * `propose` comme le reste, et réversible.
+ *
+ * Les pièces dérivées — typiquement les pièces jointes d'un courriel — reçoivent
+ * une cote fille : `D3.1` sous `D3`. Elles ne peuvent pas être omises : elles
+ * sont comptées dans les compteurs d'ingestion, et un bordereau qui en montrerait
+ * moins que l'écran serait un document faux. La cote fille dit d'où la pièce
+ * vient, ce qu'une numérotation à plat effacerait.
  */
 export function mettreEnEtat(pieces: PieceIngeree[], prefixeCote = 'D'): FicheMiseEnEtat[] {
-  return pieces.map((piece, i) => {
-    const texte = piece.pages.map((p) => p.texte).join('\n');
-    const dates = datesDuTexte(texte);
-    const { nature, justificatif } = natureProposee(piece.nomFichier, texte);
+  const fiches: FicheMiseEnEtat[] = [];
 
-    return {
-      empreinte: piece.empreinte,
-      nomFichier: piece.nomFichier,
-      cote: propose(`${prefixeCote}${i + 1}`),
-      nature: propose(nature, justificatif),
-      // La date la plus ancienne du document : celle de l'acte, le plus souvent.
-      // Proposition, avec son extrait — l'avocat tranche.
-      date: dates.length > 0
-        ? propose(
-            dates.reduce((a, b) => (a.iso <= b.iso ? a : b)).iso,
-            dates.reduce((a, b) => (a.iso <= b.iso ? a : b)).extrait
-          )
-        : propose(null, ''),
-      pages: {
-        total: piece.pages.length,
-        quarantaine: piece.pages.filter((p) => p.quarantaine).length,
-      },
-      texteNonRelu: piece.pages.every((p) => p.methode === 'ocr'),
-    };
-  });
+  const parcourir = (liste: PieceIngeree[], cotePorteuse: string): void => {
+    liste.forEach((piece, i) => {
+      const cote = cotePorteuse === '' ? `${prefixeCote}${i + 1}` : `${cotePorteuse}.${i + 1}`;
+      fiches.push(ficheDe(piece, cote));
+      parcourir(piece.derivees, cote);
+    });
+  };
+
+  parcourir(pieces, '');
+  return fiches;
+}
+
+function ficheDe(piece: PieceIngeree, cote: string): FicheMiseEnEtat {
+  const texte = piece.pages.map((p) => p.texte).join('\n');
+  const dates = datesDuTexte(texte);
+  const { nature, justificatif } = natureProposee(piece.nomFichier, texte);
+
+  return {
+    empreinte: piece.empreinte,
+    nomFichier: piece.nomFichier,
+    cote: propose(cote),
+    nature: propose(nature, justificatif),
+    // La date la plus ancienne du document : celle de l'acte, le plus souvent.
+    // Proposition, avec son extrait — l'avocat tranche.
+    date: dates.length > 0
+      ? propose(
+          dates.reduce((a, b) => (a.iso <= b.iso ? a : b)).iso,
+          dates.reduce((a, b) => (a.iso <= b.iso ? a : b)).extrait
+        )
+      : propose(null, ''),
+    pages: {
+      total: piece.pages.length,
+      quarantaine: piece.pages.filter((p) => p.quarantaine).length,
+    },
+    texteNonRelu: piece.pages.every((p) => p.methode === 'ocr'),
+  };
 }
 
 /** Convertit les fiches en pièces de dossier, prêtes pour l'analyse. */

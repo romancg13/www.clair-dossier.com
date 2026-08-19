@@ -396,6 +396,23 @@ describe('extraction différée (PDF, courriel)', () => {
     assert.match(piece.pages[0].motifQuarantaine, /Courriel reconnu, pas encore lu/);
   });
 
+  it('retient les octets des seuls formats à extraction différée', () => {
+    const { pieces } = ingerer([
+      { nom: 'convocation.eml', chemin: '', octets: EML },
+      fichier('piece.pdf'),
+      fichier('bordereau.csv'),
+    ]);
+
+    const parNom = new Map(pieces.map((p) => [p.nomFichier, p]));
+    assert.ok(parNom.get('convocation.eml')?.octetsSource, 'le courriel doit garder ses octets');
+    assert.ok(parNom.get('piece.pdf')?.octetsSource, 'le PDF doit garder ses octets');
+    // Les octets conservés sont bien ceux du fichier, pas une copie tronquée :
+    // c'est sur eux que le second passage travaille.
+    assert.equal(parNom.get('piece.pdf')?.octetsSource?.length, parNom.get('piece.pdf')?.octets);
+    // Le CSV est déjà lu : garder ses octets retiendrait le dossier en mémoire.
+    assert.equal(parNom.get('bordereau.csv')?.octetsSource, undefined);
+  });
+
   it('ne renvoie l’avocat vers aucune fonction inexistante', () => {
     // Le motif de quarantaine est LU par l'avocat dans l'interface. Y nommer
     // une fonction qui n'a jamais existé lui ferait chercher dans le vide.

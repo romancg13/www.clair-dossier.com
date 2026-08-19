@@ -73,6 +73,13 @@ export type PieceIngeree = {
   derivees: PieceIngeree[];
   /** Ce que l'extracteur n'a pas su faire, dit en clair. */
   avertissements: string[];
+  /**
+   * Octets d'origine, conservés UNIQUEMENT pour les formats dont l'extraction
+   * est différée (PDF, courriel). Ils sont relus par `completerLourds`, puis
+   * n'ont plus d'usage — les garder pour tous les formats retiendrait en
+   * mémoire l'intégralité d'un dossier de procédure sans raison.
+   */
+  octetsSource?: Uint8Array;
 };
 
 export type Quarantaine = {

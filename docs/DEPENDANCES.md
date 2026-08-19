@@ -108,11 +108,72 @@ Le format `.msg` est un conteneur composé OLE, sans rapport avec `.eml`. Il
 demande une bibliothèque dédiée pour un gain limité : la plupart des cabinets
 exportent en `.eml` ou en PDF. Reporté jusqu'à demande réelle.
 
-## Effet sur le démarrage
+## Effet sur le démarrage — mesuré, pas affirmé
 
 Toutes les dépendances d'ingestion sont chargées **paresseusement**, par `import()`
-dynamique, au moment où un fichier du format concerné est déposé. Le bundle
-initial de l'atelier reste inchangé : un avocat qui n'ouvre que le tableau de
-bord ne télécharge ni `pdfjs`, ni `postal-mime`.
+dynamique, au moment où un fichier du format concerné est déposé.
+
+Découpage constaté à la compilation (`npm run build`, 19 août 2026) :
+
+| Fragment | Taille | Gzip | Chargé |
+|---|---:|---:|---|
+| `LdiAtelier` | 131,69 Ko | 41,21 Ko | à l'ouverture de l'atelier |
+| `lourds` | 3,73 Ko | 1,81 Ko | au premier PDF ou courriel déposé |
+| `postal-mime` | 66,35 Ko | 22,64 Ko | au premier courriel |
+| `pdf` | 432,99 Ko | 128,91 Ko | au premier PDF |
+| `pdf.worker.min` | 1 262,40 Ko | — | par le worker, au premier PDF |
+
+Trois vérifications, plutôt qu'une déclaration :
+
+1. `dist/index.html` ne précharge (`modulepreload`) que `index`, `react`,
+   `router`, `motion` et `supabase`. Ni `pdf`, ni `postal-mime`, ni `lourds`.
+2. Le fragment `LdiAtelier` n'importe statiquement que `browser`, `index`,
+   `react` et `router`.
+3. Les seules références à `pdf` et `postal-mime` dans `lourds` sont des
+   `import("./pdf-….js")` et `import("./postal-mime-….js")`.
+
+Un test verrouille les deux conditions qui pourraient défaire ce découpage sans
+qu'on s'en aperçoive : un `import` statique d'une dépendance lourde dans le
+noyau, et un `import` statique de `lourds` lui-même depuis `src/`. Le second a
+été vérifié dans les deux sens — introduit exprès dans `VueDepot.tsx`, il fait
+échouer la suite en nommant le fichier fautif.
 
 C'est la décision d'architecture qui rend le reste acceptable.
+
+
+## Vérification en navigateur réel
+
+Le découpage ci-dessus prouve que les extracteurs ne sont pas dans le bundle
+initial. Il ne prouve pas qu'ils fonctionnent. Cette seconde vérification a
+donc été faite dans Chromium, sur un PDF à couche texte et un courriel `.eml`
+porteur d'une pièce jointe, à travers les deux passes réelles de l'ingestion :
+
+```
+APRES PASSE 1 : {"pieces":2,"pagesTotal":2,"pagesEnQuarantaine":2}
+APRES PASSE 2 : {"pieces":3,"pagesTotal":4,"pagesEnQuarantaine":0}
+
+PIECE piece.pdf [pdf] 2 page(s)
+   p1 (couche-texte, q=false) PROCES-VERBAL D'AUDITION - 04 fevrier 2025 - Brigade…
+   p2 (couche-texte, q=false) Page 2 : declaration recueillie a 14h30, en presence…
+PIECE courriel.eml [courriel] 1 page(s)
+   p1 (mime, q=false) De : Greffe du tribunal <greffe@exemple.fr> …
+   JOINTE bordereau-greffe.csv [csv] : Cote  Nature  Date / D1 Proces-verbal …
+
+FICHE D1   | piece.pdf            | audition | 2025-02-04
+FICHE D2   | courriel.eml         | autre    | 2025-02-03
+FICHE D2.1 | bordereau-greffe.csv | audition | 2025-02-03
+```
+
+Trois faits s'y lisent : la première passe compte les deux pièces sans les lire
+et les met en quarantaine ; la seconde les lit et lève la quarantaine ; la pièce
+jointe devient une pièce du dossier, cotée `D2.1` sous le message dont elle vient.
+
+Les dates proposées sortent du **texte du document**, pas du nom de fichier —
+c'est pourquoi la mise en état s'exécute après la seconde passe et non avant.
+
+*Ce que cette vérification ne couvre pas :* sous Node, `pdfjs-dist` exige sa
+variante `legacy` et échoue autrement sur `DOMMatrix is not defined`. La suite
+de tests ne couvre donc pas le chemin PDF ; elle couvre en revanche le fait
+qu'un document illisible ne fasse pas tomber le lot — vérifié sur un lot de 60
+fichiers, où l'échec PDF est ressorti en quarantaine nommée sans interrompre
+les 59 autres.

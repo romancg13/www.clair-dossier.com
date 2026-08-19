@@ -90,6 +90,7 @@ describe('vues couvertes par le rendu', () => {
    */
   const RENDUES: Vue[] = [
     'tableau-de-bord',
+    'depot',
     'dossiers',
     'chronologie',
     'controles',

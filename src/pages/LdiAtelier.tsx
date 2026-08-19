@@ -14,6 +14,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import { AtelierShell } from '../components/ldi/AtelierShell';
+import { VueDepot } from '../components/ldi/VueDepot';
 import { VueDossiers } from '../components/ldi/VueDossiers';
 import { VueConfidentialite, VueParametres } from '../components/ldi/VueSecurite';
 import { VueTableauDeBord } from '../components/ldi/VueTableauDeBord';
@@ -84,6 +85,19 @@ export function LdiAtelier() {
     [params, setParams]
   );
 
+  /** Ajoute un dossier à l'atelier, en remplaçant un homonyme. */
+  function ajouterDossier(nouveau: Dossier) {
+    setDossiers((liste) => {
+      // Un dossier rechargé remplace le précédent plutôt que de le doubler :
+      // deux fiches de même référence seraient impossibles à départager.
+      const sansDoublon = liste.filter((d) => d.reference !== nouveau.reference);
+      // Les dossiers fictifs s'effacent dès qu'un dossier réel arrive.
+      return [...sansDoublon.filter((d) => !estDemonstration(d.reference)), nouveau];
+    });
+    setActif(nouveau.reference);
+    setErreurImport(null);
+  }
+
   function importer(json: string) {
     let parse: unknown;
     try {
@@ -99,18 +113,7 @@ export function LdiAtelier() {
       return;
     }
 
-    const nouveau = validation.dossier;
-    setErreurImport(null);
-    setDossiers((liste) => {
-      // Un dossier rechargé remplace le précédent plutôt que de le doubler :
-      // deux fiches portant la même référence seraient impossibles à départager.
-      const sansDoublon = liste.filter((d) => d.reference !== nouveau.reference);
-      // Les dossiers fictifs s'effacent dès qu'un dossier réel arrive : ils ne
-      // sont là que pour peupler un atelier vide.
-      const reels = sansDoublon.filter((d) => !estDemonstration(d.reference));
-      return [...reels, nouveau];
-    });
-    setActif(nouveau.reference);
+    ajouterDossier(validation.dossier);
     allerA('controles');
   }
 
@@ -147,6 +150,16 @@ export function LdiAtelier() {
             actif={actif}
             onActif={setActif}
             onVue={allerA}
+          />
+        )}
+
+        {vue === 'depot' && (
+          <VueDepot
+            referenceProposee={`CAB-${new Date().getFullYear()}-001`}
+            onDossier={(nouveau) => {
+              ajouterDossier(nouveau);
+              allerA('dossiers');
+            }}
           />
         )}
 

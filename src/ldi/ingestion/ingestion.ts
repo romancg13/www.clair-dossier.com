@@ -352,6 +352,9 @@ function base(
     pages,
     derivees: [],
     avertissements: pages.filter((p) => p.quarantaine).map((p) => p.motifQuarantaine),
+    // Seuls les formats à extraction différée conservent leurs octets : les
+    // garder pour tous retiendrait tout le dossier en mémoire.
+    ...(format === 'pdf' || format === 'courriel' ? { octetsSource: fichier.octets } : {}),
   };
 }
 
