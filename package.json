@@ -22,6 +22,8 @@
     "@supabase/supabase-js": "^2.108.2",
     "fflate": "^0.8.3",
     "motion": "^11.15.0",
+    "pdfjs-dist": "^6.2.108",
+    "postal-mime": "^3.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.1.0"
