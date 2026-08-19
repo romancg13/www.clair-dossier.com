@@ -125,6 +125,8 @@ export function VueParametres({
   conservation,
   coffreOuvert,
   actionsCoffre,
+  niveau1Actif,
+  onNiveau1,
   statistiquesCache,
   onViderCache,
   nombreDossiers,
@@ -132,6 +134,8 @@ export function VueParametres({
   conservation: EtatConservation;
   coffreOuvert: boolean;
   actionsCoffre: ActionsCoffre;
+  niveau1Actif: boolean;
+  onNiveau1: (actif: boolean) => void;
   statistiquesCache: { entrees: number; succes: number; defauts: number };
   onViderCache: () => void;
   nombreDossiers: number;
@@ -146,6 +150,32 @@ export function VueParametres({
           ouvert={coffreOuvert}
           actions={actionsCoffre}
         />
+      </section>
+
+      <section>
+        <TitreSection surtitre="Ingestion" titre="Niveau d’extraction (décision D-1)" />
+
+        <div className="rounded-xl border hairline bg-white p-6 shadow-card">
+          <label className="flex items-start gap-3">
+            <input
+              type="checkbox"
+              checked={niveau1Actif}
+              onChange={(e) => onNiveau1(e.target.checked)}
+              className="mt-1 h-4 w-4 shrink-0 accent-gold-500"
+            />
+            <span>
+              <span className="block text-sm font-medium text-navy-900">
+                Niveau 1 — extraire les documents à structure (PDF natif, bureautique, courriels, archives)
+              </span>
+              <span className="mt-1 block text-xs leading-relaxed text-slate-500">
+                Désactivé par défaut : seuls le texte collé et les fichiers texte brut
+                (.txt, .md, .csv, .json) sont lus. L’extraction du niveau 1 reste locale et
+                sans OCR ; une page numérisée sans couche texte part en quarantaine, comptée
+                et nommée — jamais devinée. Le réglage ne survit pas à la session.
+              </span>
+            </span>
+          </label>
+        </div>
       </section>
 
       <section>

@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 
 import { LIBELLES_FORMAT } from '../../ldi/ingestion/formats';
-import { ingerer } from '../../ldi/ingestion/ingestion';
+import { AVERTISSEMENT_NIVEAU_1, ingererSelonNiveau } from '../../ldi/ingestion/niveaux';
 import { bordereau, mettreEnEtat, versPieces, type FicheMiseEnEtat } from '../../ldi/ingestion/mise-en-etat';
 import { BORNES_DEFAUT, type FichierEntrant, type PieceIngeree, type ResultatIngestion } from '../../ldi/ingestion/types';
 import type { Dossier } from '../../ldi/types';
@@ -33,9 +33,12 @@ type Etat =
 export function VueDepot({
   onDossier,
   referenceProposee,
+  niveau1Actif,
 }: {
   onDossier: (dossier: Dossier) => void;
   referenceProposee: string;
+  /** Interrupteur D-1 : extraction des formats à structure. FAUX par défaut. */
+  niveau1Actif: boolean;
 }) {
   const [etat, setEtat] = useState<Etat>({ statut: 'inactif' });
   const [survol, setSurvol] = useState(false);
@@ -75,7 +78,7 @@ export function VueDepot({
         });
       }
 
-      const resultat = ingerer(entrants, BORNES_DEFAUT);
+      const resultat = ingererSelonNiveau(entrants, { niveau1Actif, bornes: BORNES_DEFAUT });
 
       // Second passage. Le module n'est chargé que s'il y a effectivement de
       // quoi le faire travailler : un cabinet qui ne dépose que des documents
@@ -131,9 +134,16 @@ export function VueDepot({
             Déposez vos fichiers ici
           </p>
           <p className="mx-auto mt-2 max-w-lg text-sm leading-relaxed text-slate-600">
-            PDF, Word, tableurs, CSV, courriels, archives ZIP — ou un répertoire entier.
+            {niveau1Actif
+              ? 'PDF natifs, Word, tableurs, CSV, courriels, archives ZIP — ou un répertoire entier.'
+              : 'Texte brut : .txt, .md, .csv, .json — ou du texte collé.'}{' '}
             L’extraction s’exécute <strong>dans ce navigateur</strong> : aucun octet n’est transmis.
           </p>
+          {niveau1Actif && (
+            <p className="mx-auto mt-2 max-w-lg text-xs leading-relaxed text-gold-700">
+              {AVERTISSEMENT_NIVEAU_1}
+            </p>
+          )}
 
           <div className="mt-5 flex flex-wrap justify-center gap-3">
             <button

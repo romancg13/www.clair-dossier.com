@@ -54,6 +54,10 @@ export function LdiAtelier() {
   const [actif, setActif] = useState<string | null>(() => DOSSIERS_DEMONSTRATION[0]?.reference ?? null);
   const [erreurImport, setErreurImport] = useState<string | null>(null);
   const [conservation, setConservation] = useState<EtatConservation>(() => etatConservation());
+  // Interrupteur D-1 (extraction des formats à structure). Faux par défaut,
+  // et non conservé : un réglage qui élargit ce que l'outil lit se réactive
+  // consciemment à chaque session.
+  const [niveau1Actif, setNiveau1Actif] = useState(false);
   // Force un nouveau rendu après vidage du cache, dont les compteurs sont
   // internes et ne déclenchent donc rien par eux-mêmes.
   const [revision, setRevision] = useState(0);
@@ -157,6 +161,7 @@ export function LdiAtelier() {
         {vue === 'depot' && (
           <VueDepot
             referenceProposee={`CAB-${new Date().getFullYear()}-001`}
+            niveau1Actif={niveau1Actif}
             onDossier={(nouveau) => {
               ajouterDossier(nouveau);
               allerA('dossiers');
@@ -227,6 +232,8 @@ export function LdiAtelier() {
                 setConservation(etatConservation());
               },
             }}
+            niveau1Actif={niveau1Actif}
+            onNiveau1={setNiveau1Actif}
             statistiquesCache={cache.statistiques()}
             onViderCache={() => {
               cache.vider();

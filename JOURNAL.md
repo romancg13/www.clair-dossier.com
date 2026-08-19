@@ -27,3 +27,15 @@
   premier rempart reste les instructions de passe.
 - **Reste ouvert** : la vérification P6 des références s'étoffera quand le
   pack sources existera (étape 15).
+
+## Étape 4 — M10 / P0 : ingestion par niveaux, fragments, index, B17
+- **Fait** : `niveaux.ts` (interrupteur D-1, refus nommés, texte collé),
+  `fragments.ts` (texte source intact à l'octet près, cote proposée jamais
+  imposée, index plein texte local avec positions), `instructions-cachees.ts`
+  (B17 : détection citée et localisée, jamais exécutée ni supprimée),
+  `p0.ts` (l'ingestion comme passe, avec sa déclaration). Interrupteur branché
+  dans Paramètres, non conservé entre sessions. 15 tests.
+- **Volontairement écarté** : supprimer les extracteurs bureautiques — ils
+  rejoignent le PDF derrière l'interrupteur (voir DECISIONS.md, étape 1).
+- **Reste ouvert** : la vue Documents (alertes B17 à l'écran) arrive avec les
+  vues, étape 12.
