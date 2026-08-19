@@ -67,9 +67,13 @@ type Contexte = {
 /**
  * Ingère un lot de fichiers.
  *
- * Synchrone et sans réseau pour tout ce qui n'est pas PDF : les formats
- * bureautiques et textuels sont traités ici même. Le PDF, qui exige une
- * dépendance lourde, est traité par `ingererPdf` chargé paresseusement.
+ * Synchrone et sans dépendance lourde : les formats bureautiques et textuels
+ * sont lus ici même. Le PDF et le courriel, dont les extracteurs pèsent
+ * ensemble près de cinq cents kilooctets (voir `docs/DEPENDANCES.md`), en
+ * sortent NON LUS mais reconnus, comptés, et leurs octets conservés ;
+ * `completerLourds` les reprend ensuite en chargeant ces extracteurs à la
+ * demande. Ce module reste donc utilisable en Node et en ligne de commande
+ * sans rien tirer de lourd — et c'est aussi ce qui le rend testable.
  */
 export function ingerer(
   fichiers: FichierEntrant[],
@@ -286,7 +290,11 @@ function extraire(
           "Image sans couche texte : la reconnaissance optique n'est pas installée (voir docs/DEPENDANCES.md). La pièce est conservée, son contenu n'est pas lu."
         ),
       ]);
+    // PDF et courriel sortent d'ici NON LUS, mais reconnus et comptés. Leur
+    // format est conservé : c'est lui que `completerLourds` interroge pour
+    // savoir quoi reprendre. Les rendre `inconnu` les perdrait en silence.
     case 'pdf':
+    case 'courriel':
       return base(fichier, format, empreinteFichier, [
         page(
           1,
@@ -294,7 +302,9 @@ function extraire(
           'aucune',
           0,
           seuil,
-          "PDF non traité par l'ingestion synchrone : utiliser `ingererPdf`, qui charge son extracteur à la demande."
+          format === 'pdf'
+            ? "PDF reconnu, pas encore lu : son extraction demande une dépendance chargée à la demande. La pièce est comptée ; son texte arrive après le second passage."
+            : "Courriel reconnu, pas encore lu : son extraction demande une dépendance chargée à la demande. La pièce est comptée ; en-têtes, corps et pièces jointes arrivent après le second passage."
         ),
       ]);
     default:

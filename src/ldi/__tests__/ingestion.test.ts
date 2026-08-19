@@ -365,3 +365,45 @@ describe('bordereau', () => {
     assert.equal(rapport.dossier.reference, 'ING-001');
   });
 });
+
+// ── Formats à extraction différée ─────────────────────────────────────────
+
+describe('extraction différée (PDF, courriel)', () => {
+  const EML = octetsDe(
+    [
+      'From: Greffe <greffe@exemple.fr>',
+      'To: Maitre <avocat@exemple.fr>',
+      'Subject: Convocation',
+      'Date: Mon, 3 Feb 2025 09:00:00 +0100',
+      'Content-Type: text/plain; charset=utf-8',
+      '',
+      'Vous êtes convoqué le 12 mars 2025.',
+      '',
+    ].join('\r\n')
+  );
+
+  it('conserve le format « courriel » jusqu’à l’extraction', () => {
+    // Rendu « inconnu » par l'ingestion, un .eml n'est jamais repris par le
+    // second passage, qui filtre sur le format : le courriel serait perdu en
+    // silence, sous une étiquette « Format non reconnu » fausse.
+    const [piece] = ingerer([{ nom: 'convocation.eml', chemin: '', octets: EML }]).pieces;
+
+    assert.equal(piece.format, 'courriel');
+    assert.equal(piece.pages[0].quarantaine, true);
+    assert.match(piece.pages[0].motifQuarantaine, /Courriel reconnu, pas encore lu/);
+  });
+
+  it('ne renvoie l’avocat vers aucune fonction inexistante', () => {
+    // Le motif de quarantaine est LU par l'avocat dans l'interface. Y nommer
+    // une fonction qui n'a jamais existé lui ferait chercher dans le vide.
+    const source = readFileSync('src/ldi/ingestion/ingestion.ts', 'utf-8');
+    assert.ok(!source.includes('ingererPdf'), 'référence à `ingererPdf`, fonction inexistante');
+
+    const [pdf] = ingerer([fichier('piece.pdf')]).pieces;
+    assert.equal(pdf.format, 'pdf');
+    assert.equal(pdf.pages[0].quarantaine, true);
+    // Le motif dit que la pièce EXISTE et n'est pas encore lue — un « format
+    // non reconnu » ferait croire à l'avocat qu'il a déposé un fichier abîmé.
+    assert.match(pdf.pages[0].motifQuarantaine, /PDF reconnu, pas encore lu/);
+  });
+});
