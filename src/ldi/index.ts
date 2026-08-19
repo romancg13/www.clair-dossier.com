@@ -22,7 +22,6 @@ export { sourcerRapport, referencesDuRapport, type Sourcage } from './sourcage';
 export { journaliser, rejouer, empreinte, type Journal, type ControleRejeu } from './journal';
 export { analyserDossier, parseHorodatage, trierChronologie, SEUILS } from './modules/chronologie';
 export { detecterIrregularites } from './modules/nullites';
-export { analyserPiece, analyserPieces, SEUILS_DETECTION } from './modules/detection-ia';
 export { construireStrategie, REGLES_SOLIDITE } from './modules/strategie';
 export { genererDocument } from './modules/documents';
 export {

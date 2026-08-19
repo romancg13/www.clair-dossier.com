@@ -69,8 +69,8 @@ describe('périmètre non couvert', () => {
   it("maintient l'écart assumé sur la détection d'IA", () => {
     // Ce refus est un choix documenté, pas un manque de temps : le formuler
     // comme un simple « à venir » le rendrait révocable par inadvertance.
-    const audit = CAPACITES_PREVUES.find((c) => /audit ia/i.test(c.intitule));
-    assert.ok(audit, "l'écart sur l'audit IA doit rester visible");
+    const audit = CAPACITES_PREVUES.find((c) => /textes générés/i.test(c.intitule));
+    assert.ok(audit, "l'écart sur la détection de textes générés doit rester visible (B5)");
     assert.match(audit.pourquoi, /aucun outil ne détermine/i);
   });
 

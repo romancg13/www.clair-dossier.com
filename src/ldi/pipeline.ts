@@ -9,7 +9,6 @@
  * générative, elle, reste en aval et ne recalcule rien.
  */
 import { analyserDossier } from './modules/chronologie';
-import { analyserPieces } from './modules/detection-ia';
 import { detecterIrregularites } from './modules/nullites';
 import { construireStrategie } from './modules/strategie';
 import { celluleMarkdown } from './markdown';
@@ -31,17 +30,11 @@ const LIMITES_STRUCTURELLES = [
 export function analyser(dossier: Dossier): RapportLdi {
   const analyse = analyserDossier(dossier);
   const nullites = detecterIrregularites(dossier, analyse);
-  const analysesTextuelles = analyserPieces(dossier.pieces);
-  const strategie = construireStrategie(analyse, nullites, analysesTextuelles);
+  const strategie = construireStrategie(analyse, nullites);
 
   const limites = [...LIMITES_STRUCTURELLES];
   if (dossier.pieces.length === 0) {
     limites.unshift("Aucune pièce n'a été versée : rien n'est établi, tous les constats sont conditionnels.");
-  }
-  if (analysesTextuelles.every((a) => !a.fiable) && analysesTextuelles.length > 0) {
-    limites.push(
-      "Aucune pièce ne comporte assez de texte pour que les mesures du module 4 soient exploitables."
-    );
   }
 
   return {
@@ -49,7 +42,6 @@ export function analyser(dossier: Dossier): RapportLdi {
     genereLe: new Date().toISOString(),
     dossier: analyse,
     nullites,
-    analysesTextuelles,
     strategie,
     limites,
   };
@@ -60,7 +52,7 @@ export function analyser(dossier: Dossier): RapportLdi {
  * contexte par un modèle de langage.
  */
 export function rendreMarkdown(rapport: RapportLdi): string {
-  const { dossier, nullites, strategie, analysesTextuelles } = rapport;
+  const { dossier, nullites, strategie } = rapport;
 
   const sections: string[] = [];
 
@@ -97,20 +89,7 @@ ${nullites.points
 
 Rappel du régime : ${nullites.regimeNullite.map((r) => r.reference).join(', ')} — une irrégularité ne devient une nullité qu'à la double condition d'une formalité substantielle et d'un grief.`);
 
-  if (analysesTextuelles.length > 0) {
-    sections.push(`## 3. Signaux textuels sur les pièces
-
-${analysesTextuelles
-  .map(
-    (a) =>
-      `**Pièce ${a.pieceId}** (${a.motsAnalyses} mots) — ${a.conclusion}\n> ${a.recommandation}`
-  )
-  .join('\n\n')}
-
-*Ces mesures ne déterminent pas l'auteur d'un texte et ne sont pas opposables comme preuve.*`);
-  }
-
-  sections.push(`## 4. Axes de défense
+  sections.push(`## 3. Axes de défense
 
 ${
   strategie.axes.length === 0
@@ -135,19 +114,19 @@ ${a.actes.map((x) => `- ${x}`).join('\n')}`
         .join('\n\n')
 }`);
 
-  sections.push(`## 5. Risques
+  sections.push(`## 4. Risques
 
 ${strategie.risques.map((r) => `- ${r}`).join('\n')}
 
-## 6. Zones d'incertitude
+## 5. Zones d'incertitude
 
 ${strategie.zonesIncertitude.map((z) => `- ${z}`).join('\n') || '- Néant.'}
 
-## 7. Échéances
+## 6. Échéances
 
 ${strategie.echeances.map((e) => `- ${e}`).join('\n')}
 
-## 8. Limites de ce rapport
+## 7. Limites de ce rapport
 
 ${rapport.limites.map((l) => `- ${l}`).join('\n')}`);
 

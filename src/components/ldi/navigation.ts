@@ -19,7 +19,6 @@ export type Vue =
   | 'depot'
   | 'dossiers'
   | 'chronologie'
-  | 'recherche'
   | 'controles'
   | 'strategie'
   | 'documents'
@@ -80,12 +79,6 @@ export const NAVIGATION: SectionNavigation[] = [
         resume: 'Les dix contrôles procéduraux, leur résultat et leur fondement.',
       },
       {
-        vue: 'recherche',
-        intitule: 'Recherche juridique',
-        etat: 'actif',
-        resume: 'Jurisprudence Judilibre sur les articles mis en jeu, via un relais authentifié.',
-      },
-      {
         vue: 'strategie',
         intitule: 'Axes de défense',
         etat: 'actif',
@@ -124,6 +117,11 @@ export const NAVIGATION: SectionNavigation[] = [
  */
 export const CAPACITES_PREVUES: { intitule: string; pourquoi: string }[] = [
   {
+    intitule: 'Recherche juridique en direct',
+    pourquoi:
+      "Les API officielles (Judilibre, Légifrance) ne sont interrogeables que depuis la ligne de commande : l'atelier ne détient aucun code d'appel réseau. Les sources arrivent par un pack produit par la CLI, avec leurs horodatages.",
+  },
+  {
     intitule: 'Personnes & relations',
     pourquoi: "Aucun module ne construit de graphe d'acteurs à ce jour.",
   },
@@ -132,9 +130,9 @@ export const CAPACITES_PREVUES: { intitule: string; pourquoi: string }[] = [
     pourquoi: "La traçabilité des scellés est contrôlée, mais aucune vue dédiée n'existe.",
   },
   {
-    intitule: 'Audit IA adverse',
+    intitule: 'Détection de textes générés',
     pourquoi:
-      "Écarté délibérément : aucun outil ne détermine si un texte a été généré. Produire un tel score reviendrait à fournir une accusation non étayée.",
+      "Écartée par principe (règle B5) : aucun outil ne détermine si un texte a été généré, et produire un tel score reviendrait à fournir une accusation non étayée.",
   },
 ];
 

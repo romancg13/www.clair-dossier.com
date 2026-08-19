@@ -20,7 +20,6 @@
 import { CPP_171, CPP_173, CPP_174, CPP_802 } from '../corpus/references';
 import type {
   AnalyseDossier,
-  AnalyseTextuelle,
   AxeDefense,
   NoteStrategique,
   PointControle,
@@ -100,42 +99,17 @@ function axeForceProbante(analyse: AnalyseDossier): AxeDefense | null {
   };
 }
 
-function axeExpertise(analyses: AnalyseTextuelle[]): AxeDefense | null {
-  const suspectes = analyses.filter((a) => a.fiable && a.signauxDeclenches >= 3);
-  if (suspectes.length === 0) return null;
-
-  return {
-    intitule: 'Contestation documentaire des pièces rédigées',
-    solidite: 'exploratoire',
-    justificationSolidite: REGLES_SOLIDITE.exploratoire,
-    fondements: [],
-    appuis: suspectes.map(
-      (a) => `Pièce ${a.pieceId} : ${a.signauxDeclenches} signaux relevés sur ${a.signaux.length}.`
-    ),
-    contreArguments: [
-      "Les mesures statistiques employées ne prouvent rien sur l'auteur d'un texte et ne sont pas opposables comme telles. Fonder la demande sur le besoin de vérification documentaire, jamais sur une prétendue « détection d'IA » : l'argument se retournerait.",
-    ],
-    actes: [
-      "Demander le fichier natif et ses métadonnées (auteur, logiciel, dates de création et de modification).",
-      "Vérifier la qualification du rédacteur et le respect du contradictoire dans les opérations d'expertise.",
-      'Contester le rapport sur sa méthode et ses conclusions plutôt que sur son style.',
-    ],
-  };
-}
-
 // ---------------------------------------------------------------------------
 // Entrée du module
 // ---------------------------------------------------------------------------
 
 export function construireStrategie(
   analyse: AnalyseDossier,
-  nullites: RapportNullites,
-  analysesTextuelles: AnalyseTextuelle[] = []
+  nullites: RapportNullites
 ): NoteStrategique {
   const axes: AxeDefense[] = [
     ...nullites.anomalies.map(axeDepuisAnomalie),
     axeForceProbante(analyse),
-    axeExpertise(analysesTextuelles),
     axeDepuisNonEtabli(nullites.nonEtablis),
   ].filter((a): a is AxeDefense => a !== null);
 

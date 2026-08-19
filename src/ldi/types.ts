@@ -237,40 +237,7 @@ export type RapportNullites = {
 };
 
 // ---------------------------------------------------------------------------
-// Module 4 — Signaux de rédaction automatisée
-// ---------------------------------------------------------------------------
-
-/**
- * Un signal statistique. Volontairement nommé « signal » et non « détection » :
- * aucune de ces mesures ne prouve qu'un texte a été généré par une IA.
- */
-export type SignalTextuel = {
-  id: string;
-  intitule: string;
-  /** Valeur mesurée, brute. */
-  valeur: number;
-  /** Seuil au-delà (ou en deçà) duquel le signal est relevé. */
-  seuil: number;
-  declenche: boolean;
-  /** Ce que la mesure veut dire, et ce qu'elle ne veut pas dire. */
-  interpretation: string;
-};
-
-export type AnalyseTextuelle = {
-  pieceId: string;
-  /** Nombre de mots analysés — sous 300 mots, les mesures ne sont pas fiables. */
-  motsAnalyses: number;
-  fiable: boolean;
-  signaux: SignalTextuel[];
-  signauxDeclenches: number;
-  /** Conclusion prudente, en clair, destinée à l'avocat. */
-  conclusion: string;
-  /** Suite à donner (contre-expertise, demande de pièces natives…). */
-  recommandation: string;
-};
-
-// ---------------------------------------------------------------------------
-// Module 5 — Stratégie
+// Module 4 — Stratégie
 // ---------------------------------------------------------------------------
 
 /**
@@ -341,7 +308,6 @@ export type RapportLdi = {
   genereLe: string;
   dossier: AnalyseDossier;
   nullites: RapportNullites;
-  analysesTextuelles: AnalyseTextuelle[];
   strategie: NoteStrategique;
   /** Limites applicables à ce rapport précis. */
   limites: string[];

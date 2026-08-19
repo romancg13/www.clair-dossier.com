@@ -2,41 +2,27 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { alertesResiduelles, minimiser } from '../../ldi/confidentialite';
 import { rendreMarkdown } from '../../ldi/pipeline';
-import { referencesDuRapport } from '../../ldi/sourcage';
 import type { EtatConservation } from '../../ldi/stockage';
 import type { RapportLdi } from '../../ldi/types';
-import { isSupabaseConfigured, supabase } from '../../lib/supabase';
 import { Reserve, TitreSection, Vide } from './Indicateurs';
 import { PanneauCoffre, type ActionsCoffre } from './PanneauCoffre';
 
-type EtatRedigee =
-  | { statut: 'inactif' }
-  | { statut: 'encours' }
-  | { statut: 'erreur'; message: string }
-  | {
-      statut: 'ok';
-      texte: string;
-      alertes: string[];
-      cout: { appel: number; cumule: number } | null;
-      avertissement: string;
-    };
-
 /**
- * Minimisation puis, éventuellement, analyse rédigée.
+ * Minimisation du rapport — et rien d'autre.
  *
- * L'ordre de l'écran suit l'ordre du risque : on voit d'abord ce qui partirait,
- * ensuite seulement le bouton qui l'envoie. L'inverse inviterait à cliquer
- * avant d'avoir lu.
+ * ┌─ CET ÉCRAN N'ENVOIE RIEN ───────────────────────────────────────────────┐
+ * │ L'atelier ne détient aucun code d'appel réseau (B8) et le mode distant   │
+ * │ n'est pas atteignable depuis l'interface (D-3). Ce que cet écran         │
+ * │ produit, c'est le rapport MINIMISÉ : pseudonymisé, contrôlé, prêt à être │
+ * │ copié vers la CLI si — et seulement si — l'avocat décide d'y recourir.   │
+ * │                                                                          │
+ * │ L'ordre de l'écran suit l'ordre du risque : on voit d'abord ce qui       │
+ * │ sortirait du poste, jamais l'inverse.                                    │
+ * └──────────────────────────────────────────────────────────────────────────┘
  */
 export function VueConfidentialite({ rapport }: { rapport: RapportLdi | null }) {
   const [noms, setNoms] = useState('');
-  const [question, setQuestion] = useState('');
-  const [redigee, setRedigee] = useState<EtatRedigee>({ statut: 'inactif' });
-  const [coutEngage, setCoutEngage] = useState(0);
-  // Surcharge délibérée des alertes résiduelles. Se remet à faux dès que le
-  // texte change : une confirmation donnée sur un rapport ne vaut pas pour le
-  // suivant.
-  const [alertesAssumees, setAlertesAssumees] = useState(false);
+  const [copie, setCopie] = useState(false);
 
   const markdown = useMemo(() => (rapport ? rendreMarkdown(rapport) : ''), [rapport]);
 
@@ -47,8 +33,8 @@ export function VueConfidentialite({ rapport }: { rapport: RapportLdi | null }) 
     return { texte, alertes: alertesResiduelles(texte) };
   }, [markdown, noms]);
 
-  // Le rapport a changé : toute confirmation antérieure devient caduque.
-  useEffect(() => setAlertesAssumees(false), [minimise?.texte]);
+  // Le rapport a changé : l'accusé de copie précédent devient caduc.
+  useEffect(() => setCopie(false), [minimise?.texte]);
 
   if (!rapport || !minimise) {
     return (
@@ -59,66 +45,10 @@ export function VueConfidentialite({ rapport }: { rapport: RapportLdi | null }) 
     );
   }
 
-  async function demander() {
-    if (!minimise || !question.trim()) return;
-    setRedigee({ statut: 'encours' });
-
-    try {
-      const { data, error } = await supabase.functions.invoke('ldi-analyze', {
-        body: {
-          rapport: minimise.texte,
-          question: question.trim(),
-          referencesAutorisees: rapport ? referencesDuRapport(rapport) : [],
-          // Aucun pourvoi n'est citable depuis le navigateur : il n'y détient
-          // aucune clé PISTE, donc aucune décision n'a pu être obtenue.
-          pourvoisAutorises: [],
-          coutEngage,
-        },
-      });
-
-      if (error) {
-        setRedigee({ statut: 'erreur', message: error.message });
-        return;
-      }
-
-      const charge = data as {
-        analyse?: string;
-        avertissement?: string;
-        error?: string;
-        verification?: { conforme: boolean; rapport: string };
-        structure?: { conforme: boolean; rapport: string };
-        cout?: { dollars: number; cumule: number; plafondDepasse: boolean; avertissement: string };
-      };
-
-      if (charge.error || !charge.analyse) {
-        setRedigee({ statut: 'erreur', message: charge.error ?? 'Réponse vide.' });
-        return;
-      }
-
-      const alertes = [
-        charge.verification && !charge.verification.conforme ? charge.verification.rapport : '',
-        charge.structure && !charge.structure.conforme ? charge.structure.rapport : '',
-        charge.cout?.plafondDepasse ? charge.cout.avertissement : '',
-      ].filter(Boolean);
-
-      if (typeof charge.cout?.cumule === 'number') setCoutEngage(charge.cout.cumule);
-
-      setRedigee({
-        statut: 'ok',
-        texte: charge.analyse,
-        alertes,
-        cout: charge.cout ? { appel: charge.cout.dollars, cumule: charge.cout.cumule } : null,
-        avertissement: charge.avertissement ?? '',
-      });
-    } catch (e) {
-      setRedigee({ statut: 'erreur', message: (e as Error).message });
-    }
-  }
-
   return (
     <div className="space-y-8">
       <section>
-        <TitreSection surtitre="Avant tout envoi" titre="Ce qui partirait" />
+        <TitreSection surtitre="Avant toute sortie du poste" titre="Ce qui sortirait" />
 
         <div className="rounded-xl border hairline bg-white p-6 shadow-card">
           <label htmlFor="noms" className="block font-mono text-[0.62rem] uppercase tracking-[0.18em] text-slate-500">
@@ -157,110 +87,32 @@ export function VueConfidentialite({ rapport }: { rapport: RapportLdi | null }) 
           <pre className="mt-2 max-h-72 overflow-auto whitespace-pre-wrap rounded-lg bg-cream-50 p-4 font-mono text-[0.72rem] leading-relaxed text-navy-900">
             {minimise.texte}
           </pre>
+
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                void navigator.clipboard?.writeText(minimise.texte);
+                setCopie(true);
+              }}
+              className="rounded-lg border hairline bg-white px-4 py-2 text-sm text-navy-900 transition-colors hover:border-gold-500"
+            >
+              {copie ? 'Rapport minimisé copié' : 'Copier le rapport minimisé'}
+            </button>
+            <p className="text-xs text-slate-500">
+              La copie reste sur ce poste : c’est un presse-papiers, pas un envoi.
+            </p>
+          </div>
         </div>
-      </section>
 
-      <section>
-        <TitreSection surtitre="Analyse rédigée" titre="Demander une rédaction" />
-
-        <div className="rounded-xl border hairline bg-white p-6 shadow-card">
+        <div className="mt-4">
           <Reserve>
-            C’est la <strong>seule</strong> action de cet outil qui transmet quoi que ce soit. Ce
-            qui part est le rapport minimisé ci-dessus, jamais les pièces. La réponse est contrôlée
-            côté serveur — citations et structure — avant de vous être rendue.
+            <strong>Cet atelier n’envoie rien.</strong> Il ne contient aucun code d’appel réseau,
+            même désactivé. Si une analyse rédigée par un modèle est souhaitée, elle passe par la
+            ligne de commande — moteur local par défaut, mode distant construit mais désactivé —
+            et ce qui y entre est ce rapport minimisé, jamais les pièces. Voir le README, section
+            « moteur d’inférence ».
           </Reserve>
-
-          <label htmlFor="question" className="mt-4 block text-sm font-medium text-navy-900">
-            Question
-          </label>
-          <textarea
-            id="question"
-            value={question}
-            onChange={(e) => setQuestion(e.target.value)}
-            rows={3}
-            placeholder="Quels moyens de nullité peuvent être soulevés, et dans quel ordre ?"
-            className="mt-2 w-full rounded-lg border hairline bg-cream-50 p-3 text-sm text-navy-900 focus:border-gold-500 focus:outline-none"
-          />
-
-          {minimise.alertes.length > 0 && (
-            <label className="mt-4 flex items-start gap-3 rounded-lg border border-red-300 bg-red-50 p-3">
-              <input
-                type="checkbox"
-                checked={alertesAssumees}
-                onChange={(e) => setAlertesAssumees(e.target.checked)}
-                className="mt-0.5 h-4 w-4 shrink-0 accent-red-700"
-              />
-              <span className="text-xs leading-relaxed text-red-900">
-                J’ai lu les {minimise.alertes.length} alerte(s) ci-dessus et je confirme que ce
-                rapport peut être transmis. <strong>Un envoi est irréversible</strong> : ce qui
-                part ne peut pas être rappelé.
-              </span>
-            </label>
-          )}
-
-          <button
-            type="button"
-            onClick={() => void demander()}
-            /*
-              Blocage tant que les alertes ne sont pas assumées. Ni laisser-passer
-              — l'écran signalait un risque de ré-identification et laissait
-              cliquer — ni blocage sec : sans issue, l'avocat pressé exporterait
-              le rapport pour le coller ailleurs, hors de tout contrôle. Une
-              surcharge explicite laisse la trace du geste.
-            */
-            disabled={
-              !isSupabaseConfigured ||
-              !question.trim() ||
-              redigee.statut === 'encours' ||
-              (minimise.alertes.length > 0 && !alertesAssumees)
-            }
-            className="mt-4 rounded-lg bg-navy-900 px-5 py-2.5 text-sm text-cream-50 transition-colors hover:bg-navy-800 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            {redigee.statut === 'encours' ? 'Analyse en cours…' : 'Demander une analyse'}
-          </button>
-
-          {!isSupabaseConfigured && (
-            <p className="mt-3 text-xs text-slate-500">
-              Service non configuré dans cette build : l’analyse déterministe reste disponible, la
-              rédaction non.
-            </p>
-          )}
-
-          {redigee.statut === 'erreur' && (
-            <p role="alert" className="mt-4 text-sm text-red-800">
-              {redigee.message}
-            </p>
-          )}
-
-          {redigee.statut === 'ok' && (
-            <div className="mt-5">
-              {redigee.alertes.length > 0 && (
-                <ul role="alert" className="mb-3 space-y-2">
-                  {redigee.alertes.map((a) => (
-                    <li
-                      key={a}
-                      className="rounded-lg border border-red-300 bg-red-50 p-3 text-xs leading-relaxed text-red-900"
-                    >
-                      ⚠ {a}
-                    </li>
-                  ))}
-                </ul>
-              )}
-              <p className="rounded-lg border border-gold-500/40 bg-gold-500/10 p-3 text-xs leading-relaxed text-navy-900">
-                {redigee.avertissement}
-              </p>
-              <pre className="mt-3 max-h-[32rem] overflow-auto whitespace-pre-wrap rounded-lg bg-cream-50 p-4 font-sans text-sm leading-relaxed text-navy-900">
-                {redigee.texte}
-              </pre>
-              {redigee.cout && (
-                <p className="mt-2 font-mono text-[0.68rem] text-slate-500">
-                  Coût estimé — cet appel {redigee.cout.appel} USD, dossier {redigee.cout.cumule}{' '}
-                  USD. Estimation sur tarifs déclarés dans le code, non vérifiés : la facturation
-                  réelle fait foi.
-                </p>
-              )}
-            </div>
-          )}
         </div>
       </section>
     </div>

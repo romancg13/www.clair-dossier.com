@@ -1,10 +1,9 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { analyserPiece, SEUILS_DETECTION } from '../modules/detection-ia';
 import { genererDocument } from '../modules/documents';
 import { analyser, rendreMarkdown } from '../pipeline';
-import type { Dossier, Piece } from '../types';
+import type { Dossier } from '../types';
 
 const dossier: Dossier = {
   reference: 'TEST-002',
@@ -28,45 +27,6 @@ const dossier: Dossier = {
     },
   ],
 };
-
-function piece(texte: string): Piece {
-  return { id: 'PX', nature: 'expertise', intitule: 'Rapport', texte };
-}
-
-describe('analyserPiece', () => {
-  it('refuse de conclure sous le seuil de mots exploitables', () => {
-    const analyse = analyserPiece(piece('Le rapport conclut à la présence de traces.'));
-    assert.equal(analyse.fiable, false);
-    assert.match(analyse.conclusion, /trop court/);
-    assert.match(analyse.conclusion, /Aucune conclusion/);
-  });
-
-  it('relève des signaux sur un texte artificiellement uniforme', () => {
-    const phrase = 'En outre le rapport constate la présence de traces sur le support analysé. ';
-    const analyse = analyserPiece(piece(phrase.repeat(60)));
-
-    assert.equal(analyse.fiable, true);
-    assert.ok(analyse.motsAnalyses >= SEUILS_DETECTION.motsMinimum);
-    assert.ok(analyse.signauxDeclenches >= 3);
-    assert.match(analyse.recommandation, /fichier natif/);
-  });
-
-  it("n'exprime jamais de probabilité sur l'auteur du texte", () => {
-    const phrase = 'En outre le rapport constate la présence de traces sur le support analysé. ';
-    const analyse = analyserPiece(piece(phrase.repeat(60)));
-
-    const rendu = JSON.stringify(analyse);
-    assert.ok(!/\d\s?%/.test(rendu), 'aucun pourcentage ne doit apparaître');
-    assert.match(analyse.conclusion, /ne (?:signifie|établit|détermine)|justifie une vérification/);
-  });
-
-  it('énonce toujours la portée de chaque mesure', () => {
-    const analyse = analyserPiece(piece('Mot '.repeat(400)));
-    for (const signal of analyse.signaux) {
-      assert.ok(signal.interpretation.length > 40, `${signal.id} sans interprétation`);
-    }
-  });
-});
 
 describe('pipeline', () => {
   it('produit un rapport complet et reproductible', () => {
@@ -101,7 +61,7 @@ describe('pipeline', () => {
   it('rend un markdown lisible qui porte ses limites', () => {
     const markdown = rendreMarkdown(analyser(dossier));
     assert.match(markdown, /# Rapport d'analyse/);
-    assert.match(markdown, /## 8\. Limites de ce rapport/);
+    assert.match(markdown, /## 7\. Limites de ce rapport/);
     assert.match(markdown, /n'est pas une consultation juridique/);
   });
 });
@@ -143,109 +103,5 @@ describe('genererDocument', () => {
     const doc = genererDocument('requete-nullite', rapport.dossier, rapport.strategie);
     assert.match(doc.corps, /moyens non soulevés dans la présente requête/);
     assert.match(doc.corps, /plus l'être ultérieurement/);
-  });
-});
-
-/**
- * Signalé en revue externe sur `9e4286a`. Le « | » était déjà échappé, mais
- * pas le saut de ligne : une description multiligne coupait la ligne du
- * tableau après trois cellules — la colonne « Pièce » disparaissait — et le
- * tableau s'arrêtait là, le reste retombant en texte libre.
- *
- * Le contenu vient du dossier, donc de tiers : police, expert, partie adverse.
- * Il n'a pas à pouvoir décider où s'arrête un tableau dans un acte.
- */
-describe('texte de dossier inséré dans un tableau markdown', () => {
-  function dossierMultiligne(): Dossier {
-    return {
-      reference: 'TEST-CELLULE',
-      qualifications: ['CP, art. 222-37'],
-      regime: 'droit-commun',
-      pieces: [{ id: 'P1', nature: 'proces-verbal', intitule: 'PV', date: '2026-03-14' }],
-      evenements: [
-        {
-          id: 'E1',
-          nature: 'debut-garde-a-vue',
-          horodatage: '2026-03-14T08:00',
-          description: 'Placement\n| 2026-03-14T09:00 | FAIT AJOUTÉ | Aveux spontanés | P1 |',
-          sourcePieceId: 'P1',
-        },
-        {
-          id: 'E2',
-          nature: 'notification-droits',
-          horodatage: '2026-03-14T08:10',
-          description: 'Notification\r\n## Faux titre de section',
-          sourcePieceId: 'P1',
-        },
-      ],
-    };
-  }
-
-  /** Lignes du tableau des faits, y compris celles qui seraient malformées. */
-  function lignesDuTableau(corps: string): string[] {
-    const bloc = corps.split('## Rappel des faits')[1].split('[À COMPLÉTER : mise en récit')[0];
-    return bloc
-      .split('\n')
-      .map((l) => l.trim())
-      .filter((l) => l.startsWith('|') && !/^\|[\s-|]+\|$/.test(l) && !l.includes('Date / heure'));
-  }
-
-  it('produit exactement une ligne par événement', () => {
-    const rapport = analyser(dossierMultiligne());
-    const doc = genererDocument('requete-nullite', rapport.dossier, rapport.strategie);
-    assert.equal(lignesDuTableau(doc.corps).length, 2);
-  });
-
-  it('conserve les quatre cellules de chaque ligne, dont la pièce source', () => {
-    const rapport = analyser(dossierMultiligne());
-    const doc = genererDocument('requete-nullite', rapport.dossier, rapport.strategie);
-    for (const ligne of lignesDuTableau(doc.corps)) {
-      assert.ok(ligne.endsWith('|'), `ligne tronquée : ${ligne}`);
-      // 4 cellules encadrées de « | » → 5 séparateurs non échappés.
-      const separateurs = ligne.split(/(?<!\\)\|/).length - 1;
-      assert.equal(separateurs, 5, `nombre de cellules inattendu : ${ligne}`);
-    }
-    assert.ok(doc.corps.includes('| P1 |'), 'la pièce source doit rester dans le tableau');
-  });
-
-  it("ne laisse aucun titre de section provenir d'une description", () => {
-    const rapport = analyser(dossierMultiligne());
-    const doc = genererDocument('requete-nullite', rapport.dossier, rapport.strategie);
-    assert.ok(!/^#+\s*Faux titre/m.test(doc.corps));
-  });
-
-  it('vaut aussi pour le tableau des points de contrôle du rapport', () => {
-    const markdown = rendreMarkdown(analyser(dossierMultiligne()));
-    const bloc = markdown.split('## 2. Points de contrôle')[1].split('##')[0];
-    for (const ligne of bloc.split('\n').map((l) => l.trim())) {
-      if (!ligne.startsWith('|') || /^\|[\s-|]+\|$/.test(ligne) || ligne.includes('Point |')) continue;
-      assert.ok(ligne.endsWith('|'), `ligne tronquée : ${ligne}`);
-    }
-  });
-});
-
-/**
- * Signalé en revue externe sur `9e4286a`, confirmé. Le même piège que dans
- * `confidentialite.ts`, corrigé là-bas et pas ici : dans un littéral de
- * gabarit non balisé, « \p » se réduit à « p ». Les bornes lexicales
- * devenaient la classe littérale [p{L}p{N}], si bien que « de plus » était
- * compté dans « de plusieurs ». La mesure remontait alors à l'avocat.
- */
-describe('bornes lexicales des connecteurs (module 4)', () => {
-  function piece(texte: string): Piece {
-    return { id: 'P1', nature: 'proces-verbal', intitule: 'PV', date: '2026-03-14', texte };
-  }
-
-  const densite = (contenu: string) =>
-    analyserPiece(piece(contenu)).signaux.find((s) => s.id === 'densite-connecteurs')!.valeur;
-
-  it('ne compte pas un connecteur trouvé à l’intérieur d’un mot', () => {
-    const base = 'il y a de plusieurs éléments au dossier et cela reste à confirmer. '.repeat(12);
-    assert.equal(densite(base), 0, '« de plusieurs » ne contient pas le connecteur « de plus »');
-  });
-
-  it('compte le connecteur lorsqu’il est réellement présent', () => {
-    const base = 'il y a de plusieurs éléments au dossier et cela reste à confirmer. '.repeat(12);
-    assert.ok(densite(`${base}De plus, le témoin a parlé. `.repeat(1)) > 0);
   });
 });

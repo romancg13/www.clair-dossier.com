@@ -16,7 +16,6 @@ import { useSearchParams } from 'react-router-dom';
 import { AtelierShell } from '../components/ldi/AtelierShell';
 import { VueDepot } from '../components/ldi/VueDepot';
 import { VueDossiers } from '../components/ldi/VueDossiers';
-import { VueRecherche } from '../components/ldi/VueRecherche';
 import { VueConfidentialite, VueParametres } from '../components/ldi/VueSecurite';
 import { VueTableauDeBord } from '../components/ldi/VueTableauDeBord';
 import { VueChronologie, VueControles, VueDocuments, VueStrategie } from '../components/ldi/VuesDossier';
@@ -36,7 +35,6 @@ import {
 import type { CoffreOuvert } from '../ldi/coffre';
 import type { Dossier } from '../ldi/types';
 import { validerDossier } from '../ldi/validation';
-import { Seo } from '../lib/seo';
 
 export function LdiAtelier() {
   const [params, setParams] = useSearchParams();
@@ -138,15 +136,7 @@ export function LdiAtelier() {
   }
 
   return (
-    <>
-      <Seo
-        title="Atelier LDI"
-        description="Outil interne d’analyse de dossier pénal."
-        path="/ldi"
-        noindex
-      />
-
-      <AtelierShell
+    <AtelierShell
         vue={vue}
         onVue={allerA}
         fiches={fiches}
@@ -187,7 +177,6 @@ export function LdiAtelier() {
         )}
 
         {vue === 'chronologie' && <VueChronologie rapport={rapportActif} />}
-        {vue === 'recherche' && <VueRecherche rapport={rapportActif} />}
         {vue === 'controles' && <VueControles rapport={rapportActif} />}
         {vue === 'strategie' && <VueStrategie rapport={rapportActif} />}
         {vue === 'documents' && <VueDocuments rapport={rapportActif} onCopier={copier} />}
@@ -246,7 +235,6 @@ export function LdiAtelier() {
             nombreDossiers={dossiers.length}
           />
         )}
-      </AtelierShell>
-    </>
+    </AtelierShell>
   );
 }
