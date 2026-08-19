@@ -168,7 +168,10 @@ describe('archives et doublons', () => {
   it('reconnaît un doublon exact malgré un nom différent', () => {
     assert.equal(r.doublons.length, 1);
     assert.equal(r.doublons[0].nomFichier, 'D1-pv-copie.txt');
-    assert.equal(r.doublons[0].identiqueA, 'D1-pv.txt');
+    // L'original est désigné par son chemin complet, pas par son seul nom :
+    // dans un dossier de deux cents pièces, plusieurs « D1-pv.txt » peuvent
+    // coexister dans des répertoires différents.
+    assert.equal(r.doublons[0].identiqueA, 'lot.zip/procedure/D1-pv.txt');
   });
 
   it('refuse un fichier vide en le nommant', () => {
@@ -405,5 +408,41 @@ describe('extraction différée (PDF, courriel)', () => {
     // Le motif dit que la pièce EXISTE et n'est pas encore lue — un « format
     // non reconnu » ferait croire à l'avocat qu'il a déposé un fichier abîmé.
     assert.match(pdf.pages[0].motifQuarantaine, /PDF reconnu, pas encore lu/);
+  });
+});
+
+// ── Ce qui n'entre pas au dossier doit rester identifiable ────────────────
+
+describe('écartés — désignation', () => {
+  it('distingue deux fichiers homonymes refusés', () => {
+    // `lot.zip` contient `procedure/vide.txt`, vide lui aussi. Deux lignes
+    // « vide.txt — Fichier vide » laisseraient croire à un doublon d'affichage,
+    // alors qu'il s'agit de deux pièces manquantes distinctes.
+    const { refuses } = ingerer([
+      { nom: 'vide.txt', chemin: '', octets: new Uint8Array() },
+      fichier('lot.zip'),
+    ]);
+
+    assert.equal(refuses.length, 2);
+    const designations = refuses.map((r) => `${r.chemin ? `${r.chemin}/` : ''}${r.nomFichier}`);
+    assert.equal(new Set(designations).size, 2, `désignations ambiguës : ${designations.join(' | ')}`);
+    assert.ok(designations.some((d) => d.includes('lot.zip')), 'le refus issu de l’archive doit la nommer');
+  });
+
+  it('situe le doublon et son original', () => {
+    const { doublons } = ingerer([fichier('lot.zip')]);
+    const [copie] = doublons;
+
+    assert.equal(copie.nomFichier, 'D1-pv-copie.txt');
+    assert.match(copie.chemin, /lot\.zip/);
+    // Sans le chemin de l'original, l'avocat ne sait pas quel exemplaire a été
+    // conservé — la question exacte que pose un dossier communiqué en double.
+    assert.match(copie.identiqueA, /lot\.zip\/procedure\/D1-pv\.txt$/);
+  });
+
+  it('ne fait pas d’un chemin de répertoire un chemin de fichier', () => {
+    // `chemin` désigne où la pièce se trouve, jamais la pièce elle-même.
+    const piece = ingerer([fichier('lot.zip')]).pieces.find((p) => p.nomFichier === 'D1-pv.txt');
+    assert.equal(piece?.chemin, 'lot.zip/procedure');
   });
 });

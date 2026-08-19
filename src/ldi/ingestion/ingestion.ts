@@ -97,16 +97,27 @@ export function ingerer(
   return ctx.resultat;
 }
 
+/**
+ * Désignation complète d'un fichier : chemin puis nom.
+ *
+ * C'est ce qui permet de retrouver la pièce dans le dépôt d'origine, et de ne
+ * pas confondre deux homonymes venus de répertoires ou d'archives différents.
+ */
+function designation(fichier: FichierEntrant): string {
+  return fichier.chemin ? `${fichier.chemin}/${fichier.nom}` : fichier.nom;
+}
+
 function traiter(fichier: FichierEntrant, ctx: Contexte, profondeur: number): void {
   const { bornes, resultat } = ctx;
 
   if (fichier.octets.length === 0) {
-    resultat.refuses.push({ nomFichier: fichier.nom, motif: 'Fichier vide.' });
+    resultat.refuses.push({ nomFichier: fichier.nom, chemin: fichier.chemin, motif: 'Fichier vide.' });
     return;
   }
   if (fichier.octets.length > bornes.tailleMaxFichier) {
     resultat.refuses.push({
       nomFichier: fichier.nom,
+      chemin: fichier.chemin,
       motif: `Fichier de ${Math.round(fichier.octets.length / 1024 / 1024)} Mo : au-delà de la borne de ${Math.round(bornes.tailleMaxFichier / 1024 / 1024)} Mo.`,
     });
     return;
@@ -117,12 +128,15 @@ function traiter(fichier: FichierEntrant, ctx: Contexte, profondeur: number): vo
   if (dejaVu) {
     resultat.doublons.push({
       nomFichier: fichier.nom,
+      chemin: fichier.chemin,
       empreinte: empreinteFichier,
       identiqueA: dejaVu,
     });
     return;
   }
-  ctx.vues.set(empreinteFichier, fichier.nom);
+  // On retient la DÉSIGNATION, pas le seul nom : « identique à D1-pv.txt » ne
+  // dit pas lequel des deux exemplaires a été conservé.
+  ctx.vues.set(empreinteFichier, designation(fichier));
 
   const format = reconnaitreFormat(fichier.nom, fichier.octets);
 
@@ -152,6 +166,7 @@ function ouvrirArchive(
   if (profondeur >= bornes.profondeurMaxArchive) {
     resultat.refuses.push({
       nomFichier: fichier.nom,
+      chemin: fichier.chemin,
       motif: `Archives imbriquées au-delà de ${bornes.profondeurMaxArchive} niveaux : ouverture refusée.`,
     });
     return;
@@ -163,6 +178,7 @@ function ouvrirArchive(
   } catch (e) {
     resultat.refuses.push({
       nomFichier: fichier.nom,
+      chemin: fichier.chemin,
       motif: `Archive illisible — ${(e as Error).message}`,
     });
     return;
@@ -185,6 +201,7 @@ function ouvrirArchive(
   if (noms.length > bornes.entreesMaxArchive) {
     resultat.refuses.push({
       nomFichier: fichier.nom,
+      chemin: fichier.chemin,
       motif: `Archive de ${noms.length} entrées : au-delà de la borne de ${bornes.entreesMaxArchive}.`,
     });
     return;
@@ -201,19 +218,25 @@ function ouvrirArchive(
     ctx.decompresse.total += octets.length;
     if (ctx.decompresse.total > bornes.tailleMaxDecompressee) {
       resultat.refuses.push({
-        nomFichier: `${fichier.nom} → ${nom}`,
+        nomFichier: nom.split('/').pop() ?? nom,
+        chemin: fichier.chemin ? `${fichier.chemin}/${fichier.nom}` : fichier.nom,
         motif:
           "Cumul décompressé au-delà de la borne : le reste de l'archive n'est pas ouvert (bombe de décompression possible).",
       });
       return;
     }
 
+    // L'arborescence d'origine est conservée : elle porte souvent le classement
+    // du cabinet, et la perdre revient à perdre un tri déjà fait. Le chemin
+    // désigne le RÉPERTOIRE, jamais le fichier : y laisser le nom produirait
+    // « lot.zip/procedure/D1.txt/D1.txt », qui ne désigne aucun emplacement.
+    const sousRepertoire = nom.includes('/') ? nom.slice(0, nom.lastIndexOf('/')) : '';
+    const racine = fichier.chemin ? `${fichier.chemin}/${fichier.nom}` : fichier.nom;
+
     traiter(
       {
         nom: nom.split('/').pop() ?? nom,
-        // L'arborescence d'origine est conservée : elle porte souvent le
-        // classement du cabinet, et la perdre revient à perdre un tri déjà fait.
-        chemin: fichier.chemin ? `${fichier.chemin}/${fichier.nom}/${nom}` : `${fichier.nom}/${nom}`,
+        chemin: sousRepertoire ? `${racine}/${sousRepertoire}` : racine,
         octets,
       },
       ctx,

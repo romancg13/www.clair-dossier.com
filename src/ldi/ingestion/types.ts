@@ -82,12 +82,29 @@ export type Quarantaine = {
   pagesCorrigees: number;
 };
 
+/**
+ * Un fichier écarté, désigné assez précisément pour être retrouvé.
+ *
+ * Le chemin n'est pas décoratif : deux `vide.txt`, l'un déposé et l'autre au
+ * fond d'une archive, sont deux pièces manquantes distinctes. Sans lui, la
+ * liste des écartés est un relevé que personne ne peut vérifier.
+ */
+export type Ecarte = {
+  nomFichier: string;
+  /** Arborescence d'origine, archives comprises. Vide à la racine du dépôt. */
+  chemin: string;
+};
+
 export type ResultatIngestion = {
   pieces: PieceIngeree[];
   /** Fichiers écartés comme doublons exacts, avec l'empreinte partagée. */
-  doublons: { nomFichier: string; empreinte: string; identiqueA: string }[];
+  doublons: (Ecarte & {
+    empreinte: string;
+    /** Désignation complète de l'exemplaire CONSERVÉ, chemin compris. */
+    identiqueA: string;
+  })[];
   /** Fichiers refusés avant toute lecture, avec le motif. */
-  refuses: { nomFichier: string; motif: string }[];
+  refuses: (Ecarte & { motif: string })[];
   compteurs: Quarantaine;
 };
 
