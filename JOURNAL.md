@@ -39,3 +39,33 @@
   rejoignent le PDF derrière l'interrupteur (voir DECISIONS.md, étape 1).
 - **Reste ouvert** : la vue Documents (alertes B17 à l'écran) arrive avec les
   vues, étape 12.
+
+## Étape 5 — M11 : bibliothèque et consignes permanentes
+- **Fait** : `consignes.ts` — consignes cabinet/dossier, versionnées (réviser
+  désactive sans supprimer, B21), injection déterministe dans les
+  instructions, cloisonnement B18 testé (une consigne de dossier ne fuit pas).
+- **Volontairement écarté** : un éditeur de trames complet — les trames sont
+  stockées et mentionnées au rapport d'ancrage, l'édition riche viendra après.
+- **Reste ouvert** : vue Bibliothèque (étape 12).
+
+## Étape 7 — M3 : grille de régularité, quatorze postes
+- **Fait** : `postes.ts` — 14 postes, chacun rendant attendu / présent (ancré)
+  / manques (avec geste) / grief envisageable / actes affectés par
+  propagation. Jamais de silence : un poste sans matière le DIT. Les contrôles
+  horodatés existants (GAV, CTRL, PERQ, PREUVE, PRESC) sont versés, pas
+  recalculés. P2 scellée. 7 tests dont couverture 14/14 sur dossier vide.
+- **Volontairement écarté** : recalculer dans la grille ce que le module de
+  nullités calcule déjà — un calcul, deux lecteurs.
+- **Reste ouvert** : M1/M2 écrans (étape 12) ; la frise (étape 13).
+
+## Étape 8 — Couche d'intelligence
+- **Fait** : `instructions.ts` (gabarit §6.3, versionné, zéro référence
+  juridique en dur — testé), `moteur.ts` (local Ollama refusant toute URL non
+  locale À LA CONSTRUCTION ; distant construit avec DEUX verrous cumulatifs
+  revalidés à chaque appel, corps d'erreur amont jamais relayé). Frontière
+  interface étendue : importer `noyau/moteur` depuis l'interface fait échouer
+  la suite. 14 tests.
+- **Volontairement écarté** : un état « déverrouillé » du mode distant — le
+  consentement ne s'hérite pas d'un appel à l'autre.
+- **Reste ouvert** : l'orchestrateur des sept passes se scelle à l'étape 10,
+  quand P3/P4/P5 existent.

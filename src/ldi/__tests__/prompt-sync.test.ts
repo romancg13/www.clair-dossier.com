@@ -41,7 +41,7 @@ describe('frontière navigateur — B7/B8', () => {
   it("ne contient aucun code d'appel d'API, même désactivé, même mort", () => {
     for (const fichier of FICHIERS_INTERFACE) {
       const s = readFileSync(fichier, 'utf-8');
-      for (const interdit of ['supabase', 'anthropic', "from '../../ldi/piste'", "from '../ldi/piste'", 'api.piste.gouv.fr', 'fetch(']) {
+      for (const interdit of ['supabase', 'anthropic', "from '../../ldi/piste'", "from '../ldi/piste'", 'api.piste.gouv.fr', 'fetch(', 'noyau/moteur']) {
         assert.ok(
           !s.toLowerCase().includes(interdit.toLowerCase()),
           `${fichier.slice(RACINE.length + 1)} contient « ${interdit} » : le bundle navigateur ne doit porter aucun appel d'API`
