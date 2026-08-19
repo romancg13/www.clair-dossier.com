@@ -24,12 +24,15 @@ import { ficheDossier } from '../ldi/atelier';
 import { creerCacheAnalyse } from '../ldi/cache';
 import { DOSSIERS_DEMONSTRATION, estDemonstration } from '../ldi/demonstration';
 import {
+  activerConservation,
   conserver,
-  definirConservation,
   etatConservation,
-  relire,
+  ouvrirConservation,
+  purger,
+  purgerHeritage,
   type EtatConservation,
 } from '../ldi/stockage';
+import type { CoffreOuvert } from '../ldi/coffre';
 import type { Dossier } from '../ldi/types';
 import { validerDossier } from '../ldi/validation';
 import { Seo } from '../lib/seo';
@@ -42,10 +45,13 @@ export function LdiAtelier() {
   // aucune donnée de dossier au-delà de la session de travail.
   const cache = useRef(creerCacheAnalyse()).current;
 
-  const [dossiers, setDossiers] = useState<Dossier[]>(() => {
-    const conserves = relire();
-    return conserves.length > 0 ? conserves : DOSSIERS_DEMONSTRATION;
-  });
+  // Rien n'est relu au montage : le coffre est chiffré, et son ouverture exige
+  // la phrase. L'atelier démarre donc sur les dossiers fictifs, et bascule sur
+  // le plan de travail réel quand l'avocat ouvre le coffre.
+  const [dossiers, setDossiers] = useState<Dossier[]>(() => DOSSIERS_DEMONSTRATION);
+  // La clé vit ici, en mémoire de composant : elle ne survit ni au
+  // rechargement de la page, ni à la fermeture de l'onglet.
+  const [coffre, setCoffre] = useState<CoffreOuvert | null>(null);
   const [actif, setActif] = useState<string | null>(() => DOSSIERS_DEMONSTRATION[0]?.reference ?? null);
   const [erreurImport, setErreurImport] = useState<string | null>(null);
   const [conservation, setConservation] = useState<EtatConservation>(() => etatConservation());
@@ -66,15 +72,19 @@ export function LdiAtelier() {
 
   const demonstration = dossiers.length > 0 && dossiers.every((d) => estDemonstration(d.reference));
 
-  // Écrit à chaque changement, mais uniquement si la conservation est active :
-  // `conserver` refuse d'écrire sans consentement, la garde est dans le module.
+  // Scelle à chaque changement, mais uniquement si le coffre est ouvert dans
+  // cette session. Sans clé, rien n'est écrit — il n'existe aucun repli en clair.
   useEffect(() => {
-    if (!conservation.active) return;
+    if (!coffre) return;
     const aConserver = dossiers.filter((d) => !estDemonstration(d.reference));
-    if (conserver(aConserver, new Date().toISOString())) {
-      setConservation(etatConservation());
-    }
-  }, [dossiers, conservation.active]);
+    let vivant = true;
+    void conserver(coffre, aConserver, new Date().toISOString()).then((ecrit) => {
+      if (ecrit && vivant) setConservation(etatConservation());
+    });
+    return () => {
+      vivant = false;
+    };
+  }, [dossiers, coffre]);
 
   const allerA = useCallback(
     (v: Vue) => {
@@ -184,7 +194,48 @@ export function LdiAtelier() {
         {vue === 'parametres' && (
           <VueParametres
             conservation={conservation}
-            onConservation={(actif) => setConservation(definirConservation(actif))}
+            coffreOuvert={coffre !== null}
+            actionsCoffre={{
+              onActiver: async (phrase) => {
+                try {
+                  const reels = dossiers.filter((d) => !estDemonstration(d.reference));
+                  const { coffre: neuf, etat } = await activerConservation(
+                    phrase,
+                    reels,
+                    new Date().toISOString()
+                  );
+                  setCoffre(neuf);
+                  setConservation(etat);
+                  return null;
+                } catch (e) {
+                  return (e as Error).message;
+                }
+              },
+              onOuvrir: async (phrase) => {
+                const ouverture = await ouvrirConservation(phrase);
+                if (!ouverture.ok) return ouverture.message;
+                setCoffre(ouverture.coffre);
+                // Le plan de travail conservé remplace les dossiers fictifs ;
+                // un coffre vide laisse la démonstration en place plutôt que
+                // de présenter un atelier sans rien dedans.
+                if (ouverture.dossiers.length > 0) {
+                  setDossiers(ouverture.dossiers);
+                  setActif(ouverture.dossiers[0].reference);
+                }
+                setConservation(etatConservation());
+                return null;
+              },
+              onVerrouiller: () => setCoffre(null),
+              onEffacer: () => {
+                purger();
+                setCoffre(null);
+                setConservation(etatConservation());
+              },
+              onPurgerHeritage: () => {
+                purgerHeritage();
+                setConservation(etatConservation());
+              },
+            }}
             statistiquesCache={cache.statistiques()}
             onViderCache={() => {
               cache.vider();

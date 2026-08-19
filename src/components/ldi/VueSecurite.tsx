@@ -7,6 +7,7 @@ import type { EtatConservation } from '../../ldi/stockage';
 import type { RapportLdi } from '../../ldi/types';
 import { isSupabaseConfigured, supabase } from '../../lib/supabase';
 import { Reserve, TitreSection, Vide } from './Indicateurs';
+import { PanneauCoffre, type ActionsCoffre } from './PanneauCoffre';
 
 type EtatRedigee =
   | { statut: 'inactif' }
@@ -270,13 +271,15 @@ export function VueConfidentialite({ rapport }: { rapport: RapportLdi | null }) 
 
 export function VueParametres({
   conservation,
-  onConservation,
+  coffreOuvert,
+  actionsCoffre,
   statistiquesCache,
   onViderCache,
   nombreDossiers,
 }: {
   conservation: EtatConservation;
-  onConservation: (actif: boolean) => void;
+  coffreOuvert: boolean;
+  actionsCoffre: ActionsCoffre;
   statistiquesCache: { entrees: number; succes: number; defauts: number };
   onViderCache: () => void;
   nombreDossiers: number;
@@ -286,61 +289,11 @@ export function VueParametres({
       <section>
         <TitreSection surtitre="Confidentialité" titre="Conservation dans ce navigateur" />
 
-        <div className="rounded-xl border hairline bg-white p-6 shadow-card">
-          <label className="flex items-start gap-3">
-            <input
-              type="checkbox"
-              checked={conservation.active}
-              disabled={!conservation.disponible}
-              onChange={(e) => onConservation(e.target.checked)}
-              className="mt-1 h-4 w-4 shrink-0 accent-gold-500"
-            />
-            <span>
-              <span className="block text-sm font-medium text-navy-900">
-                Conserver les dossiers entre deux visites
-              </span>
-              <span className="mt-1 block text-xs leading-relaxed text-slate-500">
-                Sans cela, l’atelier repart vide à chaque rechargement — c’est le comportement par
-                défaut, et le plus sûr.
-              </span>
-            </span>
-          </label>
-
-          <div className="mt-5 rounded-lg bg-cream-100 p-4">
-            <p className="font-mono text-[0.62rem] uppercase tracking-[0.18em] text-slate-500">
-              État réel
-            </p>
-            {conservation.disponible ? (
-              <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                {conservation.active ? (
-                  <>
-                    {conservation.dossiersConserves} dossier(s) conservé(s),{' '}
-                    {(conservation.octets / 1024).toFixed(1)} Ko.{' '}
-                    {conservation.ecritLe
-                      ? `Dernière écriture : ${conservation.ecritLe.slice(0, 16).replace('T', ' à ')} UTC.`
-                      : 'Aucune écriture pour l’instant.'}
-                  </>
-                ) : (
-                  'Rien n’est conservé. Aucune donnée de dossier n’est écrite dans ce navigateur.'
-                )}
-              </p>
-            ) : (
-              <p className="mt-2 text-sm text-slate-600">
-                La conservation n’est pas disponible sur ce support.
-              </p>
-            )}
-          </div>
-
-          <div className="mt-4">
-            <Reserve>
-              Ce qui est conservé l’est <strong>en clair</strong> : ce module ne chiffre rien et ne
-              prétend pas le faire. Sur un poste partagé, la bonne réponse n’est pas ce réglage,
-              c’est la ligne de commande (<code className="font-mono">npm run ldi</code>), qui ne
-              laisse rien derrière elle. Décocher la case ne se contente pas d’arrêter les
-              écritures : cela <strong>efface</strong> immédiatement ce qui est stocké.
-            </Reserve>
-          </div>
-        </div>
+        <PanneauCoffre
+          conservation={conservation}
+          ouvert={coffreOuvert}
+          actions={actionsCoffre}
+        />
       </section>
 
       <section>

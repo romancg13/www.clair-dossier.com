@@ -9,11 +9,12 @@ import { describe, it } from 'node:test';
 
 import { creerCacheAnalyse } from '../cache';
 import {
+  activerConservation,
   conserver,
-  definirConservation,
   etatConservation,
+  ouvrirConservation,
   purger,
-  relire,
+  purgerHeritage,
   type StockageMinimal,
 } from '../stockage';
 import type { Dossier } from '../types';
@@ -97,67 +98,100 @@ describe('cache d’analyse', () => {
   });
 });
 
-describe('conservation locale', () => {
-  it("n'écrit rien tant que la conservation n'est pas activée", () => {
+const PHRASE = 'la clef du cabinet est longue';
+
+describe('conservation locale — coffre chiffré', () => {
+  it("n'écrit rien tant que la conservation n'est pas activée", async () => {
     const support = supportMemoire();
-    assert.equal(conserver([dossier()], '2026-08-18T10:00:00Z', support), false);
     assert.equal(support.contenu.size, 0, 'aucune clé ne doit être écrite');
-    assert.deepEqual(relire(support), []);
+    assert.equal((await ouvrirConservation(PHRASE, support)).ok, false);
   });
 
-  it('écrit et relit le plan de travail une fois activée', () => {
+  it('scelle, puis rend le plan de travail à qui a la phrase', async () => {
     const support = supportMemoire();
-    definirConservation(true, support);
+    const { coffre } = await activerConservation(PHRASE, [], '2026-08-18T09:00:00Z', support);
 
-    assert.equal(conserver([dossier('X-1')], '2026-08-18T10:00:00Z', support), true);
-    const relu = relire(support);
-    assert.equal(relu.length, 1);
-    assert.equal(relu[0].reference, 'X-1');
+    assert.equal(await conserver(coffre, [dossier('X-1')], '2026-08-18T10:00:00Z', support), true);
+
+    const ouvert = await ouvrirConservation(PHRASE, support);
+    assert.equal(ouvert.ok, true);
+    assert.equal(ouvert.ok && ouvert.dossiers.length, 1);
+    assert.equal(ouvert.ok && ouvert.dossiers[0].reference, 'X-1');
 
     const etat = etatConservation(support);
     assert.equal(etat.active, true);
-    assert.equal(etat.dossiersConserves, 1);
     assert.equal(etat.ecritLe, '2026-08-18T10:00:00Z');
     assert.ok(etat.octets > 0);
   });
 
-  it('purge réellement quand on coupe la conservation', () => {
+  it("n'écrit aucune donnée de dossier en clair sur le support", async () => {
     const support = supportMemoire();
-    definirConservation(true, support);
-    conserver([dossier()], '2026-08-18T10:00:00Z', support);
+    const { coffre } = await activerConservation(PHRASE, [], '2026-08-18T09:00:00Z', support);
+    await conserver(coffre, [dossier('SECRET-914')], '2026-08-18T10:00:00Z', support);
 
-    const etat = definirConservation(false, support);
-    assert.equal(etat.active, false);
-    assert.equal(etat.dossiersConserves, 0);
-    assert.equal(etat.octets, 0, 'couper la conservation doit effacer, pas seulement cesser d’écrire');
-    assert.deepEqual(relire(support), []);
+    // Ce que lit un tiers qui copie le profil du navigateur.
+    const surLeSupport = [...support.contenu.values()].join('\n');
+    for (const fragment of ['SECRET-914', 'proces-verbal', 'debut-garde-a-vue', '313-1']) {
+      assert.ok(!surLeSupport.includes(fragment), `« ${fragment} » lisible sur le support`);
+    }
   });
 
-  it('ignore un contenu corrompu au lieu de le passer au moteur', () => {
+  it('refuse la mauvaise phrase sans détruire le coffre', async () => {
     const support = supportMemoire();
-    definirConservation(true, support);
-    support.setItem('ldi.atelier.dossiers', '{ ceci n’est pas du JSON');
-    assert.deepEqual(relire(support), []);
+    const { coffre } = await activerConservation(PHRASE, [], '2026-08-18T09:00:00Z', support);
+    await conserver(coffre, [dossier('X-2')], '2026-08-18T10:00:00Z', support);
 
-    support.setItem('ldi.atelier.dossiers', JSON.stringify([{ reference: 'incomplet' }]));
-    assert.deepEqual(relire(support), [], 'un dossier sans tableaux requis doit être écarté');
+    const rate = await ouvrirConservation('une autre phrase bien assez longue', support);
+    assert.equal(rate.ok, false);
+
+    // Un essai manqué ne doit rien coûter : le coffre reste ouvrable.
+    const reussi = await ouvrirConservation(PHRASE, support);
+    assert.equal(reussi.ok, true);
+    assert.equal(reussi.ok && reussi.dossiers[0].reference, 'X-2');
   });
 
-  it('annonce les octets restants même quand le contenu est illisible', () => {
+  it('purge sans exiger la phrase', async () => {
     const support = supportMemoire();
-    definirConservation(true, support);
-    support.setItem('ldi.atelier.dossiers', 'contenu illisible');
+    const { coffre } = await activerConservation(PHRASE, [], '2026-08-18T09:00:00Z', support);
+    await conserver(coffre, [dossier()], '2026-08-18T10:00:00Z', support);
+
+    purger(support);
+
     const etat = etatConservation(support);
-    assert.equal(etat.dossiersConserves, 0);
-    assert.ok(etat.octets > 0, 'ce qui reste à purger doit rester visible');
+    assert.equal(etat.active, false);
+    assert.equal(etat.octets, 0, 'purger doit effacer, pas seulement cesser d’écrire');
+    // Une phrase oubliée ne doit jamais rendre les données indélébiles.
+    assert.equal((await ouvrirConservation(PHRASE, support)).ok, false);
   });
 
-  it('se comporte comme désactivée là où aucun support n’existe', () => {
+  it('ignore un coffre corrompu au lieu de le passer au moteur', async () => {
+    const support = supportMemoire();
+    support.setItem('ldi.atelier.coffre', '{ ceci n’est pas du JSON');
+
+    assert.equal(etatConservation(support).active, false);
+    assert.equal((await ouvrirConservation(PHRASE, support)).ok, false);
+    // Ce qui reste à purger doit rester visible.
+    assert.ok(etatConservation(support).octets > 0);
+  });
+
+  it('signale un héritage en clair plutôt que de l’effacer en silence', async () => {
+    const support = supportMemoire();
+    support.setItem('ldi.atelier.dossiers', JSON.stringify([dossier('ANCIEN-1')]));
+    support.setItem('ldi.atelier.conservation', 'oui');
+
+    assert.equal(etatConservation(support).heritageEnClair, true);
+
+    purgerHeritage(support);
+    assert.equal(etatConservation(support).heritageEnClair, false);
+    assert.equal(support.contenu.size, 0);
+  });
+
+  it('se comporte comme indisponible là où aucun support n’existe', async () => {
     const etat = etatConservation(null);
     assert.equal(etat.disponible, false);
     assert.equal(etat.active, false);
-    assert.equal(conserver([dossier()], '2026-08-18T10:00:00Z', null), false);
-    assert.deepEqual(relire(null), []);
+    assert.equal((await ouvrirConservation(PHRASE, null)).ok, false);
     assert.doesNotThrow(() => purger(null));
+    assert.doesNotThrow(() => purgerHeritage(null));
   });
 });
