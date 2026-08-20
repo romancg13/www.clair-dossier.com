@@ -45,8 +45,7 @@ jobs:
       - name: Build
         run: npm run build
 
-      # Le build régénère les .md de public/ via gen:md. S'ils divergent des
-      # fichiers versionnés, c'est que quelqu'un a modifié un data file sans
-      # rejouer la génération : on le signale plutôt que de le laisser passer.
-      - name: Vérifier que les markdown générés sont à jour
-        run: git diff --exit-code -- public/
+      # Le build ne doit modifier aucun fichier versionné : une dérive ici
+      # signifierait qu'un artefact généré a été commis à la main.
+      - name: Vérifier que le build ne modifie rien de versionné
+        run: git diff --exit-code
