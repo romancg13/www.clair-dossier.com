@@ -1,3 +1,7 @@
+> **Note (mandat v4).** Ce document décrit le NOYAU d'analyse, inchangé.
+> L'architecture d'ensemble (passes P0→P6, grille de quatorze postes, gate
+> d'export, CLI) est décrite dans le README et `JOURNAL.md`.
+
 # LDI — Legal Defense Intelligence
 
 Moteur d'analyse de dossier pénal destiné à un avocat de la défense.
@@ -370,28 +374,9 @@ Le dossier pénal est couvert par le secret professionnel.
 
 ---
 
-## 9. Déploiement de la fonction `ldi-analyze`
+## 9. Étage génératif
 
-```bash
-supabase secrets set ANTHROPIC_API_KEY=sk-ant-…
-supabase secrets set LDI_MODEL=claude-opus-5             # facultatif
-supabase secrets set LDI_PLAFOND_DOSSIER_DOLLARS=5       # facultatif, défaut 5
-supabase functions deploy ldi-analyze
-```
-
-La fonction utilise `claude-opus-5` avec réflexion adaptative et `effort: high`.
-Le repli côté serveur (`fallbacks: "default"`) est activé : si la requête
-déclenche un refus de classification, elle est rejouée sur un modèle de repli
-dans le même appel, plutôt que de renvoyer une réponse vide à l'avocat.
-
-Trois fichiers existent en deux exemplaires — `prompt.ts`, `citations.ts` et
-`reponse.ts` — parce que Deno ne peut pas importer un module TypeScript sans
-extension depuis `src/`. La source canonique est celle de `src/ldi/` ; le test
-`prompt-sync.test.ts` interdit toute divergence. Pour resynchroniser :
-
-```bash
-npm run ldi:sync-edge
-```
+L'étage génératif vit dans la CLI (`npm run ldi -- generer`) : moteur local par défaut, mode distant construit mais désactivé (D-3). Voir le README, « moteur d'inférence ».
 
 ### 9.1 Provenance des citations (P1-12)
 

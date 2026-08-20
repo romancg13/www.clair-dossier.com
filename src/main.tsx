@@ -1,6 +1,8 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom';
+// HashRouter, pas BrowserRouter : le build doit s'ouvrir FICHIER EN LOCAL
+// (file://), où l'API history est inutilisable. Le hash porte la vue.
+import { HashRouter } from 'react-router-dom';
 import App from './App';
 import './index.css';
 
@@ -9,8 +11,8 @@ if (!container) throw new Error('Élément #root introuvable');
 
 createRoot(container).render(
   <StrictMode>
-    <BrowserRouter>
+    <HashRouter>
       <App />
-    </BrowserRouter>
+    </HashRouter>
   </StrictMode>
 );

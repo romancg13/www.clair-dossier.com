@@ -15,3 +15,4 @@ dist-ssr
 
 # Page LDI autonome (générée par npm run ldi:artifact)
 artifact/dist
+dist-autonome

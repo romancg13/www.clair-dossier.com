@@ -117,3 +117,31 @@
   des formulaires courts, réversibles par l'édition ; consigné comme limite.
 - **Reste ouvert** : brancher la sortie generative CLI dans l'écran (jamais —
   D-3) ; l'export fichier des livrables passe par copier/imprimer.
+
+## Étape 15 — CLI et sources officielles
+- **Fait** : CLI `defense-os` étendue — `chaine` (P1→P6, 14 postes, moyens,
+  code 2 sur grief), `livrable` (gate : export bloqué ⇒ rien sur stdout,
+  verdict sur stderr, code 6), `pack-sources` (B3 filtré, fusion --cache avec
+  dates d'origine, code 3 sans décision), `generer` (moteur local par défaut,
+  distant à deux verrous, minimisation obligatoire, alertes résiduelles
+  bloquantes vers l'extérieur sauf --assumer-alertes, vérification citations +
+  structure en aval, code 5 si non conforme). Codes de sortie documentés dans
+  l'usage.
+- **Volontairement écarté** : appeler PISTE pendant la construction — aucun
+  identifiant n'existe dans cet environnement ; testé contre simulacre.
+- **Reste ouvert** : première exécution avec identifiants réels
+  (docs/RECHERCHE-JURIDIQUE.md).
+
+## Étape 16 — Conformité, autonome, documentation
+- **Fait** : `conformite.test.ts` (§10.1 : pourvois en dur, ressources
+  externes, VITE_, imports réseau dans l'interface, pourcentages et
+  culpabilité dans les neuf livrables, 14 postes sur dossier vide,
+  cloisonnement B18 des univers d'ancrage, bout en bout sur le dossier
+  fictif). Build AUTONOME : `npm run atelier:autonome` → UN fichier HTML de
+  4,6 Mo qui s'ouvre en file:// — vérifié dans Chromium (deux défauts trouvés
+  et corrigés : « $& » interprété par String.replace, « </script> » non
+  échappé). README réécrit ; docs annotées ; feuille de route v4.
+- **Volontairement écarté** : faire de dist/ (build modules) la forme
+  « fichier local » — les modules ES sont bloqués en file:// ; c'est le build
+  autonome qui tient la promesse §3.1.
+- **Reste ouvert** : rien.

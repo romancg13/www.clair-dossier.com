@@ -605,13 +605,16 @@ export function grilleRegularite(
     const synthese: PosteRegularite['synthese'] =
       griefs.length > 0 ? 'grief' : resultat.manques.length > 0 ? 'manque' : 'constat';
 
+    // Le constat « sans matière » de l'évaluateur ne vaut que si le poste est
+    // réellement sans matière : dès qu'un grief ou un manque existe, c'est LUI
+    // le constat — sinon la ligne dirait « rien à voir » sous une pastille rouge.
     const constat =
-      resultat.constat ??
-      (synthese === 'grief'
+      synthese === 'grief'
         ? `${griefs.length} grief(s) envisageable(s) sur ce poste.`
         : synthese === 'manque'
           ? `${resultat.manques.length} élément(s) manquant(s) — le poste n'est pas contrôlable en l'état.`
-          : `${resultat.present.length} élément(s) contrôlé(s), rien à signaler sur les éléments saisis.`);
+          : (resultat.constat ??
+            `${resultat.present.length} élément(s) contrôlé(s), rien à signaler sur les éléments saisis.`);
 
     return {
       numero: def.numero,

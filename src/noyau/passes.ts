@@ -86,6 +86,8 @@ export function identifiantsConnus(dossier: DossierPenal): Set<string> {
   for (const s of dossier.scelles) ids.add(s.id);
   for (const p of dossier.preuves) ids.add(p.id);
   for (const g of dossier.griefs) ids.add(g.id);
+  for (const e of dossier.echeances) ids.add(e.id);
+  for (const q of dossier.qualificationsEnvisagees) ids.add(q.id);
   return ids;
 }
 

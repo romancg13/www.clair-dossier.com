@@ -1,4 +1,14 @@
-# Chantier C — recherche juridique depuis l'interface
+# Recherche juridique — analyse d'options et état réel
+
+> **Mise à jour (mandat v4).** La décision retenue a changé : le relais serveur
+> décrit plus bas (option 2) a été SUPPRIMÉ avec l'infrastructure serveur.
+> L'architecture v4 est : **CLI → pack de sources → import dans l'atelier**
+> (`npm run ldi -- pack-sources`). L'atelier ne contient aucun code d'appel
+> d'API (B8) et n'émet aucune requête (B7). Ce qui suit reste utile pour deux
+> choses : l'analyse des options écartées, et la section « ce qui n'a pas été
+> vérifié », toujours exacte — l'intégration PISTE n'a jamais été exercée
+> contre le service réel.
+
 
 *Analyse d'options, décision, et ce qui reste invérifié.*
 

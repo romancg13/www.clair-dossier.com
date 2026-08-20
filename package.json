@@ -10,7 +10,8 @@
     "build": "tsc -p tsconfig.json && vite build",
     "preview": "vite preview --port 4173",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "ldi:artifact": "node scripts/build-artifact.mjs"
+    "ldi:artifact": "node scripts/build-artifact.mjs",
+    "atelier:autonome": "node scripts/build-atelier.mjs"
   },
   "dependencies": {
     "@fontsource/cormorant-garamond": "^5.2.5",
