@@ -69,3 +69,34 @@
   consentement ne s'hérite pas d'un appel à l'autre.
 - **Reste ouvert** : l'orchestrateur des sept passes se scelle à l'étape 10,
   quand P3/P4/P5 existent.
+
+## Étape 6 — M1/M2 : constitution et délais
+- **Fait** : `serialisation.ts` — export/réimport identique (empreinte
+  comparée), refus des versions de schéma inconnues, défauts VIDES pour les
+  dossiers historiques. Le moteur de délais (M2) était fait à l'étape 2.
+- **Volontairement écarté** : une migration automatique de schéma — l'import
+  refuse plutôt que deviner.
+- **Reste ouvert** : rien.
+
+## Étapes 9-10 — M4/M5 (P3/P4), M6/M7 (P5), orchestrateur
+- **Fait** : `preuve.ts` (sept grilles de lecture + filet générique, aucune
+  conclusion sur les faits), `qualification.ts` (éléments constitutifs
+  fonctionnels par nature, un « présent » sans appui est reclassé),
+  `moyens.ts` (ordre procédural imposé, chaque moyen naît avec riposte et
+  contre-riposte), `peine.ts` (paramètres et pièces, zéro chiffre),
+  `orchestrateur.ts` (P1→P6, déterministe, rejouable, P6 recalcule l'ancrage
+  de toutes les sorties). La chaîne tourne sur un dossier VIDE : le mode
+  déterministe seul n'est jamais inerte.
+- **Volontairement écarté** : brancher un moteur d'inférence DANS la chaîne —
+  il n'intervient qu'en aval, sur demande.
+- **Reste ouvert** : le rendu des livrables (étape 14) consomme ces sorties.
+
+## Étape 11 — M12/M13 : demandes et journal d'audit
+- **Fait** : `demandes.ts` — aucune fonction de suppression n'existe (B21) ;
+  une demande partiellement traitée reste ouverte avec ce qui manque ; la
+  reprise crée une nouvelle entrée et conserve l'ancienne. `audit.ts` —
+  entrées à identifiants et comptes seulement ; testé : le contenu du dossier
+  ne fuit pas dans l'export du journal (B11).
+- **Volontairement écarté** : un champ de texte libre dans l'entrée de
+  journal — c'est par la forme du type que B11 tient.
+- **Reste ouvert** : vues Registre et Journal (étape 12).
