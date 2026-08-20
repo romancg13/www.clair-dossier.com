@@ -79,3 +79,36 @@ export function Vide({ titre, explication }: { titre: string; explication: strin
     </div>
   );
 }
+
+/**
+ * Liste d'appuis (cotes, actes, événements) — cliquables quand `onAppui` est
+ * fourni : le clic remonte à la pièce, recherche pré-remplie dans la vue
+ * Documents (B20 : de toute phrase à sa cote, en un geste).
+ */
+export function Appuis({
+  appuis,
+  onAppui,
+  vide = '—',
+}: {
+  appuis: string[];
+  onAppui?: (appui: string) => void;
+  vide?: string;
+}) {
+  if (appuis.length === 0) return <span className="font-mono text-[0.68rem] text-encre-3">{vide}</span>;
+  if (!onAppui) return <span className="font-mono text-[0.68rem] text-encre-3">{appuis.join(', ')}</span>;
+  return (
+    <span className="inline-flex flex-wrap items-baseline gap-x-1.5 gap-y-1">
+      {appuis.map((a) => (
+        <button
+          key={a}
+          type="button"
+          onClick={() => onAppui(a)}
+          title={`Remonter à « ${a} » dans les pièces`}
+          className="font-mono text-[0.68rem] text-laiton-clair underline decoration-laiton/40 underline-offset-2 transition-colors hover:text-laiton hover:decoration-laiton"
+        >
+          {a}
+        </button>
+      ))}
+    </span>
+  );
+}

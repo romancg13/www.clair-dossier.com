@@ -195,3 +195,78 @@ describe('conservation locale — coffre chiffré', () => {
     assert.doesNotThrow(() => purgerHeritage(null));
   });
 });
+
+describe('contenu de coffre v2 — plan de travail entier', () => {
+  const bibliotheque = {
+    trames: [{ id: 't-1', intitule: 'Conclusions type', type: 'conclusions', corps: '[[CORPS]]', ajouteeLe: '2026-08-01T00:00:00Z' }],
+    consignes: [],
+  };
+  const demande = {
+    id: 'dm-1',
+    dossierReference: 'X-1',
+    enonce: 'vérifier la notification des droits',
+    date: '2026-08-18T09:00:00Z',
+    etat: 'a-verifier' as const,
+    passesDeclenchees: ['P2'],
+    sortieProduite: null,
+    resteAFaire: [],
+    verifieeLe: null,
+  };
+
+  it('scelle et restitue dossiers, bibliothèque et demandes ensemble', async () => {
+    const support = supportMemoire();
+    const { coffre } = await activerConservation(PHRASE, { dossiers: [], bibliotheque, demandes: [demande] }, '2026-08-18T09:00:00Z', support);
+    await conserver(coffre, { dossiers: [dossier('X-1')], bibliotheque, demandes: [demande] }, '2026-08-18T10:00:00Z', support);
+
+    const ouvert = await ouvrirConservation(PHRASE, support);
+    assert.equal(ouvert.ok, true);
+    if (!ouvert.ok) return;
+    assert.equal(ouvert.contenu.dossiers[0].reference, 'X-1');
+    assert.equal(ouvert.contenu.bibliotheque.trames[0].intitule, 'Conclusions type');
+    assert.equal(ouvert.contenu.demandes[0].id, 'dm-1');
+    // L'ancien champ reste servi : personne ne casse en lisant `dossiers`.
+    assert.equal(ouvert.dossiers[0].reference, 'X-1');
+  });
+
+  it('lit un coffre v1 (tableau nu) : dossiers rendus, bibliothèque vide', async () => {
+    const support = supportMemoire();
+    // Reconstitution d'un coffre v1 : sceller directement un tableau, comme
+    // l'ancienne version le faisait.
+    const { creerCoffre, sceller } = await import('../coffre');
+    const coffre = await creerCoffre(PHRASE);
+    const enveloppe = await sceller(coffre, JSON.stringify([dossier('ANCIEN-7')]), '2026-01-01T00:00:00Z');
+    support.setItem('ldi.atelier.coffre', JSON.stringify(enveloppe));
+
+    const ouvert = await ouvrirConservation(PHRASE, support);
+    assert.equal(ouvert.ok, true);
+    if (!ouvert.ok) return;
+    assert.equal(ouvert.contenu.dossiers[0].reference, 'ANCIEN-7');
+    assert.deepEqual(ouvert.contenu.bibliotheque, { trames: [], consignes: [] });
+    assert.deepEqual(ouvert.contenu.demandes, []);
+  });
+
+  it('une partie illisible ne fait pas perdre les autres', async () => {
+    const support = supportMemoire();
+    const { creerCoffre, sceller } = await import('../coffre');
+    const coffre = await creerCoffre(PHRASE);
+    const corrompu = { version: 2, dossiers: [dossier('X-9')], bibliotheque: 'pas-un-objet', demandes: [{ sans: 'forme' }] };
+    const enveloppe = await sceller(coffre, JSON.stringify(corrompu), '2026-01-01T00:00:00Z');
+    support.setItem('ldi.atelier.coffre', JSON.stringify(enveloppe));
+
+    const ouvert = await ouvrirConservation(PHRASE, support);
+    assert.equal(ouvert.ok, true);
+    if (!ouvert.ok) return;
+    assert.equal(ouvert.contenu.dossiers[0].reference, 'X-9');
+    assert.deepEqual(ouvert.contenu.bibliotheque, { trames: [], consignes: [] });
+    assert.deepEqual(ouvert.contenu.demandes, []);
+  });
+
+  it('aucune trame ni consigne en clair sur le support', async () => {
+    const support = supportMemoire();
+    await activerConservation(PHRASE, { dossiers: [], bibliotheque, demandes: [demande] }, '2026-08-18T09:00:00Z', support);
+    const surLeSupport = [...support.contenu.values()].join('\n');
+    for (const fragment of ['Conclusions type', 'notification des droits', 'dm-1']) {
+      assert.ok(!surLeSupport.includes(fragment), `« ${fragment} » lisible sur le support`);
+    }
+  });
+});

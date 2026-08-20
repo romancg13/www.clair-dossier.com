@@ -43,6 +43,7 @@ import { creerDemande, traiterDemande, verifierDemande } from '../noyau/demandes
 import { completerDossierPenal, type Demande, type DossierPenal, type ElementPreuve } from '../noyau/modele';
 import type { DocumentIngere } from '../noyau/p0';
 import type { SourceRecuperee } from '../noyau/sources';
+import { exporterDossier, importerDossier } from '../noyau/serialisation';
 import {
   activerConservation,
   conserver,
@@ -82,6 +83,7 @@ export function LdiAtelier() {
   const [sourcesRejetees, setSourcesRejetees] = useState<{ identifiant: string; motif: string }[]>([]);
   const [documentsParDossier, setDocumentsParDossier] = useState<Record<string, DocumentIngere[]>>({});
   const [revisionJournal, setRevisionJournal] = useState(0);
+  const [requeteDocuments, setRequeteDocuments] = useState('');
 
   const maintenant = useMemo(() => new Date().toISOString(), []);
 
@@ -102,9 +104,15 @@ export function LdiAtelier() {
 
   // Scelle à chaque changement, mais uniquement si le coffre est ouvert dans
   // cette session. Sans clé, rien n'est écrit — aucun repli en clair (B9+).
+  // Depuis la v2 du contenu, le plan ENTIER est scellé : dossiers,
+  // bibliothèque (trames et consignes), demandes du registre.
   useEffect(() => {
     if (!coffre) return;
-    const aConserver = dossiers.filter((d) => !estDemonstration(d.reference));
+    const aConserver = {
+      dossiers: dossiers.filter((d) => !estDemonstration(d.reference)),
+      bibliotheque,
+      demandes,
+    };
     let vivant = true;
     void conserver(coffre, aConserver, new Date().toISOString()).then((ecrit) => {
       if (ecrit && vivant) setConservation(etatConservation());
@@ -112,7 +120,7 @@ export function LdiAtelier() {
     return () => {
       vivant = false;
     };
-  }, [dossiers, coffre]);
+  }, [dossiers, bibliotheque, demandes, coffre]);
 
   const allerA = useCallback(
     (v: Vue) => {
@@ -137,6 +145,15 @@ export function LdiAtelier() {
     if (!actif) return;
     setDossiers((liste) => liste.map((d) => (d.reference === actif ? muter(d) : d)));
   }
+
+  /** B20 — d'un appui cliqué à la pièce : recherche pré-remplie, vue Documents. */
+  const remonterAppui = useCallback(
+    (appui: string) => {
+      setRequeteDocuments(appui);
+      allerA('documents');
+    },
+    [allerA]
+  );
 
   return (
     <>
@@ -189,14 +206,21 @@ export function LdiAtelier() {
           />
         )}
 
-        {vue === 'documents' && <VueDocuments documents={actif ? (documentsParDossier[actif] ?? []) : []} />}
+        {vue === 'documents' && (
+          <VueDocuments
+            documents={actif ? (documentsParDossier[actif] ?? []) : []}
+            requete={requeteDocuments}
+            onRequete={setRequeteDocuments}
+          />
+        )}
 
         {vue === 'frise' && <VueFrise dossier={ligneActive?.dossier ?? null} chaine={chaineActive} />}
-        {vue === 'regularite' && <VueRegularite postes={chaineActive?.postes ?? null} />}
+        {vue === 'regularite' && <VueRegularite postes={chaineActive?.postes ?? null} onAppui={remonterAppui} />}
         {vue === 'preuve' && (
           <VuePreuve
             dossier={ligneActive?.dossier ?? null}
             analyses={chaineActive?.preuves ?? null}
+            onAppui={remonterAppui}
             onAjouter={(element) =>
               modifierActif((d) => ({
                 ...d,
@@ -206,7 +230,11 @@ export function LdiAtelier() {
           />
         )}
         {vue === 'moyens' && (
-          <VueMoyens moyens={chaineActive?.moyens ?? null} incomplets={chaineActive?.moyensIncomplets ?? null} />
+          <VueMoyens
+            moyens={chaineActive?.moyens ?? null}
+            incomplets={chaineActive?.moyensIncomplets ?? null}
+            onAppui={remonterAppui}
+          />
         )}
 
         {vue === 'ecritures' && (
@@ -306,8 +334,12 @@ export function LdiAtelier() {
             actionsCoffre={{
               onActiver: async (phrase) => {
                 try {
-                  const reels = dossiers.filter((d) => !estDemonstration(d.reference));
-                  const { coffre: neuf, etat } = await activerConservation(phrase, reels, new Date().toISOString());
+                  const contenu = {
+                    dossiers: dossiers.filter((d) => !estDemonstration(d.reference)),
+                    bibliotheque,
+                    demandes,
+                  };
+                  const { coffre: neuf, etat } = await activerConservation(phrase, contenu, new Date().toISOString());
                   setCoffre(neuf);
                   setConservation(etat);
                   return null;
@@ -319,11 +351,16 @@ export function LdiAtelier() {
                 const ouverture = await ouvrirConservation(phrase);
                 if (!ouverture.ok) return ouverture.message;
                 setCoffre(ouverture.coffre);
-                if (ouverture.dossiers.length > 0) {
-                  const penals = ouverture.dossiers.map((d) => completerDossierPenal(d, d as never));
+                const { contenu } = ouverture;
+                if (contenu.dossiers.length > 0) {
+                  const penals = contenu.dossiers.map((d) => completerDossierPenal(d, d as never));
                   setDossiers(penals);
                   setActif(penals[0].reference);
                 }
+                if (contenu.bibliotheque.trames.length > 0 || contenu.bibliotheque.consignes.length > 0) {
+                  setBibliotheque(contenu.bibliotheque);
+                }
+                if (contenu.demandes.length > 0) setDemandes(contenu.demandes);
                 setConservation(etatConservation());
                 return null;
               },
@@ -346,6 +383,26 @@ export function LdiAtelier() {
               cacheRapport.vider();
             }}
             nombreDossiers={dossiers.length}
+            exportDossier={
+              ligneActive && !estDemonstration(ligneActive.dossier.reference)
+                ? { reference: ligneActive.dossier.reference, json: exporterDossier(ligneActive.dossier) }
+                : null
+            }
+            onImporterDossier={(texte) => {
+              const resultat = importerDossier(texte);
+              if (!resultat.ok) return resultat.message;
+              ajouterDossier(resultat.dossier);
+              cacheChaine.journal.consigner({
+                action: 'import de dossier JSON',
+                passe: null,
+                moteur: { type: 'deterministe', modele: null },
+                entrees: [resultat.empreinte],
+                sorties: [`dossier:${resultat.dossier.reference}`],
+                blocages: [],
+              });
+              setRevisionJournal((n) => n + 1);
+              return null;
+            }}
           />
         )}
       </AtelierShell>

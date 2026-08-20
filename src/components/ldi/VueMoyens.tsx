@@ -3,7 +3,7 @@
  */
 import type { Moyen } from '../../noyau/modele';
 import { ORDRE_MOYENS } from '../../noyau/modele';
-import { Reserve, TitreSection, Vide } from './Indicateurs';
+import { Appuis, Reserve, TitreSection, Vide } from './Indicateurs';
 
 const LIBELLES_CATEGORIE: Record<Moyen['categorie'], string> = {
   'in-limine-litis': 'In limine litis',
@@ -13,7 +13,16 @@ const LIBELLES_CATEGORIE: Record<Moyen['categorie'], string> = {
   peine: 'Subsidiaire — peine',
 };
 
-export function VueMoyens({ moyens, incomplets }: { moyens: Moyen[] | null; incomplets: Moyen[] | null }) {
+export function VueMoyens({
+  moyens,
+  incomplets,
+  onAppui,
+}: {
+  moyens: Moyen[] | null;
+  incomplets: Moyen[] | null;
+  /** B20 — remonter d'un clic de l'appui à la pièce (vue Documents). */
+  onAppui?: (appui: string) => void;
+}) {
   if (!moyens) {
     return <Vide titre="Aucun dossier actif" explication="Les moyens se construisent depuis la grille, la preuve et la qualification du dossier sélectionné." />;
   }
@@ -45,7 +54,8 @@ export function VueMoyens({ moyens, incomplets }: { moyens: Moyen[] | null; inco
                   <article key={m.id} className="rounded-xl border hairline bg-surface p-5 shadow-card">
                     <p className="text-sm leading-relaxed text-encre">{m.enonce}</p>
                     <p className="mt-2 font-mono text-[0.68rem] text-encre-3">
-                      appuis : {m.appuis.join(', ') || '—'} · fondement : {m.references.join(' ; ') || 'à vérifier auprès de la source officielle'}
+                      appuis : <Appuis appuis={m.appuis} onAppui={onAppui} /> · fondement :{' '}
+                      {m.references.join(' ; ') || 'à vérifier auprès de la source officielle'}
                     </p>
                     <div className="mt-3 grid gap-3 border-t hairline pt-3 sm:grid-cols-2">
                       <div>

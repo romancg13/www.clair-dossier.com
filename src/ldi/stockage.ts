@@ -31,6 +31,35 @@ import {
   type CoffreScelle,
 } from './coffre';
 import type { Dossier } from './types';
+import type { Bibliotheque } from '../noyau/consignes';
+import type { Demande } from '../noyau/modele';
+
+/**
+ * Ce que le coffre conserve depuis la version 2 : le plan de travail entier —
+ * dossiers, bibliothèque du cabinet (trames et consignes, B21 : l'historique
+ * désactivé compris), demandes du registre. Un coffre v1 (un simple tableau de
+ * dossiers) reste lisible : il rend une bibliothèque vide et aucune demande.
+ */
+export type ContenuCoffre = {
+  dossiers: Dossier[];
+  bibliotheque: Bibliotheque;
+  demandes: Demande[];
+};
+
+const VERSION_CONTENU = 2;
+
+export function contenuCoffre(partiel: Partial<ContenuCoffre> = {}): ContenuCoffre {
+  return {
+    dossiers: partiel.dossiers ?? [],
+    bibliotheque: partiel.bibliotheque ?? { trames: [], consignes: [] },
+    demandes: partiel.demandes ?? [],
+  };
+}
+
+/** Les appels historiques passent un tableau de dossiers : toujours admis. */
+function normaliserContenu(entree: Dossier[] | Partial<ContenuCoffre>): ContenuCoffre {
+  return Array.isArray(entree) ? contenuCoffre({ dossiers: entree }) : contenuCoffre(entree);
+}
 
 const CLE_COFFRE = 'ldi.atelier.coffre';
 
@@ -134,21 +163,25 @@ export function purgerHeritage(support = stockageParDefaut()): void {
  */
 export async function activerConservation(
   phrase: string,
-  dossiers: Dossier[],
+  contenu: Dossier[] | Partial<ContenuCoffre>,
   maintenant: string,
   support = stockageParDefaut()
 ): Promise<{ coffre: CoffreOuvert; etat: EtatConservation }> {
   if (!support) throw new Error("Aucun support de conservation sur cet appareil.");
 
   const coffre = await creerCoffre(phrase);
-  const enveloppe = await sceller(coffre, JSON.stringify(dossiers), maintenant);
+  const enveloppe = await sceller(coffre, serialiserContenu(contenu), maintenant);
   support.setItem(CLE_COFFRE, JSON.stringify(enveloppe));
 
   return { coffre, etat: etatConservation(support) };
 }
 
+function serialiserContenu(entree: Dossier[] | Partial<ContenuCoffre>): string {
+  return JSON.stringify({ version: VERSION_CONTENU, ...normaliserContenu(entree) });
+}
+
 export type Ouverture =
-  | { ok: true; coffre: CoffreOuvert; dossiers: Dossier[] }
+  | { ok: true; coffre: CoffreOuvert; dossiers: Dossier[]; contenu: ContenuCoffre }
   | { ok: false; message: string };
 
 /**
@@ -179,11 +212,26 @@ export async function ouvrirConservation(
     return { ok: false, message: 'Coffre ouvert, mais son contenu n’est pas un plan de travail lisible.' };
   }
 
-  return {
-    ok: true,
-    coffre: resultat.coffre,
-    dossiers: Array.isArray(parse) ? parse.filter(estDossier) : [],
-  };
+  const contenu = lireContenu(parse);
+  return { ok: true, coffre: resultat.coffre, dossiers: contenu.dossiers, contenu };
+}
+
+/**
+ * Lit un contenu de coffre, quelle que soit sa génération : un tableau nu est
+ * un coffre v1 (dossiers seuls), un objet versionné porte le plan complet.
+ * Chaque partie est validée séparément — une bibliothèque illisible ne fait
+ * pas perdre les dossiers.
+ */
+function lireContenu(parse: unknown): ContenuCoffre {
+  if (Array.isArray(parse)) return contenuCoffre({ dossiers: parse.filter(estDossier) });
+  if (typeof parse !== 'object' || parse === null) return contenuCoffre();
+
+  const brut = parse as { dossiers?: unknown; bibliotheque?: unknown; demandes?: unknown };
+  return contenuCoffre({
+    dossiers: Array.isArray(brut.dossiers) ? brut.dossiers.filter(estDossier) : [],
+    bibliotheque: estBibliotheque(brut.bibliotheque) ? brut.bibliotheque : undefined,
+    demandes: Array.isArray(brut.demandes) ? brut.demandes.filter(estDemande) : [],
+  });
 }
 
 function estDossier(d: unknown): d is Dossier {
@@ -197,6 +245,18 @@ function estDossier(d: unknown): d is Dossier {
   );
 }
 
+function estBibliotheque(b: unknown): b is Bibliotheque {
+  if (typeof b !== 'object' || b === null) return false;
+  const c = b as Partial<Bibliotheque>;
+  return Array.isArray(c.trames) && Array.isArray(c.consignes);
+}
+
+function estDemande(d: unknown): d is Demande {
+  if (typeof d !== 'object' || d === null) return false;
+  const c = d as Partial<Demande>;
+  return typeof c.id === 'string' && typeof c.enonce === 'string' && typeof c.etat === 'string';
+}
+
 /**
  * Scelle le plan de travail dans un coffre déjà ouvert.
  *
@@ -207,14 +267,14 @@ function estDossier(d: unknown): d is Dossier {
  */
 export async function conserver(
   coffre: CoffreOuvert,
-  dossiers: Dossier[],
+  contenu: Dossier[] | Partial<ContenuCoffre>,
   maintenant: string,
   support = stockageParDefaut()
 ): Promise<boolean> {
   if (!support) return false;
 
   try {
-    const enveloppe = await sceller(coffre, JSON.stringify(dossiers), maintenant);
+    const enveloppe = await sceller(coffre, serialiserContenu(contenu), maintenant);
     support.setItem(CLE_COFFRE, JSON.stringify(enveloppe));
     return true;
   } catch {

@@ -5,7 +5,7 @@
  * peut pas vérifier serait ignoré. Le passage reste dans la pièce — le
  * détecter n'est pas le supprimer.
  */
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 
 import { creerIndexLocal } from '../../ldi/ingestion/fragments';
 import type { DocumentIngere } from '../../noyau/p0';
@@ -17,8 +17,16 @@ const TON_INDEXATION: Record<DocumentIngere['etatIndexation'], string> = {
   quarantaine: 'text-alerte-clair',
 };
 
-export function VueDocuments({ documents }: { documents: DocumentIngere[] }) {
-  const [requete, setRequete] = useState('');
+export function VueDocuments({
+  documents,
+  requete,
+  onRequete,
+}: {
+  documents: DocumentIngere[];
+  /** Requête TENUE PAR LE PARENT : un clic d'appui (B20) la pré-remplit. */
+  requete: string;
+  onRequete: (q: string) => void;
+}) {
 
   const index = useMemo(() => {
     const i = creerIndexLocal();
@@ -31,7 +39,16 @@ export function VueDocuments({ documents }: { documents: DocumentIngere[] }) {
   const nomParId = new Map(documents.map((d) => [d.id, d.nom]));
 
   if (documents.length === 0) {
-    return <Vide titre="Aucun document ingéré" explication="Les pièces déposées dans l’onglet Dépôt apparaissent ici, avec leur empreinte et leur état d’indexation." />;
+    return (
+      <Vide
+        titre="Aucun document ingéré"
+        explication={
+          requete.trim()
+            ? `La recherche « ${requete.trim()} » n’a aucune pièce où chercher : ce dossier n’a pas de documents ingérés. Les pièces déposées dans l’onglet Dépôt apparaissent ici.`
+            : 'Les pièces déposées dans l’onglet Dépôt apparaissent ici, avec leur empreinte et leur état d’indexation.'
+        }
+      />
+    );
   }
 
   return (
@@ -42,7 +59,7 @@ export function VueDocuments({ documents }: { documents: DocumentIngere[] }) {
         </TitreSection>
         <input
           value={requete}
-          onChange={(e) => setRequete(e.target.value)}
+          onChange={(e) => onRequete(e.target.value)}
           placeholder="Tous les termes doivent être présents — ex. : perquisition assentiment"
           className="w-full rounded-lg border hairline bg-surface px-4 py-2.5 text-sm text-encre focus:border-laiton focus:outline-none"
         />

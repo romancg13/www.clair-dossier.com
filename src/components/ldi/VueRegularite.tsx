@@ -8,7 +8,7 @@
 import { useState } from 'react';
 
 import type { PosteRegularite } from '../../noyau/postes';
-import { Reserve, TitreSection, Vide } from './Indicateurs';
+import { Appuis, Reserve, TitreSection, Vide } from './Indicateurs';
 
 const TON: Record<PosteRegularite['synthese'], { pastille: string; texte: string; libelle: string }> = {
   constat: { pastille: 'bg-encre-3', texte: 'text-encre-2', libelle: 'constat' },
@@ -16,7 +16,14 @@ const TON: Record<PosteRegularite['synthese'], { pastille: string; texte: string
   manque: { pastille: 'bg-laiton', texte: 'text-laiton-clair', libelle: 'manque' },
 };
 
-export function VueRegularite({ postes }: { postes: PosteRegularite[] | null }) {
+export function VueRegularite({
+  postes,
+  onAppui,
+}: {
+  postes: PosteRegularite[] | null;
+  /** B20 — remonter d'un clic de l'appui à la pièce (vue Documents). */
+  onAppui?: (appui: string) => void;
+}) {
   const [ouvert, setOuvert] = useState<number | null>(null);
 
   if (!postes) {
@@ -58,8 +65,7 @@ export function VueRegularite({ postes }: { postes: PosteRegularite[] | null }) 
                       <ul className="space-y-1.5">
                         {poste.present.map((p) => (
                           <li key={p.element}>
-                            {p.element}{' '}
-                            <span className="font-mono text-[0.68rem] text-encre-3">[{p.appuis.join(', ')}]</span>
+                            {p.element} <Appuis appuis={p.appuis} onAppui={onAppui} />
                           </li>
                         ))}
                       </ul>
@@ -71,9 +77,16 @@ export function VueRegularite({ postes }: { postes: PosteRegularite[] | null }) 
                         {poste.griefs.map((g) => (
                           <li key={g.enonce}>
                             {g.enonce}
+                            {g.appuis.length > 0 && (
+                              <span className="block">
+                                <span className="font-mono text-[0.68rem] text-encre-3">appuis : </span>
+                                <Appuis appuis={g.appuis} onAppui={onAppui} />
+                              </span>
+                            )}
                             {g.actesAffectes.length > 0 && (
-                              <span className="block font-mono text-[0.68rem] text-encre-3">
-                                actes subséquents affectés : {g.actesAffectes.join(', ')}
+                              <span className="block">
+                                <span className="font-mono text-[0.68rem] text-encre-3">actes subséquents affectés : </span>
+                                <Appuis appuis={g.actesAffectes} onAppui={onAppui} />
                               </span>
                             )}
                           </li>

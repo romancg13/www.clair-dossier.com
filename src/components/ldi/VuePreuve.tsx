@@ -8,16 +8,19 @@ import { useState } from 'react';
 
 import type { AnalysePreuve } from '../../noyau/preuve';
 import type { DossierPenal, ElementPreuve } from '../../noyau/modele';
-import { Reserve, TitreSection, Vide } from './Indicateurs';
+import { Appuis, Reserve, TitreSection, Vide } from './Indicateurs';
 
 export function VuePreuve({
   dossier,
   analyses,
   onAjouter,
+  onAppui,
 }: {
   dossier: DossierPenal | null;
   analyses: AnalysePreuve[] | null;
   onAjouter: (element: Omit<ElementPreuve, 'id'>) => void;
+  /** B20 — remonter d'un clic de l'appui à la pièce (vue Documents). */
+  onAppui?: (appui: string) => void;
 }) {
   const [type, setType] = useState('');
   const [rattachement, setRattachement] = useState('');
@@ -65,7 +68,7 @@ export function VuePreuve({
               <article key={a.elementId} className="rounded-xl border hairline bg-surface p-5 shadow-card">
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <h3 className="text-sm font-semibold text-encre">{a.type}</h3>
-                  <span className="font-mono text-[0.68rem] text-encre-3">{a.appuis.join(', ')}</span>
+                  <Appuis appuis={a.appuis} onAppui={onAppui} />
                 </div>
                 <dl className="mt-3 space-y-2.5 text-xs leading-relaxed">
                   <Ligne t="Établit">{a.etablit}</Ligne>

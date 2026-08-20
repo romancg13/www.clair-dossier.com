@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { alertesResiduelles, minimiser } from '../../ldi/confidentialite';
 import { rendreMarkdown } from '../../ldi/pipeline';
@@ -130,6 +130,8 @@ export function VueParametres({
   statistiquesCache,
   onViderCache,
   nombreDossiers,
+  exportDossier,
+  onImporterDossier,
 }: {
   conservation: EtatConservation;
   coffreOuvert: boolean;
@@ -139,6 +141,10 @@ export function VueParametres({
   statistiquesCache: { entrees: number; succes: number; defauts: number };
   onViderCache: () => void;
   nombreDossiers: number;
+  /** Dossier actif prêt à l'export — `null` si aucun dossier réel actif. */
+  exportDossier: { reference: string; json: string } | null;
+  /** Import d'un dossier JSON : message d'échec, ou `null` si versé. */
+  onImporterDossier: (texte: string) => string | null;
 }) {
   return (
     <div className="space-y-8">
@@ -151,6 +157,8 @@ export function VueParametres({
           actions={actionsCoffre}
         />
       </section>
+
+      <SectionSauvegarde exportDossier={exportDossier} onImporterDossier={onImporterDossier} />
 
       <section>
         <TitreSection surtitre="Ingestion" titre="Niveau d’extraction (décision D-1)" />
@@ -253,6 +261,98 @@ export function VueParametres({
         </div>
       </section>
     </div>
+  );
+}
+
+/**
+ * Export/import de dossier : la sauvegarde STRUCTURÉE, complémentaire du
+ * coffre. Le fichier exporté est du JSON en clair — l'écran le dit avant le
+ * clic, pas après : c'est à l'avocat de choisir où ce fichier vit.
+ */
+function SectionSauvegarde({
+  exportDossier,
+  onImporterDossier,
+}: {
+  exportDossier: { reference: string; json: string } | null;
+  onImporterDossier: (texte: string) => string | null;
+}) {
+  const [statut, setStatut] = useState<{ ton: 'ok' | 'echec'; message: string } | null>(null);
+  const champImport = useRef<HTMLInputElement>(null);
+
+  function telecharger() {
+    if (!exportDossier) return;
+    const blob = new Blob([exportDossier.json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${exportDossier.reference}.dossier.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setStatut({ ton: 'ok', message: `Dossier ${exportDossier.reference} exporté — fichier JSON en clair, à ranger en lieu sûr.` });
+  }
+
+  async function importer(liste: FileList | null) {
+    const fichier = liste?.[0];
+    if (!fichier) return;
+    const texte = await fichier.text();
+    const echec = onImporterDossier(texte);
+    setStatut(
+      echec
+        ? { ton: 'echec', message: `Import refusé — ${echec}` }
+        : { ton: 'ok', message: `Dossier importé depuis « ${fichier.name} » : il est maintenant le dossier actif.` }
+    );
+    if (champImport.current) champImport.current.value = '';
+  }
+
+  return (
+    <section>
+      <TitreSection surtitre="Sauvegarde" titre="Export et import de dossier" />
+
+      <div className="rounded-xl border hairline bg-surface p-6 shadow-card">
+        <p className="text-sm leading-relaxed text-encre-2">
+          L’export produit un fichier JSON versionné (schéma d’analyse et extension pénale), relisible par
+          l’atelier et par la ligne de commande. L’import passe trois barrières — JSON lisible, version de
+          schéma connue, forme valide — et refuse en nommant ce qui bloque.
+        </p>
+
+        <div className="mt-4 flex flex-wrap gap-3">
+          <button
+            type="button"
+            onClick={telecharger}
+            disabled={!exportDossier}
+            className="rounded-lg bg-laiton px-4 py-2 text-sm text-fond transition-colors hover:bg-laiton-clair disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {exportDossier ? `Exporter ${exportDossier.reference}` : 'Aucun dossier réel actif'}
+          </button>
+          <button
+            type="button"
+            onClick={() => champImport.current?.click()}
+            className="rounded-lg border hairline bg-surface px-4 py-2 text-sm text-encre transition-colors hover:border-laiton"
+          >
+            Importer un dossier JSON
+          </button>
+          <input
+            ref={champImport}
+            type="file"
+            accept=".json,application/json"
+            className="hidden"
+            onChange={(e) => void importer(e.target.files)}
+          />
+        </div>
+
+        <p role="status" aria-live="polite" className="mt-3 min-h-5 text-xs leading-relaxed">
+          {statut && (
+            <span className={statut.ton === 'ok' ? 'text-laiton-clair' : 'text-alerte-clair'}>{statut.message}</span>
+          )}
+        </p>
+
+        <Reserve>
+          Le fichier exporté est <strong>en clair</strong> : il contient le dossier tel quel, secret
+          professionnel compris. Il ne remplace pas le coffre — il le complète, pour l’archivage ou le
+          passage d’un poste à un autre. Un export oublié dans un répertoire partagé est une pièce qui fuit.
+        </Reserve>
+      </div>
+    </section>
   );
 }
 
