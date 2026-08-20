@@ -7,14 +7,17 @@
  */
 import { Routes, Route, Navigate } from 'react-router-dom';
 
+import { BorneErreur } from './components/ldi/BorneErreur';
 import { LdiAtelier } from './pages/LdiAtelier';
 
 export default function App() {
   return (
-    <Routes>
-      <Route path="/" element={<LdiAtelier />} />
-      {/* Toute autre URL ramène à l'atelier : il n'y a rien d'autre à servir. */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <BorneErreur>
+      <Routes>
+        <Route path="/" element={<LdiAtelier />} />
+        {/* Toute autre URL ramène à l'atelier : il n'y a rien d'autre à servir. */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </BorneErreur>
   );
 }

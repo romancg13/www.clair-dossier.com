@@ -35,12 +35,17 @@ export function VueBibliotheque({
   const [trameIntitule, setTrameIntitule] = useState('');
   const [trameType, setTrameType] = useState<TypeLivrable>('conclusions');
   const [trameCorps, setTrameCorps] = useState('');
+  const [confirmation, setConfirmation] = useState('');
 
   const actives = bibliotheque.consignes.filter((c) => c.active);
   const historiques = bibliotheque.consignes.filter((c) => !c.active);
 
   return (
     <div className="space-y-10">
+      <p role="status" aria-live="polite" className={confirmation ? 'rounded-lg border border-laiton/50 bg-laiton/10 p-3 text-xs leading-relaxed text-laiton-clair' : 'sr-only'}>
+        {confirmation}
+      </p>
+
       <section>
         <TitreSection surtitre="Consignes permanentes" titre="Dites-le une fois" />
         <form
@@ -50,6 +55,7 @@ export function VueBibliotheque({
             if (!enonce.trim()) return;
             onConsigne(enonce.trim(), portee);
             setEnonce('');
+            setConfirmation('Consigne enregistrée : elle s’appliquera à toutes les générations suivantes.');
           }}
         >
           <label htmlFor="consigne" className="min-w-64 flex-1 text-xs text-encre-2">
@@ -121,6 +127,9 @@ export function VueBibliotheque({
             e.preventDefault();
             if (!trameIntitule.trim() || !trameCorps.trim()) return;
             onTrame(trameIntitule.trim(), trameType, trameCorps);
+            setConfirmation(
+              `Trame ajoutée : elle habille désormais « ${LIBELLES_LIVRABLE[trameType]} »${trameCorps.includes(EMPLACEMENT_CORPS) ? '' : ' — sans [[CORPS]], elle servira de préambule'}.`
+            );
             setTrameIntitule(''); setTrameCorps('');
           }}
         >

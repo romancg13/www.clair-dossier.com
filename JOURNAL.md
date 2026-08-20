@@ -154,3 +154,51 @@
   typecheck, build, autonome file://). DECISIONS.md et JOURNAL.md complétés.
 - **Volontairement écarté** : rien.
 - **Reste ouvert** : les limites listées au README et à la feuille de route.
+
+## Étape 18 — Suite v4+ : validations prouvées et trames substituées
+- **Fait** : les trois validations demandées, avec preuves. (1) Gate CLI :
+  `livrable synthese examples/dossier-exemple.json` → code 6, stdout vide,
+  quatre anomalies nommées avec chemins sur stderr. (2) Coffre, parcours
+  COMPLET dans un Chromium réel contre l'interface : dépôt d'une pièce,
+  création du coffre (853 octets scellés, ni phrase ni contenu lisibles sur
+  le support), rechargement → verrouillé, mauvaise phrase refusée sans
+  destruction, bonne phrase → dossier restauré, effacement sans phrase.
+  (3) Niveaux D-1 sur un PDF réel : interrupteur fermé → refus nommant le
+  réglage à activer ; ouvert → pièce admise, format pdf, empreinte.
+  Constat corrigé au passage : la CLI distante et le build IIFE n'étaient
+  pas des bugs — tous deux re-prouvés fonctionnels.
+- **Fait** : trames du cabinet SUBSTITUÉES aux gabarits (le vrai point
+  ouvert) : `trameApplicable` (la plus récente du type), `appliquerTrame`
+  (`[[CORPS]]`, `[[REFERENCE]]`, `[[INITIALES]]`, `[[JURIDICTION]]`,
+  remplacement par découpage — `$&` reste littéral). Le cadre PROJET et les
+  vérifications avant dépôt restent hors de portée des trames (B12) ; la
+  trame employée est nommée dans le corps ; le rapport d'ancrage n'est
+  jamais habillé ; le corps habillé repasse par la gate — fil B15 élargi
+  aux formulations franches (« culpabilité acquise/démontrée/avérée… »).
+  Huit tests.
+- **Volontairement écarté** : passer les trames à la CLI `livrable` — la
+  bibliothèque vit dans l'atelier ; une option --trames viendra si l'usage
+  la réclame.
+
+## Étape 19 — B20 cliquable, coffre v2, pupitre premium, filet d'erreur
+- **Fait** : B20 « remonter d'un clic » — tout appui affiché (régularité,
+  preuve, moyens) est un bouton ; le clic ouvre Documents avec la recherche
+  pré-remplie sur la cote (état vide explicite si le dossier n'a pas de
+  pièces ingérées). Vérifié en navigateur réel.
+- **Fait** : coffre v2 — le plan ENTIER est scellé (dossiers, bibliothèque
+  avec historique, demandes), un coffre v1 reste lisible, chaque partie
+  validée séparément ; export du dossier actif en JSON versionné et import
+  à trois barrières dans Paramètres, consignés au journal par identifiants.
+- **Fait** : pupitre — quatre tuiles de comptes (dossiers, échéances sous
+  7 jours, griefs, manques : des comptes, jamais des scores) et « Classer
+  par » (phase, statut, nature, avancement, urgence calculée) qui groupe la
+  grille par catégories titrées ; un dossier à plusieurs natures figure
+  dans chacune, et l'écran le dit. Vérifié en navigateur réel.
+- **Fait** : BorneErreur au sommet de l'application (erreur dite, rien ne
+  quitte le poste, rechargement proposé, le coffre reste scellé) ; retours
+  d'action aria-live dans Bibliothèque et Paramètres.
+- **Volontairement écarté** : ranger l'export JSON dans le coffre — c'est
+  un fichier de PASSAGE (archivage, changement de poste), en clair par
+  nature, et l'écran le dit avant le clic.
+- **Reste ouvert** : rien sur cette tranche. 400 tests, typecheck propre,
+  build + autonome reconstruits.

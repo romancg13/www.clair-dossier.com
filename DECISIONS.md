@@ -98,3 +98,37 @@ doit exister dans un dépôt). — Règle : §11.1-17 impose d'ailleurs un dossi
 « entièrement fictif et clairement identifié comme tel ». — Réversibilité :
 sans objet. — Test : `conformite.test.ts` (bout en bout + mention « fictif »
 exigée dans le fichier).
+
+**[18] — Une trame de cabinet habille l'INTÉRIEUR du livrable, jamais son
+cadre.** La mention PROJET (tête et pied), la ligne de dossier et les
+« Vérifications indispensables avant dépôt » sont imposées par l'outil et
+insubstituables ; la trame reçoit le corps généré à `[[CORPS]]` (sans lui,
+elle devient un préambule — le contenu généré n'est jamais écrasé), et le
+corps habillé repasse intégralement par la gate. — Écarté : laisser la trame
+remplacer le document entier (une trame pourrait alors retirer la mention
+projet — B12 tomberait par configuration). — Règle : B12, M11. —
+Réversibilité : tout est dans `cadre()` et `appliquerTrame`. — Test :
+`livrables.test.ts` (huit cas, dont B15 sur trame fautive et `$&` littéral).
+
+**[19] — Le rapport d'ancrage n'est jamais habillé par une trame.** —
+Écarté : le traiter comme les huit autres. C'est l'outil de CONTRÔLE : le
+reformater desservirait sa seule fonction — dire exactement ce que les
+passes ont produit. — Règle : §10 (le contrôle prime la forme). —
+Réversibilité : une ligne dans `genererLivrable`. — Test : `livrables.test.ts`.
+
+**[20] — Le coffre v2 scelle le plan de travail ENTIER (dossiers,
+bibliothèque avec historique, demandes) ; un coffre v1 reste lisible.** —
+Écarté : re-sceller v1 en v2 à l'ouverture sans geste de l'avocat (une
+écriture silencieuse au premier déverrouillage surprendrait ; le prochain
+scellement au fil du travail migre naturellement). — Règle : B9/B21. —
+Réversibilité : `lireContenu` accepte les deux générations, chaque partie
+validée séparément. — Test : `atelier-etat.test.ts` (v1 lu, partie corrompue
+sans perte des autres, rien en clair).
+
+**[21] — L'export de dossier est un fichier JSON EN CLAIR, dit avant le
+clic.** — Écarté : chiffrer l'export (un fichier de passage doit se relire
+ailleurs — CLI comprise — sans coffre ; le coffre couvre la conservation,
+l'export couvre le transport, et l'écran nomme le risque du répertoire
+partagé). — Règle : B9 (baseline en clair explicite), §7.10 (le manque se
+dit). — Réversibilité : la section Paramètres est autonome. — Test : barrières
+d'import dans `serialisation.test.ts` (existant).
