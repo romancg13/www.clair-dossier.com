@@ -50,3 +50,24 @@ n'est importable que par la CLI.** — Écarté : le déplacer dans `scripts/`
 (perdrait la couverture tsc/tests). — Règle : §0.3-5. — Réversibilité :
 déplacement de fichier. — Test : le test « aucun code d'appel API dans le
 bundle navigateur » balaie les imports de `src/components` et `src/pages`.
+
+**[12-14] — Les étapes 12, 13 et 14 sont livrées en un lot, le module de
+livrables AVANT l'écran Écritures.** — Écarté : suivre l'ordre strict 12→13→14
+en construisant un écran Écritures sans générateur derrière. — Règle : §1.4
+(exactitude > complétude) — un menu qui mène à un écran vide est un mensonge
+d'interface. — Réversibilité : sans objet (ordre d'écriture, pas de code). —
+Test : `livrables.test.ts` précède l'écran dans l'historique.
+
+**[12] — Pas d'annulation/rétablissement global (§5.3).** — Écarté : un
+journal d'états complet de l'atelier. — Règle : §0.3-6 (simplicité) ; la
+saisie passe par des formulaires courts, corrigeables par édition, et les
+consignes se RÉVISENT sans perte (B21). — Réversibilité : un futur
+gestionnaire d'états peut envelopper `setDossiers`. — Test : aucun (limite
+consignée, reprise au rapport final).
+
+**[13] — Police de texte : Inter (déjà embarquée) plutôt qu'une humane
+stricte.** — Écarté : ajouter une nouvelle famille de polices. — Règle :
+« aucune dépendance nouvelle » + B10 (déjà en woff2 local) ; Inter tient la
+lisibilité en petit corps et les tableaux denses, ce qui est la fonction
+demandée. — Réversibilité : un seul jeton `--font-sans`. — Test : la CI
+échoue sur toute police externe (balayage des sources).

@@ -47,7 +47,7 @@ describe('plan de navigation', () => {
 
   it('ramène une valeur d’URL inconnue au tableau de bord', () => {
     for (const valeur of [null, '', 'inexistante', '../../etc/passwd', 'PARAMETRES']) {
-      assert.equal(vueValide(valeur), 'tableau-de-bord', `valeur rejetée attendue : ${valeur}`);
+      assert.equal(vueValide(valeur), 'pupitre', `valeur rejetée attendue : ${valeur}`);
     }
   });
 

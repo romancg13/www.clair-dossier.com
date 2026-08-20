@@ -1,8 +1,7 @@
 @import "tailwindcss";
 
-@import "@fontsource/cormorant-garamond/400.css";
+/* Polices embarquées en woff2 dans le dépôt (B10) — aucun chargement externe. */
 @import "@fontsource/cormorant-garamond/500.css";
-@import "@fontsource/cormorant-garamond/500-italic.css";
 @import "@fontsource/cormorant-garamond/600.css";
 @import "@fontsource/cormorant-garamond/700.css";
 @import "@fontsource/inter/300.css";
@@ -12,79 +11,70 @@
 @import "@fontsource/jetbrains-mono/400.css";
 @import "@fontsource/jetbrains-mono/500.css";
 
+/* ┌─ « ENCRE ET GREFFE » — design system du mandat v4, §8 ──────────────────┐
+   │ Deux registres nettement séparés : l'ATELIER (fond graphite bleuté,      │
+   │ typographie claire, densité) et le DOCUMENT (fond papier, marges,        │
+   │ composition de plaidoirie). Un seul accent : le laiton dit « c'est       │
+   │ ici ». Le rouge n'apparaît que quand quelque chose échappe à l'avocat.   │
+   └───────────────────────────────────────────────────────────────────────────┘ */
 @theme {
-  /* ─── Palette signature ──────────────────────────────────── */
-  --color-navy-900: #0d1b3d;
-  --color-navy-800: #152348;
-  --color-navy-700: #1e2c52;
-  --color-navy-600: #2a3960;
+  /* ─── Jetons imposés (§8.2) ──────────────────────────────── */
+  --color-fond: #141A21;          /* --fond-atelier */
+  --color-surface: #1C242D;
+  --color-encre: #E8EAED;
+  --color-encre-2: #93A0AE;       /* --encre-secondaire */
+  --color-papier: #F7F5F0;
+  --color-encre-papier: #1A1A1A;
+  --color-laiton: #B08A46;
+  --color-alerte: #B3423A;
+  --color-ancrage-partiel: #6E7C8C;
 
-  --color-gold-500: #c4a456;
-  --color-gold-400: #e6c97d;
-  --color-gold-300: #f0d99a;
-  /* Texte uniquement sur fond clair — passe WCAG AA (contrast 5.3:1 sur cream-50) */
-  --color-gold-700: #7a5f28;
+  /* ─── Déclinaisons nécessaires au contraste ──────────────── */
+  --color-panneau: #10151B;       /* barre latérale, plus profonde que le fond */
+  --color-surface-2: #232C36;     /* zones en creux dans une carte */
+  --color-laiton-clair: #C9A55F;  /* laiton lisible en TEXTE sur fond sombre */
+  --color-alerte-clair: #E08A83;  /* alerte lisible en TEXTE sur fond sombre */
+  --color-encre-3: #6E7C8C;       /* métadonnées effacées = ancrage partiel */
 
-  --color-cream-50: #fbf9f4;
-  --color-cream-100: #f5f0e6;
-  --color-cream-200: #ebe2cf;
-
-  --color-ink: #0a1228;
-  --color-slate-500: #5a6378;
-  --color-slate-400: #7c8497;
-  --color-slate-300: #a3aab9;
-
-  --color-sky-marker: rgba(179, 210, 239, 0.6);
-  --color-sky-marker-deep: rgba(150, 190, 230, 0.8);
-
-  /* ─── Typo ───────────────────────────────────────────────── */
+  /* ─── Typographie (§8.3) ─────────────────────────────────── */
   --font-display: "Cormorant Garamond", "Iowan Old Style", Georgia, serif;
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
 
-  /* ─── Radii ──────────────────────────────────────────────── */
-  --radius-xs: 0.25rem;
-  --radius-sm: 0.5rem;
-  --radius-md: 0.75rem;
-  --radius-lg: 1.125rem;
-  --radius-xl: 1.5rem;
+  /* ─── Rayons : aucun coin très arrondi (§8.5) ────────────── */
+  --radius-xs: 0.125rem;
+  --radius-sm: 0.1875rem;
+  --radius-md: 0.25rem;
+  --radius-lg: 0.3125rem;
+  --radius-xl: 0.375rem;
   --radius-full: 9999px;
 
-  /* ─── Shadows hairline ────────────────────────────────────── */
-  --shadow-card: 0 2px 24px rgba(13, 27, 61, 0.06);
-  --shadow-card-hover: 0 12px 48px rgba(13, 27, 61, 0.1);
-  --shadow-gold: 0 8px 24px rgba(196, 164, 86, 0.22);
-  --shadow-gold-strong: 0 14px 36px rgba(196, 164, 86, 0.32);
-
-  /* ─── Animation easing ────────────────────────────────────── */
-  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  /* ─── Ombres : nettes, jamais diffuses (§8.5) ────────────── */
+  --shadow-card: 0 1px 0 rgba(0, 0, 0, 0.35);
 }
 
-/* ─── Base ─────────────────────────────────────────────────── */
+/* ─── Base — registre atelier ──────────────────────────────── */
 html {
-  background: var(--color-cream-50);
-  color: var(--color-ink);
+  background: var(--color-fond);
+  color: var(--color-encre);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
-  font-feature-settings: "ss01", "cv11", "calt";
 }
 
 body {
   font-family: var(--font-sans);
   font-weight: 400;
-  line-height: 1.55;
+  line-height: 1.5;
   overflow-x: clip;
   min-height: 100dvh;
 }
 
 ::selection {
-  background: var(--color-sky-marker);
-  color: var(--color-navy-900);
+  background: rgba(176, 138, 70, 0.35);
+  color: var(--color-encre);
 }
 
-/* ─── Headings ─────────────────────────────────────────────── */
 .font-display {
   font-family: var(--font-display);
   font-feature-settings: "liga", "kern";
@@ -93,283 +83,77 @@ body {
 h1, h2, h3, h4, h5, h6 {
   color: inherit;
   font-weight: 600;
-  letter-spacing: -0.015em;
+  letter-spacing: -0.01em;
 }
 
-/* ─── Skip nav ─────────────────────────────────────────────── */
-.skip-nav {
-  position: fixed;
-  top: -100%;
-  left: 1rem;
-  z-index: 100;
-  padding: 0.75rem 1.25rem;
-  background: var(--color-navy-900);
-  color: var(--color-cream-50);
-  border-radius: var(--radius-md);
-  font-weight: 600;
-  transition: top 0.2s var(--ease-out-soft);
-}
-.skip-nav:focus { top: 1rem; }
+/* Séparations nettes : le trait remplace l'ombre. */
+.hairline { border-color: rgba(232, 234, 237, 0.09); }
+.hairline-strong { border-color: rgba(232, 234, 237, 0.16); }
 
-/* ─── Focus visible ────────────────────────────────────────── */
+/* ─── Focus : le laiton dit « c'est ici » (§8.2) ───────────── */
 *:focus { outline: none; }
 *:focus-visible {
-  outline: 2px solid var(--color-navy-900);
+  outline: 2px solid var(--color-laiton);
   outline-offset: 2px;
-  box-shadow: 0 0 0 4px rgba(230, 201, 125, 0.95);
   border-radius: 2px;
 }
 
-/* ─── Hairlines ────────────────────────────────────────────── */
-.hairline { border-color: rgba(13, 27, 61, 0.08); }
-.hairline-strong { border-color: rgba(13, 27, 61, 0.12); }
-.hairline-gold { border-color: rgba(196, 164, 86, 0.35); }
-
-/* ─── Sheen for primary buttons ────────────────────────────── */
-.sheen {
-  position: relative;
-  overflow: hidden;
-  isolation: isolate;
-}
-.sheen::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    115deg,
-    transparent 30%,
-    rgba(255, 255, 255, 0.45) 50%,
-    transparent 70%
-  );
-  transform: translateX(-100%);
-  transition: transform 0.6s var(--ease-out-soft);
-  pointer-events: none;
-}
-.sheen:hover::before { transform: translateX(100%); }
-
-/* ─── Marker highlight ─────────────────────────────────────── */
-.marker-track {
-  position: relative;
-  display: inline-block;
-  isolation: isolate;
-}
-.marker-track::before {
-  content: "";
-  position: absolute;
-  inset: 0.2em -0.08em 0.05em -0.08em;
-  background: var(--color-sky-marker);
-  z-index: -1;
-  border-radius: 0.1em 0.3em 0.15em 0.2em;
-  transform-origin: left center;
-  transform: scaleX(var(--marker-scale, 0));
-  transition: transform 0.9s var(--ease-out-expo);
-}
-.marker-track[data-revealed="true"]::before {
-  --marker-scale: 1;
-}
-
-/* ─── Premium visual layer ───────────────────────────────────
-   Presentation-only: no routes, forms, auth, payments or API calls. */
-.premium-hero-shell::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -10;
-  pointer-events: none;
-  background:
-    radial-gradient(circle at 16% 18%, rgba(196, 164, 86, 0.13), transparent 28%),
-    radial-gradient(circle at 82% 14%, rgba(179, 210, 239, 0.22), transparent 33%),
-    linear-gradient(120deg, transparent 20%, rgba(255, 255, 255, 0.30) 50%, transparent 80%);
-  background-size: 100% 100%, 100% 100%, 220% 220%;
-  animation: premium-ambient-sweep 18s var(--ease-out-soft) infinite alternate;
-}
-
-.premium-tech-section {
-  position: relative;
-  isolation: isolate;
-  overflow: hidden;
-}
-
-.premium-tech-section::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  opacity: 0.24;
-  background-image:
-    linear-gradient(rgba(230, 201, 125, 0.16) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(230, 201, 125, 0.11) 1px, transparent 1px),
-    radial-gradient(circle at 28% 30%, rgba(196, 164, 86, 0.18), transparent 34%),
-    radial-gradient(circle at 74% 18%, rgba(179, 210, 239, 0.12), transparent 30%);
-  background-position: 0 0, 0 0, center, center;
-  background-size: 56px 56px, 56px 56px, 100% 100%, 100% 100%;
-  animation: premium-grid-drift 28s linear infinite;
-}
-
-.premium-card {
-  isolation: isolate;
-  transform: translateZ(0);
-  transition:
-    transform 360ms var(--ease-out-expo),
-    border-color 360ms var(--ease-out-soft),
-    background-color 360ms var(--ease-out-soft),
-    box-shadow 360ms var(--ease-out-expo),
-    filter 360ms var(--ease-out-expo);
-  will-change: transform;
-}
-
-.premium-card::after {
-  content: "";
-  position: absolute;
-  inset: -1px;
-  z-index: -1;
-  pointer-events: none;
-  border-radius: inherit;
-  background: linear-gradient(135deg, rgba(196, 164, 86, 0.22), transparent 32%, rgba(179, 210, 239, 0.15));
-  opacity: 0;
-  transition: opacity 360ms var(--ease-out-soft);
-}
-
-.premium-card svg {
-  transition:
-    transform 360ms var(--ease-out-expo),
-    color 360ms var(--ease-out-soft);
-  transform-origin: center;
-}
-
-.premium-recommended-plan {
-  box-shadow:
-    0 18px 60px rgba(13, 27, 61, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
-}
-
-.premium-preview-card {
-  backface-visibility: hidden;
-}
-
-header nav a {
-  position: relative;
-}
-
-header nav a::after {
-  content: "";
-  position: absolute;
-  right: 0.85rem;
-  bottom: 0.38rem;
-  left: 0.85rem;
-  height: 1px;
-  border-radius: 999px;
-  background: linear-gradient(90deg, transparent, rgba(196, 164, 86, 0.82), transparent);
-  opacity: 0;
-  transform: scaleX(0.42);
-  transform-origin: center;
-  transition:
-    opacity 180ms var(--ease-out-soft),
-    transform 360ms var(--ease-out-expo);
-}
-
-.sheen {
-  transition:
-    transform 180ms var(--ease-out-expo),
-    box-shadow 360ms var(--ease-out-expo),
-    filter 360ms var(--ease-out-soft);
-}
-
-form input,
-form textarea,
-form select {
-  transition:
-    border-color 180ms var(--ease-out-soft),
-    background-color 180ms var(--ease-out-soft),
-    box-shadow 180ms var(--ease-out-soft);
-}
-
-form label:focus-within > span:first-child {
-  color: var(--color-gold-700);
-}
-
-form input:focus,
-form textarea:focus,
-form select:focus {
-  box-shadow:
-    0 0 0 3px rgba(196, 164, 86, 0.16),
-    0 12px 30px rgba(13, 27, 61, 0.06);
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .premium-card:hover {
-    transform: translate3d(0, -6px, 0);
-    box-shadow: var(--shadow-card-hover);
-    filter: saturate(1.03);
-  }
-
-  .premium-card:hover::after {
-    opacity: 1;
-  }
-
-  .premium-card:hover svg {
-    transform: translate3d(1px, -1px, 0) scale(1.035);
-  }
-
-  header nav a:hover::after,
-  header nav a[aria-current="page"]::after {
-    opacity: 1;
-    transform: scaleX(1);
-  }
-
-  .sheen:hover {
-    filter: saturate(1.05);
-  }
-}
-
-@keyframes premium-ambient-sweep {
-  0% { background-position: center, center, 0% 50%; }
-  100% { background-position: center, center, 100% 50%; }
-}
-
-@keyframes premium-grid-drift {
-  0% { background-position: 0 0, 0 0, center, center; }
-  100% { background-position: 56px 56px, 56px 56px, center, center; }
-}
-
-/* ─── Drop cap (article blog) ──────────────────────────────── */
-.drop-cap > p:first-of-type::first-letter {
+/* ─── Registre document : lecture et impression des écritures ─ */
+.registre-document {
+  background: var(--color-papier);
+  color: var(--color-encre-papier);
   font-family: var(--font-display);
-  font-weight: 600;
-  float: left;
-  font-size: 4.2em;
-  line-height: 0.85;
-  margin: 0.05em 0.12em 0 0;
-  color: var(--color-navy-900);
+  font-size: 1.02rem;
+  line-height: 1.65;
+}
+.registre-document h1, .registre-document h2, .registre-document h3 {
+  font-family: var(--font-display);
+}
+.registre-document code, .registre-document pre {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
 }
 
-/* Drop cap off on mobile — float + huge first-letter crushes single-col reading */
-@media (max-width: 640px) {
-  .drop-cap > p:first-of-type::first-letter {
-    float: none;
-    font-size: inherit;
-    line-height: inherit;
-    margin: 0;
-  }
+/* ─── Mode audience : dense, contraste renforcé, plein écran ── */
+.mode-audience {
+  --color-fond: #0B0F13;
+  --color-surface: #12181F;
+  --color-encre: #F4F6F8;
+  font-size: 1.06rem;
 }
+.mode-audience .masque-audience { display: none; }
 
-/* ─── Reduced motion ───────────────────────────────────────── */
+/* ─── Frise de régularité (§8.4) — seul mouvement autorisé ──── */
+@keyframes propagation-grief {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+.frise-propagation {
+  transform-origin: top;
+  animation: propagation-grief 0.45s ease-out both;
+}
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+  .frise-propagation { animation: none; }
+  * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+}
+
+/* ─── Impression : les écritures, rien de l'interface ─────────
+   Tout est masqué sauf la zone marquée .imprimable, recomposée en
+   registre document, paginée, bordereau en fin (§5.3). */
+@media print {
+  body * { visibility: hidden; }
+  .imprimable, .imprimable * { visibility: visible; }
+  .imprimable {
+    position: absolute;
+    inset: 0;
+    background: #fff !important;
+    color: #1A1A1A !important;
+    font-family: var(--font-display);
+    font-size: 11.5pt;
+    line-height: 1.6;
+    padding: 2cm 2.2cm;
   }
-  .sheen::before { display: none; }
-  .marker-track::before { transform: scaleX(1); }
-  .premium-hero-shell::after,
-  .premium-tech-section::before {
-    animation: none;
-  }
-  .premium-card,
-  .premium-card:hover,
-  .premium-card:hover svg {
-    transform: none;
-  }
+  .imprimable pre { white-space: pre-wrap; font-family: var(--font-display); }
+  .saut-page { break-before: page; }
+  @page { margin: 1.6cm; }
 }

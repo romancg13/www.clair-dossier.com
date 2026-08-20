@@ -50,11 +50,11 @@ export function VueConfidentialite({ rapport }: { rapport: RapportLdi | null }) 
       <section>
         <TitreSection surtitre="Avant toute sortie du poste" titre="Ce qui sortirait" />
 
-        <div className="rounded-xl border hairline bg-white p-6 shadow-card">
-          <label htmlFor="noms" className="block font-mono text-[0.62rem] uppercase tracking-[0.18em] text-slate-500">
+        <div className="rounded-xl border hairline bg-surface p-6 shadow-card">
+          <label htmlFor="noms" className="block font-mono text-[0.62rem] uppercase tracking-[0.18em] text-encre-2">
             Noms à pseudonymiser
           </label>
-          <p className="mt-1.5 text-xs leading-relaxed text-slate-500">
+          <p className="mt-1.5 text-xs leading-relaxed text-encre-2">
             Les adresses, téléphones et numéros structurés sont reconnus automatiquement. Les
             patronymes, eux, doivent être déclarés ici : aucun outil ne les reconnaît de façon
             fiable dans un texte français, et prétendre le contraire serait la promesse la plus
@@ -65,7 +65,7 @@ export function VueConfidentialite({ rapport }: { rapport: RapportLdi | null }) 
             value={noms}
             onChange={(e) => setNoms(e.target.value)}
             placeholder="Jean Dupont, SARL Martin"
-            className="mt-3 w-full rounded-lg border hairline bg-cream-50 p-3 text-sm text-navy-900 focus:border-gold-500 focus:outline-none"
+            className="mt-3 w-full rounded-lg border hairline bg-fond p-3 text-sm text-encre focus:border-laiton focus:outline-none"
           />
 
           {minimise.alertes.length > 0 && (
@@ -73,7 +73,7 @@ export function VueConfidentialite({ rapport }: { rapport: RapportLdi | null }) 
               {minimise.alertes.map((a) => (
                 <li
                   key={a}
-                  className="rounded-lg border border-red-300 bg-red-50 p-3 text-xs leading-relaxed text-red-900"
+                  className="rounded-lg border border-alerte/60 bg-alerte/10 p-3 text-xs leading-relaxed text-alerte-clair"
                 >
                   ⚠ {a}
                 </li>
@@ -81,10 +81,10 @@ export function VueConfidentialite({ rapport }: { rapport: RapportLdi | null }) 
             </ul>
           )}
 
-          <p className="mt-4 font-mono text-[0.62rem] uppercase tracking-[0.18em] text-slate-500">
+          <p className="mt-4 font-mono text-[0.62rem] uppercase tracking-[0.18em] text-encre-2">
             Rapport minimisé
           </p>
-          <pre className="mt-2 max-h-72 overflow-auto whitespace-pre-wrap rounded-lg bg-cream-50 p-4 font-mono text-[0.72rem] leading-relaxed text-navy-900">
+          <pre className="mt-2 max-h-72 overflow-auto whitespace-pre-wrap rounded-lg bg-fond p-4 font-mono text-[0.72rem] leading-relaxed text-encre">
             {minimise.texte}
           </pre>
 
@@ -95,11 +95,11 @@ export function VueConfidentialite({ rapport }: { rapport: RapportLdi | null }) 
                 void navigator.clipboard?.writeText(minimise.texte);
                 setCopie(true);
               }}
-              className="rounded-lg border hairline bg-white px-4 py-2 text-sm text-navy-900 transition-colors hover:border-gold-500"
+              className="rounded-lg border hairline bg-surface px-4 py-2 text-sm text-encre transition-colors hover:border-laiton"
             >
               {copie ? 'Rapport minimisé copié' : 'Copier le rapport minimisé'}
             </button>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-encre-2">
               La copie reste sur ce poste : c’est un presse-papiers, pas un envoi.
             </p>
           </div>
@@ -155,19 +155,19 @@ export function VueParametres({
       <section>
         <TitreSection surtitre="Ingestion" titre="Niveau d’extraction (décision D-1)" />
 
-        <div className="rounded-xl border hairline bg-white p-6 shadow-card">
+        <div className="rounded-xl border hairline bg-surface p-6 shadow-card">
           <label className="flex items-start gap-3">
             <input
               type="checkbox"
               checked={niveau1Actif}
               onChange={(e) => onNiveau1(e.target.checked)}
-              className="mt-1 h-4 w-4 shrink-0 accent-gold-500"
+              className="mt-1 h-4 w-4 shrink-0 accent-laiton"
             />
             <span>
-              <span className="block text-sm font-medium text-navy-900">
+              <span className="block text-sm font-medium text-encre">
                 Niveau 1 — extraire les documents à structure (PDF natif, bureautique, courriels, archives)
               </span>
-              <span className="mt-1 block text-xs leading-relaxed text-slate-500">
+              <span className="mt-1 block text-xs leading-relaxed text-encre-2">
                 Désactivé par défaut : seuls le texte collé et les fichiers texte brut
                 (.txt, .md, .csv, .json) sont lus. L’extraction du niveau 1 reste locale et
                 sans OCR ; une page numérisée sans couche texte part en quarantaine, comptée
@@ -181,8 +181,8 @@ export function VueParametres({
       <section>
         <TitreSection surtitre="Performance" titre="Cache d’analyse" />
 
-        <div className="rounded-xl border hairline bg-white p-6 shadow-card">
-          <p className="text-sm leading-relaxed text-slate-600">
+        <div className="rounded-xl border hairline bg-surface p-6 shadow-card">
+          <p className="text-sm leading-relaxed text-encre-2">
             Une analyse est mémorisée par état de dossier — la clé est l’empreinte du dossier, celle
             qu’utilise déjà le journal. Elle change si et seulement si le dossier change, ce qui
             évite de tout réanalyser à chaque frappe dans un filtre.
@@ -195,11 +195,11 @@ export function VueParametres({
               ['Analyses', statistiquesCache.defauts, 'réellement exécutées'],
             ].map(([label, valeur, note]) => (
               <div key={String(label)}>
-                <dt className="font-mono text-[0.62rem] uppercase tracking-[0.18em] text-slate-500">
+                <dt className="font-mono text-[0.62rem] uppercase tracking-[0.18em] text-encre-2">
                   {label}
                 </dt>
-                <dd className="mt-1 font-display text-2xl font-semibold text-navy-900">{valeur}</dd>
-                <dd className="text-[0.68rem] text-slate-400">{note}</dd>
+                <dd className="mt-1 font-display text-2xl font-semibold text-encre">{valeur}</dd>
+                <dd className="text-[0.68rem] text-encre-3">{note}</dd>
               </div>
             ))}
           </dl>
@@ -207,7 +207,7 @@ export function VueParametres({
           <button
             type="button"
             onClick={onViderCache}
-            className="mt-5 rounded-lg border hairline bg-white px-4 py-2 text-sm text-navy-900 transition-colors hover:border-gold-500"
+            className="mt-5 rounded-lg border hairline bg-surface px-4 py-2 text-sm text-encre transition-colors hover:border-laiton"
           >
             Vider le cache
           </button>
@@ -218,24 +218,24 @@ export function VueParametres({
         <TitreSection surtitre="Périmètre" titre="Ce qui est contrôlé, et ce qui ne l’est pas" />
 
         <div className="grid gap-4 md:grid-cols-2">
-          <div className="rounded-xl border hairline bg-white p-6 shadow-card">
-            <h3 className="font-display text-lg font-semibold text-navy-900">Couvert</h3>
-            <ul className="mt-3 space-y-1.5 text-sm leading-relaxed text-slate-600">
+          <div className="rounded-xl border hairline bg-surface p-6 shadow-card">
+            <h3 className="font-display text-lg font-semibold text-encre">Couvert</h3>
+            <ul className="mt-3 space-y-1.5 text-sm leading-relaxed text-encre-2">
               {COUVERT.map((x) => (
                 <li key={x} className="flex gap-2">
-                  <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-emerald-500" aria-hidden="true" />
+                  <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-laiton" aria-hidden="true" />
                   <span>{x}</span>
                 </li>
               ))}
             </ul>
           </div>
 
-          <div className="rounded-xl border hairline bg-white p-6 shadow-card">
-            <h3 className="font-display text-lg font-semibold text-navy-900">Non couvert</h3>
-            <ul className="mt-3 space-y-1.5 text-sm leading-relaxed text-slate-600">
+          <div className="rounded-xl border hairline bg-surface p-6 shadow-card">
+            <h3 className="font-display text-lg font-semibold text-encre">Non couvert</h3>
+            <ul className="mt-3 space-y-1.5 text-sm leading-relaxed text-encre-2">
               {NON_COUVERT.map((x) => (
                 <li key={x} className="flex gap-2">
-                  <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-red-400" aria-hidden="true" />
+                  <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-alerte" aria-hidden="true" />
                   <span>{x}</span>
                 </li>
               ))}

@@ -20,16 +20,16 @@ export function Tuile({
 }) {
   const accent =
     ton === 'alerte'
-      ? 'text-red-800'
+      ? 'text-alerte-clair'
       : ton === 'attente'
-        ? 'text-gold-700'
-        : 'text-navy-900';
+        ? 'text-laiton-clair'
+        : 'text-encre';
 
   return (
-    <div className="rounded-xl border hairline bg-white p-5 shadow-card">
+    <div className="rounded-xl border hairline bg-surface p-5 shadow-card">
       <p className={`font-display text-4xl font-semibold leading-none ${accent}`}>{valeur}</p>
-      <p className="mt-2.5 text-sm font-medium text-navy-900">{intitule}</p>
-      {precision && <p className="mt-1 text-xs leading-relaxed text-slate-500">{precision}</p>}
+      <p className="mt-2.5 text-sm font-medium text-encre">{intitule}</p>
+      {precision && <p className="mt-1 text-xs leading-relaxed text-encre-2">{precision}</p>}
     </div>
   );
 }
@@ -51,10 +51,10 @@ export function TitreSection({
   return (
     <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
       <div>
-        <p className="font-mono text-[0.62rem] uppercase tracking-[0.2em] text-gold-700">
+        <p className="font-mono text-[0.62rem] uppercase tracking-[0.2em] text-laiton-clair">
           {surtitre}
         </p>
-        <h2 className="mt-1.5 font-display text-2xl font-semibold text-navy-900">{titre}</h2>
+        <h2 className="mt-1.5 font-display text-2xl font-semibold text-encre">{titre}</h2>
       </div>
       {children}
     </div>
@@ -64,7 +64,7 @@ export function TitreSection({
 /** Encart de réserve — ce que la vue ne dit pas, à côté de ce qu'elle dit. */
 export function Reserve({ children }: { children: ReactNode }) {
   return (
-    <p className="rounded-lg border hairline bg-cream-100 p-4 text-xs leading-relaxed text-slate-600">
+    <p className="rounded-lg border hairline bg-surface-2 p-4 text-xs leading-relaxed text-encre-2">
       {children}
     </p>
   );
@@ -73,9 +73,9 @@ export function Reserve({ children }: { children: ReactNode }) {
 /** État vide explicite : jamais un écran blanc, toujours une raison. */
 export function Vide({ titre, explication }: { titre: string; explication: string }) {
   return (
-    <div className="rounded-xl border hairline bg-white p-8 text-center shadow-card">
-      <p className="font-display text-xl font-semibold text-navy-900">{titre}</p>
-      <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-slate-500">{explication}</p>
+    <div className="rounded-xl border hairline bg-surface p-8 text-center shadow-card">
+      <p className="font-display text-xl font-semibold text-encre">{titre}</p>
+      <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-encre-2">{explication}</p>
     </div>
   );
 }

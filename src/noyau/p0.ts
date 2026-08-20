@@ -36,6 +36,21 @@ export type ResultatP0 = {
   sortie: SortiePasse;
 };
 
+/**
+ * Convertit les pièces d'une ingestion (dérivées comprises) en documents.
+ * Exporté pour l'interface : le dépôt fait sa propre ingestion en deux passes
+ * (extraction différée) puis livre les documents au même format que P0.
+ */
+export function documentsDepuisIngestion(
+  ingestion: ResultatIngestion,
+  maintenant: string,
+  modeEntree: 'colle' | 'fichier'
+): DocumentIngere[] {
+  const toutes = (pieces: PieceIngeree[]): PieceIngeree[] =>
+    pieces.flatMap((p) => [p, ...toutes(p.derivees)]);
+  return toutes(ingestion.pieces).map((p) => versDocument(p, maintenant, modeEntree));
+}
+
 function versDocument(piece: PieceIngeree, maintenant: string, modeEntree: 'colle' | 'fichier'): DocumentIngere {
   const fragments = fragmenter(piece);
   const alertes = piece.pages.flatMap((p) => detecterInstructions(p.page, p.texte));
@@ -71,12 +86,7 @@ export function executerP0(
 ): ResultatP0 {
   const maintenant = options.maintenant ?? new Date().toISOString();
   const ingestion = ingererSelonNiveau(fichiers, options);
-
-  const toutes = (pieces: PieceIngeree[]): PieceIngeree[] =>
-    pieces.flatMap((p) => [p, ...toutes(p.derivees)]);
-  const documents = toutes(ingestion.pieces).map((p) =>
-    versDocument(p, maintenant, options.modeEntree ?? 'fichier')
-  );
+  const documents = documentsDepuisIngestion(ingestion, maintenant, options.modeEntree ?? 'fichier');
 
   const sortie = scellerSortie(
     'P0',

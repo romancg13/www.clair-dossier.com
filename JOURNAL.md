@@ -100,3 +100,20 @@
 - **Volontairement écarté** : un champ de texte libre dans l'entrée de
   journal — c'est par la forme du type que B11 tient.
 - **Reste ouvert** : vues Registre et Journal (étape 12).
+
+## Étapes 12-14 — Interface, design « Encre et greffe », livrables
+- **Fait** : quatorze vues branchées sur la chaîne (pupitre trois blocs avec
+  filtres cinq axes, frise avec propagation des griefs, régularité 14 postes
+  dépliables, preuve avec saisie, moyens par catégorie procédurale, écritures
+  avec verdict de gate NON contournable et registre document papier,
+  registre des demandes, bibliothèque de consignes versionnées, sources avec
+  rejets B3 nommés, journal filtrable, minimisation, paramètres). Palette de
+  commandes Ctrl+K, mode audience, badge moteur permanent (B19), impression
+  limitée à la zone document, animations sous prefers-reduced-motion. Palette
+  §8.2 appliquée aux jetons près ; vérifié dans Chromium, captures des vues
+  principales.
+- **Volontairement écarté** : les vues « tableau de bord » et « dossiers »
+  séparées — le pupitre les absorbe. Undo/redo global : la saisie passe par
+  des formulaires courts, réversibles par l'édition ; consigné comme limite.
+- **Reste ouvert** : brancher la sortie generative CLI dans l'écran (jamais —
+  D-3) ; l'export fichier des livrables passe par copier/imprimer.

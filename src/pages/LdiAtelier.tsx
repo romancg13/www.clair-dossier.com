@@ -1,28 +1,48 @@
 /**
- * Atelier LDI — plusieurs dossiers, une seule vue d'ensemble.
+ * L'atelier Defense OS — l'application entière.
  *
  * ┌─ CE QUI NE QUITTE PAS CETTE PAGE ───────────────────────────────────────┐
- * │ Toute l'analyse s'exécute dans le navigateur. Les dossiers vivent en     │
- * │ mémoire de session ; ils ne sont écrits sur le disque que si l'avocat a  │
- * │ activé la conservation dans Paramètres, et l'écran le dit.               │
- * │                                                                          │
- * │ Une seule action transmet quoi que ce soit : la demande d'analyse        │
- * │ rédigée, et ce qui part alors est le rapport minimisé, jamais les pièces.│
+ * │ Tout s'exécute dans le navigateur, hors ligne. Les dossiers vivent en    │
+ * │ mémoire de session ; ils ne touchent le disque que par le coffre chiffré │
+ * │ (Paramètres), et l'écran le dit. L'atelier n'émet AUCUNE requête (B7) et │
+ * │ ne contient aucun code d'appel d'API (B8) — un test le balaie.           │
  * └──────────────────────────────────────────────────────────────────────────┘
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import { AtelierShell } from '../components/ldi/AtelierShell';
+import { PaletteCommandes } from '../components/ldi/PaletteCommandes';
+import { VueBibliotheque } from '../components/ldi/VueBibliotheque';
 import { VueDepot } from '../components/ldi/VueDepot';
-import { VueDossiers } from '../components/ldi/VueDossiers';
+import { VueDocuments } from '../components/ldi/VueDocuments';
+import { VueEcritures } from '../components/ldi/VueEcritures';
+import { VueFrise } from '../components/ldi/VueFrise';
+import { VueJournal } from '../components/ldi/VueJournal';
+import { VueMoyens } from '../components/ldi/VueMoyens';
+import { VuePreuve } from '../components/ldi/VuePreuve';
+import { VuePupitre } from '../components/ldi/VuePupitre';
+import { VueRegistre } from '../components/ldi/VueRegistre';
+import { VueRegularite } from '../components/ldi/VueRegularite';
+import { VueSources } from '../components/ldi/VueSources';
 import { VueConfidentialite, VueParametres } from '../components/ldi/VueSecurite';
-import { VueTableauDeBord } from '../components/ldi/VueTableauDeBord';
-import { VueChronologie, VueControles, VueDocuments, VueStrategie } from '../components/ldi/VuesDossier';
 import { vueValide, type Vue } from '../components/ldi/navigation';
-import { ficheDossier } from '../ldi/atelier';
 import { creerCacheAnalyse } from '../ldi/cache';
-import { DOSSIERS_DEMONSTRATION, estDemonstration } from '../ldi/demonstration';
+import { creerCacheChaine } from '../ldi/cache-chaine';
+import { DOSSIERS_DEMONSTRATION, EXTENSIONS_DEMONSTRATION, estDemonstration } from '../ldi/demonstration';
+import { empreinte } from '../ldi/journal';
+import type { Dossier } from '../ldi/types';
+import {
+  bibliothequeVide,
+  creerConsigne,
+  consignesApplicables,
+  reviserConsigne,
+  type Bibliotheque,
+} from '../noyau/consignes';
+import { creerDemande, traiterDemande, verifierDemande } from '../noyau/demandes';
+import { completerDossierPenal, type Demande, type DossierPenal, type ElementPreuve } from '../noyau/modele';
+import type { DocumentIngere } from '../noyau/p0';
+import type { SourceRecuperee } from '../noyau/sources';
 import {
   activerConservation,
   conserver,
@@ -33,50 +53,55 @@ import {
   type EtatConservation,
 } from '../ldi/stockage';
 import type { CoffreOuvert } from '../ldi/coffre';
-import type { Dossier } from '../ldi/types';
-import { validerDossier } from '../ldi/validation';
+
+function dossierDemonstration(base: Dossier): DossierPenal {
+  return completerDossierPenal(base, EXTENSIONS_DEMONSTRATION[base.reference] ?? {});
+}
 
 export function LdiAtelier() {
   const [params, setParams] = useSearchParams();
   const vue = vueValide(params.get('vue'));
 
-  // Le cache survit aux rendus mais pas au démontage : il ne conserve donc
-  // aucune donnée de dossier au-delà de la session de travail.
-  const cache = useRef(creerCacheAnalyse()).current;
+  // La chaîne P1→P6 est mémorisée par empreinte de dossier ; son journal
+  // d'audit est commun à la session — chaque passe s'y consigne (M13).
+  const cacheChaine = useRef(creerCacheChaine()).current;
+  // Le rapport markdown (pipeline d'analyse) sert la minimisation.
+  const cacheRapport = useRef(creerCacheAnalyse()).current;
 
-  // Rien n'est relu au montage : le coffre est chiffré, et son ouverture exige
-  // la phrase. L'atelier démarre donc sur les dossiers fictifs, et bascule sur
-  // le plan de travail réel quand l'avocat ouvre le coffre.
-  const [dossiers, setDossiers] = useState<Dossier[]>(() => DOSSIERS_DEMONSTRATION);
-  // La clé vit ici, en mémoire de composant : elle ne survit ni au
-  // rechargement de la page, ni à la fermeture de l'onglet.
-  const [coffre, setCoffre] = useState<CoffreOuvert | null>(null);
-  const [actif, setActif] = useState<string | null>(() => DOSSIERS_DEMONSTRATION[0]?.reference ?? null);
-  const [erreurImport, setErreurImport] = useState<string | null>(null);
-  const [conservation, setConservation] = useState<EtatConservation>(() => etatConservation());
-  // Interrupteur D-1 (extraction des formats à structure). Faux par défaut,
-  // et non conservé : un réglage qui élargit ce que l'outil lit se réactive
-  // consciemment à chaque session.
-  const [niveau1Actif, setNiveau1Actif] = useState(false);
-  // Force un nouveau rendu après vidage du cache, dont les compteurs sont
-  // internes et ne déclenchent donc rien par eux-mêmes.
-  const [revision, setRevision] = useState(0);
-
-  // Une analyse par état de dossier, pas une par rendu : c'est le cache qui
-  // rend le classement et les filtres praticables au-delà de deux dossiers.
-  const rapports = useMemo(
-    () => dossiers.map((d) => cache.analyser(d)),
-    // `revision` participe volontairement : vider le cache doit reconstruire.
-    [dossiers, cache, revision]
+  const [dossiers, setDossiers] = useState<DossierPenal[]>(() =>
+    DOSSIERS_DEMONSTRATION.map(dossierDemonstration)
   );
+  const [actif, setActif] = useState<string | null>(() => DOSSIERS_DEMONSTRATION[0]?.reference ?? null);
+  const [coffre, setCoffre] = useState<CoffreOuvert | null>(null);
+  const [conservation, setConservation] = useState<EtatConservation>(() => etatConservation());
+  const [niveau1Actif, setNiveau1Actif] = useState(false);
+  const [modeAudience, setModeAudience] = useState(false);
+  const [bibliotheque, setBibliotheque] = useState<Bibliotheque>(bibliothequeVide);
+  const [demandes, setDemandes] = useState<Demande[]>([]);
+  const [sources, setSources] = useState<SourceRecuperee[]>([]);
+  const [sourcesRejetees, setSourcesRejetees] = useState<{ identifiant: string; motif: string }[]>([]);
+  const [documentsParDossier, setDocumentsParDossier] = useState<Record<string, DocumentIngere[]>>({});
+  const [revisionJournal, setRevisionJournal] = useState(0);
 
-  const fiches = useMemo(() => rapports.map(ficheDossier), [rapports]);
-  const rapportActif = rapports.find((r) => r.dossier.reference === actif) ?? null;
+  const maintenant = useMemo(() => new Date().toISOString(), []);
+
+  // Une exécution de chaîne par état de dossier — le cache rend le pupitre
+  // praticable au-delà de deux dossiers.
+  const lignes = useMemo(
+    () => dossiers.map((d) => ({ dossier: d, chaine: cacheChaine.executer(d) })),
+    [dossiers, cacheChaine]
+  );
+  const ligneActive = lignes.find((l) => l.dossier.reference === actif) ?? null;
+  const chaineActive = ligneActive?.chaine ?? null;
 
   const demonstration = dossiers.length > 0 && dossiers.every((d) => estDemonstration(d.reference));
+  const consignesActives = useMemo(
+    () => (actif ? consignesApplicables(bibliotheque, actif) : bibliotheque.consignes.filter((c) => c.active && c.portee === 'cabinet')),
+    [bibliotheque, actif]
+  );
 
   // Scelle à chaque changement, mais uniquement si le coffre est ouvert dans
-  // cette session. Sans clé, rien n'est écrit — il n'existe aucun repli en clair.
+  // cette session. Sans clé, rien n'est écrit — aucun repli en clair (B9+).
   useEffect(() => {
     if (!coffre) return;
     const aConserver = dossiers.filter((d) => !estDemonstration(d.reference));
@@ -98,61 +123,45 @@ export function LdiAtelier() {
     [params, setParams]
   );
 
-  /** Ajoute un dossier à l'atelier, en remplaçant un homonyme. */
-  function ajouterDossier(nouveau: Dossier) {
-    setDossiers((liste) => {
-      // Un dossier rechargé remplace le précédent plutôt que de le doubler :
-      // deux fiches de même référence seraient impossibles à départager.
-      const sansDoublon = liste.filter((d) => d.reference !== nouveau.reference);
-      // Les dossiers fictifs s'effacent dès qu'un dossier réel arrive.
-      return [...sansDoublon.filter((d) => !estDemonstration(d.reference)), nouveau];
-    });
+  /** Ajoute un dossier, en remplaçant un homonyme ; chasse la démonstration. */
+  function ajouterDossier(nouveau: DossierPenal) {
+    setDossiers((liste) => [
+      ...liste.filter((d) => d.reference !== nouveau.reference && !estDemonstration(d.reference)),
+      nouveau,
+    ]);
     setActif(nouveau.reference);
-    setErreurImport(null);
   }
 
-  function importer(json: string) {
-    let parse: unknown;
-    try {
-      parse = JSON.parse(json);
-    } catch (e) {
-      setErreurImport(`JSON invalide — ${(e as Error).message}`);
-      return;
-    }
-
-    const validation = validerDossier(parse);
-    if (!validation.ok) {
-      setErreurImport(validation.message);
-      return;
-    }
-
-    ajouterDossier(validation.dossier);
-    allerA('controles');
-  }
-
-  function retirer(reference: string) {
-    setDossiers((liste) => liste.filter((d) => d.reference !== reference));
-    setActif((courant) => (courant === reference ? null : courant));
-  }
-
-  function copier(texte: string) {
-    void navigator.clipboard?.writeText(texte);
+  /** Mute le dossier actif — chaque geste passe par ici, immuablement. */
+  function modifierActif(muter: (d: DossierPenal) => DossierPenal) {
+    if (!actif) return;
+    setDossiers((liste) => liste.map((d) => (d.reference === actif ? muter(d) : d)));
   }
 
   return (
-    <AtelierShell
+    <>
+      <PaletteCommandes
+        dossiers={dossiers.map((d) => d.reference)}
+        onVue={allerA}
+        onActif={(r) => setActif(r)}
+        onRecherche={() => allerA('documents')}
+      />
+
+      <AtelierShell
         vue={vue}
         onVue={allerA}
-        fiches={fiches}
+        references={dossiers.map((d) => d.reference)}
         actif={actif}
         onActif={setActif}
         demonstration={demonstration}
+        modeAudience={modeAudience}
+        onModeAudience={setModeAudience}
       >
-        {vue === 'tableau-de-bord' && (
-          <VueTableauDeBord
-            fiches={fiches}
-            rapports={rapports}
-            actif={actif}
+        {vue === 'pupitre' && (
+          <VuePupitre
+            lignes={lignes}
+            demandes={demandes}
+            maintenant={maintenant}
             onActif={setActif}
             onVue={allerA}
           />
@@ -162,30 +171,132 @@ export function LdiAtelier() {
           <VueDepot
             referenceProposee={`CAB-${new Date().getFullYear()}-001`}
             niveau1Actif={niveau1Actif}
-            onDossier={(nouveau) => {
-              ajouterDossier(nouveau);
-              allerA('dossiers');
+            onDossier={(nouveau, documents) => {
+              const penal = completerDossierPenal(nouveau, { avancement: 'controle' });
+              ajouterDossier(penal);
+              setDocumentsParDossier((etat) => ({ ...etat, [penal.reference]: documents }));
+              cacheChaine.journal.consigner({
+                action: 'dépôt de pièces',
+                passe: 'P0',
+                moteur: { type: 'deterministe', modele: null },
+                entrees: documents.map((d) => d.id),
+                sorties: [`documents:${documents.length}`],
+                blocages: [],
+              });
+              setRevisionJournal((n) => n + 1);
+              allerA('documents');
             }}
           />
         )}
 
-        {vue === 'dossiers' && (
-          <VueDossiers
-            fiches={fiches}
-            actif={actif}
-            onActif={setActif}
-            onVue={allerA}
-            onImporter={importer}
-            onRetirer={retirer}
-            erreurImport={erreurImport}
+        {vue === 'documents' && <VueDocuments documents={actif ? (documentsParDossier[actif] ?? []) : []} />}
+
+        {vue === 'frise' && <VueFrise dossier={ligneActive?.dossier ?? null} chaine={chaineActive} />}
+        {vue === 'regularite' && <VueRegularite postes={chaineActive?.postes ?? null} />}
+        {vue === 'preuve' && (
+          <VuePreuve
+            dossier={ligneActive?.dossier ?? null}
+            analyses={chaineActive?.preuves ?? null}
+            onAjouter={(element) =>
+              modifierActif((d) => ({
+                ...d,
+                preuves: [...d.preuves, { ...element, id: `pr-${empreinte(`${d.reference}|${element.type}|${d.preuves.length}`).slice(0, 8)}` } as ElementPreuve],
+              }))
+            }
+          />
+        )}
+        {vue === 'moyens' && (
+          <VueMoyens moyens={chaineActive?.moyens ?? null} incomplets={chaineActive?.moyensIncomplets ?? null} />
+        )}
+
+        {vue === 'ecritures' && (
+          <VueEcritures
+            chaine={chaineActive}
+            sources={sources}
+            consignes={consignesActives}
+            onGeneration={(type, autorise) => {
+              cacheChaine.journal.consigner({
+                action: `génération livrable ${type}`,
+                passe: 'P6',
+                moteur: { type: 'deterministe', modele: null },
+                entrees: consignesActives.map((c) => c.id),
+                sorties: [`livrable:${type}`, `export:${autorise ? 'autorisé' : 'bloqué'}`],
+                blocages: autorise ? [] : [`gate:${type}`],
+              });
+              setRevisionJournal((n) => n + 1);
+            }}
           />
         )}
 
-        {vue === 'chronologie' && <VueChronologie rapport={rapportActif} />}
-        {vue === 'controles' && <VueControles rapport={rapportActif} />}
-        {vue === 'strategie' && <VueStrategie rapport={rapportActif} />}
-        {vue === 'documents' && <VueDocuments rapport={rapportActif} onCopier={copier} />}
-        {vue === 'confidentialite' && <VueConfidentialite rapport={rapportActif} />}
+        {vue === 'registre' && (
+          <VueRegistre
+            demandes={demandes}
+            dossierActif={actif}
+            onCreer={(enonce) => {
+              if (!actif) return;
+              let demande = creerDemande(actif, enonce);
+              // La chaîne tourne à chaque rendu : la demande est immédiatement
+              // rattachée à la dernière exécution, puis laissée à vérifier.
+              demande = traiterDemande(demande, {
+                passes: ['P1', 'P2', 'P3', 'P4', 'P5', 'P6'],
+                sortieId: `chaine-${empreinte(actif).slice(0, 8)}`,
+              });
+              setDemandes((liste) => [...liste, { ...demande, etat: 'a-verifier' }]);
+            }}
+            onClore={(id) =>
+              setDemandes((liste) => liste.map((d) => (d.id === id ? verifierDemande(d) : d)))
+            }
+          />
+        )}
+
+        {vue === 'bibliotheque' && (
+          <VueBibliotheque
+            bibliotheque={bibliotheque}
+            dossierActif={actif}
+            onConsigne={(enonce, portee) =>
+              setBibliotheque((b) => ({
+                ...b,
+                consignes: [...b.consignes, creerConsigne(enonce, portee, { dossierReference: actif ?? undefined })],
+              }))
+            }
+            onReviser={(id, enonce) => setBibliotheque((b) => reviserConsigne(b, id, enonce))}
+            onTrame={(intitule, type, corps) =>
+              setBibliotheque((b) => ({
+                ...b,
+                trames: [...b.trames, { id: `t-${empreinte(intitule + corps).slice(0, 8)}`, intitule, type, corps, ajouteeLe: new Date().toISOString() }],
+              }))
+            }
+          />
+        )}
+
+        {vue === 'sources' && (
+          <VueSources
+            sources={sources}
+            rejetees={sourcesRejetees}
+            onImport={(importees, rejetees) => {
+              setSources(importees);
+              setSourcesRejetees(rejetees);
+              cacheChaine.journal.consigner({
+                action: 'import pack de sources',
+                passe: null,
+                moteur: { type: 'deterministe', modele: null },
+                entrees: importees.map((s) => s.identifiant),
+                sorties: [`sources:${importees.length}`, `rejetees:${rejetees.length}`],
+                blocages: [],
+              });
+              setRevisionJournal((n) => n + 1);
+            }}
+          />
+        )}
+
+        {vue === 'journal' && (
+          // `revisionJournal` force le rendu : le journal est interne au cache.
+          <VueJournal key={revisionJournal} entrees={cacheChaine.journal.entrees()} />
+        )}
+
+        {vue === 'confidentialite' && (
+          <VueConfidentialite rapport={ligneActive ? cacheRapport.analyser(ligneActive.dossier) : null} />
+        )}
 
         {vue === 'parametres' && (
           <VueParametres
@@ -195,11 +306,7 @@ export function LdiAtelier() {
               onActiver: async (phrase) => {
                 try {
                   const reels = dossiers.filter((d) => !estDemonstration(d.reference));
-                  const { coffre: neuf, etat } = await activerConservation(
-                    phrase,
-                    reels,
-                    new Date().toISOString()
-                  );
+                  const { coffre: neuf, etat } = await activerConservation(phrase, reels, new Date().toISOString());
                   setCoffre(neuf);
                   setConservation(etat);
                   return null;
@@ -211,12 +318,10 @@ export function LdiAtelier() {
                 const ouverture = await ouvrirConservation(phrase);
                 if (!ouverture.ok) return ouverture.message;
                 setCoffre(ouverture.coffre);
-                // Le plan de travail conservé remplace les dossiers fictifs ;
-                // un coffre vide laisse la démonstration en place plutôt que
-                // de présenter un atelier sans rien dedans.
                 if (ouverture.dossiers.length > 0) {
-                  setDossiers(ouverture.dossiers);
-                  setActif(ouverture.dossiers[0].reference);
+                  const penals = ouverture.dossiers.map((d) => completerDossierPenal(d, d as never));
+                  setDossiers(penals);
+                  setActif(penals[0].reference);
                 }
                 setConservation(etatConservation());
                 return null;
@@ -234,14 +339,15 @@ export function LdiAtelier() {
             }}
             niveau1Actif={niveau1Actif}
             onNiveau1={setNiveau1Actif}
-            statistiquesCache={cache.statistiques()}
+            statistiquesCache={cacheRapport.statistiques()}
             onViderCache={() => {
-              cache.vider();
-              setRevision((n) => n + 1);
+              cacheChaine.vider();
+              cacheRapport.vider();
             }}
             nombreDossiers={dossiers.length}
           />
         )}
-    </AtelierShell>
+      </AtelierShell>
+    </>
   );
 }

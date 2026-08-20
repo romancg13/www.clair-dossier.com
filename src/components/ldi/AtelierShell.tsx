@@ -1,77 +1,96 @@
+/**
+ * La coquille de l'atelier — barre latérale, en-tête, mode audience.
+ *
+ * ┌─ CE QUE L'EN-TÊTE AFFICHE EN PERMANENCE (B19) ──────────────────────────┐
+ * │ Le moteur d'inférence actif. Dans l'atelier il n'y en a qu'un possible : │
+ * │ « déterministe · sur ce poste ». Ce n'est pas un détail de pied de page  │
+ * │ — l'avocat doit savoir, à chaque instant, ce qui produit ce qu'il lit.   │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
 import type { ReactNode } from 'react';
 
-import { LIBELLES_ETAT, type FicheDossier } from '../../ldi/atelier';
 import { estDemonstration } from '../../ldi/demonstration';
 import { CAPACITES_PREVUES, NAVIGATION, entreePour, type Vue } from './navigation';
-
-/** Couleur de pastille par état, alignée sur la sémantique du classement. */
-export const TON_ETAT: Record<FicheDossier['etat'], string> = {
-  anomalie: 'bg-red-500',
-  'a-verifier': 'bg-gold-500',
-  vide: 'bg-slate-300',
-};
 
 type Props = {
   vue: Vue;
   onVue: (vue: Vue) => void;
-  fiches: FicheDossier[];
+  references: string[];
   actif: string | null;
   onActif: (reference: string | null) => void;
-  /** Vrai tant que l'atelier ne contient que les dossiers fictifs. */
   demonstration: boolean;
+  modeAudience: boolean;
+  onModeAudience: (actif: boolean) => void;
   children: ReactNode;
 };
 
 export function AtelierShell({
   vue,
   onVue,
-  fiches,
+  references,
   actif,
   onActif,
   demonstration,
+  modeAudience,
+  onModeAudience,
   children,
 }: Props) {
   const entree = entreePour(vue);
-  const ficheActive = fiches.find((f) => f.reference === actif) ?? null;
 
   return (
-    <div className="min-h-screen bg-cream-50 lg:grid lg:grid-cols-[17rem_1fr]">
-      {/*
-        La colonne porte le fond, pas la barre elle-même : celle-ci est collante
-        et donc haute d'un écran, si bien qu'une page longue laissait apparaître
-        le fond crème sous elle.
-      */}
-      <div className="bg-navy-900">
+    <div className={`min-h-screen bg-fond ${modeAudience ? 'mode-audience' : ''} lg:grid lg:grid-cols-[16rem_1fr]`}>
+      <div className={`bg-panneau ${modeAudience ? 'masque-audience' : ''}`}>
         <Sidebar vue={vue} onVue={onVue} />
       </div>
 
       <div className="min-w-0">
-        <Topbar
-          vue={vue}
-          resume={entree?.resume ?? ''}
-          fiches={fiches}
-          actif={actif}
-          onActif={onActif}
-          ficheActive={ficheActive}
-        />
+        <header className="sticky top-0 z-10 border-b hairline bg-fond/95 px-5 py-3 backdrop-blur sm:px-8">
+          <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-5 gap-y-2">
+            <div className="min-w-0 flex-1">
+              <h1 className="font-display text-lg font-semibold text-encre">{entree?.intitule ?? 'Atelier'}</h1>
+              <p className="truncate text-xs text-encre-2">{entree?.resume ?? ''}</p>
+            </div>
+
+            <label className="flex items-center gap-1.5 text-xs text-encre-2">
+              Dossier
+              <select
+                value={actif ?? ''}
+                onChange={(e) => onActif(e.target.value || null)}
+                className="max-w-44 rounded-md border hairline bg-surface px-2 py-1.5 font-mono text-xs text-encre focus:border-laiton focus:outline-none"
+              >
+                <option value="">—</option>
+                {references.map((r) => (
+                  <option key={r} value={r}>{r}</option>
+                ))}
+              </select>
+            </label>
+
+            {/* B19 : le moteur actif, en permanence, jamais dans un sous-menu. */}
+            <p className="rounded-md border hairline bg-surface px-2.5 py-1.5 font-mono text-[0.62rem] uppercase tracking-[0.14em] text-laiton-clair">
+              moteur : déterministe · sur ce poste
+            </p>
+
+            <button
+              type="button"
+              onClick={() => onModeAudience(!modeAudience)}
+              aria-pressed={modeAudience}
+              className={`rounded-md border px-2.5 py-1.5 font-mono text-[0.62rem] uppercase tracking-[0.14em] transition-colors ${
+                modeAudience ? 'border-laiton bg-laiton/10 text-laiton-clair' : 'hairline bg-surface text-encre-2 hover:border-laiton'
+              }`}
+            >
+              audience
+            </button>
+
+            <p className="masque-audience hidden font-mono text-[0.62rem] text-encre-3 md:block">Ctrl+K</p>
+          </div>
+        </header>
 
         <main className="mx-auto max-w-6xl px-5 py-8 sm:px-8">
           {demonstration && (
-            <p
-              className="mb-8 rounded-lg border border-gold-500/40 bg-gold-500/10 p-4 text-sm text-navy-900"
-              role="status"
-            >
+            <p className="mb-8 rounded-lg border border-laiton/50 bg-laiton/10 p-4 text-sm text-encre" role="status">
               <strong className="font-semibold">Dossiers de démonstration, entièrement fictifs.</strong>{' '}
-              Aucune de ces procédures n’existe. Elles servent à montrer ce que les détecteurs
-              relèvent sur des cas connus. Chargez un dossier réel depuis{' '}
-              <button
-                type="button"
-                onClick={() => onVue('dossiers')}
-                className="underline decoration-gold-500 underline-offset-2 hover:text-gold-700"
-              >
-                l’onglet Dossiers
-              </button>{' '}
-              — il ne quittera pas ce navigateur.
+              Aucune de ces procédures n’existe : elles montrent ce que les contrôles relèvent sur des cas connus.
+              Déposez un dossier réel depuis l’onglet Dépôt — il ne quittera pas ce poste.
             </p>
           )}
           {children}
@@ -81,130 +100,57 @@ export function AtelierShell({
   );
 }
 
-function Sidebar({ vue, onVue }: { vue: Vue; onVue: (v: Vue) => void }) {
+function Sidebar({ vue, onVue }: { vue: Vue; onVue: (vue: Vue) => void }) {
   return (
-    <aside className="border-b border-navy-800 text-cream-50 lg:sticky lg:top-0 lg:max-h-screen lg:overflow-y-auto lg:border-b-0 lg:border-r">
-      <div className="px-6 py-7">
-        <p className="font-display text-2xl font-semibold leading-none">LDI</p>
-        <p className="mt-1.5 font-mono text-[0.62rem] uppercase tracking-[0.22em] text-gold-400">
-          Analyse de dossier pénal
+    <aside className="border-b hairline text-encre lg:sticky lg:top-0 lg:max-h-screen lg:overflow-y-auto lg:border-b-0 lg:border-r">
+      <div className="px-6 pb-5 pt-6">
+        <p className="font-display text-xl font-semibold tracking-tight text-encre">Defense OS</p>
+        <p className="mt-1 font-mono text-[0.62rem] uppercase tracking-[0.22em] text-laiton-clair">
+          hors ligne · rien ne sort du poste
         </p>
       </div>
 
-      <nav aria-label="Sections de l’atelier" className="pb-6">
+      <nav aria-label="Navigation de l’atelier" className="px-3 pb-4">
         {NAVIGATION.map((section) => (
-          <div key={section.titre} className="mb-5">
-            <p className="px-6 pb-2 font-mono text-[0.6rem] uppercase tracking-[0.22em] text-slate-400">
+          <div key={section.titre} className="mb-4">
+            <p className="px-3 pb-1.5 font-mono text-[0.6rem] uppercase tracking-[0.2em] text-encre-3">
               {section.titre}
             </p>
             <ul>
-              {section.entrees.map((e) => {
-                const courant = e.vue === vue;
-                return (
-                  <li key={e.vue}>
-                    <button
-                      type="button"
-                      onClick={() => onVue(e.vue)}
-                      aria-current={courant ? 'page' : undefined}
-                      className={`flex w-full items-center gap-3 border-l-2 px-6 py-2.5 text-left text-sm transition-colors ${
-                        courant
-                          ? 'border-gold-500 bg-navy-800 text-cream-50'
-                          : 'border-transparent text-slate-300 hover:bg-navy-800/60 hover:text-cream-50'
-                      }`}
-                    >
-                      <span className="min-w-0 flex-1 truncate">{e.intitule}</span>
-                    </button>
-                  </li>
-                );
-              })}
+              {section.entrees.map((e) => (
+                <li key={e.vue}>
+                  <button
+                    type="button"
+                    onClick={() => onVue(e.vue)}
+                    aria-current={vue === e.vue ? 'page' : undefined}
+                    className={`w-full rounded-md px-3 py-1.5 text-left text-sm transition-colors ${
+                      vue === e.vue
+                        ? 'bg-laiton/15 text-laiton-clair'
+                        : 'text-encre-2 hover:bg-surface hover:text-encre'
+                    }`}
+                  >
+                    {e.intitule}
+                  </button>
+                </li>
+              ))}
             </ul>
           </div>
         ))}
-
-        {/*
-          Le périmètre non couvert est affiché, pas masqué : une capacité qu'on
-          croit active est une erreur qui se découvre au pire moment.
-        */}
-        <div className="mx-6 mt-2 rounded-lg border border-navy-700 bg-navy-800/60 p-4">
-          <p className="font-mono text-[0.6rem] uppercase tracking-[0.22em] text-slate-400">
-            Non couvert à ce jour
-          </p>
-          <ul className="mt-3 space-y-2.5">
-            {CAPACITES_PREVUES.map((c) => (
-              <li key={c.intitule}>
-                <p className="text-xs font-medium text-slate-300">{c.intitule}</p>
-                <p className="mt-0.5 text-[0.7rem] leading-relaxed text-slate-400">{c.pourquoi}</p>
-              </li>
-            ))}
-          </ul>
-        </div>
       </nav>
+
+      <div className="mx-6 mb-6 rounded-lg border hairline bg-surface/60 p-4">
+        <p className="font-mono text-[0.6rem] uppercase tracking-[0.2em] text-encre-3">Non couvert ici</p>
+        <ul className="mt-2 space-y-2">
+          {CAPACITES_PREVUES.map((c) => (
+            <li key={c.intitule}>
+              <p className="text-xs font-medium text-encre-2">{c.intitule}</p>
+              <p className="mt-0.5 text-[0.68rem] leading-relaxed text-encre-3">{c.pourquoi}</p>
+            </li>
+          ))}
+        </ul>
+      </div>
     </aside>
   );
 }
 
-function Topbar({
-  vue,
-  resume,
-  fiches,
-  actif,
-  onActif,
-  ficheActive,
-}: {
-  vue: Vue;
-  resume: string;
-  fiches: FicheDossier[];
-  actif: string | null;
-  onActif: (r: string | null) => void;
-  ficheActive: FicheDossier | null;
-}) {
-  const entree = entreePour(vue);
-
-  return (
-    <header className="border-b hairline bg-white">
-      <div className="mx-auto flex max-w-6xl flex-wrap items-end justify-between gap-4 px-5 py-5 sm:px-8">
-        <div className="min-w-0">
-          <p className="font-mono text-[0.62rem] uppercase tracking-[0.2em] text-slate-500">
-            Atelier · {entree?.intitule ?? ''}
-          </p>
-          <h1 className="mt-1 font-display text-3xl font-semibold leading-tight text-navy-900">
-            {entree?.intitule ?? 'Atelier'}
-          </h1>
-          {resume && <p className="mt-1 max-w-xl text-sm text-slate-500">{resume}</p>}
-        </div>
-
-        <div className="flex items-center gap-3">
-          {ficheActive && (
-            <span className="hidden items-center gap-2 sm:inline-flex">
-              <span
-                className={`h-2 w-2 rounded-full ${TON_ETAT[ficheActive.etat]}`}
-                aria-hidden="true"
-              />
-              <span className="text-xs text-slate-500">
-                {LIBELLES_ETAT[ficheActive.etat].court}
-              </span>
-            </span>
-          )}
-
-          <label className="sr-only" htmlFor="dossier-actif">
-            Dossier actif
-          </label>
-          <select
-            id="dossier-actif"
-            value={actif ?? ''}
-            onChange={(e) => onActif(e.target.value || null)}
-            className="max-w-[16rem] rounded-lg border hairline bg-cream-50 px-3 py-2 text-sm text-navy-900 focus:border-gold-500 focus:outline-none"
-          >
-            <option value="">Aucun dossier sélectionné</option>
-            {fiches.map((f) => (
-              <option key={f.reference} value={f.reference}>
-                {f.reference}
-                {estDemonstration(f.reference) ? ' · fictif' : ''}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-    </header>
-  );
-}
+export { estDemonstration };

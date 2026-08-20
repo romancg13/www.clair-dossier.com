@@ -5,6 +5,7 @@ import { AVERTISSEMENT_NIVEAU_1, ingererSelonNiveau } from '../../ldi/ingestion/
 import { bordereau, mettreEnEtat, versPieces, type FicheMiseEnEtat } from '../../ldi/ingestion/mise-en-etat';
 import { BORNES_DEFAUT, type FichierEntrant, type PieceIngeree, type ResultatIngestion } from '../../ldi/ingestion/types';
 import type { Dossier } from '../../ldi/types';
+import { documentsDepuisIngestion, type DocumentIngere } from '../../noyau/p0';
 import { Reserve, TitreSection, Tuile, GrilleTuiles, Vide } from './Indicateurs';
 
 /**
@@ -35,7 +36,8 @@ export function VueDepot({
   referenceProposee,
   niveau1Actif,
 }: {
-  onDossier: (dossier: Dossier) => void;
+  /** Le dossier constitué ET les documents ingérés (empreintes, B17, fragments). */
+  onDossier: (dossier: Dossier, documents: DocumentIngere[]) => void;
   referenceProposee: string;
   /** Interrupteur D-1 : extraction des formats à structure. FAUX par défaut. */
   niveau1Actif: boolean;
@@ -127,20 +129,20 @@ export function VueDepot({
             void traiter(e.dataTransfer.files);
           }}
           className={`rounded-xl border-2 border-dashed p-10 text-center transition-colors ${
-            survol ? 'border-gold-500 bg-gold-500/5' : 'hairline bg-white'
+            survol ? 'border-laiton bg-laiton/10' : 'hairline bg-surface'
           }`}
         >
-          <p className="font-display text-xl font-semibold text-navy-900">
+          <p className="font-display text-xl font-semibold text-encre">
             Déposez vos fichiers ici
           </p>
-          <p className="mx-auto mt-2 max-w-lg text-sm leading-relaxed text-slate-600">
+          <p className="mx-auto mt-2 max-w-lg text-sm leading-relaxed text-encre-2">
             {niveau1Actif
               ? 'PDF natifs, Word, tableurs, CSV, courriels, archives ZIP — ou un répertoire entier.'
               : 'Texte brut : .txt, .md, .csv, .json — ou du texte collé.'}{' '}
             L’extraction s’exécute <strong>dans ce navigateur</strong> : aucun octet n’est transmis.
           </p>
           {niveau1Actif && (
-            <p className="mx-auto mt-2 max-w-lg text-xs leading-relaxed text-gold-700">
+            <p className="mx-auto mt-2 max-w-lg text-xs leading-relaxed text-laiton-clair">
               {AVERTISSEMENT_NIVEAU_1}
             </p>
           )}
@@ -149,14 +151,14 @@ export function VueDepot({
             <button
               type="button"
               onClick={() => champFichiers.current?.click()}
-              className="rounded-lg bg-navy-900 px-5 py-2.5 text-sm text-cream-50 transition-colors hover:bg-navy-800"
+              className="rounded-lg bg-laiton px-5 py-2.5 text-sm text-fond transition-colors hover:bg-laiton-clair"
             >
               Choisir des fichiers
             </button>
             <button
               type="button"
               onClick={() => champDossier.current?.click()}
-              className="rounded-lg border hairline bg-white px-5 py-2.5 text-sm text-navy-900 transition-colors hover:border-gold-500"
+              className="rounded-lg border hairline bg-surface px-5 py-2.5 text-sm text-encre transition-colors hover:border-laiton"
             >
               Choisir un répertoire
             </button>
@@ -194,22 +196,22 @@ export function VueDepot({
       </section>
 
       {etat.statut === 'encours' && (
-        <section className="rounded-xl border hairline bg-white p-6 shadow-card">
-          <p className="text-sm text-navy-900">
+        <section className="rounded-xl border hairline bg-surface p-6 shadow-card">
+          <p className="text-sm text-encre">
             {etat.passe === 'lecture' ? 'Lecture' : 'Extraction'}{' '}
             {Math.min(etat.fait + 1, etat.total)} / {etat.total}
             {etat.courant ? ` — ${etat.courant}` : ''}
           </p>
           {etat.passe === 'extraction' && (
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="mt-1 text-xs text-encre-2">
               PDF et courriels : leur extracteur est téléchargé maintenant, une seule fois,
               parce que le lot en contient. Rien n’est transmis — c’est le code de l’outil qui
               arrive, pas les pièces qui partent.
             </p>
           )}
-          <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-cream-200">
+          <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-surface-2">
             <div
-              className="h-full bg-gold-500 transition-[width] duration-200"
+              className="h-full bg-laiton transition-[width] duration-200"
               style={{
                 width: `${Math.round((Math.min(etat.fait + 1, etat.total) / etat.total) * 100)}%`,
               }}
@@ -219,7 +221,7 @@ export function VueDepot({
       )}
 
       {etat.statut === 'erreur' && (
-        <p role="alert" className="rounded-lg border border-red-300 bg-red-50 p-4 text-sm text-red-900">
+        <p role="alert" className="rounded-lg border border-alerte/60 bg-alerte/10 p-4 text-sm text-alerte-clair">
           L’ingestion a échoué — {etat.message}
         </p>
       )}
@@ -248,7 +250,7 @@ function Resultat({
   fiches: FicheMiseEnEtat[];
   reference: string;
   onReference: (r: string) => void;
-  onDossier: (d: Dossier) => void;
+  onDossier: (d: Dossier, documents: DocumentIngere[]) => void;
 }) {
   const c = resultat.compteurs;
 
@@ -290,14 +292,14 @@ function Resultat({
       <section>
         <TitreSection surtitre="Mise en état" titre="Métadonnées proposées">
           <div className="flex items-center gap-2">
-            <label htmlFor="ref-dossier" className="text-xs text-slate-500">
+            <label htmlFor="ref-dossier" className="text-xs text-encre-2">
               Référence
             </label>
             <input
               id="ref-dossier"
               value={reference}
               onChange={(e) => onReference(e.target.value)}
-              className="w-40 rounded-lg border hairline bg-white px-3 py-1.5 text-sm text-navy-900 focus:border-gold-500 focus:outline-none"
+              className="w-40 rounded-lg border hairline bg-surface px-3 py-1.5 text-sm text-encre focus:border-laiton focus:outline-none"
             />
           </div>
         </TitreSection>
@@ -310,12 +312,12 @@ function Resultat({
           </Reserve>
         </div>
 
-        <div className="overflow-x-auto rounded-xl border hairline bg-white shadow-card">
+        <div className="overflow-x-auto rounded-xl border hairline bg-surface shadow-card">
           <table className="w-full min-w-[52rem] text-sm">
             <thead>
               <tr className="border-b hairline text-left">
                 {['Cote', 'Fichier', 'Nature', 'Date', 'Pages', 'Justificatif'].map((t) => (
-                  <th key={t} className="px-4 py-3 font-mono text-[0.62rem] uppercase tracking-[0.16em] text-slate-500">
+                  <th key={t} className="px-4 py-3 font-mono text-[0.62rem] uppercase tracking-[0.16em] text-encre-2">
                     {t}
                   </th>
                 ))}
@@ -324,20 +326,20 @@ function Resultat({
             <tbody>
               {fiches.map((f) => (
                 <tr key={f.empreinte} className="border-b hairline last:border-0 align-top">
-                  <td className="px-4 py-3 font-mono text-xs text-navy-900">{f.cote.valeur} *</td>
-                  <td className="px-4 py-3 text-navy-900">{f.nomFichier}</td>
-                  <td className="px-4 py-3 text-slate-600">{f.nature.valeur} *</td>
-                  <td className="px-4 py-3 text-slate-600">
-                    {f.date.valeur ?? <span className="text-slate-400">[MANQUANTE]</span>}
+                  <td className="px-4 py-3 font-mono text-xs text-encre">{f.cote.valeur} *</td>
+                  <td className="px-4 py-3 text-encre">{f.nomFichier}</td>
+                  <td className="px-4 py-3 text-encre-2">{f.nature.valeur} *</td>
+                  <td className="px-4 py-3 text-encre-2">
+                    {f.date.valeur ?? <span className="text-encre-3">[MANQUANTE]</span>}
                     {f.date.valeur ? ' *' : ''}
                   </td>
-                  <td className="px-4 py-3 text-slate-600">
+                  <td className="px-4 py-3 text-encre-2">
                     {f.pages.total}
                     {f.pages.quarantaine > 0 && (
-                      <span className="ml-1 text-gold-700">({f.pages.quarantaine} non lue)</span>
+                      <span className="ml-1 text-laiton-clair">({f.pages.quarantaine} non lue)</span>
                     )}
                   </td>
-                  <td className="max-w-sm px-4 py-3 text-xs leading-relaxed text-slate-500">
+                  <td className="max-w-sm px-4 py-3 text-xs leading-relaxed text-encre-2">
                     {f.date.justificatif || f.nature.justificatif || '—'}
                   </td>
                 </tr>
@@ -350,28 +352,31 @@ function Resultat({
           <button
             type="button"
             onClick={() =>
-              onDossier({
-                reference: reference.trim() || 'DOSSIER-IMPORTÉ',
-                qualifications: [],
-                regime: 'droit-commun',
-                pieces: versPieces(fiches),
-                evenements: [],
-              })
+              onDossier(
+                {
+                  reference: reference.trim() || 'DOSSIER-IMPORTÉ',
+                  qualifications: [],
+                  regime: 'droit-commun',
+                  pieces: versPieces(fiches),
+                  evenements: [],
+                },
+                documentsDepuisIngestion(resultat, new Date().toISOString(), 'fichier')
+              )
             }
-            className="rounded-lg bg-navy-900 px-5 py-2.5 text-sm text-cream-50 transition-colors hover:bg-navy-800"
+            className="rounded-lg bg-laiton px-5 py-2.5 text-sm text-fond transition-colors hover:bg-laiton-clair"
           >
             Créer le dossier à partir de ces pièces
           </button>
           <button
             type="button"
             onClick={() => void navigator.clipboard?.writeText(bordereau(fiches, reference))}
-            className="rounded-lg border hairline bg-white px-5 py-2.5 text-sm text-navy-900 transition-colors hover:border-gold-500"
+            className="rounded-lg border hairline bg-surface px-5 py-2.5 text-sm text-encre transition-colors hover:border-laiton"
           >
             Copier le bordereau
           </button>
         </div>
 
-        <p className="mt-3 text-xs text-slate-500">
+        <p className="mt-3 text-xs text-encre-2">
           Le dossier créé ne comporte <strong>aucun événement</strong> : la chronologie se
           construit à partir d’actes datés que seul l’avocat peut qualifier. Les pièces, elles,
           sont versées avec leur cote proposée.
@@ -381,17 +386,17 @@ function Resultat({
       {(resultat.doublons.length > 0 || resultat.refuses.length > 0) && (
         <section>
           <TitreSection surtitre="Écartés" titre="Ce qui n’est pas entré au dossier" />
-          <ul className="divide-y hairline overflow-hidden rounded-xl border hairline bg-white shadow-card">
+          <ul className="divide-y hairline overflow-hidden rounded-xl border hairline bg-surface shadow-card">
             {resultat.refuses.map((r) => (
               <li key={`r-${ou(r)}`} className="p-4">
-                <p className="font-mono text-xs text-red-800">refusé · {ou(r)}</p>
-                <p className="mt-1 text-sm text-slate-600">{r.motif}</p>
+                <p className="font-mono text-xs text-alerte-clair">refusé · {ou(r)}</p>
+                <p className="mt-1 text-sm text-encre-2">{r.motif}</p>
               </li>
             ))}
             {resultat.doublons.map((d) => (
               <li key={`d-${ou(d)}`} className="p-4">
-                <p className="font-mono text-xs text-slate-500">doublon · {ou(d)}</p>
-                <p className="mt-1 text-sm text-slate-600">
+                <p className="font-mono text-xs text-encre-2">doublon · {ou(d)}</p>
+                <p className="mt-1 text-sm text-encre-2">
                   Contenu identique à <span className="font-mono">{d.identiqueA}</span>. Un seul
                   exemplaire est versé.
                 </p>
@@ -428,7 +433,7 @@ function FormatsLus({ pieces }: { pieces: PieceIngeree[] }) {
         {[...parFormat].map(([format, n]) => (
           <li
             key={format}
-            className="rounded-full border hairline bg-white px-3.5 py-1.5 text-xs text-navy-900"
+            className="rounded-full border hairline bg-surface px-3.5 py-1.5 text-xs text-encre"
           >
             {LIBELLES_FORMAT[format as keyof typeof LIBELLES_FORMAT] ?? format} · {n}
           </li>

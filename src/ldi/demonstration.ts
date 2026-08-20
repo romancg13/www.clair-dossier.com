@@ -117,6 +117,45 @@ const DOSSIER_OUVERT: Dossier = {
  * Les quatre dossiers fictifs. Ils couvrent les trois états du classement —
  * anomalie relevée, à vérifier (deux dossiers), aucune pièce.
  */
+/**
+ * Extensions v4 des dossiers fictifs : phase, statut, natures, échéances.
+ * Tout est inventé, daté loin dans le futur relatif, et le préfixe DEMO- le
+ * crie — le pupitre a besoin de matière pour montrer ses trois blocs.
+ */
+export const EXTENSIONS_DEMONSTRATION: Record<string, Partial<import('../noyau/modele').ExtensionPenale>> = {
+  'DEMO-2026-014': {
+    initialesClient: 'A.B.', juridiction: 'TJ de démonstration',
+    phase: 'enquete', statutLiberte: 'detention-provisoire',
+    natures: ['detention-transport', 'trafic-aggrave'], avancement: 'controle',
+    echeances: [
+      { id: 'demo-ec1', intitule: 'Débat de prolongation (fictif)', date: '2026-08-22', type: 'detention', etat: 'ouverte' },
+      { id: 'demo-ec2', intitule: 'Audience de fond (fictive)', date: '2026-09-15', type: 'audience', etat: 'ouverte' },
+    ],
+    preuves: [
+      { id: 'demo-pr1', type: 'téléphonie — bornage', rattachementClient: 'ligne prépayée retrouvée sur lui', portee: 'présence de secteur', faiblesses: [], cotes: [] },
+    ],
+    qualificationsEnvisagees: [
+      { id: 'demo-q1', intituleFonctionnel: 'transport de produits stupéfiants', elementsAttendus: [], elementsPresents: [], elementsManquants: [], aggravationsDiscutees: ['bande organisée'] },
+    ],
+  },
+  'DEMO-2026-021': {
+    initialesClient: 'C.D.', juridiction: 'TJ de démonstration',
+    phase: 'jugement', statutLiberte: 'controle-judiciaire',
+    natures: ['cession'], avancement: 'moyens-a-arbitrer',
+    echeances: [{ id: 'demo-ec3', intitule: 'Dépôt de conclusions (fictif)', date: '2026-08-29', type: 'procedural', etat: 'ouverte' }],
+  },
+  'DEMO-2026-033': {
+    initialesClient: 'E.F.', juridiction: 'TJ de démonstration',
+    phase: 'instruction', statutLiberte: 'libre',
+    natures: ['usage'], avancement: 'ingestion',
+  },
+  'DEMO-2026-040': {
+    initialesClient: 'G.H.', juridiction: 'TJ de démonstration',
+    phase: 'appel', statutLiberte: 'condamne',
+    natures: ['importation', 'volet-douanier'], avancement: 'a-constituer',
+  },
+};
+
 export const DOSSIERS_DEMONSTRATION: Dossier[] = [
   GARDE_A_VUE_IRREGULIERE,
   CRIMINALITE_ORGANISEE,

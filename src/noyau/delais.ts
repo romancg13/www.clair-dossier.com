@@ -97,7 +97,7 @@ export function urgenceDe(echeances: Echeance[], maintenantIso: string): Urgence
 }
 
 /** Tri du bandeau « qu'est-ce qui brûle ? » : date croissante, ouvertes d'abord. */
-export function trierEcheances(echeances: Echeance[]): Echeance[] {
+export function trierEcheances<T extends Echeance>(echeances: T[]): T[] {
   return [...echeances].sort((a, b) => {
     if ((a.etat === 'ouverte') !== (b.etat === 'ouverte')) return a.etat === 'ouverte' ? -1 : 1;
     return a.date < b.date ? -1 : a.date > b.date ? 1 : 0;

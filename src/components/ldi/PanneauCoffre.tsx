@@ -48,8 +48,8 @@ export function PanneauCoffre({
 
   if (!conservation.disponible) {
     return (
-      <div className="rounded-xl border hairline bg-white p-6 shadow-card">
-        <p className="text-sm leading-relaxed text-slate-600">
+      <div className="rounded-xl border hairline bg-surface p-6 shadow-card">
+        <p className="text-sm leading-relaxed text-encre-2">
           La conservation n’est pas disponible sur ce support : il manque{' '}
           <code className="font-mono text-xs">localStorage</code> ou{' '}
           <code className="font-mono text-xs">crypto.subtle</code>.{' '}
@@ -82,22 +82,22 @@ export function PanneauCoffre({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-xl border hairline bg-white p-6 shadow-card">
+      <div className="rounded-xl border hairline bg-surface p-6 shadow-card">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h3 className="font-display text-lg font-semibold text-navy-900">
+          <h3 className="font-display text-lg font-semibold text-encre">
             {!conservation.active
               ? 'Aucun coffre sur ce poste'
               : ouvert
                 ? 'Coffre ouvert'
                 : 'Coffre verrouillé'}
           </h3>
-          <p className="font-mono text-[0.62rem] uppercase tracking-[0.18em] text-slate-500">
+          <p className="font-mono text-[0.62rem] uppercase tracking-[0.18em] text-encre-2">
             AES-256-GCM · PBKDF2-SHA256
           </p>
         </div>
 
         {conservation.active && (
-          <p className="mt-2 text-sm leading-relaxed text-slate-600">
+          <p className="mt-2 text-sm leading-relaxed text-encre-2">
             {(conservation.octets / 1024).toFixed(1)} Ko scellés.{' '}
             {conservation.ecritLe
               ? `Dernier scellement : ${conservation.ecritLe.slice(0, 16).replace('T', ' à ')} UTC.`
@@ -119,7 +119,7 @@ export function PanneauCoffre({
             }}
           >
             <div>
-              <label htmlFor="phrase-coffre" className="block text-xs text-slate-500">
+              <label htmlFor="phrase-coffre" className="block text-xs text-encre-2">
                 Phrase de chiffrement
               </label>
               <input
@@ -129,10 +129,10 @@ export function PanneauCoffre({
                 autoComplete="off"
                 spellCheck={false}
                 onChange={(e) => setPhrase(e.target.value)}
-                className="mt-1 w-full max-w-md rounded-lg border hairline bg-white px-3 py-2 font-mono text-sm text-navy-900 focus:border-gold-500 focus:outline-none"
+                className="mt-1 w-full max-w-md rounded-lg border hairline bg-surface px-3 py-2 font-mono text-sm text-encre focus:border-laiton focus:outline-none"
               />
               {tropCourte && (
-                <p className="mt-1 text-xs text-gold-700">
+                <p className="mt-1 text-xs text-laiton-clair">
                   {phrase.length} caractère(s) — il en faut au moins {LONGUEUR_MIN_PHRASE}. Une
                   phrase entière, faite de mots, vaut mieux qu’un mot de passe court et compliqué.
                 </p>
@@ -141,7 +141,7 @@ export function PanneauCoffre({
 
             {!conservation.active && (
               <div>
-                <label htmlFor="phrase-confirmation" className="block text-xs text-slate-500">
+                <label htmlFor="phrase-confirmation" className="block text-xs text-encre-2">
                   Répéter la phrase
                 </label>
                 <input
@@ -151,10 +151,10 @@ export function PanneauCoffre({
                   autoComplete="off"
                   spellCheck={false}
                   onChange={(e) => setConfirmation(e.target.value)}
-                  className="mt-1 w-full max-w-md rounded-lg border hairline bg-white px-3 py-2 font-mono text-sm text-navy-900 focus:border-gold-500 focus:outline-none"
+                  className="mt-1 w-full max-w-md rounded-lg border hairline bg-surface px-3 py-2 font-mono text-sm text-encre focus:border-laiton focus:outline-none"
                 />
                 {discordante && (
-                  <p className="mt-1 text-xs text-red-700">
+                  <p className="mt-1 text-xs text-alerte-clair">
                     Les deux saisies diffèrent. Une faute de frappe ici scellerait le coffre avec
                     une phrase que personne ne connaît.
                   </p>
@@ -169,7 +169,7 @@ export function PanneauCoffre({
                 phrase.length < LONGUEUR_MIN_PHRASE ||
                 (!conservation.active && confirmation !== phrase)
               }
-              className="rounded-lg bg-navy-900 px-5 py-2.5 text-sm text-cream-50 transition-colors hover:bg-navy-800 disabled:cursor-not-allowed disabled:opacity-40"
+              className="rounded-lg bg-laiton px-5 py-2.5 text-sm text-fond transition-colors hover:bg-laiton-clair disabled:cursor-not-allowed disabled:opacity-40"
             >
               {travaille
                 ? 'Dérivation de la clé…'
@@ -179,7 +179,7 @@ export function PanneauCoffre({
             </button>
 
             {travaille && (
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-encre-2">
                 La dérivation prend volontairement quelques centaines de millisecondes : c’est ce
                 qui rend l’essai de phrases coûteux pour qui aurait copié ce poste.
               </p>
@@ -188,7 +188,7 @@ export function PanneauCoffre({
         )}
 
         {erreur && (
-          <p role="alert" className="mt-4 rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-900">
+          <p role="alert" className="mt-4 rounded-lg border border-alerte/60 bg-alerte/10 p-3 text-sm text-alerte-clair">
             {erreur}
           </p>
         )}
@@ -198,7 +198,7 @@ export function PanneauCoffre({
             <button
               type="button"
               onClick={actions.onVerrouiller}
-              className="rounded-lg border hairline bg-white px-4 py-2 text-sm text-navy-900 transition-colors hover:border-gold-500"
+              className="rounded-lg border hairline bg-surface px-4 py-2 text-sm text-encre transition-colors hover:border-laiton"
             >
               Verrouiller maintenant
             </button>
@@ -207,7 +207,7 @@ export function PanneauCoffre({
             <button
               type="button"
               onClick={actions.onEffacer}
-              className="rounded-lg border border-red-300 bg-white px-4 py-2 text-sm text-red-800 transition-colors hover:bg-red-50"
+              className="rounded-lg border border-alerte/60 bg-surface px-4 py-2 text-sm text-alerte-clair transition-colors hover:bg-alerte/10"
             >
               Effacer le coffre
             </button>
@@ -229,12 +229,12 @@ export function PanneauCoffre({
       </Reserve>
 
       {conservation.heritageEnClair && (
-        <div className="rounded-xl border border-gold-500/50 bg-gold-500/5 p-5">
-          <p className="text-sm font-medium text-navy-900">
+        <div className="rounded-xl border border-laiton/50 bg-laiton/10 p-5">
+          <p className="text-sm font-medium text-encre">
             Des données d’une version antérieure sont présentes <strong>en clair</strong> sur ce
             poste.
           </p>
-          <p className="mt-1.5 text-sm leading-relaxed text-slate-600">
+          <p className="mt-1.5 text-sm leading-relaxed text-encre-2">
             Elles ont été écrites avant que la conservation soit chiffrée. Elles ne sont plus lues
             par l’atelier, mais elles sont toujours là. Elles ne sont pas effacées automatiquement :
             savoir qu’un plan de travail a été conservé sans chiffrement sur ce poste peut, dans un
@@ -243,7 +243,7 @@ export function PanneauCoffre({
           <button
             type="button"
             onClick={actions.onPurgerHeritage}
-            className="mt-4 rounded-lg border border-red-300 bg-white px-4 py-2 text-sm text-red-800 transition-colors hover:bg-red-50"
+            className="mt-4 rounded-lg border border-alerte/60 bg-surface px-4 py-2 text-sm text-alerte-clair transition-colors hover:bg-alerte/10"
           >
             Effacer les données en clair
           </button>
