@@ -11,6 +11,7 @@ import { useMemo, useState } from 'react';
 import { genererLivrable, LIBELLES_LIVRABLE, type TypeLivrable } from '../../noyau/livrables';
 import type { ResultatChaine } from '../../noyau/orchestrateur';
 import type { Consigne } from '../../noyau/modele';
+import type { TrameCabinet } from '../../noyau/consignes';
 import type { SourceRecuperee } from '../../noyau/sources';
 import { rendreVerdict } from '../../noyau/gate';
 import { Reserve, TitreSection, Vide } from './Indicateurs';
@@ -24,11 +25,14 @@ export function VueEcritures({
   chaine,
   sources,
   consignes,
+  trames = [],
   onGeneration,
 }: {
   chaine: ResultatChaine | null;
   sources: SourceRecuperee[];
   consignes: Consigne[];
+  /** Trames du cabinet — la plus récente du type habille le livrable. */
+  trames?: TrameCabinet[];
   /** Journalisation M13 : type généré, verdict — identifiants seulement. */
   onGeneration: (type: TypeLivrable, autorise: boolean) => void;
 }) {
@@ -37,9 +41,9 @@ export function VueEcritures({
 
   const livrable = useMemo(() => {
     if (!chaine) return null;
-    const resultat = genererLivrable(type, chaine, { sources, consignes });
+    const resultat = genererLivrable(type, chaine, { sources, consignes, trames });
     return resultat;
-  }, [chaine, type, sources, consignes]);
+  }, [chaine, type, sources, consignes, trames]);
 
   if (!chaine) {
     return <Vide titre="Aucun dossier actif" explication="Les écritures se génèrent depuis l’analyse du dossier sélectionné." />;
@@ -78,7 +82,7 @@ export function VueEcritures({
             key={t}
             type="button"
             aria-pressed={type === t}
-            onClick={() => { setType(t); setCopie(false); if (chaine) { const g = genererLivrable(t, chaine, { sources, consignes }); onGeneration(t, g.verdict.autorise); } }}
+            onClick={() => { setType(t); setCopie(false); if (chaine) { const g = genererLivrable(t, chaine, { sources, consignes, trames }); onGeneration(t, g.verdict.autorise); } }}
             className={`rounded-full border px-3.5 py-1.5 text-xs transition-colors ${
               type === t ? 'border-laiton bg-laiton/10 text-encre' : 'hairline bg-surface text-encre-2 hover:border-laiton'
             }`}
@@ -115,6 +119,7 @@ export function VueEcritures({
           Chaque livrable est un <strong>projet</strong> : il le porte en tête et en pied, et se termine par les
           vérifications indispensables avant dépôt. Le rapport d’ancrage est une annexe de contrôle — il ne se dépose pas.
           {consignes.length > 0 && ` Consignes appliquées à cette génération : ${consignes.length}.`}
+          {livrable?.trameEmployee && ` Trame employée : « ${livrable.trameEmployee.intitule} » (${livrable.trameEmployee.id}).`}
         </Reserve>
       </div>
     </div>

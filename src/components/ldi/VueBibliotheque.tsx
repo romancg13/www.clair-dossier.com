@@ -7,8 +7,14 @@
  */
 import { useState } from 'react';
 
-import type { Bibliotheque } from '../../noyau/consignes';
+import { EMPLACEMENT_CORPS, type Bibliotheque } from '../../noyau/consignes';
+import { LIBELLES_LIVRABLE, type TypeLivrable } from '../../noyau/livrables';
 import { Reserve, TitreSection } from './Indicateurs';
+
+/** Types qu'une trame peut habiller — le rapport d'ancrage est exclu à dessein. */
+const TYPES_TRAME = (Object.keys(LIBELLES_LIVRABLE) as TypeLivrable[]).filter(
+  (t) => t !== 'rapport-ancrage'
+);
 
 export function VueBibliotheque({
   bibliotheque,
@@ -27,6 +33,7 @@ export function VueBibliotheque({
   const [portee, setPortee] = useState<'cabinet' | 'dossier'>('cabinet');
   const [revision, setRevision] = useState<{ id: string; texte: string } | null>(null);
   const [trameIntitule, setTrameIntitule] = useState('');
+  const [trameType, setTrameType] = useState<TypeLivrable>('conclusions');
   const [trameCorps, setTrameCorps] = useState('');
 
   const actives = bibliotheque.consignes.filter((c) => c.active);
@@ -113,23 +120,43 @@ export function VueBibliotheque({
           onSubmit={(e) => {
             e.preventDefault();
             if (!trameIntitule.trim() || !trameCorps.trim()) return;
-            onTrame(trameIntitule.trim(), 'conclusions', trameCorps);
+            onTrame(trameIntitule.trim(), trameType, trameCorps);
             setTrameIntitule(''); setTrameCorps('');
           }}
         >
-          <input value={trameIntitule} onChange={(e) => setTrameIntitule(e.target.value)} placeholder="Intitulé de la trame"
-            className="w-full max-w-md rounded-md border hairline bg-fond px-3 py-2 text-sm text-encre focus:border-laiton focus:outline-none" />
-          <textarea value={trameCorps} onChange={(e) => setTrameCorps(e.target.value)} rows={4} placeholder="Corps de la trame — en-têtes, formules d’usage, dispositif type."
+          <div className="flex flex-wrap gap-3">
+            <input value={trameIntitule} onChange={(e) => setTrameIntitule(e.target.value)} placeholder="Intitulé de la trame"
+              className="w-full max-w-md rounded-md border hairline bg-fond px-3 py-2 text-sm text-encre focus:border-laiton focus:outline-none" />
+            <label htmlFor="trame-type" className="text-xs text-encre-2">
+              Livrable habillé
+              <select id="trame-type" value={trameType} onChange={(e) => setTrameType(e.target.value as TypeLivrable)}
+                className="mt-1 block rounded-md border hairline bg-surface px-2 py-2 text-sm text-encre focus:border-laiton focus:outline-none">
+                {TYPES_TRAME.map((t) => (
+                  <option key={t} value={t}>{LIBELLES_LIVRABLE[t]}</option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <textarea value={trameCorps} onChange={(e) => setTrameCorps(e.target.value)} rows={6}
+            placeholder={`En-têtes, formules d’usage, dispositif type du cabinet.\nPlacer ${EMPLACEMENT_CORPS} là où le contenu généré doit s’insérer — sans lui, la trame sert de préambule.\nEmplacements admis : [[REFERENCE]], [[INITIALES]], [[JURIDICTION]].`}
             className="w-full rounded-md border hairline bg-fond px-3 py-2 font-mono text-xs text-encre focus:border-laiton focus:outline-none" />
           <button type="submit" className="rounded-lg border hairline bg-surface px-4 py-2 text-sm text-encre transition-colors hover:border-laiton">
             Ajouter la trame
           </button>
+          <p className="text-xs leading-relaxed text-encre-2">
+            La trame la plus récente pour un type l’habille ; les précédentes restent conservées. Le cadre
+            « PROJET » et les vérifications avant dépôt ne sont <strong>pas</strong> substituables, et le corps
+            habillé repasse intégralement par la gate.
+          </p>
         </form>
         <ul className="mt-4 space-y-2">
           {bibliotheque.trames.map((t) => (
             <li key={t.id} className="rounded-lg border hairline bg-surface p-4">
               <p className="text-sm font-medium text-encre">{t.intitule}</p>
-              <p className="font-mono text-[0.68rem] text-encre-3">{t.type} · ajoutée le {t.ajouteeLe.slice(0, 10)}</p>
+              <p className="font-mono text-[0.68rem] text-encre-3">
+                {LIBELLES_LIVRABLE[t.type as TypeLivrable] ?? t.type} · ajoutée le {t.ajouteeLe.slice(0, 10)}
+                {!t.corps.includes(EMPLACEMENT_CORPS) && ' · sans [[CORPS]] — servira de préambule'}
+              </p>
             </li>
           ))}
         </ul>

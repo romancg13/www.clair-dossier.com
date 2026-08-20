@@ -28,6 +28,51 @@ export type TrameCabinet = {
   ajouteeLe: string;
 };
 
+/** Là où la trame reçoit le corps généré. Sans lui, la trame sert de préambule. */
+export const EMPLACEMENT_CORPS = '[[CORPS]]';
+
+/** Emplacements de métadonnées admis dans une trame, tous facultatifs. */
+export const EMPLACEMENTS_DOSSIER = ['[[REFERENCE]]', '[[INITIALES]]', '[[JURIDICTION]]'] as const;
+
+/**
+ * La trame qui habille un type de livrable : la plus récemment ajoutée pour ce
+ * type. Les trames antérieures restent dans la bibliothèque (B21) — elles ne
+ * sont simplement plus employées.
+ */
+export function trameApplicable(trames: TrameCabinet[], type: string): TrameCabinet | null {
+  const candidates = trames.filter((t) => t.type === type);
+  if (candidates.length === 0) return null;
+  return candidates.reduce((a, b) => (b.ajouteeLe >= a.ajouteeLe ? b : a));
+}
+
+/**
+ * Habille un corps généré avec une trame du cabinet.
+ *
+ * Les remplacements se font par découpage, jamais par motif : un corps ou une
+ * trame contenant `$&` doit rester littéral (leçon consignée du build
+ * autonome). Une trame sans `[[CORPS]]` devient un préambule — le corps généré
+ * suit, jamais écrasé : une trame ne peut pas faire disparaître l'analyse.
+ */
+export function appliquerTrame(
+  trame: TrameCabinet,
+  corps: string,
+  dossier: { reference: string; initialesClient?: string; juridiction?: string }
+): string {
+  // `||` et non `??` : les défauts du schéma pénal sont des chaînes VIDES, et
+  // une trame ne doit jamais rendre un champ vide là où l'avocat attend une
+  // valeur — le manque se dit.
+  let habille = trame.corps
+    .split('[[REFERENCE]]').join(dossier.reference)
+    .split('[[INITIALES]]').join(dossier.initialesClient || '[À COMPLÉTER : initiales]')
+    .split('[[JURIDICTION]]').join(dossier.juridiction || '[À COMPLÉTER : juridiction]');
+
+  habille = habille.includes(EMPLACEMENT_CORPS)
+    ? habille.split(EMPLACEMENT_CORPS).join(corps)
+    : `${habille.trimEnd()}\n\n${corps}`;
+
+  return habille;
+}
+
 export type Bibliotheque = {
   trames: TrameCabinet[];
   consignes: Consigne[];

@@ -214,6 +214,7 @@ export function LdiAtelier() {
             chaine={chaineActive}
             sources={sources}
             consignes={consignesActives}
+            trames={bibliotheque.trames}
             onGeneration={(type, autorise) => {
               cacheChaine.journal.consigner({
                 action: `génération livrable ${type}`,

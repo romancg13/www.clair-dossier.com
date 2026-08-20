@@ -8,6 +8,7 @@ import { describe, it } from 'node:test';
 import { completerDossierPenal, type DossierPenal } from '../modele';
 import { executerChaine } from '../orchestrateur';
 import { LIBELLES_LIVRABLE, genererLivrable, type TypeLivrable } from '../livrables';
+import type { TrameCabinet } from '../consignes';
 import { construirePack, lirePack, resoudreReference, type SourceRecuperee } from '../sources';
 
 function dossier(): DossierPenal {
@@ -151,5 +152,86 @@ describe('pack de sources (§9.2)', () => {
 
   it("LIBELLES_LIVRABLE couvre les neuf types", () => {
     assert.equal(Object.keys(LIBELLES_LIVRABLE).length, 9);
+  });
+});
+
+describe('trames du cabinet (M11) — substitution dans les livrables', () => {
+  const chaine = executerChaine(dossier(), { maintenant: '2026-08-20T08:00:00Z' });
+
+  const trame = (surcharge: Partial<TrameCabinet> = {}): TrameCabinet => ({
+    id: 't-conclusions1',
+    intitule: 'Conclusions type du cabinet',
+    type: 'conclusions',
+    corps: 'POUR : [[INITIALES]]\nDossier [[REFERENCE]], devant [[JURIDICTION]]\n\nPLAISE AU TRIBUNAL\n\n[[CORPS]]\n\nSOUS TOUTES RÉSERVES',
+    ajouteeLe: '2026-08-01T00:00:00Z',
+    ...surcharge,
+  });
+
+  it('insère le corps généré à l’emplacement [[CORPS]] et remplit les métadonnées', () => {
+    const livrable = genererLivrable('conclusions', chaine, { trames: [trame()] });
+    assert.match(livrable.corps, /PLAISE AU TRIBUNAL/);
+    assert.match(livrable.corps, /SOUS TOUTES RÉSERVES/);
+    assert.match(livrable.corps, /Dossier LIV-001, devant \[À COMPLÉTER : juridiction\]/);
+    // Le contenu généré est bien À L'INTÉRIEUR de la trame.
+    assert.ok(
+      livrable.corps.indexOf('PLAISE AU TRIBUNAL') < livrable.corps.indexOf('PAR CES MOTIFS'),
+      'le corps généré doit suivre l’en-tête de la trame'
+    );
+    assert.ok(
+      livrable.corps.indexOf('PAR CES MOTIFS') < livrable.corps.indexOf('SOUS TOUTES RÉSERVES'),
+      'le pied de la trame doit suivre le corps généré'
+    );
+    assert.deepEqual(livrable.trameEmployee, { id: 't-conclusions1', intitule: 'Conclusions type du cabinet' });
+  });
+
+  it('le cadre PROJET et les vérifications survivent à toute trame', () => {
+    const livrable = genererLivrable('conclusions', chaine, { trames: [trame()] });
+    const lignes = livrable.corps.split('\n');
+    assert.match(lignes[0], /PROJET — à vérifier/);
+    assert.match(lignes[lignes.length - 1], /PROJET — à vérifier/);
+    assert.match(livrable.corps, /Vérifications indispensables avant dépôt/);
+    assert.match(livrable.corps, /La trame du cabinet employée est la bonne/);
+  });
+
+  it('nomme la trame employée dans le corps, en zone visible', () => {
+    const livrable = genererLivrable('conclusions', chaine, { trames: [trame()] });
+    assert.match(livrable.corps, /Trame du cabinet employée :\*\* Conclusions type du cabinet \(t-conclusions1/);
+  });
+
+  it('sans [[CORPS]], la trame devient un préambule — le contenu généré n’est jamais écrasé', () => {
+    const sansEmplacement = trame({ corps: 'EN-TÊTE DU CABINET SEULEMENT' });
+    const livrable = genererLivrable('conclusions', chaine, { trames: [sansEmplacement] });
+    assert.match(livrable.corps, /EN-TÊTE DU CABINET SEULEMENT/);
+    assert.match(livrable.corps, /PAR CES MOTIFS/);
+  });
+
+  it('la plus récente du type l’emporte ; les autres types sont ignorés', () => {
+    const ancienne = trame({ id: 't-vieille', intitule: 'Ancienne', ajouteeLe: '2026-01-01T00:00:00Z' });
+    const autreType = trame({ id: 't-nullite', intitule: 'Nullité type', type: 'requete-nullite' });
+    const livrable = genererLivrable('conclusions', chaine, { trames: [ancienne, autreType, trame()] });
+    assert.equal(livrable.trameEmployee?.id, 't-conclusions1');
+
+    const sansTrame = genererLivrable('plaidoirie', chaine, { trames: [ancienne, autreType, trame()] });
+    assert.equal(sansTrame.trameEmployee, null);
+  });
+
+  it('le rapport d’ancrage n’est JAMAIS habillé — c’est l’outil de contrôle', () => {
+    const pourAncrage = trame({ type: 'rapport-ancrage', id: 't-ancrage' });
+    const livrable = genererLivrable('rapport-ancrage', chaine, { trames: [pourAncrage] });
+    assert.equal(livrable.trameEmployee, null);
+    assert.ok(!livrable.corps.includes('PLAISE AU TRIBUNAL'));
+  });
+
+  it('une trame qui affirme la culpabilité est bloquée par la gate (B15)', () => {
+    const fautive = trame({ corps: 'La culpabilité est acquise.\n\n[[CORPS]]' });
+    const livrable = genererLivrable('conclusions', chaine, { trames: [fautive] });
+    assert.equal(livrable.verdict.autorise, false);
+    assert.ok(livrable.verdict.anomalies.some((a) => /culpabilité|B15/i.test(a.regle + a.detail)));
+  });
+
+  it('un corps ou une trame contenant $& reste littéral — aucune injection de motif', () => {
+    const avecDollar = trame({ corps: 'Barème $& du cabinet\n[[CORPS]]' });
+    const livrable = genererLivrable('conclusions', chaine, { trames: [avecDollar] });
+    assert.match(livrable.corps, /Barème \$& du cabinet/);
   });
 });

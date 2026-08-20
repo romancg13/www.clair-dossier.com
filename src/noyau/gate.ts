@@ -67,7 +67,7 @@ const MOTIFS_PRONOSTIC: { motif: RegExp; nom: string }[] = [
 
 const MOTIFS_CULPABILITE: RegExp[] = [
   /\b(le\s+client|la\s+cliente|il|elle)\s+est\s+(coupable|innocent[e]?)\b/iu,
-  /\bculpabilit[eé]\s+(est\s+)?[eé]tablie\b/iu,
+  /\bculpabilit[eé]\s+(est\s+)?([eé]tablie|acquise|d[eé]montr[eé]e|av[eé]r[eé]e|certaine|incontestable|indiscutable)\b/iu,
   /\best\s+(bien\s+)?l['’]auteur\s+des\s+faits\b/iu,
 ];
 

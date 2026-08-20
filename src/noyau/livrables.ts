@@ -16,6 +16,7 @@
  */
 import type { Consigne, DossierPenal, Moyen } from './modele';
 import { LIBELLES_AVANCEMENT, LIBELLES_NATURE, LIBELLES_PHASE, LIBELLES_STATUT_CLIENT } from './modele';
+import { appliquerTrame, trameApplicable, type TrameCabinet } from './consignes';
 import { controlerExport, type LivrableAExporter, type VerdictExport } from './gate';
 import type { ResultatChaine } from './orchestrateur';
 import { resoudreReference, type SourceRecuperee } from './sources';
@@ -51,6 +52,8 @@ export type Livrable = {
   aExporter: LivrableAExporter;
   verdict: VerdictExport;
   consignesAppliquees: string[];
+  /** Trame du cabinet employée pour habiller le corps, `null` sinon. */
+  trameEmployee: { id: string; intitule: string } | null;
 };
 
 const MENTION_PROJET = "PROJET — à vérifier, compléter et signer par l'avocat";
@@ -105,19 +108,33 @@ function blocManques(chaine: ResultatChaine): string {
   ].filter(Boolean).join('\n');
 }
 
-function cadre(titre: string, dossier: DossierPenal, contenu: string, verifications: string[]): string {
+/**
+ * Le cadre est IMPOSÉ et hors de portée des trames : mention projet en tête et
+ * en pied, ligne de dossier, vérifications avant dépôt. Une trame habille le
+ * contenu à l'intérieur de ce cadre — elle ne peut ni retirer la mention
+ * projet (B12), ni faire disparaître les vérifications.
+ */
+function cadre(
+  titre: string,
+  dossier: DossierPenal,
+  contenu: string,
+  verifications: string[],
+  trame: TrameCabinet | null
+): string {
   return [
     `> ${MENTION_PROJET}`,
     '',
     `# ${titre}`,
     '',
     `**Dossier :** ${dossier.reference}${dossier.initialesClient ? ` · ${dossier.initialesClient}` : ''}${dossier.juridiction ? ` · ${dossier.juridiction}` : ''}`,
+    ...(trame ? ['', `**Trame du cabinet employée :** ${trame.intitule} (${trame.id}, ajoutée le ${trame.ajouteeLe.slice(0, 10)})`] : []),
     '',
-    contenu.trim(),
+    (trame ? appliquerTrame(trame, contenu.trim(), dossier) : contenu).trim(),
     '',
     '## Vérifications indispensables avant dépôt',
     '',
     ...verifications.map((v) => `- [ ] ${v}`),
+    ...(trame ? ['- [ ] La trame du cabinet employée est la bonne pour cette juridiction et ce stade.'] : []),
     '',
     `> ${MENTION_PROJET}`,
   ].join('\n');
@@ -296,11 +313,16 @@ function corpsAncrage(chaine: ResultatChaine): string {
 export function genererLivrable(
   type: TypeLivrable,
   chaine: ResultatChaine,
-  options: { sources?: SourceRecuperee[]; consignes?: Consigne[] } = {}
+  options: { sources?: SourceRecuperee[]; consignes?: Consigne[]; trames?: TrameCabinet[] } = {}
 ): Livrable {
   const sources = options.sources ?? [];
   const consignes = options.consignes ?? [];
   const d = chaine.dossier;
+
+  // Le rapport d'ancrage est une annexe de CONTRÔLE : il n'est jamais habillé.
+  // Une trame qui reformaterait l'outil de vérification desservirait sa seule
+  // fonction — dire exactement ce que les passes ont produit.
+  const trame = type === 'rapport-ancrage' ? null : trameApplicable(options.trames ?? [], type);
 
   const CORPS: Record<TypeLivrable, () => string> = {
     synthese: () => corpsSynthese(chaine, sources),
@@ -314,7 +336,7 @@ export function genererLivrable(
     'rapport-ancrage': () => corpsAncrage(chaine),
   };
 
-  const corps = cadre(LIBELLES_LIVRABLE[type], d, CORPS[type](), VERIFICATIONS_COMMUNES);
+  const corps = cadre(LIBELLES_LIVRABLE[type], d, CORPS[type](), VERIFICATIONS_COMMUNES, trame);
 
   // Un livrable ne porte devant la gate QUE les moyens qu'il rend réellement :
   // la nullité porte les moyens de procédure, les conclusions ceux du fond.
@@ -343,5 +365,6 @@ export function genererLivrable(
     aExporter,
     verdict: controlerExport(aExporter, d),
     consignesAppliquees: consignes.map((c) => c.id),
+    trameEmployee: trame ? { id: trame.id, intitule: trame.intitule } : null,
   };
 }
