@@ -5,7 +5,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { bibliothequeVide, blocConsignes, consignesApplicables, creerConsigne, reviserConsigne } from '../consignes';
+import { bibliothequeVide, blocConsignes, consignesApplicables, creerConsigne, reviserConsigne, type Bibliotheque } from '../consignes';
 import { VERSION_INSTRUCTIONS, instructionDePasse } from '../instructions';
 import {
   REFUS_DISTANT_INACTIF,
@@ -64,7 +64,7 @@ describe('consignes du cabinet — injectées et visibles', () => {
 
   it('réviser désactive l’ancienne version sans la supprimer (B21)', () => {
     const initiale = creerConsigne('Version 1.', 'cabinet');
-    let bibliotheque = { trames: [], consignes: [initiale] };
+    let bibliotheque: Bibliotheque = { trames: [], consignes: [initiale] };
     bibliotheque = reviserConsigne(bibliotheque, initiale.id, 'Version 2.');
 
     assert.equal(bibliotheque.consignes.length, 2, "l'historique reste");
