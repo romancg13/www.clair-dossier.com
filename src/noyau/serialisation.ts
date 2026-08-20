@@ -27,7 +27,7 @@ export type ImportDossier =
 
 /** Export : JSON indenté, version de schéma en tête, prêt pour un fichier. */
 export function exporterDossier(dossier: DossierPenal): string {
-  return JSON.stringify({ versionSchema: VERSION_SCHEMA, ...dossier, }, null, 2);
+  return JSON.stringify({ ...dossier, versionSchema: VERSION_SCHEMA }, null, 2);
 }
 
 /**
