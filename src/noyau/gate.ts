@@ -23,7 +23,7 @@
  */
 import type { Contradiction } from '../ldi/types';
 import type { DossierPenal, Moyen } from './modele';
-import type { SortiePasse } from './passes';
+import { identifiantsConnus, type SortiePasse } from './passes';
 
 export type AnomalieExport = {
   /** Où, exactement : `moyens[1].ripostePrevue`, `corps (ligne 12)`… */
@@ -111,8 +111,10 @@ const MENTION_FONDEMENT = 'fondement à vérifier auprès de la source officiell
 
 export function controlerExport(livrable: LivrableAExporter, dossier: DossierPenal): VerdictExport {
   const anomalies: AnomalieExport[] = [];
-  const cotesConnues = new Set(dossier.pieces.flatMap((p) => [p.id, ...(p.cote ? [p.cote] : [])]));
-  const faitsEtActes = new Set([...dossier.faits.map((f) => f.id), ...dossier.actes.map((a) => a.id)]);
+  // Le même univers d'identifiants que l'ancrage des passes : cotes, pièces,
+  // événements, faits, actes, mesures, scellés, preuves, griefs. Un moyen
+  // ancré sur un événement de garde à vue est un moyen ancré.
+  const appuisConnus = identifiantsConnus(dossier);
 
   // ── B4 : aucun chiffre de pronostic ──────────────────────────────────────
   for (const faute of lignesEnFaute(livrable.corps, MOTIFS_PRONOSTIC)) {
@@ -172,7 +174,7 @@ export function controlerExport(livrable: LivrableAExporter, dossier: DossierPen
       });
     }
     for (const appui of moyen.appuis) {
-      if (!cotesConnues.has(appui) && !faitsEtActes.has(appui)) {
+      if (!appuisConnus.has(appui)) {
         anomalies.push({
           chemin: `${livrable.nom} · moyens[${i}].appuis`,
           regle: 'Gate — moyen citant une cote inexistante',
