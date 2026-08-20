@@ -1,0 +1,250 @@
+{
+  "reference": "FICTIF-2026-001",
+  "versionSchema": "3.0",
+  "initialesClient": "K.T.",
+  "juridiction": "Tribunal judiciaire de démonstration (fictif)",
+  "cadreProcedural": "enquête de flagrance, régime de la criminalité organisée",
+  "qualiteClient": "mis en cause",
+  "statutLiberte": "detention-provisoire",
+  "phase": "enquete",
+  "natures": [
+    "detention-transport",
+    "trafic-aggrave"
+  ],
+  "avancement": "controle",
+  "etiquettes": [
+    "démonstration"
+  ],
+  "qualifications": [
+    "transport et détention de produits stupéfiants (fictif)"
+  ],
+  "regime": "criminalite-organisee",
+  "pieces": [
+    {
+      "id": "P1",
+      "cote": "D12",
+      "nature": "proces-verbal",
+      "intitule": "PV d'interpellation (fictif)",
+      "date": "2026-03-14"
+    },
+    {
+      "id": "P2",
+      "cote": "D13",
+      "nature": "proces-verbal",
+      "intitule": "PV de perquisition (fictif)",
+      "date": "2026-03-14"
+    },
+    {
+      "id": "P3",
+      "cote": "D40",
+      "nature": "expertise",
+      "intitule": "Analyse du produit saisi (fictive)",
+      "date": "2026-03-20"
+    },
+    {
+      "id": "P4",
+      "cote": "D55",
+      "nature": "proces-verbal",
+      "intitule": "Exploitation de téléphonie (fictive)",
+      "date": "2026-03-25"
+    },
+    {
+      "id": "P5",
+      "cote": "D30",
+      "nature": "proces-verbal",
+      "intitule": "PV de déroulé et de fin de la mesure (fictif)",
+      "date": "2026-03-16"
+    }
+  ],
+  "evenements": [
+    {
+      "id": "E1",
+      "nature": "interpellation",
+      "horodatage": "2026-03-14T06:20",
+      "description": "Interpellation au domicile (fictive)",
+      "sourcePieceId": "P1"
+    },
+    {
+      "id": "E2",
+      "nature": "debut-garde-a-vue",
+      "horodatage": "2026-03-14T06:40",
+      "description": "Placement en garde à vue",
+      "sourcePieceId": "P1"
+    },
+    {
+      "id": "E3",
+      "nature": "notification-droits",
+      "horodatage": "2026-03-14T08:00",
+      "description": "Notification des droits",
+      "sourcePieceId": "P1"
+    },
+    {
+      "id": "E4",
+      "nature": "demande-avocat",
+      "horodatage": "2026-03-14T08:05",
+      "description": "Demande d'assistance d'un avocat",
+      "sourcePieceId": "P1"
+    },
+    {
+      "id": "E5",
+      "nature": "avis-avocat",
+      "horodatage": "2026-03-14T08:20",
+      "description": "Avis donné au barreau",
+      "sourcePieceId": "P1"
+    },
+    {
+      "id": "E6",
+      "nature": "audition",
+      "horodatage": "2026-03-14T11:00",
+      "description": "Première audition sur les faits",
+      "sourcePieceId": "P1"
+    },
+    {
+      "id": "E7",
+      "nature": "prolongation-garde-a-vue",
+      "horodatage": "2026-03-15T06:00",
+      "description": "Prolongation autorisée",
+      "sourcePieceId": "P5"
+    },
+    {
+      "id": "E8",
+      "nature": "fin-garde-a-vue",
+      "horodatage": "2026-03-16T05:40",
+      "description": "Fin de la mesure",
+      "sourcePieceId": "P5"
+    }
+  ],
+  "echeances": [
+    {
+      "id": "EC1",
+      "intitule": "Débat de prolongation de la détention (fictif)",
+      "date": "2026-09-02",
+      "type": "detention",
+      "etat": "ouverte"
+    },
+    {
+      "id": "EC2",
+      "intitule": "Audience de fond (fictive)",
+      "date": "2026-10-06",
+      "type": "audience",
+      "etat": "ouverte"
+    }
+  ],
+  "faits": [
+    {
+      "id": "F1",
+      "enonce": "Origine de l'enquête : signalement d'un véhicule (fictif).",
+      "periode": "2026-03-10",
+      "statut": "allegue",
+      "cotes": [
+        "D12"
+      ]
+    },
+    {
+      "id": "F2",
+      "enonce": "Interpellation du client à 6 h 20 au domicile.",
+      "periode": "2026-03-14",
+      "statut": "allegue",
+      "cotes": [
+        "D12"
+      ]
+    }
+  ],
+  "actes": [
+    {
+      "id": "A1",
+      "type": "géolocalisation du véhicule",
+      "dateHeure": "2026-03-11T09:00",
+      "autoritePrescriptrice": "parquet",
+      "autorisationPrealable": "non",
+      "cotes": [
+        "D12"
+      ],
+      "actesSubsequents": [
+        "A2",
+        "A3"
+      ]
+    },
+    {
+      "id": "A2",
+      "type": "interpellation",
+      "dateHeure": "2026-03-14T06:20",
+      "autoritePrescriptrice": "OPJ",
+      "autorisationPrealable": "oui",
+      "cotes": [
+        "D12"
+      ],
+      "actesSubsequents": [
+        "A3"
+      ]
+    },
+    {
+      "id": "A3",
+      "type": "perquisition du domicile",
+      "dateHeure": "2026-03-14T07:10",
+      "autoritePrescriptrice": "OPJ",
+      "autorisationPrealable": "oui",
+      "cotes": [
+        "D13"
+      ],
+      "actesSubsequents": []
+    }
+  ],
+  "mesures": [],
+  "preuves": [
+    {
+      "id": "PR1",
+      "type": "téléphonie — bornage",
+      "rattachementClient": "ligne prépayée attribuée par déclaration d'un tiers",
+      "portee": "",
+      "faiblesses": [],
+      "cotes": [
+        "D55"
+      ]
+    },
+    {
+      "id": "PR2",
+      "type": "quantité et pesée du produit",
+      "rattachementClient": "produit trouvé dans les parties communes",
+      "portee": "",
+      "faiblesses": [],
+      "cotes": [
+        "D40"
+      ]
+    }
+  ],
+  "scelles": [
+    {
+      "id": "S1",
+      "designation": "Scellé UN — produit saisi (fictif)",
+      "dateSaisie": "2026-03-14",
+      "chaineConservation": [
+        "saisie et mise sous scellé (D13)",
+        "ouverture pour analyse (D40)"
+      ],
+      "operationsSubsequentes": []
+    }
+  ],
+  "qualificationsEnvisagees": [
+    {
+      "id": "Q1",
+      "intituleFonctionnel": "transport de produits stupéfiants",
+      "elementsAttendus": [],
+      "elementsPresents": [
+        {
+          "element": "Détention matérielle ou transport du produit",
+          "appuis": [
+            "D13"
+          ]
+        }
+      ],
+      "elementsManquants": [],
+      "aggravationsDiscutees": [
+        "bande organisée"
+      ]
+    }
+  ],
+  "griefs": [],
+  "moyens": [],
+  "manques": []
+}

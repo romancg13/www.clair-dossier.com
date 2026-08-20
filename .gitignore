@@ -12,3 +12,7 @@ dist-ssr
 .env
 .env.*
 !.env.example
+
+# Page LDI autonome (générée par npm run ldi:artifact)
+artifact/dist
+dist-autonome

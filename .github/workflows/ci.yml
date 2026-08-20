@@ -1,0 +1,51 @@
+name: CI
+
+# Le workflow deploy.yml ne se déclenche que sur push vers main : rien ne
+# validait donc les pull requests. Ce workflow comble ce trou — il exécute sur
+# chaque PR exactement les vérifications qu'un développeur lance en local.
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Une PR qui reçoit plusieurs push d'affilée n'occupe qu'un seul runner.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Typecheck · tests · build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Les étapes suivantes exécutent du code venu de la PR : elles n'ont
+          # aucun besoin d'un jeton git utilisable.
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Installer les dépendances
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Tests LDI
+        run: npm run test:ldi
+
+      - name: Build
+        run: npm run build
+
+      # Le build ne doit modifier aucun fichier versionné : une dérive ici
+      # signifierait qu'un artefact généré a été commis à la main.
+      - name: Vérifier que le build ne modifie rien de versionné
+        run: git diff --exit-code

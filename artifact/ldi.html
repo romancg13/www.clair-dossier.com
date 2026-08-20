@@ -1,0 +1,794 @@
+<title>Registre LDI</title>
+<!--
+  Aucune fonte distante : un dossier pénal est couvert par le secret
+  professionnel, et une requête de fonte divulgue l'adresse IP, l'agent
+  utilisateur et le référent du lecteur à un tiers, à chaque ouverture.
+  La page annonce « aucun appel réseau » — elle doit donc n'en faire aucun.
+  Les piles de repli locales ci-dessous portent la typographie.
+-->
+
+<style>
+  /* Palette claire complète — tokens définis sur :root nu, jamais dans un bloc
+     conditionnel, pour que l'état « système » non stampé reste lisible. */
+  :root {
+    --ground: #fbf9f4;
+    --surface: #ffffff;
+    --surface-alt: #f5f0e6;
+    --ink: #0a1228;
+    --ink-soft: #1e2c52;
+    --muted: #5a6378;
+    --accent: #a8873a;
+    --accent-soft: rgba(196, 164, 86, 0.16);
+    --rule: rgba(10, 18, 40, 0.12);
+    --rule-strong: rgba(10, 18, 40, 0.22);
+    --critique: #96222b;
+    --critique-bg: rgba(150, 34, 43, 0.08);
+    --majeure: #7d5610;
+    --majeure-bg: rgba(125, 86, 16, 0.09);
+    --conforme: #2c6249;
+    --conforme-bg: rgba(44, 98, 73, 0.09);
+    --shadow: 0 1px 2px rgba(10, 18, 40, 0.05), 0 8px 24px rgba(10, 18, 40, 0.05);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #0b1631;
+      --surface: #12203f;
+      --surface-alt: #182948;
+      --ink: #f3efe6;
+      --ink-soft: #d7dbe6;
+      --muted: #97a1b8;
+      --accent: #e6c97d;
+      --accent-soft: rgba(230, 201, 125, 0.14);
+      --rule: rgba(243, 239, 230, 0.14);
+      --rule-strong: rgba(243, 239, 230, 0.26);
+      --critique: #f0959a;
+      --critique-bg: rgba(240, 149, 154, 0.12);
+      --majeure: #e2b76c;
+      --majeure-bg: rgba(226, 183, 108, 0.12);
+      --conforme: #85c8a5;
+      --conforme-bg: rgba(133, 200, 165, 0.12);
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.28);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground: #0b1631;
+    --surface: #12203f;
+    --surface-alt: #182948;
+    --ink: #f3efe6;
+    --ink-soft: #d7dbe6;
+    --muted: #97a1b8;
+    --accent: #e6c97d;
+    --accent-soft: rgba(230, 201, 125, 0.14);
+    --rule: rgba(243, 239, 230, 0.14);
+    --rule-strong: rgba(243, 239, 230, 0.26);
+    --critique: #f0959a;
+    --critique-bg: rgba(240, 149, 154, 0.12);
+    --majeure: #e2b76c;
+    --majeure-bg: rgba(226, 183, 108, 0.12);
+    --conforme: #85c8a5;
+    --conforme-bg: rgba(133, 200, 165, 0.12);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.28);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 0 20px; }
+
+  h1, h2, h3 {
+    font-family: ui-serif, Georgia, "Times New Roman", serif;
+    font-weight: 600;
+    text-wrap: balance;
+    margin: 0;
+    line-height: 1.12;
+  }
+
+  .eyebrow {
+    font-family: ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, Consolas, monospace;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.19em;
+    color: var(--muted);
+    margin: 0;
+  }
+
+  .mono {
+    font-family: ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, Consolas, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---------------- En-tête ---------------- */
+
+  header.masthead {
+    border-bottom: 1px solid var(--rule);
+    background: var(--surface);
+  }
+
+  .masthead-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+    padding: 44px 0 38px;
+  }
+
+  h1 { font-size: clamp(2.6rem, 6vw, 4rem); letter-spacing: -0.01em; }
+
+  .lede {
+    max-width: 62ch;
+    color: var(--ink-soft);
+    font-size: 1.02rem;
+    margin: 0;
+  }
+
+  .claims { display: flex; flex-wrap: wrap; gap: 10px; }
+
+  .claim {
+    font-family: ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, Consolas, monospace;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    padding: 6px 11px;
+    border: 1px solid var(--rule-strong);
+    color: var(--ink-soft);
+  }
+
+  .claim.on { border-color: var(--accent); background: var(--accent-soft); }
+
+  /* ---------------- Atelier ---------------- */
+
+  .workspace {
+    display: grid;
+    grid-template-columns: minmax(0, 400px) minmax(0, 1fr);
+    gap: 34px;
+    padding: 34px 0 60px;
+    align-items: start;
+  }
+
+  @media (max-width: 940px) { .workspace { grid-template-columns: minmax(0, 1fr); } }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    box-shadow: var(--shadow);
+    padding: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .panel + .panel { margin-top: 22px; }
+
+  .stack { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
+
+  label.field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-family: ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, Consolas, monospace;
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--muted);
+  }
+
+  textarea, input[type="text"] {
+    width: 100%;
+    background: var(--ground);
+    color: var(--ink);
+    border: 1px solid var(--rule-strong);
+    padding: 11px 12px;
+    font-family: ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, Consolas, monospace;
+    font-size: 0.78rem;
+    line-height: 1.65;
+    resize: vertical;
+  }
+
+  input[type="text"] { font-size: 0.82rem; }
+
+  textarea:focus-visible, input:focus-visible, button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .actions { display: flex; flex-wrap: wrap; gap: 9px; }
+
+  button {
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    font-size: 0.83rem;
+    font-weight: 600;
+    padding: 9px 15px;
+    border: 1px solid var(--ink);
+    background: var(--ink);
+    color: var(--ground);
+    cursor: pointer;
+    transition: opacity 140ms ease, background-color 140ms ease;
+  }
+
+  button:hover { opacity: 0.86; }
+
+  button.secondary { background: transparent; color: var(--ink); border-color: var(--rule-strong); }
+  button.secondary:hover { border-color: var(--accent); opacity: 1; }
+
+  .hint { font-size: 0.79rem; color: var(--muted); margin: 0; }
+
+  .error {
+    color: var(--critique);
+    background: var(--critique-bg);
+    border-left: 3px solid var(--critique);
+    padding: 9px 12px;
+    font-size: 0.85rem;
+    margin: 0;
+  }
+
+  /* ---------------- Synthèse ---------------- */
+
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1px; background: var(--rule); border: 1px solid var(--rule); }
+
+  .tile { background: var(--surface); padding: 16px 18px; display: flex; flex-direction: column; gap: 3px; }
+
+  .tile .num {
+    font-family: ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, Consolas, monospace;
+    font-variant-numeric: tabular-nums;
+    font-size: 1.85rem;
+    line-height: 1;
+    color: var(--ink);
+  }
+
+  .tile .num.alert { color: var(--critique); }
+  .tile .num.warn { color: var(--majeure); }
+
+  .tile .cap {
+    font-family: ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, Consolas, monospace;
+    font-size: 0.63rem;
+    text-transform: uppercase;
+    letter-spacing: 0.13em;
+    color: var(--muted);
+  }
+
+  section.report { background: var(--surface); border: 1px solid var(--rule); box-shadow: var(--shadow); }
+
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 14px;
+    flex-wrap: wrap;
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .section-head h2 { font-size: 1.6rem; }
+  .section-body { padding: 20px 22px; }
+
+  /* ---------------- Registre ---------------- */
+
+  .register { display: flex; flex-direction: column; }
+
+  .entry {
+    display: grid;
+    grid-template-columns: 132px minmax(0, 1fr);
+    gap: 16px;
+    padding: 11px 0;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .entry:last-child { border-bottom: 0; }
+
+  .entry .gutter {
+    font-family: ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, Consolas, monospace;
+    font-variant-numeric: tabular-nums;
+    font-size: 0.72rem;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  .entry .gutter .piece { display: block; color: var(--accent); }
+  .entry .nature { font-size: 0.94rem; color: var(--ink); }
+
+  .entry .kind {
+    font-family: ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, Consolas, monospace;
+    font-size: 0.63rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    display: block;
+  }
+
+  @media (max-width: 560px) { .entry { grid-template-columns: minmax(0, 1fr); gap: 4px; } }
+
+  /* ---------------- Constats ---------------- */
+
+  .finding {
+    border-left: 3px solid var(--rule-strong);
+    padding: 12px 0 12px 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .finding + .finding { margin-top: 14px; }
+  .finding.critique { border-left-color: var(--critique); background: var(--critique-bg); }
+  .finding.majeure { border-left-color: var(--majeure); background: var(--majeure-bg); }
+  .finding.critique, .finding.majeure { padding-right: 14px; }
+
+  .chip {
+    font-family: ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, Consolas, monospace;
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 0.13em;
+    white-space: nowrap;
+  }
+
+  .chip.critique { color: var(--critique); }
+  .chip.majeure { color: var(--majeure); }
+  .chip.conforme { color: var(--conforme); }
+  .chip.attente { color: var(--muted); }
+
+  .finding p { margin: 0; font-size: 0.93rem; }
+  .finding .todo { color: var(--muted); font-size: 0.85rem; }
+
+  /* ---------------- Table de contrôle ---------------- */
+
+  .scroller { overflow-x: auto; }
+
+  /* Largeurs fixes : en mode auto, la colonne « point » et la colonne
+     « constat » se disputent l'espace et l'une finit toujours étranglée.
+     Sous 720 px, le tableau défile dans son conteneur plutôt que de s'écraser. */
+  table { border-collapse: collapse; width: 100%; min-width: 720px; table-layout: fixed; font-size: 0.88rem; }
+  th:nth-child(1) { width: 23%; }
+  th:nth-child(2) { width: 11%; }
+  th:nth-child(3) { width: 45%; }
+  th:nth-child(4) { width: 21%; }
+
+  th, td { text-align: left; padding: 10px 12px 10px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+
+  th {
+    font-family: ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, Consolas, monospace;
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 0.13em;
+    color: var(--muted);
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  /* Seule la puce d'identifiant est insécable ; l'intitulé se replie. */
+  td.fondement { white-space: nowrap; }
+  /* Le constat absorbe la largeur restante : les deux colonnes insécables
+     (état, fondement) ne doivent pas l'étrangler. */
+  td.fondement .statut { display: block; color: var(--muted); font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase; }
+
+  /* ---------------- Axes ---------------- */
+
+  .axis { padding: 15px 0; border-bottom: 1px solid var(--rule); }
+  .axis:last-child { border-bottom: 0; }
+  .axis h3 { font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.98rem; font-weight: 600; display: flex; flex-wrap: wrap; gap: 9px; align-items: baseline; }
+  .axis .rule-note { color: var(--muted); font-size: 0.83rem; margin: 5px 0 0; }
+  .axis ul { margin: 9px 0 0; padding-left: 18px; font-size: 0.9rem; }
+  .axis li { margin-bottom: 4px; }
+  .refs { margin-top: 9px; font-size: 0.7rem; color: var(--muted); }
+
+  details.doc { border-top: 1px solid var(--rule); padding-top: 14px; margin-top: 6px; }
+  details.doc summary { cursor: pointer; font-weight: 600; font-size: 0.9rem; }
+  pre.doc-body {
+    background: var(--ground);
+    border: 1px solid var(--rule);
+    padding: 15px;
+    overflow-x: auto;
+    font-family: ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, Consolas, monospace;
+    font-size: 0.73rem;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    max-height: 460px;
+    overflow-y: auto;
+  }
+
+  .placeholder { color: var(--muted); font-size: 0.92rem; padding: 26px 22px; margin: 0; }
+
+  ul.plain { margin: 0; padding-left: 18px; font-size: 0.9rem; }
+  ul.plain li { margin-bottom: 6px; }
+  ul.plain.quiet li { color: var(--muted); font-size: 0.86rem; }
+
+  /* ---------------- Pied ---------------- */
+
+  footer.colophon { border-top: 1px solid var(--rule); background: var(--surface); margin-top: 20px; }
+  .colophon-inner { padding: 34px 0 46px; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 30px; }
+  .colophon h3 { font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.15em; color: var(--muted); font-weight: 600; }
+  .colophon p, .colophon li { font-size: 0.87rem; color: var(--ink-soft); }
+  .colophon p { margin: 9px 0 0; }
+  .colophon ul { margin: 9px 0 0; padding-left: 17px; }
+  .colophon li { margin-bottom: 5px; }
+  .colophon strong { color: var(--ink); }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+</style>
+
+<header class="masthead">
+  <div class="wrap masthead-inner">
+    <p class="eyebrow">Legal Defense Intelligence · procédure pénale française</p>
+    <h1>Registre LDI</h1>
+    <p class="lede">
+      Un dossier pénal se lit à l'heure près. Cet outil reconstruit la chronologie
+      d'une procédure, confronte les durées aux régimes du code de procédure pénale
+      et déroule dix points de contrôle — pour faire ressortir ce qu'une lecture
+      fatiguée laisse passer&nbsp;: une audition ouverte avant la notification des
+      droits, un procès-verbal daté avant les faits qu'il constate, une garde à vue
+      qui déborde les prolongations actées.
+    </p>
+    <div class="claims">
+      <span class="claim on">Aucun appel réseau</span>
+      <span class="claim on">Aucune donnée transmise</span>
+      <span class="claim">Résultat reproductible</span>
+      <span class="claim">Zéro jurisprudence générée</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap workspace">
+  <!-- Saisie -->
+  <div>
+    <div class="panel">
+      <label class="field" for="dossier">
+        Dossier (JSON)
+        <textarea id="dossier" rows="20" spellcheck="false"></textarea>
+      </label>
+      <p id="err" class="error" role="alert" hidden></p>
+      <div class="actions">
+        <button id="run" type="button">Analyser</button>
+        <button id="sample" class="secondary" type="button">Charger l'exemple</button>
+        <button id="clear" class="secondary" type="button">Vider</button>
+      </div>
+      <p class="hint">
+        Tout s'exécute dans votre navigateur. Rien n'est envoyé nulle part — la page
+        ne sait pas faire de requête réseau.
+      </p>
+    </div>
+
+    <div class="panel">
+      <label class="field" for="noms">
+        Noms à pseudonymiser
+        <input id="noms" type="text" placeholder="Jean Dupont, SARL Martin" autocomplete="off">
+      </label>
+      <p class="hint">
+        Adresses e-mail, téléphones, IBAN, NIR et plaques sont repérés seuls. Les
+        patronymes, non&nbsp;: ils doivent être déclarés ici. Utile avant de coller
+        un extrait ailleurs.
+      </p>
+      <div class="actions">
+        <button id="copy" class="secondary" type="button">Copier le rapport</button>
+        <button id="copy-min" class="secondary" type="button">Copier pseudonymisé</button>
+      </div>
+      <p id="alerts" class="hint"></p>
+    </div>
+  </div>
+
+  <!-- Résultats -->
+  <div class="stack" id="out">
+    <section class="report">
+      <p class="placeholder">
+        Chargez l'exemple ou collez un dossier, puis lancez l'analyse.
+      </p>
+    </section>
+  </div>
+</main>
+
+<footer class="colophon">
+  <div class="wrap colophon-inner">
+    <div>
+      <h3>Ce que l'outil établit</h3>
+      <ul>
+        <li>Contradictions d'heures, de durées et d'ordre des actes.</li>
+        <li>Dix points de contrôle rattachés à un article du CPP.</li>
+        <li>Axes de défense classés, avec l'objection prévisible du parquet.</li>
+        <li>Squelettes d'actes, emplacements à compléter balisés.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Ce qu'il ne fait pas</h3>
+      <ul>
+        <li><strong>Aucune jurisprudence</strong> n'est produite hors réponse d'une API officielle. Aucun arrêt n'est codé en dur, nulle part.</li>
+        <li><strong>Aucun pourcentage de succès.</strong> La base de décisions appariées qui le justifierait n'existe pas en accès ouvert.</li>
+        <li><strong>Aucune détection d'IA.</strong> Les mesures textuelles motivent une demande de pièce, rien de plus.</li>
+        <li>Ni OCR, ni extraction PDF&nbsp;: la saisie reste manuelle.</li>
+        <li><strong>Un rapport sans anomalie ne veut pas dire « procédure régulière ».</strong> Sont contrôlés&nbsp;: garde à vue, contrôle d'identité, perquisition en enquête préliminaire, scellés, prescription. Ne le sont pas&nbsp;: l'instruction, la détention provisoire, les interceptions, l'audience et les voies de recours.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Trois corrections au cahier des charges</h3>
+      <ul>
+        <li>La garde à vue de droit commun est de 24&nbsp;h, prolongeable une fois de 24&nbsp;h (art. 63 CPP), et non de 72&nbsp;h. Le régime de l'art. 706-88 CPP peut porter la mesure à 96&nbsp;h.</li>
+        <li>L'art. 803 CPP porte sur les menottes et entraves&nbsp;; la notification des droits relève de l'art. 63-1 CPP.</li>
+        <li>L'art. 222-37 CP est un délit&nbsp;: prescription de six ans (art. 8 CPP), à ne pas confondre avec les dix ans d'emprisonnement encourus.</li>
+      </ul>
+      <p>
+        Les textes cités portent le statut «&nbsp;à vérifier&nbsp;» tant qu'ils n'ont pas
+        été relus sur Légifrance. Ce n'est pas une consultation juridique&nbsp;: l'outil
+        prépare le travail de l'avocat, qui décide seul et en répond.
+      </p>
+    </div>
+  </div>
+</footer>
+
+<script>/*__LDI_BUNDLE__*/</script>
+<script>
+(function () {
+  'use strict';
+
+  var LDI = window.LDI;
+  var $ = function (id) { return document.getElementById(id); };
+  var dossierInput = $('dossier');
+  var out = $('out');
+  var err = $('err');
+  var rapport = null;
+
+  function el(tag, cls, text) {
+    var node = document.createElement(tag);
+    if (cls) node.className = cls;
+    if (text !== undefined && text !== null) node.textContent = String(text);
+    return node;
+  }
+
+  function section(titre, meta) {
+    var wrap = el('section', 'report');
+    var head = el('div', 'section-head');
+    head.appendChild(el('h2', null, titre));
+    if (meta) head.appendChild(el('span', 'mono chip attente', meta));
+    wrap.appendChild(head);
+    var body = el('div', 'section-body');
+    wrap.appendChild(body);
+    return { wrap: wrap, body: body };
+  }
+
+  function showError(message) {
+    err.textContent = message;
+    err.hidden = false;
+  }
+
+  function renderTiles(r) {
+    var critiques = r.dossier.contradictions.filter(function (c) { return c.severite === 'critique'; }).length;
+    var tiles = el('div', 'tiles');
+    [
+      { n: critiques, c: 'Contradictions critiques', k: critiques > 0 ? 'alert' : '' },
+      { n: r.nullites.anomalies.length, c: 'Anomalies procédurales', k: r.nullites.anomalies.length > 0 ? 'alert' : '' },
+      { n: r.nullites.nonEtablis.length, c: 'Points non établis', k: r.nullites.nonEtablis.length > 0 ? 'warn' : '' },
+      { n: r.strategie.axes.length, c: 'Axes de défense', k: '' },
+      { n: r.dossier.chronologie.length, c: 'Actes au registre', k: '' }
+    ].forEach(function (t) {
+      var tile = el('div', 'tile');
+      tile.appendChild(el('div', 'num ' + t.k, t.n));
+      tile.appendChild(el('div', 'cap', t.c));
+      tiles.appendChild(tile);
+    });
+    return tiles;
+  }
+
+  function renderChronologie(r) {
+    var s = section('Chronologie', r.dossier.regime);
+    var reg = el('div', 'register');
+    r.dossier.chronologie.forEach(function (e) {
+      var row = el('div', 'entry');
+      var gutter = el('div', 'gutter');
+      gutter.appendChild(document.createTextNode(e.horodatage));
+      gutter.appendChild(el('span', 'piece', e.sourcePieceId ? 'pièce ' + e.sourcePieceId : 'sans pièce'));
+      row.appendChild(gutter);
+      var body = el('div');
+      body.appendChild(el('span', 'kind', e.nature));
+      body.appendChild(el('span', 'nature', e.description));
+      row.appendChild(body);
+      reg.appendChild(row);
+    });
+    s.body.appendChild(reg);
+    return s.wrap;
+  }
+
+  function renderContradictions(r) {
+    var liste = r.dossier.contradictions;
+    var s = section('Contradictions', liste.length + ' relevée(s)');
+    if (!liste.length) {
+      s.body.appendChild(el('p', 'hint',
+        "Aucune contradiction détectée. Les contrôles ne portent que sur les heures, les durées et l'ordre des actes — ils ne disent rien du fond."));
+      return s.wrap;
+    }
+    liste.forEach(function (c) {
+      var f = el('div', 'finding ' + c.severite);
+      f.appendChild(el('span', 'chip ' + c.severite, c.severite + ' · ' + c.type));
+      f.appendChild(el('p', null, c.constat));
+      f.appendChild(el('p', 'todo', 'À vérifier — ' + c.verificationSuggeree));
+      s.body.appendChild(f);
+    });
+    return s.wrap;
+  }
+
+  function renderControles(r) {
+    var s = section('Points de contrôle', r.nullites.anomalies.length + ' anomalie(s)');
+    var scroller = el('div', 'scroller');
+    var table = el('table');
+    var thead = el('thead');
+    var hr = el('tr');
+    ['Point', 'État', 'Constat', 'Fondement'].forEach(function (h) {
+      hr.appendChild(el('th', h === 'Constat' ? 'constat' : null, h));
+    });
+    thead.appendChild(hr);
+    table.appendChild(thead);
+    var tbody = el('tbody');
+    r.nullites.points.forEach(function (p) {
+      var tr = el('tr');
+      var idCell = el('td');
+      idCell.appendChild(el('span', 'mono chip attente', p.id));
+      idCell.appendChild(el('div', null, p.intitule));
+      tr.appendChild(idCell);
+      var etat = p.resultat === 'anomalie' ? 'critique' : p.resultat === 'conforme' ? 'conforme' : 'attente';
+      var etatCell = el('td');
+      etatCell.appendChild(el('span', 'chip ' + etat, p.resultat));
+      tr.appendChild(etatCell);
+      tr.appendChild(el('td', 'constat', p.constat));
+      var ref = el('td', 'mono fondement');
+      ref.style.fontSize = '0.72rem';
+      ref.appendChild(document.createTextNode(p.fondement.reference));
+      ref.appendChild(el('span', 'statut', p.fondement.statut));
+      tr.appendChild(ref);
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    scroller.appendChild(table);
+    s.body.appendChild(scroller);
+    s.body.appendChild(el('p', 'hint',
+      "« Non établi » est l'état par défaut : le dossier doit prouver la régularité pour qu'un point devienne conforme. Une anomalie n'est pas une nullité — celle-ci suppose une formalité substantielle et un grief (art. 171 et 802 CPP)."));
+    return s.wrap;
+  }
+
+  function renderAxes(r) {
+    var s = section('Axes de défense', r.strategie.axes.length + ' axe(s)');
+    if (!r.strategie.axes.length) {
+      s.body.appendChild(el('p', 'hint', 'Aucun axe ne se dégage des éléments fournis.'));
+      return s.wrap;
+    }
+    r.strategie.axes.forEach(function (a, i) {
+      var box = el('div', 'axis');
+      var h = el('h3');
+      h.appendChild(document.createTextNode((i + 1) + '. ' + a.intitule));
+      h.appendChild(el('span', 'chip', a.solidite));
+      box.appendChild(h);
+      box.appendChild(el('p', 'rule-note', a.justificationSolidite));
+      var ul = el('ul');
+      a.appuis.forEach(function (x) { ul.appendChild(el('li', null, x)); });
+      box.appendChild(ul);
+      if (a.fondements.length) {
+        box.appendChild(el('p', 'refs mono', a.fondements.map(function (f) {
+          return f.reference + ' (' + f.statut + ')';
+        }).join('  ·  ')));
+      }
+      s.body.appendChild(box);
+    });
+    return s.wrap;
+  }
+
+  function renderRisques(r) {
+    var s = section('Risques et limites');
+    s.body.appendChild(el('p', 'eyebrow', 'Risques'));
+    var ul = el('ul', 'plain');
+    r.strategie.risques.forEach(function (x) { ul.appendChild(el('li', null, x)); });
+    s.body.appendChild(ul);
+
+    var head = el('p', 'eyebrow', 'Limites de ce rapport');
+    head.style.marginTop = '18px';
+    s.body.appendChild(head);
+    var ul2 = el('ul', 'plain quiet');
+    r.limites.forEach(function (x) { ul2.appendChild(el('li', null, x)); });
+    s.body.appendChild(ul2);
+
+    var det = el('details', 'doc');
+    det.appendChild(el('summary', null, 'Squelette de requête en nullité'));
+    var pre = el('pre', 'doc-body');
+    pre.textContent = LDI.genererDocument('requete-nullite', r.dossier, r.strategie).corps;
+    det.appendChild(pre);
+    s.body.appendChild(det);
+    return s.wrap;
+  }
+
+  function render(r) {
+    out.replaceChildren(
+      renderTiles(r),
+      renderContradictions(r),
+      renderControles(r),
+      renderChronologie(r),
+      renderAxes(r),
+      renderRisques(r)
+    );
+  }
+
+  function analyser() {
+    err.hidden = true;
+    var dossier;
+    try {
+      dossier = JSON.parse(dossierInput.value);
+    } catch (e) {
+      showError('JSON invalide — ' + e.message);
+      return;
+    }
+    // Validation partagée avec la CLI et l'atelier : une page autonome plus
+    // permissive que les autres interfaces accepterait des dossiers dont
+    // l'analyse serait fausse sans que rien ne le signale.
+    var validation = LDI.validerDossier(dossier);
+    if (!validation.ok) {
+      showError(validation.message);
+      return;
+    }
+    try {
+      rapport = LDI.analyser(validation.dossier);
+    } catch (e) {
+      showError("L'analyse a échoué — " + e.message);
+      return;
+    }
+    render(rapport);
+    updateAlerts();
+  }
+
+  function noms() {
+    return $('noms').value.split(',').map(function (n) { return n.trim(); }).filter(Boolean);
+  }
+
+  function updateAlerts() {
+    if (!rapport) return;
+    var min = LDI.minimiser(LDI.rendreMarkdown(rapport), noms());
+    var alertes = LDI.alertesResiduelles(min.texte);
+    $('alerts').textContent = min.correspondances.size + ' valeur(s) pseudonymisée(s). '
+      + (alertes.length ? 'Risque résiduel — ' + alertes.join(' ') : 'Aucun risque résiduel détecté par les motifs connus.');
+  }
+
+  function copier(bouton, texte, libelle) {
+    var initial = bouton.textContent;
+    function done(ok) {
+      bouton.textContent = ok ? libelle : 'Copie impossible';
+      setTimeout(function () { bouton.textContent = initial; }, 1800);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(texte).then(function () { done(true); }, function () { done(false); });
+    } else {
+      done(false);
+    }
+  }
+
+  $('run').addEventListener('click', analyser);
+  $('sample').addEventListener('click', function () {
+    dossierInput.value = JSON.stringify(LDI.exemple, null, 2);
+    analyser();
+  });
+  $('clear').addEventListener('click', function () {
+    dossierInput.value = '';
+    rapport = null;
+    err.hidden = true;
+    $('alerts').textContent = '';
+    var vide = el('section', 'report');
+    vide.appendChild(el('p', 'placeholder', 'Chargez l’exemple ou collez un dossier, puis lancez l’analyse.'));
+    out.replaceChildren(vide);
+  });
+  $('noms').addEventListener('input', updateAlerts);
+  $('copy').addEventListener('click', function () {
+    if (!rapport) return;
+    copier(this, LDI.rendreMarkdown(rapport), 'Rapport copié');
+  });
+  $('copy-min').addEventListener('click', function () {
+    if (!rapport) return;
+    copier(this, LDI.minimiser(LDI.rendreMarkdown(rapport), noms()).texte, 'Version copiée');
+  });
+
+  // Démarrage sur l'exemple : la page doit montrer ce qu'elle fait avant qu'on
+  // lui demande quoi que ce soit.
+  dossierInput.value = JSON.stringify(LDI.exemple, null, 2);
+  analyser();
+})();
+</script>

@@ -1,0 +1,27 @@
+From: Greffe du tribunal <greffe@exemple.fr>
+To: Maitre Dupont <avocat@exemple.fr>
+Cc: Substitut <parquet@exemple.fr>
+Subject: Communication de pieces - dossier 2025/114
+Date: Mon, 3 Feb 2025 09:12:00 +0100
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="frontiere-114"
+
+--frontiere-114
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+
+Maitre,
+
+Vous trouverez ci-joint le bordereau des pieces communiquees le 3 fevrier 2025.
+L'audience est fixee au 12 mars 2025.
+
+Le greffe
+
+--frontiere-114
+Content-Type: text/csv; name="bordereau-greffe.csv"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="bordereau-greffe.csv"
+
+Q290ZTtOYXR1cmU7RGF0ZQ0KRDE7UHJvY2VzLXZlcmJhbDswMy8wMi8yMDI1DQpEMjtBdWRpdGlvbjswNC8wMi8yMDI1DQo=
+
+--frontiere-114--

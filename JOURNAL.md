@@ -1,0 +1,204 @@
+# JOURNAL — passage des étapes (mandat v4, §11.1)
+
+## Étape 1 — Audit
+- **Fait** : inventaire complet, écarts B consignés dans `AUDIT.md`, purge du
+  site vitrine, de Supabase, du code d'appel API navigateur et du module B5.
+- **Volontairement écarté** : renommage du dépôt distant (hors de portée d'une
+  session de code).
+- **Reste ouvert** : rien — la purge est vérifiée par typecheck + suite.
+
+## Étape 2 — Noyau métier
+- **Fait** : modèle de données v4 (`src/noyau/modele.ts`, schéma 3.0) étendant
+  le `Dossier` d'analyse ; taxonomie cinq axes ; invariants contrôlés sans
+  correction silencieuse ; propagation de grief transitive et cyclable ;
+  contrat de passes §3.3 avec ancrage CALCULÉ, jamais déclaré (`passes.ts`) ;
+  moteur de délais exposant méthode, entrées et fondement (`delais.ts`).
+  16 tests.
+- **Volontairement écarté** : réécrire les types d'analyse existants — le
+  modèle v4 les étend, il ne les remplace pas (réversible, testé).
+- **Reste ouvert** : les entités Document/Fragment arrivent avec P0 (étape 4).
+
+## Étape 3 — Gate d'export (M9)
+- **Fait** : `src/noyau/gate.ts` — huit causes de blocage de §10.2, chemin
+  exact par anomalie, aucun contournement d'interface. 14 tests, chaque cause
+  couverte une à une.
+- **Volontairement écarté** : un détecteur « sémantique » de B13/B15 — les
+  motifs sont des fils de détente lexicaux, dits comme tels dans le code ; le
+  premier rempart reste les instructions de passe.
+- **Reste ouvert** : la vérification P6 des références s'étoffera quand le
+  pack sources existera (étape 15).
+
+## Étape 4 — M10 / P0 : ingestion par niveaux, fragments, index, B17
+- **Fait** : `niveaux.ts` (interrupteur D-1, refus nommés, texte collé),
+  `fragments.ts` (texte source intact à l'octet près, cote proposée jamais
+  imposée, index plein texte local avec positions), `instructions-cachees.ts`
+  (B17 : détection citée et localisée, jamais exécutée ni supprimée),
+  `p0.ts` (l'ingestion comme passe, avec sa déclaration). Interrupteur branché
+  dans Paramètres, non conservé entre sessions. 15 tests.
+- **Volontairement écarté** : supprimer les extracteurs bureautiques — ils
+  rejoignent le PDF derrière l'interrupteur (voir DECISIONS.md, étape 1).
+- **Reste ouvert** : la vue Documents (alertes B17 à l'écran) arrive avec les
+  vues, étape 12.
+
+## Étape 5 — M11 : bibliothèque et consignes permanentes
+- **Fait** : `consignes.ts` — consignes cabinet/dossier, versionnées (réviser
+  désactive sans supprimer, B21), injection déterministe dans les
+  instructions, cloisonnement B18 testé (une consigne de dossier ne fuit pas).
+- **Volontairement écarté** : un éditeur de trames complet — les trames sont
+  stockées et mentionnées au rapport d'ancrage, l'édition riche viendra après.
+- **Reste ouvert** : vue Bibliothèque (étape 12).
+
+## Étape 7 — M3 : grille de régularité, quatorze postes
+- **Fait** : `postes.ts` — 14 postes, chacun rendant attendu / présent (ancré)
+  / manques (avec geste) / grief envisageable / actes affectés par
+  propagation. Jamais de silence : un poste sans matière le DIT. Les contrôles
+  horodatés existants (GAV, CTRL, PERQ, PREUVE, PRESC) sont versés, pas
+  recalculés. P2 scellée. 7 tests dont couverture 14/14 sur dossier vide.
+- **Volontairement écarté** : recalculer dans la grille ce que le module de
+  nullités calcule déjà — un calcul, deux lecteurs.
+- **Reste ouvert** : M1/M2 écrans (étape 12) ; la frise (étape 13).
+
+## Étape 8 — Couche d'intelligence
+- **Fait** : `instructions.ts` (gabarit §6.3, versionné, zéro référence
+  juridique en dur — testé), `moteur.ts` (local Ollama refusant toute URL non
+  locale À LA CONSTRUCTION ; distant construit avec DEUX verrous cumulatifs
+  revalidés à chaque appel, corps d'erreur amont jamais relayé). Frontière
+  interface étendue : importer `noyau/moteur` depuis l'interface fait échouer
+  la suite. 14 tests.
+- **Volontairement écarté** : un état « déverrouillé » du mode distant — le
+  consentement ne s'hérite pas d'un appel à l'autre.
+- **Reste ouvert** : l'orchestrateur des sept passes se scelle à l'étape 10,
+  quand P3/P4/P5 existent.
+
+## Étape 6 — M1/M2 : constitution et délais
+- **Fait** : `serialisation.ts` — export/réimport identique (empreinte
+  comparée), refus des versions de schéma inconnues, défauts VIDES pour les
+  dossiers historiques. Le moteur de délais (M2) était fait à l'étape 2.
+- **Volontairement écarté** : une migration automatique de schéma — l'import
+  refuse plutôt que deviner.
+- **Reste ouvert** : rien.
+
+## Étapes 9-10 — M4/M5 (P3/P4), M6/M7 (P5), orchestrateur
+- **Fait** : `preuve.ts` (sept grilles de lecture + filet générique, aucune
+  conclusion sur les faits), `qualification.ts` (éléments constitutifs
+  fonctionnels par nature, un « présent » sans appui est reclassé),
+  `moyens.ts` (ordre procédural imposé, chaque moyen naît avec riposte et
+  contre-riposte), `peine.ts` (paramètres et pièces, zéro chiffre),
+  `orchestrateur.ts` (P1→P6, déterministe, rejouable, P6 recalcule l'ancrage
+  de toutes les sorties). La chaîne tourne sur un dossier VIDE : le mode
+  déterministe seul n'est jamais inerte.
+- **Volontairement écarté** : brancher un moteur d'inférence DANS la chaîne —
+  il n'intervient qu'en aval, sur demande.
+- **Reste ouvert** : le rendu des livrables (étape 14) consomme ces sorties.
+
+## Étape 11 — M12/M13 : demandes et journal d'audit
+- **Fait** : `demandes.ts` — aucune fonction de suppression n'existe (B21) ;
+  une demande partiellement traitée reste ouverte avec ce qui manque ; la
+  reprise crée une nouvelle entrée et conserve l'ancienne. `audit.ts` —
+  entrées à identifiants et comptes seulement ; testé : le contenu du dossier
+  ne fuit pas dans l'export du journal (B11).
+- **Volontairement écarté** : un champ de texte libre dans l'entrée de
+  journal — c'est par la forme du type que B11 tient.
+- **Reste ouvert** : vues Registre et Journal (étape 12).
+
+## Étapes 12-14 — Interface, design « Encre et greffe », livrables
+- **Fait** : quatorze vues branchées sur la chaîne (pupitre trois blocs avec
+  filtres cinq axes, frise avec propagation des griefs, régularité 14 postes
+  dépliables, preuve avec saisie, moyens par catégorie procédurale, écritures
+  avec verdict de gate NON contournable et registre document papier,
+  registre des demandes, bibliothèque de consignes versionnées, sources avec
+  rejets B3 nommés, journal filtrable, minimisation, paramètres). Palette de
+  commandes Ctrl+K, mode audience, badge moteur permanent (B19), impression
+  limitée à la zone document, animations sous prefers-reduced-motion. Palette
+  §8.2 appliquée aux jetons près ; vérifié dans Chromium, captures des vues
+  principales.
+- **Volontairement écarté** : les vues « tableau de bord » et « dossiers »
+  séparées — le pupitre les absorbe. Undo/redo global : la saisie passe par
+  des formulaires courts, réversibles par l'édition ; consigné comme limite.
+- **Reste ouvert** : brancher la sortie generative CLI dans l'écran (jamais —
+  D-3) ; l'export fichier des livrables passe par copier/imprimer.
+
+## Étape 15 — CLI et sources officielles
+- **Fait** : CLI `defense-os` étendue — `chaine` (P1→P6, 14 postes, moyens,
+  code 2 sur grief), `livrable` (gate : export bloqué ⇒ rien sur stdout,
+  verdict sur stderr, code 6), `pack-sources` (B3 filtré, fusion --cache avec
+  dates d'origine, code 3 sans décision), `generer` (moteur local par défaut,
+  distant à deux verrous, minimisation obligatoire, alertes résiduelles
+  bloquantes vers l'extérieur sauf --assumer-alertes, vérification citations +
+  structure en aval, code 5 si non conforme). Codes de sortie documentés dans
+  l'usage.
+- **Volontairement écarté** : appeler PISTE pendant la construction — aucun
+  identifiant n'existe dans cet environnement ; testé contre simulacre.
+- **Reste ouvert** : première exécution avec identifiants réels
+  (docs/RECHERCHE-JURIDIQUE.md).
+
+## Étape 16 — Conformité, autonome, documentation
+- **Fait** : `conformite.test.ts` (§10.1 : pourvois en dur, ressources
+  externes, VITE_, imports réseau dans l'interface, pourcentages et
+  culpabilité dans les neuf livrables, 14 postes sur dossier vide,
+  cloisonnement B18 des univers d'ancrage, bout en bout sur le dossier
+  fictif). Build AUTONOME : `npm run atelier:autonome` → UN fichier HTML de
+  4,6 Mo qui s'ouvre en file:// — vérifié dans Chromium (deux défauts trouvés
+  et corrigés : « $& » interprété par String.replace, « </script> » non
+  échappé). README réécrit ; docs annotées ; feuille de route v4.
+- **Volontairement écarté** : faire de dist/ (build modules) la forme
+  « fichier local » — les modules ES sont bloqués en file:// ; c'est le build
+  autonome qui tient la promesse §3.1.
+- **Reste ouvert** : rien.
+
+## Étape 17 — Livraison
+- **Fait** : parcours de bout en bout sur `examples/dossier-demonstration.json`
+  (fictif, et le fichier doit le dire — testé) : chaîne P1→P6 conforme,
+  quatorze postes, moyens avec ripostes, requête en nullité exportée avec
+  PAR CES MOTIFS, rapport d'ancrage ; vérifications finales (suite complète,
+  typecheck, build, autonome file://). DECISIONS.md et JOURNAL.md complétés.
+- **Volontairement écarté** : rien.
+- **Reste ouvert** : les limites listées au README et à la feuille de route.
+
+## Étape 18 — Suite v4+ : validations prouvées et trames substituées
+- **Fait** : les trois validations demandées, avec preuves. (1) Gate CLI :
+  `livrable synthese examples/dossier-exemple.json` → code 6, stdout vide,
+  quatre anomalies nommées avec chemins sur stderr. (2) Coffre, parcours
+  COMPLET dans un Chromium réel contre l'interface : dépôt d'une pièce,
+  création du coffre (853 octets scellés, ni phrase ni contenu lisibles sur
+  le support), rechargement → verrouillé, mauvaise phrase refusée sans
+  destruction, bonne phrase → dossier restauré, effacement sans phrase.
+  (3) Niveaux D-1 sur un PDF réel : interrupteur fermé → refus nommant le
+  réglage à activer ; ouvert → pièce admise, format pdf, empreinte.
+  Constat corrigé au passage : la CLI distante et le build IIFE n'étaient
+  pas des bugs — tous deux re-prouvés fonctionnels.
+- **Fait** : trames du cabinet SUBSTITUÉES aux gabarits (le vrai point
+  ouvert) : `trameApplicable` (la plus récente du type), `appliquerTrame`
+  (`[[CORPS]]`, `[[REFERENCE]]`, `[[INITIALES]]`, `[[JURIDICTION]]`,
+  remplacement par découpage — `$&` reste littéral). Le cadre PROJET et les
+  vérifications avant dépôt restent hors de portée des trames (B12) ; la
+  trame employée est nommée dans le corps ; le rapport d'ancrage n'est
+  jamais habillé ; le corps habillé repasse par la gate — fil B15 élargi
+  aux formulations franches (« culpabilité acquise/démontrée/avérée… »).
+  Huit tests.
+- **Volontairement écarté** : passer les trames à la CLI `livrable` — la
+  bibliothèque vit dans l'atelier ; une option --trames viendra si l'usage
+  la réclame.
+
+## Étape 19 — B20 cliquable, coffre v2, pupitre premium, filet d'erreur
+- **Fait** : B20 « remonter d'un clic » — tout appui affiché (régularité,
+  preuve, moyens) est un bouton ; le clic ouvre Documents avec la recherche
+  pré-remplie sur la cote (état vide explicite si le dossier n'a pas de
+  pièces ingérées). Vérifié en navigateur réel.
+- **Fait** : coffre v2 — le plan ENTIER est scellé (dossiers, bibliothèque
+  avec historique, demandes), un coffre v1 reste lisible, chaque partie
+  validée séparément ; export du dossier actif en JSON versionné et import
+  à trois barrières dans Paramètres, consignés au journal par identifiants.
+- **Fait** : pupitre — quatre tuiles de comptes (dossiers, échéances sous
+  7 jours, griefs, manques : des comptes, jamais des scores) et « Classer
+  par » (phase, statut, nature, avancement, urgence calculée) qui groupe la
+  grille par catégories titrées ; un dossier à plusieurs natures figure
+  dans chacune, et l'écran le dit. Vérifié en navigateur réel.
+- **Fait** : BorneErreur au sommet de l'application (erreur dite, rien ne
+  quitte le poste, rechargement proposé, le coffre reste scellé) ; retours
+  d'action aria-live dans Bibliothèque et Paramètres.
+- **Volontairement écarté** : ranger l'export JSON dans le coffre — c'est
+  un fichier de PASSAGE (archivage, changement de poste), en clair par
+  nature, et l'écran le dit avant le clic.
+- **Reste ouvert** : rien sur cette tranche. 400 tests, typecheck propre,
+  build + autonome reconstruits.

@@ -1,0 +1,143 @@
+{
+  "_avertissement": "DOSSIER FICTIF, créé pour la démonstration et les tests de LDI. Aucune personne, aucune procédure et aucune juridiction réelles ne sont visées. Les identités sont des étiquettes, pas des noms.",
+  "reference": "EXEMPLE-2026-001",
+  "qualifications": ["CP, art. 222-37"],
+  "regime": "droit-commun",
+  "pieces": [
+    {
+      "id": "P1",
+      "cote": "D1",
+      "nature": "proces-verbal",
+      "intitule": "Procès-verbal de placement en garde à vue",
+      "date": "2026-03-14",
+      "auteur": "OPJ_1"
+    },
+    {
+      "id": "P2",
+      "cote": "D4",
+      "nature": "audition",
+      "intitule": "Procès-verbal d'audition n° 1",
+      "date": "2026-03-14",
+      "auteur": "OPJ_1"
+    },
+    {
+      "id": "P3",
+      "cote": "D9",
+      "nature": "proces-verbal",
+      "intitule": "Procès-verbal de fin de garde à vue",
+      "date": "2026-03-16",
+      "auteur": "OPJ_2"
+    },
+    {
+      "id": "P4",
+      "cote": "D6",
+      "nature": "proces-verbal",
+      "intitule": "Procès-verbal de perquisition",
+      "date": "2026-03-14",
+      "auteur": "OPJ_2"
+    },
+    {
+      "id": "P5",
+      "cote": "D21",
+      "nature": "expertise",
+      "intitule": "Rapport d'analyse des substances saisies",
+      "date": "2026-04-02",
+      "auteur": "EXPERT_1",
+      "texte": "En outre, le présent rapport porte sur l'analyse des substances remises sous scellé au laboratoire. Par ailleurs, les opérations ont été conduites conformément aux protocoles internes du laboratoire concerné. En effet, chaque échantillon a fait l'objet d'un prélèvement représentatif selon la méthode habituelle. Ainsi, les masses ont été relevées au moyen d'une balance étalonnée le mois précédent. De plus, les analyses ont été réalisées par chromatographie en phase gazeuse couplée à la spectrométrie. En outre, les résultats obtenus ont été comparés aux étalons de référence disponibles au laboratoire. Par ailleurs, la concordance des spectres permet d'identifier la nature des substances analysées. En effet, la teneur mesurée se situe dans les plages habituellement observées pour ce type de produit. Ainsi, la masse totale des échantillons analysés a été consignée dans le tableau annexé. De plus, aucune anomalie n'a été relevée au cours des opérations de pesée successives. En outre, les scellés ont été rouverts puis refermés selon la procédure applicable au laboratoire. Par ailleurs, les photographies des scellés figurent en annexe du présent rapport technique. En effet, les conditions de conservation des échantillons étaient conformes aux exigences habituelles. Ainsi, aucune dégradation des substances analysées n'a été constatée lors des opérations. De plus, les instruments utilisés ont fait l'objet des vérifications périodiques prévues. En outre, les résultats sont reproductibles dans les conditions décrites au présent rapport. Par ailleurs, les incertitudes de mesure ont été calculées selon la méthode habituelle. En effet, ces incertitudes demeurent compatibles avec les exigences de la mission confiée. Ainsi, les conclusions présentées ci-après reposent sur l'ensemble des éléments qui précèdent. De plus, aucune observation particulière n'appelle de développement complémentaire dans ce rapport. En outre, la mission confiée à l'expert soussigné se trouve intégralement remplie. Par ailleurs, le présent rapport comporte les annexes techniques mentionnées dans le corps du texte. En effet, l'expert soussigné demeure à la disposition du magistrat mandant pour tout complément. Ainsi, le présent rapport est clos et transmis à l'autorité mandante à la date indiquée."
+    }
+  ],
+  "evenements": [
+    {
+      "id": "E1",
+      "nature": "controle-identite",
+      "horodatage": "2026-03-14T07:45",
+      "description": "Contrôle du véhicule sur réquisitions du procureur (mention au PV, réquisitions non jointes)",
+      "personne": "MIS_EN_CAUSE",
+      "lieu": "Voie publique"
+    },
+    {
+      "id": "E2",
+      "nature": "debut-garde-a-vue",
+      "horodatage": "2026-03-14T08:00",
+      "description": "Placement en garde à vue",
+      "sourcePieceId": "P1",
+      "personne": "MIS_EN_CAUSE",
+      "lieu": "Commissariat"
+    },
+    {
+      "id": "E3",
+      "nature": "notification-droits",
+      "horodatage": "2026-03-14T09:20",
+      "description": "Notification des droits",
+      "sourcePieceId": "P1",
+      "personne": "MIS_EN_CAUSE"
+    },
+    {
+      "id": "E4",
+      "nature": "demande-avocat",
+      "horodatage": "2026-03-14T09:25",
+      "description": "Demande d'assistance par un avocat commis d'office",
+      "sourcePieceId": "P1",
+      "personne": "MIS_EN_CAUSE"
+    },
+    {
+      "id": "E5",
+      "nature": "avis-avocat",
+      "horodatage": "2026-03-14T09:35",
+      "description": "Avis donné au bâtonnier",
+      "sourcePieceId": "P1"
+    },
+    {
+      "id": "E6",
+      "nature": "audition",
+      "horodatage": "2026-03-14T10:15",
+      "description": "Audition n° 1 portant sur les faits reprochés",
+      "sourcePieceId": "P2",
+      "personne": "MIS_EN_CAUSE",
+      "lieu": "Commissariat",
+      "dureeMinutes": 75
+    },
+    {
+      "id": "E7",
+      "nature": "perquisition",
+      "horodatage": "2026-03-14T11:00",
+      "description": "Perquisition du domicile en enquête préliminaire",
+      "sourcePieceId": "P4",
+      "personne": "MIS_EN_CAUSE",
+      "lieu": "Domicile",
+      "dureeMinutes": 60
+    },
+    {
+      "id": "E8",
+      "nature": "saisie",
+      "horodatage": "2026-03-14T11:45",
+      "description": "Saisie et mise sous scellé des substances",
+      "sourcePieceId": "P4"
+    },
+    {
+      "id": "E9",
+      "nature": "prolongation-garde-a-vue",
+      "horodatage": "2026-03-15T07:00",
+      "description": "Prolongation autorisée par le procureur de la République",
+      "sourcePieceId": "P1"
+    },
+    {
+      "id": "E10",
+      "nature": "expertise",
+      "horodatage": "2026-04-02T10:00",
+      "description": "Analyse des substances placées sous scellé",
+      "sourcePieceId": "P5"
+    },
+    {
+      "id": "E11",
+      "nature": "fin-garde-a-vue",
+      "horodatage": "2026-03-16T09:00",
+      "description": "Levée de la garde à vue",
+      "sourcePieceId": "P3"
+    }
+  ],
+  "observations": [
+    "Le client indique avoir demandé un avocat dès son interpellation, avant le placement acté à 08:00.",
+    "Les réquisitions du procureur visées par le PV de contrôle ne figurent pas au dossier communiqué."
+  ]
+}
