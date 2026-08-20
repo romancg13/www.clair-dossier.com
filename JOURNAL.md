@@ -145,3 +145,12 @@
   « fichier local » — les modules ES sont bloqués en file:// ; c'est le build
   autonome qui tient la promesse §3.1.
 - **Reste ouvert** : rien.
+
+## Étape 17 — Livraison
+- **Fait** : parcours de bout en bout sur `examples/dossier-demonstration.json`
+  (fictif, et le fichier doit le dire — testé) : chaîne P1→P6 conforme,
+  quatorze postes, moyens avec ripostes, requête en nullité exportée avec
+  PAR CES MOTIFS, rapport d'ancrage ; vérifications finales (suite complète,
+  typecheck, build, autonome file://). DECISIONS.md et JOURNAL.md complétés.
+- **Volontairement écarté** : rien.
+- **Reste ouvert** : les limites listées au README et à la feuille de route.

@@ -71,3 +71,30 @@ stricte.** — Écarté : ajouter une nouvelle famille de polices. — Règle :
 lisibilité en petit corps et les tableaux denses, ce qui est la fonction
 demandée. — Réversibilité : un seul jeton `--font-sans`. — Test : la CI
 échoue sur toute police externe (balayage des sources).
+
+**[15] — Le mode distant appelle l'API par `fetch` natif, sans SDK.** —
+Écarté : ajouter le SDK fournisseur en dépendance. — Règle : « aucune
+dépendance nouvelle » + §0.3-6. — Réversibilité : le transport est isolé dans
+`creerMoteurDistant`. — Test : `moteur.test.ts` (verrous, B11).
+
+**[15] — `pack-sources` n'inscrit au pack que les références VÉRIFIÉES pendant
+l'exécution.** — Écarté : verser aussi les énoncés « à vérifier » de l'index
+(ils n'ont pas d'horodatage de récupération : B3 les rendrait inaffichables et
+l'import les rejetterait — autant le dire à la production). — Règle : §0.3-3
+(ne pas inventer). — Réversibilité : filtre local dans la commande. — Test :
+`livrables.test.ts` (rejet B3 nommé à l'import).
+
+**[16] — La forme « fichier ouvert en local » est le build AUTONOME (IIFE, un
+seul fichier), pas le build modules.** — Écarté : prétendre que `dist/`
+s'ouvre en file:// (les modules ES y sont bloqués — constaté dans Chromium,
+page blanche). — Règle : §0.3-5 (testable) ; vérifié par capture d'écran en
+file://. — Réversibilité : le build modules reste le mode servi
+(`npm run dev` / hébergement statique). — Test : assemblage refusé si le
+repli ne produit pas exactement 1 js + 1 css.
+
+**[17] — Le « dossier réel » de la Definition of Done est tenu par le dossier
+FICTIF de démonstration.** — Écarté : rien (aucun dossier réel n'existe ni ne
+doit exister dans un dépôt). — Règle : §11.1-17 impose d'ailleurs un dossier
+« entièrement fictif et clairement identifié comme tel ». — Réversibilité :
+sans objet. — Test : `conformite.test.ts` (bout en bout + mention « fictif »
+exigée dans le fichier).
