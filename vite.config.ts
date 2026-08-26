@@ -20,6 +20,7 @@ function spaFallback(): Plugin {
 const base = process.env.VITE_BASE_PATH ?? '/';
 
 export default defineConfig({
+  publicDir: 'publique',
   base,
   plugins: [react(), tailwindcss(), spaFallback()],
   build: {
