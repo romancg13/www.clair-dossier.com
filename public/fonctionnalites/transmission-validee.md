@@ -1,7 +1,7 @@
 ---
 title: "Transmission validée par vous"
 description: "Vous transmettez votre dossier par e-mail ou WhatsApp, quand vous le décidez. Rien ne part sans votre validation explicite."
-url: https://www.clair-dossier.com/fonctionnalites/validation-avocat
+url: https://www.clair-dossier.com/fonctionnalites/transmission-validee
 ---
 
 # Transmission validée par vous
@@ -26,6 +26,6 @@ Ce fonctionnement protège vos données : elles restent dans votre espace privé
 
 ---
 
-*Source : https://www.clair-dossier.com/fonctionnalites/validation-avocat — éditeur : Roman Gomes (SIREN 105 490 734, Château-Gombert, 13013 Marseille). Site réalisé par Nouh BENZIDANE.*
+*Source : https://www.clair-dossier.com/fonctionnalites/transmission-validee — éditeur : Roman Gomes (SIREN 105 490 734, Château-Gombert, 13013 Marseille). Site réalisé par Nouh BENZIDANE.*
 
-*Citation suggérée : « ClairDossier, [titre de la page], https://www.clair-dossier.com/fonctionnalites/validation-avocat ».*
+*Citation suggérée : « ClairDossier, [titre de la page], https://www.clair-dossier.com/fonctionnalites/transmission-validee ».*

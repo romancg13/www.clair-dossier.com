@@ -34,7 +34,7 @@ export const features: Feature[] = [
     ],
   },
   {
-    slug: "pieces-ocr",
+    slug: "depot-de-pieces",
     title: "Dépôt de pièces dans un espace privé",
     shortTitle: "Dépôt de pièces",
     icon: "scan-ocr",
@@ -76,7 +76,7 @@ export const features: Feature[] = [
     ],
   },
   {
-    slug: "validation-avocat",
+    slug: "transmission-validee",
     title: "Transmission validée par vous",
     shortTitle: "Transmission",
     icon: "validate",
@@ -118,7 +118,7 @@ export const features: Feature[] = [
     ],
   },
   {
-    slug: "messagerie-securisee",
+    slug: "espace-securise",
     title: "Espace privé et sécurisé",
     shortTitle: "Espace sécurisé",
     icon: "message-secure",
@@ -139,7 +139,7 @@ export const features: Feature[] = [
     ],
   },
   {
-    slug: "coffre-fort",
+    slug: "donnees-protegees",
     title: "Vos données protégées et maîtrisées",
     shortTitle: "Données RGPD",
     icon: "vault",
@@ -180,7 +180,7 @@ export const features: Feature[] = [
     ],
   },
   {
-    slug: "reponse-auto-mails",
+    slug: "recapitulatif-transmission",
     title: "Récapitulatif avant transmission",
     shortTitle: "Récapitulatif",
     icon: "ai-brief",
@@ -200,6 +200,20 @@ export const features: Feature[] = [
     ],
   },
 ];
+
+/**
+ * Anciennes adresses (positionnement historique) → slugs actuels.
+ * Les redirections 301 côté hébergeur (netlify.toml) et côté client
+ * (FeatureDetail) s'appuient sur cette même carte. Ne jamais supprimer une
+ * entrée : une URL indexée doit rester redirigée en permanence (VII.1).
+ */
+export const LEGACY_FEATURE_SLUGS: Record<string, string> = {
+  "pieces-ocr": "depot-de-pieces",
+  "validation-avocat": "transmission-validee",
+  "messagerie-securisee": "espace-securise",
+  "coffre-fort": "donnees-protegees",
+  "reponse-auto-mails": "recapitulatif-transmission",
+};
 
 export function getFeatureBySlug(
   slug: string | undefined,

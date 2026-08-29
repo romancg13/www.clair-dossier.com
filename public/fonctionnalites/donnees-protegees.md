@@ -1,7 +1,7 @@
 ---
 title: "Vos données protégées et maîtrisées"
 description: "Vos données sont isolées par utilisateur, chiffrées au repos côté hébergeur, accessibles par authentification. Accès, export et suppression sur demande."
-url: https://www.clair-dossier.com/fonctionnalites/coffre-fort
+url: https://www.clair-dossier.com/fonctionnalites/donnees-protegees
 ---
 
 # Vos données protégées et maîtrisées
@@ -26,6 +26,6 @@ Tant que vous ne demandez pas de modification, vos données restent là où vous
 
 ---
 
-*Source : https://www.clair-dossier.com/fonctionnalites/coffre-fort — éditeur : Roman Gomes (SIREN 105 490 734, Château-Gombert, 13013 Marseille). Site réalisé par Nouh BENZIDANE.*
+*Source : https://www.clair-dossier.com/fonctionnalites/donnees-protegees — éditeur : Roman Gomes (SIREN 105 490 734, Château-Gombert, 13013 Marseille). Site réalisé par Nouh BENZIDANE.*
 
-*Citation suggérée : « ClairDossier, [titre de la page], https://www.clair-dossier.com/fonctionnalites/coffre-fort ».*
+*Citation suggérée : « ClairDossier, [titre de la page], https://www.clair-dossier.com/fonctionnalites/donnees-protegees ».*

@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "gen:md": "tsx scripts/gen-markdown.ts",
-    "build": "npm run gen:md && tsc -p tsconfig.json && vite build",
+    "gen:sitemap": "tsx scripts/gen-sitemap.ts",
+    "check:routes": "node scripts/check-routes.mjs",
+    "build": "npm run gen:md && npm run gen:sitemap && tsc -p tsconfig.json && vite build",
     "preview": "vite preview --port 4173",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },

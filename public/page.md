@@ -57,14 +57,14 @@ Artisan, indépendant, profession libérale ou PME : retrouvez la liste de vos d
 ## Fonctionnalités
 
 - [**Création guidée**](https://www.clair-dossier.com/fonctionnalites/creation-guidee) — Un tunnel de création en 5 étapes qui s'adapte à votre profil — artisan, indépendant, profession libérale, PME — et structure votre dossier dès le départ.
-- [**Dépôt de pièces**](https://www.clair-dossier.com/fonctionnalites/pieces-ocr) — Déposez vos pièces — contrats, courriers, factures — dans un espace privé et sécurisé, rattaché au dossier.
+- [**Dépôt de pièces**](https://www.clair-dossier.com/fonctionnalites/depot-de-pieces) — Déposez vos pièces — contrats, courriers, factures — dans un espace privé et sécurisé, rattaché au dossier.
 - [**Avancement**](https://www.clair-dossier.com/fonctionnalites/chronologie) — Une page d'avancement claire qui suit votre dossier à travers 5 étapes métier, avec pièces et échéances réunies au même endroit.
-- [**Transmission**](https://www.clair-dossier.com/fonctionnalites/validation-avocat) — Vous transmettez votre dossier par e-mail ou WhatsApp, quand vous le décidez. Rien ne part sans votre validation explicite.
+- [**Transmission**](https://www.clair-dossier.com/fonctionnalites/transmission-validee) — Vous transmettez votre dossier par e-mail ou WhatsApp, quand vous le décidez. Rien ne part sans votre validation explicite.
 - [**Mes dossiers**](https://www.clair-dossier.com/fonctionnalites/suivi-statuts) — Tous vos dossiers réunis dans votre espace de compte. D'un coup d'œil, vous voyez lesquels ouvrir et où chacun en est.
-- [**Espace sécurisé**](https://www.clair-dossier.com/fonctionnalites/messagerie-securisee) — Vos pièces et informations quittent les SMS et les e-mails dispersés pour un espace privé : accès par authentification, chiffrement en transit et au repos.
-- [**Données RGPD**](https://www.clair-dossier.com/fonctionnalites/coffre-fort) — Vos données sont isolées par utilisateur, chiffrées au repos côté hébergeur, accessibles par authentification. Accès, export et suppression sur demande.
+- [**Espace sécurisé**](https://www.clair-dossier.com/fonctionnalites/espace-securise) — Vos pièces et informations quittent les SMS et les e-mails dispersés pour un espace privé : accès par authentification, chiffrement en transit et au repos.
+- [**Données RGPD**](https://www.clair-dossier.com/fonctionnalites/donnees-protegees) — Vos données sont isolées par utilisateur, chiffrées au repos côté hébergeur, accessibles par authentification. Accès, export et suppression sur demande.
 - [**Échéances**](https://www.clair-dossier.com/fonctionnalites/calendrier-relances) — Chaque dossier a ses dates clés. ClairDossier les conserve et les affiche sur la page d'avancement, sous vos yeux à chaque consultation.
-- [**Récapitulatif**](https://www.clair-dossier.com/fonctionnalites/reponse-auto-mails) — Avant d'envoyer, ClairDossier vous présente un récapitulatif complet du dossier. Vous relisez, vous corrigez si besoin, puis vous transmettez.
+- [**Récapitulatif**](https://www.clair-dossier.com/fonctionnalites/recapitulatif-transmission) — Avant d'envoyer, ClairDossier vous présente un récapitulatif complet du dossier. Vous relisez, vous corrigez si besoin, puis vous transmettez.
 
 ## Tarifs
 

@@ -1,6 +1,10 @@
 User-agent: *
 Allow: /
+# Espaces privés et écrans d'authentification (routes réelles du routeur src/App.tsx)
 Disallow: /dossier/
+Disallow: /compte
+Disallow: /connexion
+Disallow: /inscription
 
 # Allow AI crawlers (sourced citations)
 User-agent: GPTBot

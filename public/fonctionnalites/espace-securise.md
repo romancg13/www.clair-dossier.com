@@ -1,7 +1,7 @@
 ---
 title: "Espace privé et sécurisé"
 description: "Vos pièces et informations quittent les SMS et les e-mails dispersés pour un espace privé : accès par authentification, chiffrement en transit et au repos."
-url: https://www.clair-dossier.com/fonctionnalites/messagerie-securisee
+url: https://www.clair-dossier.com/fonctionnalites/espace-securise
 ---
 
 # Espace privé et sécurisé
@@ -26,6 +26,6 @@ Quand vous le décidez, vous transmettez le dossier par e-mail ou par WhatsApp, 
 
 ---
 
-*Source : https://www.clair-dossier.com/fonctionnalites/messagerie-securisee — éditeur : Roman Gomes (SIREN 105 490 734, Château-Gombert, 13013 Marseille). Site réalisé par Nouh BENZIDANE.*
+*Source : https://www.clair-dossier.com/fonctionnalites/espace-securise — éditeur : Roman Gomes (SIREN 105 490 734, Château-Gombert, 13013 Marseille). Site réalisé par Nouh BENZIDANE.*
 
-*Citation suggérée : « ClairDossier, [titre de la page], https://www.clair-dossier.com/fonctionnalites/messagerie-securisee ».*
+*Citation suggérée : « ClairDossier, [titre de la page], https://www.clair-dossier.com/fonctionnalites/espace-securise ».*

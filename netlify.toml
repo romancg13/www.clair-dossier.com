@@ -7,18 +7,91 @@
 [build.environment]
   NODE_VERSION = "22"
 
+# ── Domaine canonique : une seule forme servie (www), l'apex redirige en 301.
+# (Rendre www.clair-dossier.com "primary domain" dans Netlify → ces règles
+# explicitent la même chose et couvrent le cas où l'ordre des domaines change.)
+[[redirects]]
+  from = "https://clair-dossier.com/*"
+  to = "https://www.clair-dossier.com/:splat"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "http://clair-dossier.com/*"
+  to = "https://www.clair-dossier.com/:splat"
+  status = 301
+  force = true
+
+# ── Anciennes adresses /fonctionnalites/* (positionnement historique) → slugs
+# actuels. Carte identique côté client : LEGACY_FEATURE_SLUGS (src/data/features.ts).
+[[redirects]]
+  from = "/fonctionnalites/pieces-ocr"
+  to = "/fonctionnalites/depot-de-pieces"
+  status = 301
+
+[[redirects]]
+  from = "/fonctionnalites/pieces-ocr.md"
+  to = "/fonctionnalites/depot-de-pieces.md"
+  status = 301
+
+[[redirects]]
+  from = "/fonctionnalites/validation-avocat"
+  to = "/fonctionnalites/transmission-validee"
+  status = 301
+
+[[redirects]]
+  from = "/fonctionnalites/validation-avocat.md"
+  to = "/fonctionnalites/transmission-validee.md"
+  status = 301
+
+[[redirects]]
+  from = "/fonctionnalites/messagerie-securisee"
+  to = "/fonctionnalites/espace-securise"
+  status = 301
+
+[[redirects]]
+  from = "/fonctionnalites/messagerie-securisee.md"
+  to = "/fonctionnalites/espace-securise.md"
+  status = 301
+
+[[redirects]]
+  from = "/fonctionnalites/coffre-fort"
+  to = "/fonctionnalites/donnees-protegees"
+  status = 301
+
+[[redirects]]
+  from = "/fonctionnalites/coffre-fort.md"
+  to = "/fonctionnalites/donnees-protegees.md"
+  status = 301
+
+[[redirects]]
+  from = "/fonctionnalites/reponse-auto-mails"
+  to = "/fonctionnalites/recapitulatif-transmission"
+  status = 301
+
+[[redirects]]
+  from = "/fonctionnalites/reponse-auto-mails.md"
+  to = "/fonctionnalites/recapitulatif-transmission.md"
+  status = 301
+
 # SPA fallback: the site uses react-router BrowserRouter, so any unknown path
 # must return index.html. Real files in dist (sitemap.xml, *.md, assets…) are
-# served first; this only catches client-side routes.
+# served first; this only catches client-side routes. Les routes publiques
+# pré-rendues (dist/<route>/index.html) sont servies comme fichiers réels.
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
 
 # Sécurité (defense-in-depth) — appliqué à toutes les réponses.
+# HSTS : 1 an, sans includeSubDomains ni preload tant que l'inventaire des
+# sous-domaines n'est pas confirmé (décision humaine — voir docs/GO-LIVE-NETLIFY.md).
+# CSP : si l'analytics sans cookie est activée (VITE_PLAUSIBLE_DOMAIN), ajouter
+# https://plausible.io à script-src et connect-src.
 [[headers]]
   for = "/*"
   [headers.values]
+    Strict-Transport-Security = "max-age=31536000"
     X-Frame-Options = "DENY"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"

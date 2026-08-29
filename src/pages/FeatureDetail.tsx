@@ -1,13 +1,18 @@
-import { Link, useParams } from 'react-router-dom';
+import { Link, Navigate, useParams } from 'react-router-dom';
 import { Seo, breadcrumbSchema } from '../lib/seo';
 import { Reveal } from '../components/primitives/Reveal';
-import { features, getFeatureBySlug } from '../data/features';
+import { LEGACY_FEATURE_SLUGS, features, getFeatureBySlug } from '../data/features';
 import { FEATURE_ICONS, ArrowRightIcon, CheckIcon } from '../components/icons';
 import { NotFound } from './NotFound';
 
 export function FeatureDetail() {
   const { slug } = useParams();
   const feature = getFeatureBySlug(slug);
+
+  // Ancienne adresse → redirection client (le 301 serveur vit dans netlify.toml).
+  if (!feature && slug && LEGACY_FEATURE_SLUGS[slug]) {
+    return <Navigate to={`/fonctionnalites/${LEGACY_FEATURE_SLUGS[slug]}`} replace />;
+  }
 
   if (!feature) return <NotFound />;
 
