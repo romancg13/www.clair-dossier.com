@@ -74,13 +74,13 @@
   to = "/fonctionnalites/recapitulatif-transmission.md"
   status = 301
 
-# SPA fallback: the site uses react-router BrowserRouter, so any unknown path
-# must return index.html. Real files in dist (sitemap.xml, *.md, assets…) are
-# served first; this only catches client-side routes. Les routes publiques
-# pré-rendues (dist/<route>/index.html) sont servies comme fichiers réels.
+# SPA fallback : les routes publiques sont pré-rendues (dist/<route>/index.html,
+# servies comme fichiers réels) ; ce fallback ne capte plus que les routes
+# privées (/compte, /dossier/nouveau…) et inconnues, servies avec la coquille
+# SPA vierge (spa-shell.html) pour éviter toute hydratation croisée.
 [[redirects]]
   from = "/*"
-  to = "/index.html"
+  to = "/spa-shell.html"
   status = 200
 
 # Sécurité (defense-in-depth) — appliqué à toutes les réponses.

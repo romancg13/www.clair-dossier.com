@@ -13,6 +13,28 @@ type SeoProps = {
 const SITE_URL = 'https://www.clair-dossier.com';
 const SITE_NAME = 'ClairDossier';
 
+// ── Pré-rendu (SSG) : collecte des métadonnées au rendu serveur ──────────
+// Pendant le pré-rendu (scripts/prerender.ts via src/entry-server.tsx), les
+// useEffect ne s'exécutent pas : le composant <Seo> enregistre donc ses
+// métadonnées résolues auprès de ce collecteur au moment du rendu. Inactif
+// (et éliminé du bundle) côté client.
+export type CollectedSeo = {
+  title: string;
+  description: string;
+  url: string;
+  type: 'website' | 'article';
+  image: string;
+  noindex: boolean;
+  jsonLd: Record<string, unknown>[];
+};
+
+let ssrSeoCollector: ((seo: CollectedSeo) => void) | null = null;
+
+/** Réservé au pré-rendu — voir src/entry-server.tsx. */
+export function setSsrSeoCollector(fn: ((seo: CollectedSeo) => void) | null): void {
+  ssrSeoCollector = fn;
+}
+
 function upsertMeta(selector: string, attr: 'name' | 'property', key: string, content: string) {
   let el = document.head.querySelector<HTMLMetaElement>(selector);
   if (!el) {
@@ -32,11 +54,23 @@ export function Seo({
   jsonLd,
   noindex = false,
 }: SeoProps) {
-  useEffect(() => {
-    const fullTitle = title.includes(SITE_NAME) ? title : `${title} — ${SITE_NAME} · Dossier juridique clair, structuré et suivi`;
-    const url = `${SITE_URL}${path}`;
-    const absImage = image.startsWith('http') ? image : `${SITE_URL}${image}`;
+  const fullTitle = title.includes(SITE_NAME) ? title : `${title} — ${SITE_NAME} · Dossier juridique clair, structuré et suivi`;
+  const url = `${SITE_URL}${path}`;
+  const absImage = image.startsWith('http') ? image : `${SITE_URL}${image}`;
 
+  if (import.meta.env.SSR) {
+    ssrSeoCollector?.({
+      title: fullTitle,
+      description,
+      url,
+      type,
+      image: absImage,
+      noindex,
+      jsonLd: jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [],
+    });
+  }
+
+  useEffect(() => {
     document.title = fullTitle;
     upsertMeta('meta[name="description"]', 'name', 'description', description);
     upsertMeta(

@@ -8,7 +8,8 @@
     "gen:md": "tsx scripts/gen-markdown.ts",
     "gen:sitemap": "tsx scripts/gen-sitemap.ts",
     "check:routes": "node scripts/check-routes.mjs",
-    "build": "npm run gen:md && npm run gen:sitemap && tsc -p tsconfig.json && vite build",
+    "prerender": "tsx scripts/prerender.ts",
+    "build": "npm run gen:md && npm run gen:sitemap && tsc -p tsconfig.json && vite build && npm run prerender",
     "preview": "vite preview --port 4173",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },

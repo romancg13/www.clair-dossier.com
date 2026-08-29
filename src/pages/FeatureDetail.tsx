@@ -56,7 +56,7 @@ export function FeatureDetail() {
       {/* Hero */}
       <section className="bg-cream-50">
         <div className="mx-auto max-w-5xl px-5 pb-12 pt-16 sm:px-8 lg:px-12">
-          <Reveal>
+          <div className="rise-in">
             <span className="inline-grid h-12 w-12 place-items-center rounded-lg bg-cream-100 text-navy-900">
               <Icon width={26} height={26} />
             </span>
@@ -69,7 +69,7 @@ export function FeatureDetail() {
             <p className="mt-5 max-w-3xl font-display text-xl italic leading-relaxed text-navy-700 sm:text-2xl">
               {feature.hero}
             </p>
-          </Reveal>
+          </div>
         </div>
       </section>
 

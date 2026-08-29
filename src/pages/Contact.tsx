@@ -1,6 +1,5 @@
-import { useState, type FormEvent } from 'react';
+import { useState, type CSSProperties, type FormEvent } from 'react';
 import { Seo, breadcrumbSchema } from '../lib/seo';
-import { Reveal } from '../components/primitives/Reveal';
 import { ArrowRightIcon, WhatsAppIcon } from '../components/icons';
 import { WHATSAPP_DISPLAY, openWhatsApp, buildWhatsAppUrl } from '../lib/whatsapp';
 
@@ -53,7 +52,7 @@ export function Contact() {
         <div className="mx-auto max-w-7xl px-5 py-14 sm:py-20 lg:py-24 sm:px-8 lg:px-12">
           <div className="grid gap-12 lg:grid-cols-[1fr_1.1fr]">
             {/* Left — copy + WhatsApp CTA */}
-            <Reveal>
+            <div className="rise-in">
               <p className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-700">
                 Contact
               </p>
@@ -105,10 +104,10 @@ export function Contact() {
                   detail="Voir les mentions légales pour les coordonnées complètes"
                 />
               </div>
-            </Reveal>
+            </div>
 
             {/* Right — form (pre-fills WhatsApp message) */}
-            <Reveal delay={0.1}>
+            <div className="rise-in" style={{ '--rise-delay': '0.1s' } as CSSProperties}>
               <div className="rounded-2xl border hairline bg-white p-7 shadow-card sm:p-9">
                 <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">
                   Formulaire guidé
@@ -189,7 +188,7 @@ export function Contact() {
                   </p>
                 </form>
               </div>
-            </Reveal>
+            </div>
           </div>
         </div>
       </section>
