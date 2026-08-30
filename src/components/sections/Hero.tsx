@@ -100,6 +100,19 @@ export function Hero() {
             </Link>
           </div>
 
+          <p
+            className="rise-in mt-4 text-sm text-slate-500"
+            style={{ "--rise-delay": "0.8s" } as CSSProperties}
+          >
+            Vous êtes un cabinet ou une structure à fort volume documentaire ?{" "}
+            <Link
+              to="/grands-comptes"
+              className="border-b hairline-gold font-medium text-navy-900 transition-colors hover:text-gold-700"
+            >
+              Découvrir le parcours dédié
+            </Link>
+          </p>
+
           <div
             className="rise-in mt-8 flex flex-wrap items-center gap-2.5"
             style={{ "--rise-delay": "0.9s" } as CSSProperties}

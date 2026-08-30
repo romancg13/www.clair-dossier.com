@@ -29,12 +29,12 @@ const staticRoutes: PublicRoute[] = [
   { path: '/securite', changefreq: 'monthly', priority: 0.8 },
   { path: '/blog', changefreq: 'weekly', priority: 0.8 },
   { path: '/contact', changefreq: 'yearly', priority: 0.5 },
-  // Vague 1 — à décommenter au moment où chaque page est ajoutée à src/App.tsx :
-  // { path: '/etat-du-produit', changefreq: 'monthly', priority: 0.7 },
-  // { path: '/cabinets-avocats', changefreq: 'monthly', priority: 0.8 },
-  // { path: '/experts-comptables', changefreq: 'monthly', priority: 0.8 },
-  // { path: '/grands-comptes', changefreq: 'monthly', priority: 0.8 },
-  // { path: '/rendez-vous', changefreq: 'monthly', priority: 0.7 },
+  // Vague 1 — parcours à forte valeur
+  { path: '/etat-du-produit', changefreq: 'monthly', priority: 0.7 },
+  { path: '/cabinets-avocats', changefreq: 'monthly', priority: 0.8 },
+  { path: '/experts-comptables', changefreq: 'monthly', priority: 0.8 },
+  { path: '/grands-comptes', changefreq: 'monthly', priority: 0.8 },
+  { path: '/rendez-vous', changefreq: 'monthly', priority: 0.7 },
 ];
 
 export function publicRoutes(): PublicRoute[] {

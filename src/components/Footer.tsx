@@ -5,7 +5,15 @@ const PRODUIT = [
   { to: "/fonctionnalites", label: "Fonctionnalités" },
   { to: "/tarifs", label: "Tarifs" },
   { to: "/securite", label: "Sécurité" },
+  { to: "/etat-du-produit", label: "État du produit" },
   { to: "/dossier/nouveau", label: "Créer un dossier" },
+];
+
+const PARCOURS = [
+  { to: "/cabinets-avocats", label: "Cabinets d'avocats" },
+  { to: "/experts-comptables", label: "Experts-comptables" },
+  { to: "/grands-comptes", label: "Grands comptes" },
+  { to: "/rendez-vous", label: "Prendre rendez-vous" },
 ];
 
 const RESSOURCES = [
@@ -26,8 +34,8 @@ export function Footer() {
   return (
     <footer className="border-t hairline bg-cream-100/60">
       <div className="mx-auto max-w-7xl px-5 py-14 sm:px-8 lg:px-12">
-        <div className="grid gap-12 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
-          <div>
+        <div className="grid gap-12 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr_1fr]">
+          <div className="sm:col-span-2 lg:col-span-1">
             <Logo />
             <p className="mt-5 max-w-xs text-sm leading-relaxed text-slate-500">
               ClairDossier structure vos dossiers administratifs et juridiques —
@@ -37,6 +45,7 @@ export function Footer() {
           </div>
 
           <FooterCol title="Produit" items={PRODUIT} />
+          <FooterCol title="Parcours dédiés" items={PARCOURS} />
           <FooterCol title="Ressources" items={RESSOURCES} />
           <FooterCol title="Légal" items={LEGAL} />
         </div>

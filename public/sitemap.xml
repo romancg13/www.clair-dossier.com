@@ -31,6 +31,31 @@
     <priority>0.5</priority>
   </url>
   <url>
+    <loc>https://www.clair-dossier.com/etat-du-produit</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.clair-dossier.com/cabinets-avocats</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.clair-dossier.com/experts-comptables</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.clair-dossier.com/grands-comptes</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.clair-dossier.com/rendez-vous</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://www.clair-dossier.com/fonctionnalites/creation-guidee</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>

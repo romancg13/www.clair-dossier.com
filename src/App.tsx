@@ -28,6 +28,13 @@ const Signup = named(() => import('./pages/Signup'), 'Signup');
 const Login = named(() => import('./pages/Login'), 'Login');
 const Account = named(() => import('./pages/Account'), 'Account');
 const DossierDetail = named(() => import('./pages/DossierDetail'), 'DossierDetail');
+// Vague 1 — parcours à forte valeur (toute route ajoutée ici doit aussi
+// entrer dans le manifeste public src/data/routes.ts).
+const CabinetsAvocats = named(() => import('./pages/SegmentPage'), 'CabinetsAvocats');
+const ExpertsComptables = named(() => import('./pages/SegmentPage'), 'ExpertsComptables');
+const GrandsComptes = named(() => import('./pages/SegmentPage'), 'GrandsComptes');
+const ProductStatus = named(() => import('./pages/ProductStatus'), 'ProductStatus');
+const RendezVous = named(() => import('./pages/RendezVous'), 'RendezVous');
 
 function RouteFallback() {
   return (
@@ -179,6 +186,46 @@ export default function App() {
           element={
             <Suspense fallback={<RouteFallback />}>
               <LegalPage slug="cookies" />
+            </Suspense>
+          }
+        />
+        <Route
+          path="cabinets-avocats"
+          element={
+            <Suspense fallback={<RouteFallback />}>
+              <CabinetsAvocats />
+            </Suspense>
+          }
+        />
+        <Route
+          path="experts-comptables"
+          element={
+            <Suspense fallback={<RouteFallback />}>
+              <ExpertsComptables />
+            </Suspense>
+          }
+        />
+        <Route
+          path="grands-comptes"
+          element={
+            <Suspense fallback={<RouteFallback />}>
+              <GrandsComptes />
+            </Suspense>
+          }
+        />
+        <Route
+          path="etat-du-produit"
+          element={
+            <Suspense fallback={<RouteFallback />}>
+              <ProductStatus />
+            </Suspense>
+          }
+        />
+        <Route
+          path="rendez-vous"
+          element={
+            <Suspense fallback={<RouteFallback />}>
+              <RendezVous />
             </Suspense>
           }
         />
