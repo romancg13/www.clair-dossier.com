@@ -1,7 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot, hydrateRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
-import App from './App';
+import App, { preloadForPath } from './App';
 import { AuthProvider } from './lib/auth';
 import { initAnalytics } from './lib/analytics';
 import './index.css';
@@ -24,10 +24,12 @@ const app = (
 );
 
 // Routes publiques pré-rendues (Lot 3) : #root contient déjà le HTML de la
-// page → hydratation. Coquille SPA vierge (routes privées, fallback) :
-// rendu client classique, comportement inchangé.
+// page → hydratation, après préchargement du chunk de la route pour que la
+// frontière Suspense n'affiche jamais son fallback par-dessus le contenu
+// serveur. Coquille SPA vierge (routes privées, fallback) : rendu client
+// classique, comportement inchangé.
 if (container.firstElementChild) {
-  hydrateRoot(container, app);
+  void preloadForPath(window.location.pathname).finally(() => hydrateRoot(container, app));
 } else {
   createRoot(container).render(app);
 }

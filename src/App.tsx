@@ -9,8 +9,92 @@ import { Home } from './pages/Home';
 // Lazy-load the rest — each route ships its own chunk so the initial bundle
 // stays tight and visits to /tarifs, /blog, /securite, etc. only load what
 // they need.
-const named = <T extends string>(load: () => Promise<Record<T, ComponentType<Record<string, never>>>>, name: T) =>
-  lazy(() => load().then((m) => ({ default: m[name] })));
+//
+// Pré-rendu (Lot 3) : côté serveur, React.lazy suspend et l'API prerender
+// émet alors la frontière en format « complétion différée » (segment caché +
+// script), illisible sans JavaScript. entry-server.tsx appelle donc
+// preloadAllRoutes() avant le rendu : chaque page est résolue dans ssrPages
+// et rendue de façon synchrone — aucune frontière Suspense en attente.
+type PageComponent = ComponentType<Record<string, never>>;
+type PageLoader = () => Promise<Record<string, PageComponent>>;
+
+const pageRegistry: Array<{ load: PageLoader; name: string }> = [];
+const ssrPages = new Map<string, PageComponent>();
+// Côté client : pages résolues AVANT hydratation (voir preloadForPath) pour
+// que la frontière Suspense n'affiche jamais son fallback par-dessus le HTML
+// pré-rendu. Vide en navigation SPA classique → comportement lazy inchangé.
+const clientPages = new Map<string, PageComponent>();
+
+/** Réservé au pré-rendu (src/entry-server.tsx). */
+export async function preloadAllRoutes(): Promise<void> {
+  for (const { load, name } of pageRegistry) {
+    if (!ssrPages.has(name)) {
+      const mod = await load();
+      ssrPages.set(name, mod[name]);
+    }
+  }
+}
+
+/**
+ * Précharge le chunk de la route courante avant hydrateRoot (src/main.tsx).
+ * Doit rester aligné avec les routes publiques déclarées plus bas.
+ */
+export async function preloadForPath(pathname: string): Promise<void> {
+  const clean = pathname.replace(/\/+$/, '') || '/';
+  const name = /^\/fonctionnalites\/[^/]+$/.test(clean)
+    ? 'FeatureDetail'
+    : clean === '/fonctionnalites'
+      ? 'FeaturesIndex'
+      : clean === '/tarifs'
+        ? 'Pricing'
+        : clean === '/securite'
+          ? 'Security'
+          : /^\/blog\/[^/]+$/.test(clean)
+            ? 'BlogPost'
+            : clean === '/blog'
+              ? 'BlogIndex'
+              : clean === '/contact'
+                ? 'Contact'
+                : /^\/(mentions-legales|cgv|politique-confidentialite|cookies)$/.test(clean)
+                  ? 'LegalPage'
+                  : clean === '/cabinets-avocats'
+                    ? 'CabinetsAvocats'
+                    : clean === '/experts-comptables'
+                      ? 'ExpertsComptables'
+                      : clean === '/grands-comptes'
+                        ? 'GrandsComptes'
+                        : clean === '/etat-du-produit'
+                          ? 'ProductStatus'
+                          : clean === '/rendez-vous'
+                            ? 'RendezVous'
+                            : null;
+  if (!name) return;
+  const entry = pageRegistry.find((e) => e.name === name);
+  if (!entry || clientPages.has(name)) return;
+  try {
+    const mod = await entry.load();
+    clientPages.set(name, mod[name]);
+  } catch {
+    // Échec de préchargement : l'hydratation retombera sur le lazy classique.
+  }
+}
+
+const named = <T extends string>(load: () => Promise<Record<T, PageComponent>>, name: T): PageComponent => {
+  pageRegistry.push({ load: load as PageLoader, name });
+  const Lazy = lazy(() => load().then((m) => ({ default: m[name] })));
+  if (import.meta.env.SSR) {
+    return function SsrResolved(props: Record<string, never>) {
+      const Resolved = ssrPages.get(name);
+      const Comp = (Resolved ?? Lazy) as PageComponent;
+      return <Comp {...props} />;
+    };
+  }
+  return function PageResolver(props: Record<string, never>) {
+    const Ready = clientPages.get(name);
+    const Comp = (Ready ?? Lazy) as PageComponent;
+    return <Comp {...props} />;
+  };
+};
 
 const FeaturesIndex = named(() => import('./pages/FeaturesIndex'), 'FeaturesIndex');
 const FeatureDetail = named(() => import('./pages/FeatureDetail'), 'FeatureDetail');
@@ -20,9 +104,20 @@ const BlogIndex = named(() => import('./pages/BlogIndex'), 'BlogIndex');
 const BlogPost = named(() => import('./pages/BlogPost'), 'BlogPost');
 const Contact = named(() => import('./pages/Contact'), 'Contact');
 const DossierFlow = named(() => import('./pages/DossierFlow'), 'DossierFlow');
-const LegalPage = lazy(() =>
+// LegalPage prend une prop (slug) : même mécanique que named(), avec ses types.
+pageRegistry.push({
+  load: () => import('./pages/LegalPage') as unknown as Promise<Record<string, PageComponent>>,
+  name: 'LegalPage',
+});
+const LegalLazy = lazy(() =>
   import('./pages/LegalPage').then((m) => ({ default: m.LegalPage }))
 );
+function LegalPage(props: { slug: string }) {
+  const cache = import.meta.env.SSR ? ssrPages : clientPages;
+  const Resolved = cache.get('LegalPage') as unknown as ComponentType<{ slug: string }> | undefined;
+  if (Resolved) return <Resolved {...props} />;
+  return <LegalLazy {...props} />;
+}
 const NotFound = named(() => import('./pages/NotFound'), 'NotFound');
 const Signup = named(() => import('./pages/Signup'), 'Signup');
 const Login = named(() => import('./pages/Login'), 'Login');
