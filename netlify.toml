@@ -6,6 +6,16 @@
 
 [build.environment]
   NODE_VERSION = "22"
+  # ── Capture de prospects (Lot 2.2) — décision humaine, 3 prérequis :
+  #  1. migration supabase/migrations/20260829120000_prospects.sql appliquée
+  #  2. Edge Function submit-prospect déployée (+ secret PROSPECT_HASH_SALT)
+  #  3. politique de confidentialité mise à jour
+  # puis décommenter :
+  # VITE_ENABLE_PROSPECT_CAPTURE = "true"
+  #
+  # ── Analytics sans cookie (Lot 2.1) — décision humaine (compte Plausible),
+  # puis décommenter et ajouter l'hôte à script-src/connect-src de la CSP :
+  # VITE_PLAUSIBLE_DOMAIN = "www.clair-dossier.com"
 
 # ── Domaine canonique : une seule forme servie (www), l'apex redirige en 301.
 # (Rendre www.clair-dossier.com "primary domain" dans Netlify → ces règles

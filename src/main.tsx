@@ -3,7 +3,12 @@ import { createRoot, hydrateRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import { AuthProvider } from './lib/auth';
+import { initAnalytics } from './lib/analytics';
 import './index.css';
+
+// Mesure d'audience sans cookie (Lot 2.1) — no-op tant que
+// VITE_PLAUSIBLE_DOMAIN n'est pas configuré.
+initAnalytics();
 
 const container = document.getElementById('root');
 if (!container) throw new Error('Missing #root element');
