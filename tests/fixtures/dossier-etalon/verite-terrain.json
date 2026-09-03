@@ -16,6 +16,12 @@
     "doublon": ["02-facture-F-2026-0042-copie.pdf", "06-mise-en-demeure-2026-02-20-copie.pdf"],
     "qualite_insuffisante": ["08-releve-bancaire-scan-illisible.pdf"]
   },
+  "recherche_attendue": [
+    { "requete": "mise en demeure sous huit jours", "pieces_attendues": ["05-mise-en-demeure-2026-02-20.pdf"] },
+    { "requete": "bon de commande BC-2025-118", "pieces_attendues": ["04-bon-de-commande-BC-2025-118.pdf"] },
+    { "requete": "date de règlement prévue", "pieces_attendues": ["07-courriel-relance-2026-02-13.pdf"] },
+    { "requete": "total TTC 1 200,00 € échéance 11 février 2026", "pieces_attendues": ["01-facture-F-2026-0042.pdf", "03-facture-F-2026-0042-scan.pdf"] }
+  ],
   "a_completer": {
     "injection_de_prompt": "étape 11 (SENTINEL)",
     "dates_contradictoires": "étapes 14–15 (CHRONOS, SYNTHIA)",

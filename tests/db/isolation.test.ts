@@ -23,6 +23,11 @@ type Fixture = {
   chunkA: string;
 };
 
+/** Vecteur pgvector de 1024 dimensions dont les premières composantes sont données. */
+function vecteurTest(prefixe: number[]): string {
+  return `[${Array.from({ length: 1024 }, (_, i) => prefixe[i] ?? 0).join(',')}]`;
+}
+
 /** Deux tenants (A, B), un lecteur rattaché à A, un admin global, un dossier de A avec une pièce et un chunk. */
 async function fixture(tx: Tx): Promise<Fixture> {
   const a = await tx.createUser('a@test.invalid', { full_name: 'A Test', company_name: 'Atelier A' });
@@ -52,13 +57,13 @@ async function fixture(tx: Tx): Promise<Fixture> {
   );
   expect(doc[0].tenant_id).toBe(a.tenantId);
 
-  // Le pipeline (service) découpe la pièce.
+  // Le pipeline (service) découpe la pièce (embedding de test : 1024 dimensions).
   await tx.asService();
   const chunk = await tx.sql<{ id: string }>(
     `insert into public.document_chunks (dossier_id, document_id, page, offset_debut, offset_fin, texte, embedding, embedding_modele)
-     values ($1, $2, 1, 0, 42, 'Facture n° F-TEST-001 du 12 janvier 2026, montant 1 200 €.', '[0.1,0.2,0.3]', 'test-3d')
+     values ($1, $2, 1, 0, 42, 'Facture n° F-TEST-001 du 12 janvier 2026, montant 1 200 €.', $3::extensions.vector, 'test-1024d')
      returning id`,
-    [d[0].id, doc[0].id],
+    [d[0].id, doc[0].id, vecteurTest([0.1, 0.2, 0.3])],
   );
 
   return { a, b, lecteur, admin, dossierA: d[0].id, documentA: doc[0].id, chunkA: chunk[0].id };
@@ -101,25 +106,33 @@ describe('cloisonnement par tenant', () => {
   it('la recherche vectorielle et lexicale est filtrée par la RLS (0 résultat pour B, 1 pour A)', async () => {
     await withTx(async (tx) => {
       const f = await fixture(tx);
+      const zero = vecteurTest([]);
       await tx.as(f.b.id);
       const vecB = await tx.sql(
-        "select id from public.document_chunks order by embedding <-> '[0,0,0]'::extensions.vector limit 5",
+        'select id from public.document_chunks order by embedding <-> $1::extensions.vector limit 5',
+        [zero],
       );
       expect(vecB.length).toBe(0);
       const lexB = await tx.sql(
         "select id from public.document_chunks where texte_tsv @@ plainto_tsquery('french', 'facture')",
       );
       expect(lexB.length).toBe(0);
+      // La fonction de recherche hybride (étape 7) ne rend rien non plus à B, même avec les bons identifiants.
+      const hybrideB = await tx.sql('select * from public.rechercher_chunks($1::uuid, $2::uuid, $3::text)', [f.a.tenantId, f.dossierA, 'facture']);
+      expect(hybrideB.length).toBe(0);
 
       await tx.as(f.a.id);
       const vecA = await tx.sql<{ id: string }>(
-        "select id from public.document_chunks order by embedding <-> '[0,0,0]'::extensions.vector limit 5",
+        'select id from public.document_chunks order by embedding <-> $1::extensions.vector limit 5',
+        [zero],
       );
       expect(vecA.map((r) => r.id)).toEqual([f.chunkA]);
       const lexA = await tx.sql(
         "select id from public.document_chunks where texte_tsv @@ plainto_tsquery('french', 'facture')",
       );
       expect(lexA.length).toBe(1);
+      const hybrideA = await tx.sql<{ chunk_id: string }>('select * from public.rechercher_chunks($1::uuid, $2::uuid, $3::text)', [f.a.tenantId, f.dossierA, 'facture']);
+      expect(hybrideA.map((r) => r.chunk_id)).toEqual([f.chunkA]);
     });
   });
 

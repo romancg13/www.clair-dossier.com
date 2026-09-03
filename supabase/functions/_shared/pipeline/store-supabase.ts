@@ -4,7 +4,18 @@
  * 20260903150000 (SECURITY DEFINER, refusées à tout appel client).
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { DocumentIngestion, PageExtraite, Quota, StatutSortie, Stockage, Store, Travail } from "./types.ts";
+import type {
+  Chunk,
+  DocumentIngestion,
+  PageExtraite,
+  PageTexte,
+  Quota,
+  ResultatRecherche,
+  StatutSortie,
+  Stockage,
+  Store,
+  Travail,
+} from "./types.ts";
 
 const COLONNES_DOCUMENT =
   "id,tenant_id,dossier_id,file_path,file_name,size_bytes,mime,hash_sha256,kind,statut_ingestion,doublon_de_id,supprime_le";
@@ -74,6 +85,25 @@ export function creerStoreSupabase(client: SupabaseClient): Store {
         }),
         "terminer_run",
       );
+    },
+    async lireDocumentPages(documentId) {
+      const data = verifier(
+        await client.from("document_pages").select("page,texte,methode").eq("document_id", documentId).order("page"),
+        "lireDocumentPages",
+      );
+      return (data as PageTexte[] | null) ?? [];
+    },
+    async enregistrerChunks(documentId, chunks: Chunk[]) {
+      verifier(await client.rpc("enregistrer_chunks", { p_document_id: documentId, p_chunks: chunks }), "enregistrer_chunks");
+    },
+    async rechercherChunks(tenantId, dossierId, requete, embedding, limite) {
+      const data = verifier(
+        await client.rpc("rechercher_chunks", {
+          p_tenant_id: tenantId, p_dossier_id: dossierId, p_requete: requete, p_embedding: embedding, p_limite: limite,
+        }),
+        "rechercher_chunks",
+      );
+      return ((data as ResultatRecherche[] | null) ?? []).map((r) => ({ ...r, score_fusion: Number(r.score_fusion) }));
     },
   };
 }

@@ -15,6 +15,7 @@ export type VeriteTerrain = {
   quasi_doublons: { piece: string; original: string }[];
   documents_illisibles: { piece: string; attendu: string }[];
   ingestion_attendue: Record<string, string[]>;
+  recherche_attendue: { requete: string; pieces_attendues: string[] }[];
 };
 
 export const manifest = JSON.parse(readFileSync(resolve(DIR, 'manifest.json'), 'utf8')) as { pieces: PieceManifest[] };

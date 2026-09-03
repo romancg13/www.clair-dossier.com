@@ -107,6 +107,59 @@ export type Quota = {
   max_pages_par_piece?: number | null;
 };
 
+export type PageTexte = { page: number; texte: string; methode: MethodePage };
+
+/** Chunk d'une page : offsets dans le texte de la page, embedding sérialisé pgvector. */
+export type Chunk = {
+  page: number;
+  offset_debut: number;
+  offset_fin: number;
+  texte: string;
+  embedding?: string;
+  embedding_modele?: string;
+};
+
+export type ResultatRecherche = {
+  chunk_id: string;
+  document_id: string;
+  file_name: string;
+  page: number;
+  offset_debut: number;
+  offset_fin: number;
+  texte: string;
+  rang_lexical: number | null;
+  rang_vectoriel: number | null;
+  score_fusion: number;
+  couverture_termes?: number;
+};
+
+/** Sortie du travail d'indexation (schéma universel, sans assertion). */
+export type SortieIndexation = {
+  agent: "INDEXATION";
+  version: string;
+  dossier_id: string;
+  trace_id: string;
+  horodatage: string;
+  statut: StatutSortie;
+  confiance_globale: number;
+  resultat: {
+    document_id: string;
+    statut_ingestion: string;
+    pages_indexees: number[];
+    pages_ignorees: number[];
+    nb_chunks: number;
+    nb_chunks_vectorises: number;
+    embedding_modele: string;
+    dimension: number;
+  };
+  assertions: never[];
+  incertitudes: Incertitude[];
+  escalades: Escalade[];
+  donnees_sensibles_detectees: string[];
+  cout: { modele: string | null; tokens_entree: number; tokens_sortie: number };
+  duree_ms: number;
+};
+
 /** Persistance : implémentée par Supabase (service role) en production, par pg dans les tests. */
 export interface Store {
   prendreTravail(types: string[], executant: string): Promise<Travail | null>;
@@ -119,6 +172,9 @@ export interface Store {
   marquerIngestion(documentId: string, statut: string, erreur: string | null, pages: number | null, traceId: string): Promise<void>;
   demarrerRun(agent: string, tenantId: string, dossierId: string | null, traceId: string, entreeHash: string, modele: string | null, version: string): Promise<string>;
   terminerRun(runId: string, statut: StatutSortie, sortie: unknown, confiance: number | null, dureeMs: number, erreur: string | null): Promise<void>;
+  lireDocumentPages(documentId: string): Promise<PageTexte[]>;
+  enregistrerChunks(documentId: string, chunks: Chunk[]): Promise<void>;
+  rechercherChunks(tenantId: string, dossierId: string, requete: string, embedding: string | null, limite: number): Promise<ResultatRecherche[]>;
 }
 
 /** Accès aux octets d'une pièce (bucket privé en production, fichiers du jeu d'essai en test). */

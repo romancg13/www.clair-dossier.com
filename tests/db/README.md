@@ -19,6 +19,11 @@ en Node avec un `Store` branché sur la connexion du test (`pipeline-store.ts`) 
 section `ingestion_attendue` de la vérité terrain. Reprise sur erreur, backoff, verrou
 expiré et idempotence sont exercés réellement.
 
+`recherche.test.ts` enchaîne l'indexation (découpage, vectorisation 1024 dimensions,
+index HNSW) et interroge la recherche hybride : premiers résultats de la section
+`recherche_attendue`, aucun résultat pour un autre tenant, hors du dossier ou sur une
+pièce retirée, y compris pour le rôle de service (le filtre est dans la requête SQL).
+
 `isolation.test.ts` rejoue aussi les scénarios d'attaque identifiés en revue
 (forge du journal, contournement du verrou humain par suppression, réécriture des
 métadonnées d'ingestion, déplacement de dossier entre tenants, `setval` sur la

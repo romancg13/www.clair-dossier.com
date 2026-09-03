@@ -45,7 +45,8 @@ describe('pipeline d’ingestion, étapes 1 à 5 (PARTIE 7.1)', () => {
 
       await contexteExecutant(tx);
       const stockage = creerStockageEtalon();
-      const bilan = await executerFile(creerStorePg(tx.sql), stockage, { executant: 'test-1' });
+      // Étapes 1 à 5 seulement : l'indexation (étape 7) a son propre test.
+      const bilan = await executerFile(creerStorePg(tx.sql), stockage, { executant: 'test-1', types: ['ingestion'] });
       expect(bilan).toMatchObject({ traites: 1, termines: 1, reessais: 0, echecs: 0 });
       expect(stockage.appels).toEqual(['01-facture-F-2026-0042.pdf']);
 
@@ -88,7 +89,12 @@ describe('pipeline d’ingestion, étapes 1 à 5 (PARTIE 7.1)', () => {
       // Le client lit le texte de sa pièce ; un autre tenant ne voit rien.
       await tx.as(f.a.id);
       expect((await tx.sql('select 1 from public.document_pages')).length).toBe(1);
-      expect((await tx.sql('select 1 from public.travaux')).length).toBe(1);
+      // Avancement visible : l'ingestion est terminée, l'indexation (étape 7) attend son tour.
+      const avancement = await tx.sql<{ type: string; statut: string }>('select type, statut from public.travaux order by id');
+      expect(avancement).toEqual([
+        { type: 'ingestion', statut: 'termine' },
+        { type: 'indexation', statut: 'en_attente' },
+      ]);
       await tx.as(f.b.id);
       expect((await tx.sql('select 1 from public.document_pages')).length).toBe(0);
       expect((await tx.sql('select 1 from public.travaux')).length).toBe(0);
@@ -100,7 +106,7 @@ describe('pipeline d’ingestion, étapes 1 à 5 (PARTIE 7.1)', () => {
       const f = await dossierEtalon(tx);
       for (const p of manifest.pieces) await deposer(tx, f.a.id, f.dossierId, p.fichier);
       await contexteExecutant(tx);
-      const bilan = await executerFile(creerStorePg(tx.sql), creerStockageEtalon(), { executant: 'test-etalon', maxTravaux: 50 });
+      const bilan = await executerFile(creerStorePg(tx.sql), creerStockageEtalon(), { executant: 'test-etalon', maxTravaux: 50, types: ['ingestion'] });
       // Les doublons stricts n'entrent jamais dans la file : aucun traitement payant.
       expect(bilan.traites).toBe(manifest.pieces.length - verite.ingestion_attendue.doublon.length);
       expect(bilan.echecs).toBe(0);
@@ -137,7 +143,7 @@ describe('pipeline d’ingestion, étapes 1 à 5 (PARTIE 7.1)', () => {
       const legacy = await deposer(tx, f.a.id, f.dossierId, '02-facture-F-2026-0042-copie.pdf', { hash: null, mime: null });
       expect(legacy.statut_ingestion).toBe('recu');
       await contexteExecutant(tx);
-      const bilan = await executerFile(creerStorePg(tx.sql), creerStockageEtalon(), { executant: 'test-legacy' });
+      const bilan = await executerFile(creerStorePg(tx.sql), creerStockageEtalon(), { executant: 'test-legacy', types: ['ingestion'] });
       expect(bilan.traites).toBe(2);
       const [doc] = await tx.sql<DocEtat & { doublon_de_id: string | null }>(
         'select file_name, statut_ingestion, ingestion_erreur, pages, hash_verifie_le, doublon_de_id from public.dossier_documents where id = $1',
@@ -165,7 +171,7 @@ describe('pipeline d’ingestion, étapes 1 à 5 (PARTIE 7.1)', () => {
           'photo.png': new Uint8Array(bytesOf('01-facture-F-2026-0042.pdf')),
         },
       });
-      const bilan = await executerFile(creerStorePg(tx.sql), stockage, { executant: 'test-refus' });
+      const bilan = await executerFile(creerStorePg(tx.sql), stockage, { executant: 'test-refus', types: ['ingestion'] });
       expect(bilan).toMatchObject({ traites: 3, termines: 3, echecs: 0 });
       const etats = await tx.sql<DocEtat & { id: string }>(
         'select id, file_name, statut_ingestion, ingestion_erreur, pages, hash_verifie_le from public.dossier_documents where dossier_id = $1',
@@ -189,7 +195,7 @@ describe('pipeline d’ingestion, étapes 1 à 5 (PARTIE 7.1)', () => {
       const store = creerStorePg(tx.sql);
       const stockage = creerStockageEtalon({ echecs: { '05-mise-en-demeure-2026-02-20.pdf': 1 } });
 
-      const premier = await traiterProchainTravail(store, stockage, 'test-reprise');
+      const premier = await traiterProchainTravail(store, stockage, 'test-reprise', { types: ['ingestion'] });
       expect(premier?.issue).toBe('reessai');
       let [t] = await travauxDuDossier(tx, f.dossierId);
       expect(t.statut).toBe('en_attente');
@@ -197,13 +203,13 @@ describe('pipeline d’ingestion, étapes 1 à 5 (PARTIE 7.1)', () => {
       expect(t.erreur).toMatch(/stockage indisponible/);
       expect(new Date(t.prochaine_tentative_le).getTime()).toBeGreaterThan(Date.now() + 20_000);
       // Pas encore l'heure : la file est vide pour l'exécutant.
-      expect(await traiterProchainTravail(store, stockage, 'test-reprise')).toBeNull();
+      expect(await traiterProchainTravail(store, stockage, 'test-reprise', { types: ['ingestion'] })).toBeNull();
       // L'exécution en échec est tracée elle aussi.
       const runsEchec = await tx.sql<{ statut: string; erreur: string }>("select statut, erreur from public.agent_runs where statut = 'echec'");
       expect(runsEchec.length).toBe(1);
 
       await tx.sql('update public.travaux set prochaine_tentative_le = now() where id = $1', [t.id]);
-      const second = await traiterProchainTravail(store, stockage, 'test-reprise');
+      const second = await traiterProchainTravail(store, stockage, 'test-reprise', { types: ['ingestion'] });
       expect(second?.issue).toBe('termine');
       [t] = await travauxDuDossier(tx, f.dossierId);
       expect(t.statut).toBe('termine');
@@ -214,7 +220,7 @@ describe('pipeline d’ingestion, étapes 1 à 5 (PARTIE 7.1)', () => {
       // Échec définitif après épuisement des tentatives.
       const autre = await deposer(tx, f.a.id, f.dossierId, 'introuvable.pdf', { hash: 'c'.repeat(64) });
       await tx.sql('update public.travaux set max_tentatives = 1 where document_id = $1', [autre.id]);
-      const echec = await traiterProchainTravail(store, creerStockageEtalon(), 'test-reprise');
+      const echec = await traiterProchainTravail(store, creerStockageEtalon(), 'test-reprise', { types: ['ingestion'] });
       expect(echec?.issue).toBe('echec');
       const [te] = await tx.sql<TravailRow>('select * from public.travaux where document_id = $1', [autre.id]);
       expect(te.statut).toBe('echec');

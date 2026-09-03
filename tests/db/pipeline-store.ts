@@ -7,9 +7,12 @@
 import { resolve } from 'node:path';
 import { existsSync, readFileSync } from 'node:fs';
 import type {
+  Chunk,
   DocumentIngestion,
   PageExtraite,
+  PageTexte,
   Quota,
+  ResultatRecherche,
   StatutSortie,
   Stockage,
   Store,
@@ -74,6 +77,19 @@ export function creerStorePg(sql: Sql): Store {
       await sql('select public.terminer_run($1::uuid, $2::text, $3::jsonb, $4::numeric, $5::integer, $6::text)', [
         runId, statut, JSON.stringify(sortie), confiance, dureeMs, erreur,
       ]);
+    },
+    async lireDocumentPages(documentId) {
+      return sql<PageTexte>('select page, texte, methode from public.document_pages where document_id = $1::uuid order by page', [documentId]);
+    },
+    async enregistrerChunks(documentId, chunks: Chunk[]) {
+      await sql('select public.enregistrer_chunks($1::uuid, $2::jsonb)', [documentId, JSON.stringify(chunks)]);
+    },
+    async rechercherChunks(tenantId, dossierId, requete, embedding, limite) {
+      const rows = await sql<ResultatRecherche & { score_fusion: number | string }>(
+        'select * from public.rechercher_chunks($1::uuid, $2::uuid, $3::text, $4::extensions.vector, $5::integer)',
+        [tenantId, dossierId, requete, embedding, limite],
+      );
+      return rows.map((r) => ({ ...r, score_fusion: Number(r.score_fusion) }));
     },
   };
 }

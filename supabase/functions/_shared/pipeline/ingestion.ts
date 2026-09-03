@@ -10,8 +10,10 @@
  *        → echec (réception refusée : type, cohérence MIME, quota, fichier vide)
  * Les journaux applicatifs ne portent que des identifiants (PARTIE 11).
  */
+import type { FournisseurEmbedding } from "./embedding.ts";
 import { empreinteSha256 } from "./empreinte.ts";
 import { extrairePagesPdf, type FournisseurOcr } from "./extraction.ts";
+import { indexerDocument, TYPE_TRAVAIL_INDEXATION } from "./indexation.ts";
 import { evaluerQualite, SEUIL_QUALITE } from "./qualite.ts";
 import { controlerReception } from "./reception.ts";
 import {
@@ -19,6 +21,7 @@ import {
   type Escalade,
   type Incertitude,
   type PageExtraite,
+  type SortieIndexation,
   type SortieIngestion,
   type StatutSortie,
   type Stockage,
@@ -28,10 +31,15 @@ import {
 
 export const VERSION_INGESTION = "1.0";
 export const TYPE_TRAVAIL_INGESTION = "ingestion";
+/** Types de travaux consommés par le même exécutant, dans l'ordre de priorité de la file. */
+export const TYPES_TRAVAUX = [TYPE_TRAVAIL_INGESTION, TYPE_TRAVAIL_INDEXATION];
 
 export type OptionsIngestion = {
   ocr?: FournisseurOcr | null;
+  embedding?: FournisseurEmbedding;
   maintenant?: () => Date;
+  /** Types de travaux à consommer (défaut : tous) — permet des exécutants dédiés. */
+  types?: string[];
 };
 
 function messageErreur(e: unknown): string {
@@ -226,19 +234,33 @@ export async function ingererDocument(
 }
 
 export type ResultatTravail =
-  | { travail: Travail; issue: "termine"; sortie: SortieIngestion }
+  | { travail: Travail; issue: "termine"; sortie: SortieIngestion | SortieIndexation }
   | { travail: Travail; issue: "reessai" | "echec"; erreur: string };
 
-/** Prend et traite UN travail d'ingestion ; null si la file est vide. */
+/** Prend et traite UN travail (ingestion ou indexation) ; null si la file est vide. */
 export async function traiterProchainTravail(
   store: Store,
   stockage: Stockage,
   executant: string,
   options: OptionsIngestion = {},
 ): Promise<ResultatTravail | null> {
-  const travail = await store.prendreTravail([TYPE_TRAVAIL_INGESTION], executant);
+  const travail = await store.prendreTravail(options.types ?? TYPES_TRAVAUX, executant);
   if (!travail) return null;
   try {
+    if (travail.type === TYPE_TRAVAIL_INDEXATION) {
+      const sortie = await indexerDocument(store, travail, { embedding: options.embedding, maintenant: options.maintenant });
+      await store.terminerTravail(travail.id, {
+        statut: sortie.statut,
+        statut_ingestion: sortie.resultat.statut_ingestion,
+        nb_chunks: sortie.resultat.nb_chunks,
+        nb_chunks_vectorises: sortie.resultat.nb_chunks_vectorises,
+        duree_ms: sortie.duree_ms,
+      });
+      return { travail, issue: "termine", sortie };
+    }
+    if (travail.type !== TYPE_TRAVAIL_INGESTION) {
+      throw new ErreurDefinitive(`TYPE_TRAVAIL_INCONNU:${travail.type}`);
+    }
     const sortie = await ingererDocument(store, stockage, travail, options);
     await store.terminerTravail(travail.id, {
       statut: sortie.statut,
