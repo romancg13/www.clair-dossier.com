@@ -49,9 +49,9 @@ export function BlogIndex() {
               Le droit administratif et juridique, expliqué calmement.
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-relaxed text-slate-500 sm:text-lg">
-              Articles écrits par des avocats, des juristes IT et l'équipe éditoriale
-              ClairDossier. Pédagogie sans simplification. Position claire sur les sujets
-              de fond.
+              Articles écrits par l'équipe éditoriale ClairDossier, à partir de sources
+              juridiques publiques. Pédagogie sans simplification. Position claire sur les
+              sujets de fond.
             </p>
           </div>
         </div>

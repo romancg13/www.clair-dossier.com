@@ -8,13 +8,13 @@ url: https://www.clair-dossier.com/
 
 **Votre dossier administratif et juridique, clair, structuré et suivi.**
 
-Créez des dossiers administratifs et juridiques structurés : calendrier, relances à échéance et projets de réponse aux e-mails. Pour les PME, artisans, entreprises individuelles et professions libérales. Option : un préavis juridique et un résumé de la situation à valider par un professionnel du droit.
+Créez des dossiers administratifs et juridiques structurés : déposez vos pièces dans un espace privé, suivez l'avancement et vos échéances, puis transmettez quand vous le décidez. Pour les PME, artisans, entreprises individuelles et professions libérales.
 
-## Promesse
+## Ce que vous obtenez
 
-- 6 statuts dossier standardisés et traçables
-- Calendrier et relances automatiques à échéance
-- 100 % conforme RGPD — hébergement OVH France
+- Suivi du dossier étape par étape
+- Pièces déposées dans un espace privé, chiffrées au repos côté hébergeur
+- Conçu pour le RGPD : accès, export et suppression de vos données sur demande
 
 ## Trois espaces, un dossier
 
@@ -45,7 +45,7 @@ Artisan, indépendant, profession libérale ou PME : retrouvez la liste de vos d
 - Données isolées par compte : vous ne voyez que les vôtres
 - Transmission par e-mail ou WhatsApp, dossier par dossier
 
-## Workflow — 6 statuts
+## Le parcours d'un dossier
 
 1. **Brouillon** — Vous construisez votre dossier dans le tunnel en 5 étapes : profil, nature, informations, dépôt des pièces, récapitulatif. Le nom du dossier est obligatoire. Rien n'est transmis tant que vous ne l'avez pas décidé.
 2. **Complété** — Vous avez renseigné les informations et déposé vos pièces dans l'espace privé sécurisé. Le récapitulatif vous montre le dossier avant toute transmission.
@@ -72,8 +72,8 @@ Artisan, indépendant, profession libérale ou PME : retrouvez la liste de vos d
 - **Entrepreneur** (Entrepreneur / prof. libérale) — 39 €/mois HT. Pour les entrepreneurs et professions libérales avec un flux régulier de dossiers.
 - **Business PME 20** (TPE / PME) — 49 €/mois HT. Pour les TPE/PME avec plusieurs dossiers récurrents et une petite équipe.
 - **Business PME 50** (PME) — 89 €/mois HT. Pour les PME qui gèrent de nombreux dossiers en parallèle.
-- **Business / PME Pro** (PME / multi-sites) — 169 €/mois HT. Pour les structures multi-collaborateurs avec statistiques et workflows avancés.
-- **Business / PME Premium** (Entreprise) — 299 €/mois HT. Solution entreprise : marque blanche, API, SSO, audit avancé.
+- **Business / PME Pro** (PME / multi-sites) — 169 €/mois HT. Pour les structures multi-collaborateurs : dossiers illimités et support dédié.
+- **Business / PME Premium** (Entreprise) — 299 €/mois HT. Pour les entreprises : dossiers et utilisateurs illimités, support entreprise.
 - **Business / PME personnalisée** (Grand compte) — Sur devis. Volumétrie, intégrations ou conformité spécifiques ? On construit une offre sur-mesure.
 
 Facturation annuelle disponible sur tous les plans payants avec 10 % de réduction sur le cumul mensuel.
@@ -92,11 +92,11 @@ Vos échanges passent en HTTPS (chiffrement en transit) et vos données sont chi
 
 ### Suis-je obligé de passer par un tiers via ClairDossier ?
 
-Non. ClairDossier vous sert à constituer et organiser votre dossier, puis à le transmettre quand vous le décidez — par e-mail ou WhatsApp — au destinataire de votre choix. Rien n'est envoyé sans votre validation explicite, et vous n'êtes obligé de passer par aucun intermédiaire imposé.
+Non. ClairDossier vous sert à constituer et organiser votre dossier, puis à le transmettre à l'équipe ClairDossier quand vous le décidez — par e-mail ou WhatsApp. Rien n'est envoyé sans votre validation explicite, et vous n'êtes obligé de passer par aucun intermédiaire imposé pour la suite de votre démarche.
 
 ### Comment je récupère ou partage mes dossiers ?
 
-Depuis la liste de vos dossiers, ouvrez la page détail « Avancement du dossier » : vous y consultez les 5 étapes, téléchargez chaque pièce et voyez les échéances. Quand vous le souhaitez, vous transmettez le dossier par e-mail ou WhatsApp au destinataire de votre choix, après votre validation.
+Depuis la liste de vos dossiers, ouvrez la page détail « Avancement du dossier » : vous y consultez les 5 étapes, téléchargez chaque pièce et voyez les échéances. À la création, vous transmettez le dossier à l'équipe ClairDossier par e-mail ou WhatsApp, après votre validation ; vos pièces restent téléchargeables à tout moment pour les partager vous-même.
 
 ### Comment je suis l'avancement de mon dossier ?
 

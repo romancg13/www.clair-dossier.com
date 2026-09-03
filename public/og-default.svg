@@ -28,18 +28,19 @@
   <text x="170" y="124" font-family="Cormorant Garamond, Georgia, serif" font-weight="600" font-size="32" fill="#fbf9f4">ClairDossier</text>
 
   <!-- Eyebrow -->
-  <text x="80" y="270" font-family="JetBrains Mono, monospace" font-weight="500" font-size="20" fill="#c4a456" letter-spacing="4">LEGALTECH · CLIENTS · PME · CABINETS</text>
+  <text x="80" y="250" font-family="JetBrains Mono, monospace" font-weight="500" font-size="20" fill="#c4a456" letter-spacing="4">LEGALTECH · PME · ARTISANS · INDÉPENDANTS</text>
 
-  <!-- H1 -->
-  <text x="80" y="350" font-family="Cormorant Garamond, Georgia, serif" font-weight="600" font-size="78" fill="#fbf9f4" letter-spacing="-2">Votre dossier juridique,</text>
-  <text x="80" y="430" font-family="Cormorant Garamond, Georgia, serif" font-weight="600" font-size="78" fill="#fbf9f4" letter-spacing="-2">clair, <tspan fill="#c4a456">structuré</tspan> et suivi.</text>
+  <!-- H1 (identique au Hero du site) -->
+  <text x="80" y="322" font-family="Cormorant Garamond, Georgia, serif" font-weight="600" font-size="66" fill="#fbf9f4" letter-spacing="-1.5">Votre dossier administratif</text>
+  <text x="80" y="392" font-family="Cormorant Garamond, Georgia, serif" font-weight="600" font-size="66" fill="#fbf9f4" letter-spacing="-1.5">et juridique, clair,</text>
+  <text x="80" y="462" font-family="Cormorant Garamond, Georgia, serif" font-weight="600" font-size="66" fill="#fbf9f4" letter-spacing="-1.5"><tspan fill="#c4a456">structuré</tspan> et suivi.</text>
 
   <!-- Sub -->
-  <text x="80" y="500" font-family="Inter, sans-serif" font-weight="400" font-size="24" fill="#a3aab9">Plateforme legaltech française · OVH France · RGPD natif</text>
-
-  <!-- URL -->
-  <text x="80" y="580" font-family="JetBrains Mono, monospace" font-weight="400" font-size="18" fill="#7c8497">clair-dossier.com</text>
+  <text x="80" y="520" font-family="Inter, sans-serif" font-weight="400" font-size="24" fill="#a3aab9">Plateforme legaltech française · Conçue pour le RGPD</text>
 
   <!-- Gold hairline -->
-  <line x1="80" y1="540" x2="200" y2="540" stroke="#c4a456" stroke-width="2"/>
+  <line x1="80" y1="552" x2="200" y2="552" stroke="#c4a456" stroke-width="2"/>
+
+  <!-- URL -->
+  <text x="80" y="588" font-family="JetBrains Mono, monospace" font-weight="400" font-size="18" fill="#7c8497">clair-dossier.com</text>
 </svg>

@@ -14,7 +14,7 @@ L'accès à votre espace passe par une authentification : vous seul ouvrez vos d
 
 Le stockage des pièces est privé : les fichiers ne sont accessibles que via des liens temporaires signés, jamais en accès libre. Vos documents restent rangés là où vous les avez déposés, dossier par dossier.
 
-Quand vous le décidez, vous transmettez le dossier par e-mail ou par WhatsApp, à la personne de votre choix. Le partage n'a lieu que sur votre action explicite — rien ne sort de votre espace sans votre validation.
+Quand vous le décidez, vous transmettez le dossier à l'équipe ClairDossier par e-mail ou par WhatsApp. Le partage n'a lieu que sur votre action explicite — rien ne sort de votre espace sans votre validation.
 
 ## Concrètement
 

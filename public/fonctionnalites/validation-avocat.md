@@ -10,11 +10,11 @@ url: https://www.clair-dossier.com/fonctionnalites/validation-avocat
 
 ClairDossier prépare votre dossier ; c'est vous qui choisissez quand et à qui le transmettre. Aucun envoi automatique : tant que vous n'avez pas validé, rien ne quitte votre espace.
 
-Quand votre dossier est prêt, vous le transmettez en un geste, par e-mail ou par WhatsApp. Vous décidez du destinataire et du moment. La transmission est toujours déclenchée par vous, explicitement.
+Quand votre dossier est prêt, vous le transmettez en un geste à l'équipe ClairDossier, par e-mail ou par WhatsApp. Vous décidez du canal et du moment. La transmission est toujours déclenchée par vous, explicitement.
 
 Vous gardez ainsi la main du début à la fin : vous construisez le dossier dans le tunnel, vous relisez le récapitulatif, puis vous transmettez seulement lorsque tout vous convient.
 
-Ce fonctionnement protège vos données : elles restent dans votre espace privé jusqu'à votre validation, et ne sont partagées qu'avec les personnes que vous avez choisies.
+Ce fonctionnement protège vos données : elles restent dans votre espace privé jusqu'à votre validation, et ne sont partagées que sur votre action explicite.
 
 ## Concrètement
 

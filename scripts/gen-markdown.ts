@@ -24,6 +24,11 @@ import {
   plans,
   type Plan,
 } from '../src/data/pricing';
+import {
+  SECURITY_ARCHITECTURE,
+  SECURITY_BADGES,
+  SECURITY_PILLARS,
+} from '../src/data/security';
 import { statuses } from '../src/data/statuses';
 import { workspaces } from '../src/data/workspaces';
 
@@ -61,13 +66,13 @@ function generateHome(): void {
     '',
     '**Votre dossier administratif et juridique, clair, structuré et suivi.**',
     '',
-    "Créez des dossiers administratifs et juridiques structurés : calendrier, relances à échéance et projets de réponse aux e-mails. Pour les PME, artisans, entreprises individuelles et professions libérales. Option : un préavis juridique et un résumé de la situation à valider par un professionnel du droit.",
+    "Créez des dossiers administratifs et juridiques structurés : déposez vos pièces dans un espace privé, suivez l'avancement et vos échéances, puis transmettez quand vous le décidez. Pour les PME, artisans, entreprises individuelles et professions libérales.",
     '',
-    '## Promesse',
+    '## Ce que vous obtenez',
     '',
-    '- 6 statuts dossier standardisés et traçables',
-    '- Calendrier et relances automatiques à échéance',
-    '- 100 % conforme RGPD — hébergement OVH France',
+    '- Suivi du dossier étape par étape',
+    '- Pièces déposées dans un espace privé, chiffrées au repos côté hébergeur',
+    '- Conçu pour le RGPD : accès, export et suppression de vos données sur demande',
     '',
     '## Trois espaces, un dossier',
     '',
@@ -82,7 +87,7 @@ function generateHome(): void {
     lines.push('');
   }
 
-  lines.push('## Workflow — 6 statuts');
+  lines.push('## Le parcours d\'un dossier');
   lines.push('');
   statuses.forEach((s, i) => {
     lines.push(`${i + 1}. **${s.label}** — ${s.description}`);
@@ -237,7 +242,7 @@ function generateBlogIndex(): void {
     '',
     '# Journal ClairDossier',
     '',
-    "Articles écrits par la rédaction ClairDossier, relus par des avocats. Pédagogie, sans conseil personnalisé.",
+    "Articles écrits par la rédaction ClairDossier, à partir de sources juridiques publiques. Pédagogie, sans conseil personnalisé.",
     '',
     '## Articles publiés',
     '',
@@ -362,7 +367,7 @@ function generatePricing(): void {
   lines.push('## Devis sur-mesure');
   lines.push('');
   lines.push(
-    'Pour structures avec exigences de marque blanche, intégration API, SSO, audit dédié, ou volumétrie au-dessus du Premium — proposition chiffrée sous 48 h. Contact : contact.clairdossier@icloud.com ou WhatsApp +33 7 82 98 36 44.'
+    'Pour les structures avec une volumétrie au-dessus du Premium, des exigences de conformité interne ou des besoins spécifiques — proposition chiffrée sous 48 h. Contact : contact.clairdossier@icloud.com ou WhatsApp +33 7 82 98 36 44.'
   );
   lines.push('');
 
@@ -378,62 +383,69 @@ function generatePricing(): void {
 }
 
 // ─── Sécurité ──────────────────────────────────────────────────────
+// Dérivé de src/data/security.ts : même contenu que la page /securite, aucune
+// affirmation qui ne soit pas en place (invariant I10).
 function generateSecurity(): void {
   const path = '/securite';
   const lines: string[] = [
     '---',
     'title: "Sécurité & conformité ClairDossier"',
-    'description: "Hébergement OVH France, chiffrement AES-256 et TLS 1.3, RGPD natif, conformité RIN, audit annuel par tiers."',
+    'description: "Chiffrement en transit et au repos, isolation des données par utilisateur, stockage privé des pièces et hébergeur conforme RGPD. Les engagements sécurité de ClairDossier."',
     `url: ${SITE}${path}`,
     '---',
     '',
     '# Sécurité et conformité',
     '',
-    "La sécurité juridique commence par la sécurité technique. Pour une legaltech, la conformité n'est pas une case à cocher — c'est la condition d'existence.",
+    "La sécurité administrative et juridique commence par la sécurité technique. Cette page expose, sans jargon, ce que ClairDossier fait concrètement pour protéger vos données : chiffrement, isolation par utilisateur, stockage privé de vos pièces et respect de vos droits RGPD.",
     '',
-    '## Architecture',
+    '## Architecture simplifiée',
     '',
-    '1. **Client** — navigateur, application, API.',
-    '2. **TLS 1.3** — HSTS preload, pinning.',
-    '3. **Bastion** — WAF, rate-limit, audit.',
-    '4. **Application** — hébergée en France, 2FA admin obligatoire.',
-    '5. **Coffre chiffré** — AES-256, réplique France.',
-    '',
-    'Chaque flèche est chiffrée. Chaque nœud est journalisé. Aucune donnée client n\'est lisible en clair sur les sauvegardes.',
-    '',
-    '## Six piliers',
-    '',
-    '### Infrastructure',
-    "Datacenters OVH France (Roubaix, Strasbourg). Aucun datacenter hors UE, ni pour la production, ni pour les sauvegardes. Bare-metal souverain, pas de cloud public américain. Architecture trois tiers avec bastion de sortie et VPN administrateur 2FA obligatoire.",
-    '',
-    '### Chiffrement',
-    'AES-256 au repos pour la base de données et le coffre-fort de pièces. TLS 1.3 obligatoire pour tous les flux client ↔ serveur (HSTS preload). Clés chiffrées par KMS, rotation automatique tous les 90 jours, séparation stricte clés / données.',
-    '',
-    '### Accès',
-    "Authentification obligatoire à deux facteurs pour les accès administrateurs internes. Journalisation des consultations sensibles avec conservation des logs 12 mois. Aucune donnée client accessible par défaut aux équipes ClairDossier — accès sur demande tracée et justifiée.",
-    '',
-    '### Conformité',
-    "RGPD (UE 2016/679) appliqué dès la conception : registre des traitements, DPIA réalisée, DPA standard et version renforcée disponibles. Conformité RIN (Règlement Intérieur National des avocats) sur le périmètre IA : préparation autorisée, conseil interdit. Hébergement HDS en cours pour les dossiers contenant des données de santé.",
-    '',
-    '### Continuité',
-    'Sauvegardes 3-2-1 : trois copies de chaque donnée, sur deux supports différents, dont une hors site. Restauration testée chaque trimestre. RPO 15 minutes, RTO inférieur à 4 heures.',
-    '',
-    '### Audit et incident',
-    "Audit annuel par cabinet de pentest indépendant — rapport remis aux clients Entreprise. Politique de divulgation responsable publiée. Procédure d'incident documentée avec notification CNIL sous 72 h, notification client sous 24 h.",
-    '',
-    '## Cadres réglementaires',
-    '',
-    '- **RGPD** : conforme.',
-    '- **RIN 2024** : conforme — IA encadrée.',
-    '- **HDS** : en cours (objectif 2026 T3).',
-    '- **ISO 27001** : objectif 2027.',
-    '',
-    '## Divulgation responsable',
-    '',
-    'Vulnérabilités à signaler à contact.clairdossier@icloud.com. Réponse sous 24 h ouvrées. Programme de récompense informel pour les contributions confirmées. Aucune action en justice contre les chercheurs de bonne foi.',
-    '',
-    footer(path),
   ];
+
+  SECURITY_ARCHITECTURE.forEach((node) => {
+    lines.push(`${node.kicker}. **${node.label}** — ${node.detail}.`);
+  });
+  lines.push('');
+  lines.push(
+    "Les échanges passent par une connexion chiffrée. L'accès à votre espace exige une authentification, et vos données sont isolées des autres utilisateurs. Vos pièces sont conservées dans un stockage privé, chiffrées au repos côté hébergeur."
+  );
+  lines.push('');
+
+  lines.push('## Six engagements');
+  lines.push('');
+  for (const p of SECURITY_PILLARS) {
+    lines.push(`### ${p.title}`);
+    lines.push(p.body);
+    lines.push('');
+    for (const b of p.bullets) lines.push(`- ${b}`);
+    lines.push('');
+  }
+
+  lines.push('## Nos engagements en clair');
+  lines.push('');
+  for (const b of SECURITY_BADGES) {
+    lines.push(`- **${b.label}** : ${b.status.toLowerCase()}.`);
+  }
+  lines.push('');
+  lines.push(
+    "Aucune certification (ISO 27001, HDS) n'est revendiquée. Les sous-traitants techniques sont indiqués dans les mentions légales et la politique de confidentialité."
+  );
+  lines.push('');
+
+  lines.push('## Vos droits');
+  lines.push('');
+  lines.push(
+    "Au titre du RGPD, vous pouvez exercer vos droits d'accès, d'export et de suppression sur vos données. Adressez votre demande via le contact ou depuis votre espace : elle est traitée dans un délai de 30 jours, sauf obligation légale de conservation."
+  );
+  lines.push('');
+
+  lines.push('## Divulgation responsable');
+  lines.push('');
+  lines.push(
+    'Vulnérabilités à signaler à contact.clairdossier@icloud.com. Réponse sous 24 h ouvrées. Aucune action en justice contre les chercheurs de bonne foi.'
+  );
+  lines.push('');
+  lines.push(footer(path));
   write('securite.md', lines.join('\n'));
 }
 

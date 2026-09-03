@@ -14,11 +14,11 @@ export function FeaturesGrid() {
             Fonctionnalités
           </p>
           <h2 className="mt-3 font-display text-4xl font-semibold leading-tight text-navy-900 sm:text-5xl">
-            Huit briques pour structurer un dossier juridique.
+            Neuf briques pour structurer un dossier administratif ou juridique.
           </h2>
           <p className="mt-4 text-base leading-relaxed text-slate-500">
-            Chaque brique répond à un point de friction identifié auprès de cabinets et de
-            services juridiques français. Aucune n'est décorative.
+            Chaque brique répond à un point de friction rencontré dans la constitution
+            de dossiers administratifs et juridiques. Aucune n'est décorative.
           </p>
         </div>
 

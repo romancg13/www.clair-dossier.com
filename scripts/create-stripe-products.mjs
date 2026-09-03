@@ -31,19 +31,22 @@ const SITE_URL = 'https://www.clair-dossier.com';
 
 // Grille tarifaire 2026 — alignée sur src/data/pricing.ts.
 // Le plan « sur devis » n'est pas inclus (pas de paiement automatisé).
+// Descriptions limitées aux capacités réellement livrées (invariant I10) : volume de
+// dossiers, utilisateurs, support. Les produits déjà créés sur Stripe doivent être
+// mis à jour manuellement dans le dashboard (cf. DECISIONS.md D-003).
 const PLANS = [
   { planId: 'essentiel', name: 'ClairDossier — Essentiel', monthlyEuros: 19,
-    description: "Pour les indépendants et entrepreneurs individuels qui structurent leurs premiers dossiers. 5 dossiers, 1 utilisateur, calendrier et relances à échéance, résumé IA." },
+    description: "Pour les indépendants et entrepreneurs individuels qui structurent leurs premiers dossiers. 5 dossiers, 1 utilisateur, support e-mail." },
   { planId: 'entrepreneur', name: 'ClairDossier — Entrepreneur', monthlyEuros: 39,
-    description: "Pour les entrepreneurs et professions libérales avec un flux régulier de dossiers. 10 dossiers, 2 utilisateurs, rédaction IA (projet de réponse), modèles." },
+    description: "Pour les entrepreneurs et professions libérales avec un flux régulier de dossiers. 10 dossiers, 2 utilisateurs, support e-mail prioritaire." },
   { planId: 'business-pme-20', name: 'ClairDossier — Business PME 20', monthlyEuros: 49,
-    description: "Pour les TPE/PME. 20 dossiers, 5 utilisateurs, support prioritaire, rédaction IA, dossiers récurrents." },
+    description: "Pour les TPE/PME. 20 dossiers, 5 utilisateurs, support prioritaire." },
   { planId: 'business-pme-50', name: 'ClairDossier — Business PME 50', monthlyEuros: 89,
-    description: "Pour les PME avec plusieurs dossiers en parallèle. 50 dossiers, 5 utilisateurs, support prioritaire, réponse automatisée aux e-mails, IA complète." },
+    description: "Pour les PME avec plusieurs dossiers en parallèle. 50 dossiers, 5 utilisateurs, support prioritaire." },
   { planId: 'business-pme-pro', name: 'ClairDossier — Business / PME Pro', monthlyEuros: 169,
-    description: "Pour les PME et structures multi-collaborateurs. Dossiers illimités, 15 utilisateurs, statistiques avancées, IA avancée (GPT-5.5)." },
+    description: "Pour les structures multi-collaborateurs. Dossiers illimités, 15 utilisateurs, support dédié." },
   { planId: 'business-pme-premium', name: 'ClairDossier — Business / PME Premium', monthlyEuros: 299,
-    description: "Solution entreprise : marque blanche, API, SSO, audit avancé. Utilisateurs et dossiers illimités, support dédié." },
+    description: "Pour les entreprises. Dossiers et utilisateurs illimités, support entreprise." },
 ];
 
 async function archiveOld() {

@@ -17,7 +17,7 @@ export function BlogPreview() {
               Journal
             </p>
             <h2 className="mt-3 font-display text-4xl font-semibold leading-tight text-navy-900 sm:text-5xl">
-              Trois lectures pour comprendre où on se situe.
+              Des lectures pour comprendre où on se situe.
             </h2>
           </div>
           <Link

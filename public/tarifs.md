@@ -92,7 +92,7 @@ Fonctionnalités incluses :
 
 ### Business / PME Pro (mis en avant) — 169 € HT/mois
 
-*PME / multi-sites.* Pour les structures multi-collaborateurs avec statistiques et workflows avancés.
+*PME / multi-sites.* Pour les structures multi-collaborateurs : dossiers illimités et support dédié.
 
 Facturation annuelle : 1825,20 € HT/an, soit 152,10 € HT/mois (−10 %).
 
@@ -112,7 +112,7 @@ Fonctionnalités incluses :
 
 ### Business / PME Premium — 299 € HT/mois
 
-*Entreprise.* Solution entreprise : marque blanche, API, SSO, audit avancé.
+*Entreprise.* Pour les entreprises : dossiers et utilisateurs illimités, support entreprise.
 
 Facturation annuelle : 3229,20 € HT/an, soit 269,10 € HT/mois (−10 %).
 
@@ -150,7 +150,7 @@ Fonctionnalités incluses :
 
 ## Devis sur-mesure
 
-Pour structures avec exigences de marque blanche, intégration API, SSO, audit dédié, ou volumétrie au-dessus du Premium — proposition chiffrée sous 48 h. Contact : contact.clairdossier@icloud.com ou WhatsApp +33 7 82 98 36 44.
+Pour les structures avec une volumétrie au-dessus du Premium, des exigences de conformité interne ou des besoins spécifiques — proposition chiffrée sous 48 h. Contact : contact.clairdossier@icloud.com ou WhatsApp +33 7 82 98 36 44.
 
 ## Engagement
 

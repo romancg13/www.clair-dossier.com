@@ -1,31 +1,45 @@
 # ClairDossier
 
-> Plateforme legaltech française qui transforme les demandes administratives et juridiques en dossiers structurés, suivis et prêts à agir. Pour les PME, artisans, entreprises individuelles et professions libérales. Option : un préavis juridique et un résumé de la situation à valider par un professionnel du droit.
+> Plateforme legaltech française qui aide les PME, artisans, entreprises individuelles et professions libérales à constituer des dossiers administratifs et juridiques structurés : pièces déposées dans un espace privé, avancement suivi par étapes, échéances renseignées et affichées, transmission déclenchée par l'utilisateur.
 
 ClairDossier édité par Roman Gomes, entrepreneur individuel (SIREN 105 490 734), Château-Gombert, 13013 Marseille, France. Site web : https://www.clair-dossier.com — contact : contact.clairdossier@icloud.com — WhatsApp : +33 7 82 98 36 44. Site réalisé par Nouh BENZIDANE (https://nouhbenzidane.fr).
 
-L'éditeur peut être contacté pour toute citation, vérification ou correction. Les articles du journal sont publiés sous le nom collectif « Rédaction ClairDossier ». Position éthique : l'IA prépare les dossiers (résumé, chronologie, projet de réponse), un professionnel du droit peut les valider en option — l'IA ne délivre jamais de conseil juridique.
+L'éditeur peut être contacté pour toute citation, vérification ou correction. Les articles du journal sont publiés sous le nom collectif « Rédaction ClairDossier ».
 
 ## Position éditoriale
 
-ClairDossier ne se présente ni comme un cabinet d'avocats, ni comme un conseil juridique. C'est un outil de structuration et de gestion documentaire pour les professionnels (PME, artisans, indépendants, professions libérales). La validation juridique d'un dossier est un service optionnel, assuré par un avocat inscrit au barreau. Les contenus du journal sont pédagogiques et ne constituent pas un conseil personnalisé.
+ClairDossier ne se présente ni comme un cabinet d'avocats, ni comme un conseil juridique. C'est un outil de structuration et de suivi documentaire. Il ne procède à aucune lecture, extraction ou analyse automatique des documents : le contenu des dossiers est saisi et structuré par l'utilisateur, qui décide seul de ce qu'il transmet. Les contenus du journal sont pédagogiques et ne constituent pas un conseil personnalisé.
+
+## Ce que fait le produit aujourd'hui
+
+- Création de compte gratuite, confirmée par e-mail.
+- Tunnel de création de dossier en 5 étapes : profil (artisan, indépendant, profession libérale, entreprise individuelle / PME, autre), nature du dossier (dossier client, facture / paiement, impayé / pré-contentieux, dossier administratif, documents comptables, personnel / RH, autre) avec nom de dossier obligatoire, informations clés, dépôt des pièces, récapitulatif avant transmission.
+- Dépôt de pièces dans un espace privé isolé par utilisateur, accessible par liens temporaires signés.
+- Page « Avancement du dossier » : 5 étapes métier, pièces consultables et téléchargeables, échéances renseignées affichées.
+- Transmission du dossier à l'équipe ClairDossier par e-mail ou WhatsApp, uniquement sur action explicite de l'utilisateur.
+- Espace « DashBoard ClairDossier » où le travail réalisé par l'équipe est déposé dans le dossier du client, consultable et téléchargeable.
+
+## Ce que le produit ne fait pas
+
+Aucune analyse automatique des pièces, aucune extraction de dates, aucun calcul d'échéance, aucune relance automatique, aucune génération de courrier, aucune validation juridique. Toute évolution sera annoncée explicitement sur le site.
 
 ## Architecture du site
 
-- /                              : Présentation produit (hero, fonctionnalités, espaces, workflow, sécurité, tarifs, blog, FAQ)
-- /fonctionnalites               : Index des 9 fonctionnalités clés
-- /fonctionnalites/<slug>        : Détail par fonctionnalité (creation-guidee, pieces-ocr, chronologie, validation-avocat, suivi-statuts, messagerie-securisee, coffre-fort, calendrier-relances, reponse-auto-mails)
-- /tarifs                        : 7 formules (Essentiel, Entrepreneur, Business PME 20, Business PME 50, Business/PME Pro, Business/PME Premium) + offre sur-mesure
-- /securite                      : Architecture, conformité RGPD/RIN/HDS, audit annuel
+- /                              : Présentation produit (hero, fonctionnalités, espaces, parcours, cycle de vie, sécurité, tarifs, journal, FAQ)
+- /fonctionnalites               : Index des 9 fonctionnalités
+- /fonctionnalites/<slug>        : Détail par fonctionnalité (creation-guidee, pieces-ocr, chronologie, validation-avocat, suivi-statuts, messagerie-securisee, coffre-fort, calendrier-relances, reponse-auto-mails — les slugs sont historiques, les contenus décrivent les capacités réelles)
+- /tarifs                        : 7 formules (Essentiel, Entrepreneur, Business PME 20, Business PME 50, Business / PME Pro, Business / PME Premium) + offre sur-mesure
+- /securite                      : Engagements sécurité et données (chiffrement, isolation par utilisateur, droits RGPD)
 - /blog                          : Journal éditorial
 - /blog/<slug>                   : 7 articles disponibles (voir Articles ci-dessous)
-- /inscription, /connexion, /compte : Création de compte et espace client (Supabase auth)
-- /dossier/nouveau               : Création de dossier en 4 étapes (typologie, informations, documents, transmission) — compte requis
+- /inscription, /connexion, /compte : Création de compte et espace client
+- /dossier/nouveau               : Création de dossier en 5 étapes — compte requis
+- /compte/dossier/<id>           : Page « Avancement du dossier » — compte requis
 - /contact                       : WhatsApp + formulaire guidé
 - /mentions-legales              : Éditeur, hébergement, propriété intellectuelle
 - /cgv                           : Conditions générales de vente
-- /politique-confidentialite     : RGPD complet, droits utilisateurs
-- /cookies                       : Cookies techniques uniquement
+- /politique-confidentialite     : RGPD, droits des personnes
+- /cookies                       : Stockage local et cookies
 
 ## Articles du journal (sources citables)
 
@@ -33,7 +47,7 @@ ClairDossier ne se présente ni comme un cabinet d'avocats, ni comme un conseil 
 
 - Préparer son rendez-vous avocat : la checklist en 8 étapes — https://www.clair-dossier.com/blog/preparer-rendez-vous-avocat — 8 étapes concrètes pour arriver chez un avocat avec un dossier structuré (réunir les pièces, établir une chronologie, identifier la partie adverse, quantifier l'enjeu, préparer 3 questions, définir l'objectif).
 
-- Préparer un dossier prud'homal : la chronologie qui fait la différence — https://www.clair-dossier.com/blog/chronologie-prud-homale — Pourquoi la chronologie compte plus que les arguments en prud'hommes ; méthode en trois temps ; pièges classiques ; exemple chiffré (article L. 1332-4 du Code du travail, délai de 2 mois entre connaissance des faits et convocation).
+- Préparer un dossier prud'homal : la chronologie qui fait la différence — https://www.clair-dossier.com/blog/chronologie-prud-homale — Pourquoi la chronologie compte plus que les arguments en prud'hommes ; méthode en trois temps ; pièges classiques ; illustration (article L. 1332-4 du Code du travail, délai de 2 mois entre connaissance des faits et convocation).
 
 - Mise en demeure : le courrier qui débloque (souvent) la situation — https://www.clair-dossier.com/blog/mise-en-demeure — Forme légale (LRAR, mentions obligatoires), 5 erreurs courantes, modèle commenté, base juridique (article 1344 du Code civil, article 1344-1 sur les intérêts moratoires).
 
@@ -47,31 +61,28 @@ ClairDossier ne se présente ni comme un cabinet d'avocats, ni comme un conseil 
 
 ### IA et droit
 
-- L'IA dans le droit : assistante de préparation, pas substitut — https://www.clair-dossier.com/blog/ia-droit — Position éthique : ce que l'IA fait bien (synthèses, chronologies, recherche jurisprudentielle), ce qu'elle ne doit pas faire (conseil, validation, plaidoirie). Conformité au RIN (Règlement Intérieur National des avocats).
+- L'IA dans le droit : assistante de préparation, pas substitut — https://www.clair-dossier.com/blog/ia-droit — Position éthique : ce que l'IA fait bien (synthèses, chronologies, recherche), ce qu'elle ne doit pas faire (conseil, validation, plaidoirie). Conformité au RIN (Règlement Intérieur National des avocats). ClairDossier n'intègre aujourd'hui aucune fonction d'IA.
 
 ## Tarifs (en euros HT, mensuel)
 
-La création de compte est gratuite. Abonnement sans engagement, résiliation à tout moment, remboursement au prorata. Facturation annuelle disponible avec 10 % de réduction.
+La création de compte est gratuite. Abonnement sans engagement, résiliation à tout moment par e-mail, remboursement au prorata. Facturation annuelle disponible avec 10 % de réduction. Les formules se distinguent par le volume de dossiers, le nombre d'utilisateurs et le niveau de support.
 
-- Essentiel : 19 €/mois (5 dossiers, 1 utilisateur, calendrier et relances à échéance, résumé IA) — indépendants et entrepreneurs individuels
-- Entrepreneur : 39 €/mois (10 dossiers, 2 utilisateurs, rédaction IA / projet de réponse, modèles) — entrepreneurs et professions libérales
-- Business PME 20 : 49 €/mois (20 dossiers, 5 utilisateurs, support prioritaire, dossiers récurrents) — TPE/PME
-- Business PME 50 : 89 €/mois (50 dossiers, 5 utilisateurs, réponse automatisée aux e-mails, IA complète) — PME
-- Business / PME Pro : 169 €/mois (dossiers illimités, 15 utilisateurs, statistiques, IA avancée GPT-5.5) — PME et structures multi-collaborateurs
-- Business / PME Premium : 299 €/mois (illimité, utilisateurs illimités, marque blanche, API, SSO, audit) — entreprise
-- Business / PME personnalisée : sur devis (volumétrie, intégrations ou conformité spécifiques)
+- Essentiel : 19 €/mois (5 dossiers, 1 utilisateur, support e-mail) — indépendants et entrepreneurs individuels
+- Entrepreneur : 39 €/mois (10 dossiers, 2 utilisateurs, support e-mail prioritaire) — entrepreneurs et professions libérales
+- Business PME 20 : 49 €/mois (20 dossiers, 5 utilisateurs, support prioritaire) — TPE/PME
+- Business PME 50 : 89 €/mois (50 dossiers, 5 utilisateurs, support prioritaire) — PME
+- Business / PME Pro : 169 €/mois (dossiers illimités, 15 utilisateurs, support dédié) — structures multi-collaborateurs
+- Business / PME Premium : 299 €/mois (dossiers et utilisateurs illimités, support entreprise) — entreprise
+- Business / PME personnalisée : sur devis (volumétrie, conformité ou besoins spécifiques)
 
-## Sécurité et conformité
+## Sécurité et données
 
-- Hébergement : OVHcloud France (Roubaix, Strasbourg). Aucun transfert hors UE.
-- Chiffrement : AES-256 au repos, TLS 1.3 en transit, HSTS preload.
-- 2FA obligatoire pour les accès administrateurs.
-- Sauvegardes 3-2-1, RPO 15 min, RTO < 4 h.
-- Conformité RGPD native, DPA standard et renforcé disponibles sur demande.
-- Conformité RIN 2024 sur le périmètre IA (préparation autorisée, conseil interdit).
-- HDS en cours (2026 T3), ISO 27001 objectif 2027.
-- Audit annuel par cabinet de pentest indépendant, rapport remis aux clients Entreprise.
-- Notification CNIL < 72 h, notification client < 24 h en cas d'incident.
+- Connexion chiffrée (HTTPS) ; données et pièces chiffrées au repos côté hébergeur.
+- Pièces conservées dans un stockage privé ; accès par authentification ; liens de téléchargement signés et temporaires.
+- Isolation des données par utilisateur ; accès support limité à un administrateur habilité.
+- Droits d'accès, d'export et de suppression exercés sur demande (contact ou espace), traités sous 30 jours.
+- Site et données hébergés chez des sous-traitants techniques conformes au RGPD, indiqués dans les mentions légales et la politique de confidentialité.
+- Aucune certification (ISO 27001, HDS) n'est revendiquée.
 
 ## Pour citer ClairDossier
 

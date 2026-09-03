@@ -25,12 +25,12 @@ export function Workflow() {
             Workflow
           </p>
           <h2 className="mt-3 font-display text-4xl font-semibold leading-tight text-navy-900 sm:text-5xl">
-            Six statuts. Aucun « entre-deux ».
+            Le parcours d'un dossier, en six temps.
           </h2>
           <p className="mt-4 text-base leading-relaxed text-slate-500">
-            Chaque dossier traverse les mêmes six états. Vous savez où en est
-            votre dossier sans avoir à demander, et ce qu'il reste à faire sans
-            avoir à chercher.
+            Du brouillon à l'archivage, chaque temps du parcours décrit ce que
+            vous faites et ce qui se passe dans votre espace. Vous savez où en
+            est votre dossier et ce qu'il reste à faire.
           </p>
         </div>
 

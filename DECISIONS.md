@@ -53,7 +53,15 @@ Format : une entrée par décision, numérotée, datée, avec contexte, décisio
 
 **Alternative écartée.** Renommer `public/` en `publique/` : casserait `gen-markdown.ts` et l'historique, sans bénéfice.
 
-**Statut.** Décidée, en attente d'exécution (tâche « Correctif bloquant »).
+**Exécution (2026-09-02).**
+- `vite.config.ts` : ligne `publicDir: 'publique'` retirée (retour au défaut), commentaire de justification ajouté.
+- Contenus réalignés sur les capacités réelles : `scripts/gen-markdown.ts` (accueil, parcours, index du journal, devis, page sécurité entièrement dérivée des données partagées), `public/llms.txt` (réécrit), `public/og-default.svg` (H1 actuel, sous-titre sans OVH), `index.html` (meta description, og:description), `src/components/sections/{Hero,Workflow,DossierLifecycle,FinalCTA,FeaturesGrid,BlogPreview}.tsx`, `src/lib/seo.tsx` (orgSchema), `src/pages/{Home,Pricing,BlogIndex,Security}.tsx`, `src/data/{pricing,faq,features,authors}.ts`, quatre articles de blog (`rgpd-legaltech`, `ia-droit`, `chronologie-prud-homale`, `mise-en-demeure`), `scripts/create-stripe-products.mjs` (descriptions sans IA).
+- Nouveau fichier `src/data/security.ts` : source de vérité unique des engagements sécurité (piliers, schéma, badges), consommée par `Security.tsx` et par `gen-markdown.ts` ; le registre `SECURITY_ICONS`, jusque-là inutilisé, sert désormais au rendu.
+- Ce qui a été volontairement laissé : les engagements de délai de réponse (« sous 1 h », « sous 48 h », « sous 24 h ouvrées ») sont des engagements commerciaux de l'éditeur, pas des capacités produit ; la matrice comparative des plans (capacités gratuites marquées ✗) relève d'une décision commerciale ; les conseils génériques de l'article RGPD (« exiger AES-256, TLS 1.3, 2FA à son fournisseur ») ne décrivent pas ClairDossier. Tous trois sont listés au § 12 de l'inventaire pour arbitrage humain.
+- Vérifications : `npm run gen:md` (27 fichiers), `npm run typecheck` exit 0, `npm run build` exit 0, `dist/` contient CNAME, favicon, robots, sitemap, llms.txt, og-default.svg, brochure et les 27 `.md` ; grep résiduel sur OVH / AES-256 / HDS / ISO 27001 / GPT / « 100 % conforme » / relances automatiques / résumé IA : plus aucune occurrence descriptive de ClairDossier.
+- Action humaine restante : mettre à jour les descriptions des produits déjà créés dans le dashboard Stripe.
+
+**Statut.** Appliquée.
 
 ---
 

@@ -96,11 +96,11 @@ export const rgpdLegaltech: BlogPost = {
     { type: 'h2', text: "Ce que cela signifie pour ClairDossier" },
     {
       type: 'p',
-      text: "Nous avons construit ClairDossier en partant du RGPD, pas en l'ajoutant à la fin. Hébergement OVH France exclusif, chiffrement AES-256 au repos, TLS 1.3 en transit, DPA standard et version renforcée pour les plans Entreprise, DPIA disponible, audit annuel par un cabinet de sécurité tiers indépendant, export ZIP intégral à tout moment, suppression de compte avec anonymisation sous 30 jours.",
+      text: "ClairDossier applique ces principes à son propre périmètre, sans en promettre davantage : connexion chiffrée (HTTPS) et données chiffrées au repos côté hébergeur, pièces conservées dans un espace privé accessible par liens temporaires signés, isolation des données par utilisateur, accès par authentification, droits d'accès, d'export et de suppression exercés sur demande et traités sous 30 jours. Les sous-traitants techniques sont indiqués dans les mentions légales et la politique de confidentialité.",
     },
     {
       type: 'p',
-      text: "Ces engagements sont consultables et vérifiables sur notre page Sécurité. Vous pouvez les opposer à n'importe quel cabinet, n'importe quel DPO, n'importe quel auditeur. C'est notre définition de la conformité : pas un slogan, des documents.",
+      text: "Ces engagements sont décrits sur notre page Sécurité et dans notre politique de confidentialité. Ils se limitent volontairement à ce qui est en place : pas de slogan, des faits vérifiables, que vous pouvez soumettre à votre DPO ou à votre conseil.",
     },
   ],
   takeaways: [

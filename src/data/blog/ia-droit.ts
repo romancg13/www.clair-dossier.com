@@ -72,7 +72,7 @@ export const iaDroit: BlogPost = {
     },
     {
       type: 'p',
-      text: "ClairDossier interdit techniquement ce cas d'usage. Les outputs IA sont accessibles uniquement à un avocat habilité, dans son espace professionnel. Le client ne voit jamais une analyse juridique générée par IA — il voit l'analyse validée par son avocat.",
+      text: "C'est pourquoi ClairDossier n'intègre aujourd'hui aucune fonction d'analyse automatique des dossiers : l'outil structure, conserve et transmet ce que vous saisissez. Si des fonctions d'assistance sont un jour proposées, elles resteront des aides à la préparation destinées à être vérifiées par un professionnel, jamais un avis juridique rendu au client.",
     },
     {
       type: 'h3',
@@ -80,7 +80,7 @@ export const iaDroit: BlogPost = {
     },
     {
       type: 'p',
-      text: "Aucun dossier ne quitte le statut « brouillon » sans la signature d'un avocat habilité. Cette signature est une responsabilité juridique. Elle engage l'assurance professionnelle du cabinet, elle engage la déontologie du barreau, elle engage l'avenir du client. Aucun système automatique ne peut prendre cette responsabilité — et tout système qui prétend le pouvoir doit être refusé.",
+      text: "La validation d'un dossier est une responsabilité juridique. Elle engage l'assurance professionnelle du cabinet, elle engage la déontologie du barreau, elle engage l'avenir du client. Aucun système automatique ne peut prendre cette responsabilité — et tout système qui prétend le pouvoir doit être refusé.",
     },
     {
       type: 'h3',
@@ -93,11 +93,11 @@ export const iaDroit: BlogPost = {
     { type: 'h2', text: "La position éthique de ClairDossier" },
     {
       type: 'p',
-      text: "Nous avons formalisé cette frontière en interne sous une forme courte : « l'IA prépare, l'avocat décide ». Cette formule n'est pas un slogan — c'est une règle technique. Chaque fonctionnalité IA de ClairDossier est conçue pour produire un livrable destiné à l'avocat, jamais au client en direct.",
+      text: "Nous avons formalisé cette frontière sous une forme courte : « l'IA prépare, le professionnel décide ». Cette formule n'est pas un slogan — c'est une règle de conception. Si ClairDossier propose un jour des fonctions d'assistance, elles produiront des éléments de préparation à faire vérifier, jamais un avis rendu au client en direct.",
     },
     {
       type: 'p',
-      text: "Le brief préparatoire avant consultation est un document interne. Les suggestions de qualification juridique sont des hypothèses présentées à l'avocat. Les références jurisprudentielles sont sourcées et vérifiables. Aucune décision juridique ne sort de ClairDossier sans la signature électronique d'un professionnel habilité.",
+      text: "Un brief préparatoire est un document de travail. Une suggestion de qualification juridique reste une hypothèse tant qu'un professionnel ne l'a pas validée. Une référence jurisprudentielle doit être sourcée et vérifiable. Aucune décision juridique ne devrait sortir d'un outil sans la validation d'un professionnel habilité.",
     },
     {
       type: 'quote',
@@ -110,7 +110,7 @@ export const iaDroit: BlogPost = {
     },
     {
       type: 'p',
-      text: "L'article 11.5 impose une transparence vis-à-vis du client quant à l'usage d'outils automatisés dans la préparation de son dossier. ClairDossier respecte cette obligation par défaut : le client est informé, au moment de la création de son compte, que des outils d'assistance peuvent être utilisés par l'avocat assigné, et qu'aucun de ces outils ne se substitue à la validation professionnelle.",
+      text: "L'article 11.5 impose une transparence vis-à-vis du client quant à l'usage d'outils automatisés dans la préparation de son dossier. ClairDossier s'y conforme par construction : aujourd'hui, aucun outil automatisé n'intervient dans le contenu de votre dossier ; si cela change, vous en serez informé explicitement avant toute utilisation, et aucun de ces outils ne se substituera à la validation professionnelle.",
     },
     { type: 'h2', text: "L'avenir, raisonnablement" },
     {

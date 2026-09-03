@@ -27,22 +27,24 @@ import {
 } from '../components/icons';
 import { WHATSAPP_DISPLAY, buildWhatsAppUrl } from '../lib/whatsapp';
 
+// Offre sur-mesure : uniquement ce qui est étudié sur devis, sans présenter
+// comme disponible une capacité que le produit ne livre pas (invariant I10).
 const DEVIS_CAPABILITIES = [
   {
-    title: 'Marque blanche complète',
-    body: "Logo, palette, domaine, exports : votre identité, votre clientèle ne saura pas qu'il s'agit de ClairDossier.",
+    title: 'Volumétrie adaptée',
+    body: "Au-delà des plafonds du plan Premium : nombre de dossiers et d'utilisateurs défini avec vous.",
   },
   {
-    title: 'API et webhooks dédiés',
-    body: "Intégration avec votre CRM, votre outil de gestion ou votre stack maison. SDK Node et Python disponibles.",
+    title: 'Exigences de conformité',
+    body: "Documentation de sous-traitance et réponses aux questions de votre DPO, préparées sur demande.",
   },
   {
-    title: 'SSO et audit renforcé',
-    body: "SAML 2.0, OIDC, journalisation détaillée, DPA personnalisé négocié avec votre DPO.",
+    title: 'Prise en main accompagnée',
+    body: "Session de démarrage à distance et reprise de vos dossiers existants, chiffrées sur devis.",
   },
   {
-    title: 'Onboarding sur site',
-    body: "Deux jours dans vos locaux, reprise de vos dossiers existants, formation de l'équipe entière.",
+    title: 'Besoins spécifiques',
+    body: "Toute demande d'intégration ou de fonctionnalité est étudiée et chiffrée avant engagement, sans promesse de calendrier.",
   },
 ];
 
@@ -51,7 +53,7 @@ const PRICING_FAQ = [
     id: 'engagement',
     question: "Y a-t-il un engagement de durée ?",
     answer:
-      "Aucun. Tous les plans payants sont sans engagement, résiliables à tout moment depuis l'espace facturation. Le remboursement au prorata est appliqué automatiquement.",
+      "Aucun. Tous les plans payants sont sans engagement, résiliables à tout moment par e-mail à contact.clairdossier@icloud.com (voir les CGV). Le remboursement au prorata est appliqué.",
   },
   {
     id: 'changement',
@@ -69,7 +71,7 @@ const PRICING_FAQ = [
     id: 'essai',
     question: 'Faut-il payer pour créer un compte ?',
     answer:
-      "Non. La création de compte est gratuite et vous pouvez constituer vos dossiers immédiatement. Un abonnement n'est nécessaire que pour débloquer plus de dossiers, d'utilisateurs et les fonctions IA avancées. Sans engagement, résiliable à tout moment.",
+      "Non. La création de compte est gratuite et vous pouvez constituer vos dossiers immédiatement. Un abonnement correspond à un volume de dossiers et d'utilisateurs et à un niveau de support. Sans engagement, résiliable à tout moment.",
   },
   {
     id: 'annuel',
@@ -238,8 +240,8 @@ export function Pricing() {
                 Au-delà du plan Premium ?
               </h2>
               <p className="mt-5 max-w-md text-base leading-relaxed text-cream-50/75">
-                Pour les structures avec exigences de marque blanche, intégration API,
-                conformité interne ou volumétrie au-dessus du Premium, on construit une offre
+                Pour les structures avec une volumétrie au-dessus du Premium, des exigences
+                de conformité interne ou des besoins spécifiques, on construit une offre
                 sur-mesure avec proposition chiffrée sous 48 h.
               </p>
 
@@ -376,7 +378,7 @@ export function Pricing() {
 
               <p className="mt-7 border-t border-cream-50/15 pt-5 text-xs leading-relaxed text-cream-50/70">
                 Engagement ClairDossier : proposition chiffrée écrite sous 48 h ouvrées, sans
-                ré-engagement après échange initial. Vos données restent en France.
+                ré-engagement après échange initial.
               </p>
             </div>
           </div>

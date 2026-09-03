@@ -80,7 +80,7 @@ export const miseEnDemeure: BlogPost = {
     {
       type: 'p',
       text:
-        "Nous avons vu ces erreurs répétées dans des dizaines de dossiers reçus chez ClairDossier. Toutes étaient évitables.",
+        "Ces erreurs reviennent fréquemment dans les dossiers d'impayés. Toutes sont évitables.",
     },
     {
       type: 'list',
@@ -96,7 +96,7 @@ export const miseEnDemeure: BlogPost = {
     {
       type: 'p',
       text:
-        "Voici la structure que nous recommandons. Elle tient sur une page A4, suffit dans 80 % des situations, et a été relue par des avocats partenaires.",
+        "Voici la structure que nous recommandons. Elle tient sur une page A4 et couvre la plupart des situations courantes ; faites-la relire par un professionnel du droit si l'enjeu le justifie.",
     },
     {
       type: 'callout',

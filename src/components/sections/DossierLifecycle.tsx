@@ -22,12 +22,12 @@ const STEPS = [
   {
     Icon: StatusTrackIcon,
     label: 'Suivi du dossier',
-    body: "Documents ajoutés au fil de l'eau, échéances calées, relances préparées à date. On voit où en est chaque dossier.",
+    body: "Documents ajoutés au fil de l'eau, échéances renseignées et affichées sur le dossier. On voit où en est chaque dossier.",
   },
   {
     Icon: ValidateIcon,
     label: 'Facture et paiement',
-    body: "La facture est rattachée au dossier, le paiement est suivi, et les justificatifs restent regroupés au même endroit.",
+    body: "Facture, montant dû et échéance de paiement sont renseignés sur le dossier, et les justificatifs restent regroupés au même endroit.",
   },
   {
     Icon: AuditIcon,
@@ -61,10 +61,10 @@ export function DossierLifecycle() {
             De la création du dossier au contentieux.
           </h2>
           <p className="mt-4 text-base leading-relaxed text-slate-500">
-            ClairDossier permet de créer un dossier, ajouter les documents, suivre les
-            échéances, gérer la facture, préparer les relances et regrouper les pièces utiles
-            en cas d'impayé ou de contentieux. Le dossier peut aussi servir à transmettre les
-            pièces au comptable ou à un professionnel du droit.
+            ClairDossier permet de créer un dossier, ajouter les documents, garder en vue
+            les échéances renseignées, conserver la trace de la facture et regrouper les
+            pièces utiles en cas d'impayé ou de contentieux. Le dossier peut aussi servir à
+            transmettre les pièces au comptable ou à un professionnel du droit.
           </p>
         </div>
 

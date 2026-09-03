@@ -75,20 +75,20 @@ export const chronologiePrudHomale: BlogPost = {
     { type: 'h2', text: "Un exemple chiffré" },
     {
       type: 'p',
-      text: "Dans un dossier que nous avons accompagné récemment via ClairDossier — licenciement pour cause réelle et sérieuse contesté par un cadre de 9 ans d'ancienneté — la chronologie reconstituée a fait apparaître que l'employeur avait laissé passer 47 jours entre la connaissance des faits reprochés et la convocation à entretien préalable. L'article L. 1332-4 du Code du travail fixe ce délai à deux mois — mais l'employeur, qui avait connu les faits par un courriel daté précisément, ne pouvait plus contester sa propre tardivité.",
+      text: "Prenons un cas type : un licenciement pour cause réelle et sérieuse, contesté par un salarié. Une chronologie rigoureuse permet de vérifier, date à date, le délai écoulé entre la connaissance des faits par l'employeur et la convocation à l'entretien préalable — délai que l'article L. 1332-4 du Code du travail encadre à deux mois. Lorsque le point de départ est établi par un courriel daté avec précision, le débat ne porte plus sur des impressions mais sur un calendrier.",
     },
     {
       type: 'p',
-      text: "Cet élément — invisible sans une chronologie rigoureuse — a transformé la stratégie. L'avocate adverse comptait débattre du caractère réel des faits. La chronologie a déplacé le débat sur la procédure. Le quantum a doublé en transaction.",
+      text: "Un tel élément — invisible sans une chronologie rigoureuse — peut déplacer le débat du caractère réel des faits vers la procédure. C'est précisément ce qu'une chronologie bien construite rend possible ; l'appréciation de ses conséquences relève du professionnel qui vous conseille.",
     },
     { type: 'h2', text: "Outil ou méthode" },
     {
       type: 'p',
-      text: "Construire une chronologie est une discipline avant d'être un outil. Mais quand l'outil est conçu autour de cette discipline, il fait gagner du temps sans la dégrader. ClairDossier extrait automatiquement les dates des pièces déposées par le client, propose une frise éditable, et permet à l'avocat de requalifier chaque évènement. La méthode reste celle de l'avocat — l'outil enlève seulement la friction administrative.",
+      text: "Construire une chronologie est une discipline avant d'être un outil. ClairDossier n'extrait pas automatiquement les dates de vos pièces : vous renseignez les dates clés à la création du dossier, elles sont conservées et affichées avec les pièces, et le dossier est prêt à être transmis à un professionnel qui pourra requalifier chaque évènement. La méthode reste la sienne — l'outil réduit seulement la friction administrative.",
     },
     {
       type: 'callout',
-      text: "Une chronologie qui sort de l'app prête à être versée comme pièce 1 du dossier, c'est trente minutes économisées par dossier — et un débat qui démarre sur le bon terrain.",
+      text: "Une chronologie tenue à jour dans le dossier, prête à être reprise comme pièce 1, c'est un débat qui démarre sur le bon terrain.",
       tone: 'gold',
     },
   ],
