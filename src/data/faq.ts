@@ -21,13 +21,13 @@ export const homeFaq: FaqEntry[] = [
     id: "obligation-avocat",
     question: "Suis-je obligé de passer par un tiers via ClairDossier ?",
     answer:
-      "Non. ClairDossier vous sert à constituer et organiser votre dossier, puis à le transmettre quand vous le décidez — par e-mail ou WhatsApp — au destinataire de votre choix. Rien n'est envoyé sans votre validation explicite, et vous n'êtes obligé de passer par aucun intermédiaire imposé.",
+      "Non. ClairDossier vous sert à constituer et organiser votre dossier, puis à le transmettre à l'équipe ClairDossier quand vous le décidez — par e-mail ou WhatsApp. Rien n'est envoyé sans votre validation explicite, et vous n'êtes obligé de passer par aucun intermédiaire imposé pour la suite de votre démarche.",
   },
   {
     id: "compatible-cabinet",
     question: "Comment je récupère ou partage mes dossiers ?",
     answer:
-      "Depuis la liste de vos dossiers, ouvrez la page détail « Avancement du dossier » : vous y consultez les 5 étapes, téléchargez chaque pièce et voyez les échéances. Quand vous le souhaitez, vous transmettez le dossier par e-mail ou WhatsApp au destinataire de votre choix, après votre validation.",
+      "Depuis la liste de vos dossiers, ouvrez la page détail « Avancement du dossier » : vous y consultez les 5 étapes, téléchargez chaque pièce et voyez les échéances. À la création, vous transmettez le dossier à l'équipe ClairDossier par e-mail ou WhatsApp, après votre validation ; vos pièces restent téléchargeables à tout moment pour les partager vous-même.",
   },
   {
     id: "refus-avocat",

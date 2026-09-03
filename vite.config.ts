@@ -20,7 +20,8 @@ function spaFallback(): Plugin {
 const base = process.env.VITE_BASE_PATH ?? '/';
 
 export default defineConfig({
-  publicDir: 'publique',
+  // publicDir reste la valeur par défaut ('public') : scripts/gen-markdown.ts écrit
+  // dans public/ et le dossier versionné s'appelle public/ (cf. DECISIONS.md D-003).
   base,
   plugins: [react(), tailwindcss(), spaFallback()],
   build: {

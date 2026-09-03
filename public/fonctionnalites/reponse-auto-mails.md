@@ -12,7 +12,7 @@ Avant de transmettre un dossier, il faut être sûr de ce qu'il contient : les i
 
 Le récapitulatif affiche le profil, la nature du dossier, les informations saisies et les pièces déposées. Vous relisez le tout d'un seul écran, vous revenez en arrière pour corriger si besoin, puis vous confirmez. Rien n'est transmis tant que vous n'avez pas validé.
 
-Une fois le dossier confirmé, vous le transmettez quand vous le décidez, par e-mail ou par WhatsApp, à la personne de votre choix. Vous gardez la main sur le contenu comme sur l'envoi.
+Une fois le dossier confirmé, vous le transmettez quand vous le décidez, par e-mail ou par WhatsApp, à l'équipe ClairDossier. Vous gardez la main sur le contenu comme sur l'envoi.
 
 ## Concrètement
 

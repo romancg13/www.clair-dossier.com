@@ -44,11 +44,11 @@ Le client raconte. Il est sincère. Mais sa mémoire reconstruit les dates, fusi
 
 Une IA qui dit à un client « vous avez des chances de gagner ce dossier prud'homal », c'est une IA qui exerce illégalement la profession d'avocat. C'est puni par l'article 4 de la loi du 31 décembre 1971. C'est aussi une mise en danger du client : un conseil juridique sans validation professionnelle peut orienter une décision majeure sur des bases erronées.
 
-ClairDossier interdit techniquement ce cas d'usage. Les outputs IA sont accessibles uniquement à un avocat habilité, dans son espace professionnel. Le client ne voit jamais une analyse juridique générée par IA — il voit l'analyse validée par son avocat.
+C'est pourquoi ClairDossier n'intègre aujourd'hui aucune fonction d'analyse automatique des dossiers : l'outil structure, conserve et transmet ce que vous saisissez. Si des fonctions d'assistance sont un jour proposées, elles resteront des aides à la préparation destinées à être vérifiées par un professionnel, jamais un avis juridique rendu au client.
 
 ### Valider un dossier à la place du professionnel
 
-Aucun dossier ne quitte le statut « brouillon » sans la signature d'un avocat habilité. Cette signature est une responsabilité juridique. Elle engage l'assurance professionnelle du cabinet, elle engage la déontologie du barreau, elle engage l'avenir du client. Aucun système automatique ne peut prendre cette responsabilité — et tout système qui prétend le pouvoir doit être refusé.
+La validation d'un dossier est une responsabilité juridique. Elle engage l'assurance professionnelle du cabinet, elle engage la déontologie du barreau, elle engage l'avenir du client. Aucun système automatique ne peut prendre cette responsabilité — et tout système qui prétend le pouvoir doit être refusé.
 
 ### Plaider, négocier, représenter
 
@@ -56,9 +56,9 @@ L'IA peut préparer une trame de plaidoirie, suggérer une stratégie de négoci
 
 ## La position éthique de ClairDossier
 
-Nous avons formalisé cette frontière en interne sous une forme courte : « l'IA prépare, l'avocat décide ». Cette formule n'est pas un slogan — c'est une règle technique. Chaque fonctionnalité IA de ClairDossier est conçue pour produire un livrable destiné à l'avocat, jamais au client en direct.
+Nous avons formalisé cette frontière sous une forme courte : « l'IA prépare, le professionnel décide ». Cette formule n'est pas un slogan — c'est une règle de conception. Si ClairDossier propose un jour des fonctions d'assistance, elles produiront des éléments de préparation à faire vérifier, jamais un avis rendu au client en direct.
 
-Le brief préparatoire avant consultation est un document interne. Les suggestions de qualification juridique sont des hypothèses présentées à l'avocat. Les références jurisprudentielles sont sourcées et vérifiables. Aucune décision juridique ne sort de ClairDossier sans la signature électronique d'un professionnel habilité.
+Un brief préparatoire est un document de travail. Une suggestion de qualification juridique reste une hypothèse tant qu'un professionnel ne l'a pas validée. Une référence jurisprudentielle doit être sourcée et vérifiable. Aucune décision juridique ne devrait sortir d'un outil sans la validation d'un professionnel habilité.
 
 > « L'IA augmente la capacité de l'avocat. Elle n'augmente pas son habilitation. Cette distinction est la base de toute legaltech éthique. »
 
@@ -66,7 +66,7 @@ Le brief préparatoire avant consultation est un document interne. Les suggestio
 
 Le Règlement Intérieur National des avocats, dans sa version actualisée 2024, intègre des dispositions explicites sur l'usage de l'IA générative. L'article 6.3.1 rappelle que l'avocat reste personnellement responsable du contenu de tout acte qu'il signe, quel qu'en soit l'auteur initial — y compris quand cet auteur est un système automatique.
 
-L'article 11.5 impose une transparence vis-à-vis du client quant à l'usage d'outils automatisés dans la préparation de son dossier. ClairDossier respecte cette obligation par défaut : le client est informé, au moment de la création de son compte, que des outils d'assistance peuvent être utilisés par l'avocat assigné, et qu'aucun de ces outils ne se substitue à la validation professionnelle.
+L'article 11.5 impose une transparence vis-à-vis du client quant à l'usage d'outils automatisés dans la préparation de son dossier. ClairDossier s'y conforme par construction : aujourd'hui, aucun outil automatisé n'intervient dans le contenu de votre dossier ; si cela change, vous en serez informé explicitement avant toute utilisation, et aucun de ces outils ne se substituera à la validation professionnelle.
 
 ## L'avenir, raisonnablement
 

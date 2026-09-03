@@ -50,7 +50,7 @@ C'est le canal standard. L'AR prouve que le destinataire a reçu (ou refusé de 
 
 ## Cinq erreurs courantes
 
-Nous avons vu ces erreurs répétées dans des dizaines de dossiers reçus chez ClairDossier. Toutes étaient évitables.
+Ces erreurs reviennent fréquemment dans les dossiers d'impayés. Toutes sont évitables.
 
 - Envoyer en lettre simple ou par email — aucune preuve de réception, la mise en demeure n'est pas opposable.
 - Omettre la mention « mise en demeure » et présenter le courrier comme une « relance amicale » — le juge ne reconnaît pas la qualification.
@@ -60,7 +60,7 @@ Nous avons vu ces erreurs répétées dans des dizaines de dossiers reçus chez 
 
 ## Modèle commenté
 
-Voici la structure que nous recommandons. Elle tient sur une page A4, suffit dans 80 % des situations, et a été relue par des avocats partenaires.
+Voici la structure que nous recommandons. Elle tient sur une page A4 et couvre la plupart des situations courantes ; faites-la relire par un professionnel du droit si l'enjeu le justifie.
 
 > **Note —** « Objet : Mise en demeure de [payer la somme de X / exécuter telle obligation]. Madame, Monsieur, Par la présente, je vous mets en demeure de [action attendue] dans un délai de [8 / 15 jours] à compter de la réception du présent courrier. Cette obligation résulte de [référence précise : contrat du …, facture n°…, etc.]. À défaut d'exécution dans ce délai, je me verrai contraint de saisir la juridiction compétente, et de réclamer en sus les intérêts moratoires courus depuis [date], ainsi que les frais éventuels de procédure. Veuillez agréer, etc. »
 

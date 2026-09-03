@@ -1,78 +1,19 @@
 import { Link } from "react-router-dom";
 import { Seo, breadcrumbSchema } from "../lib/seo";
 import { Reveal, Stagger, StaggerItem } from "../components/primitives/Reveal";
+import { ArrowRightIcon, SECURITY_ICONS } from "../components/icons";
 import {
-  HostingFranceIcon,
-  EncryptionIcon,
-  RgpdIcon,
-  ComplianceRinIcon,
-  BackupIcon,
-  AuditIcon,
-  ArrowRightIcon,
-} from "../components/icons";
+  SECURITY_ARCHITECTURE,
+  SECURITY_BADGES,
+  SECURITY_PILLARS,
+} from "../data/security";
 
-const PILLARS = [
-  {
-    Icon: HostingFranceIcon,
-    title: "Hébergement",
-    body: "L'application est hébergée chez un sous-traitant conforme au RGPD. Les données sont chiffrées en transit (HTTPS) et au repos côté hébergeur. Vous gardez la main : aucune pièce n'est transmise à un tiers sans votre validation explicite.",
-    bullets: [
-      "Sous-traitant hébergeur conforme RGPD",
-      "Chiffrement en transit (HTTPS)",
-      "Chiffrement au repos côté hébergeur",
-    ],
-  },
-  {
-    Icon: EncryptionIcon,
-    title: "Chiffrement",
-    body: "Tous les échanges entre votre navigateur et l'application passent par une connexion chiffrée (HTTPS). Les pièces déposées sont conservées dans un stockage privé, chiffré au repos côté hébergeur. Les liens de téléchargement sont signés et temporaires.",
-    bullets: [
-      "Connexion chiffrée HTTPS de bout en bout",
-      "Stockage des pièces chiffré au repos",
-      "Liens de téléchargement signés et temporaires",
-    ],
-  },
-  {
-    Icon: RgpdIcon,
-    title: "Accès",
-    body: "L'accès à votre espace passe par une authentification (compte avec confirmation par e-mail). Vos données sont isolées par utilisateur : un client ne voit jamais les dossiers d'un autre. Seul un administrateur unique peut consulter les dossiers côté support.",
-    bullets: [
-      "Accès protégé par authentification",
-      "Isolation des données par utilisateur",
-      "Consultation support limitée à un seul admin",
-    ],
-  },
-  {
-    Icon: ComplianceRinIcon,
-    title: "Conformité",
-    body: "Le service est conçu pour respecter le RGPD (UE 2016/679). Vos données restent les vôtres : vous pouvez exercer vos droits d'accès, d'export et de suppression sur simple demande via le contact ou votre espace. L'hébergeur intervient comme sous-traitant conforme au RGPD.",
-    bullets: [
-      "Conçu pour le RGPD (UE 2016/679)",
-      "Droits d'accès, export et suppression sur demande",
-      "Hébergeur sous-traitant conforme RGPD",
-    ],
-  },
-  {
-    Icon: BackupIcon,
-    title: "Vos pièces",
-    body: "Chaque dossier rassemble vos pièces dans un espace privé et sécurisé. Vous les retrouvez à tout moment depuis la liste de vos dossiers et la page d'avancement, où elles restent téléchargeables. Rien n'est partagé tant que vous ne déclenchez pas la transmission.",
-    bullets: [
-      "Espace privé et sécurisé par dossier",
-      "Pièces téléchargeables depuis votre espace",
-      "Transmission déclenchée par vous seul",
-    ],
-  },
-  {
-    Icon: AuditIcon,
-    title: "Maîtrise & contact",
-    body: "Vous décidez de chaque envoi : la transmission d'un dossier par e-mail ou WhatsApp ne part qu'après votre validation explicite. Pour toute question de sécurité ou demande relative à vos données, une adresse de contact dédiée vous répond.",
-    bullets: [
-      "Aucune transmission sans votre validation",
-      "Envoi par e-mail ou WhatsApp à votre main",
-      "Contact dédié pour vos demandes données",
-    ],
-  },
-];
+// Contenu partagé avec public/securite.md (scripts/gen-markdown.ts) : une seule
+// source de vérité pour les engagements sécurité, cf. src/data/security.ts.
+const PILLARS = SECURITY_PILLARS.map((p) => ({
+  ...p,
+  Icon: SECURITY_ICONS[p.icon],
+}));
 
 export function Security() {
   return (
@@ -116,29 +57,11 @@ export function Security() {
               Architecture simplifiée
             </p>
             <h2 className="mt-2 font-display text-3xl font-semibold text-navy-900">
-              Du navigateur jusqu'à vos sauvegardes.
+              Du navigateur jusqu'au stockage de vos pièces.
             </h2>
 
             <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-5">
-              {[
-                { kicker: "1", label: "Client", detail: "Navigateur · App" },
-                { kicker: "2", label: "HTTPS", detail: "Connexion chiffrée" },
-                {
-                  kicker: "3",
-                  label: "Authentification",
-                  detail: "Compte confirmé",
-                },
-                {
-                  kicker: "4",
-                  label: "Application",
-                  detail: "Isolation par utilisateur",
-                },
-                {
-                  kicker: "5",
-                  label: "Stockage privé",
-                  detail: "Pièces chiffrées au repos",
-                },
-              ].map((node) => (
+              {SECURITY_ARCHITECTURE.map((node) => (
                 <div
                   key={node.kicker}
                   className="rounded-xl border hairline bg-cream-50 p-4 text-center"
@@ -198,12 +121,7 @@ export function Security() {
             Nos engagements en clair
           </p>
           <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {[
-              { label: "RGPD", status: "Conçu pour" },
-              { label: "Chiffrement", status: "Transit & repos" },
-              { label: "Isolation", status: "Par utilisateur" },
-              { label: "Vos droits", status: "Sur demande" },
-            ].map((b) => (
+            {SECURITY_BADGES.map((b) => (
               <div
                 key={b.label}
                 className="rounded-xl border hairline bg-white px-4 py-5 text-center"

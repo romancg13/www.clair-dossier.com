@@ -6,6 +6,7 @@ import { ArrowRightIcon, CheckIcon, WhatsAppIcon } from "../components/icons";
 import { openWhatsApp } from "../lib/whatsapp";
 import { useAuth } from "../lib/auth";
 import { supabase } from "../lib/supabase";
+import { isUnknownColumnError, pieceMetadata, sanitizeName } from "../lib/documents";
 
 type Profil =
   | "artisan"
@@ -187,10 +188,6 @@ function fieldsFor(category: Category): Field[] {
 const AI_OPTION_TEXT =
   "Obtenez un premier résumé du dossier, identifiez les pièces utiles et préparez les éléments à faire valider par un professionnel du droit.";
 
-function sanitizeName(name: string): string {
-  return name.replace(/[^a-zA-Z0-9._-]+/g, "_").slice(0, 80);
-}
-
 export function DossierFlow() {
   const { user } = useAuth();
   const [draft, setDraft] = useState<Draft>({
@@ -358,17 +355,25 @@ export function DossierFlow() {
       const dossierId = data.id as string;
       for (const file of files) {
         const path = `${user.id}/${dossierId}/${Date.now()}-${sanitizeName(file.name)}`;
+        // Empreinte SHA-256 et type MIME calculés avant le dépôt : la base détecte
+        // les doublons stricts ; le serveur recalcule et confirme à l'ingestion.
+        const meta = await pieceMetadata(file);
         const up = await supabase.storage
           .from("documents")
           .upload(path, file, { upsert: false });
         if (!up.error) {
-          await supabase.from("dossier_documents").insert({
+          const row = {
             dossier_id: dossierId,
             user_id: user.id,
             file_path: path,
             file_name: file.name,
             size_bytes: file.size,
-          });
+          };
+          const ins = await supabase.from("dossier_documents").insert({ ...row, ...meta });
+          if (ins.error && isUnknownColumnError(ins.error)) {
+            // Migration d'empreinte pas encore appliquée côté base : comportement historique.
+            await supabase.from("dossier_documents").insert(row);
+          }
         }
       }
     } catch {

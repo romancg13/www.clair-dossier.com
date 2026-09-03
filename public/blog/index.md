@@ -6,7 +6,7 @@ url: https://www.clair-dossier.com/blog
 
 # Journal ClairDossier
 
-Articles écrits par la rédaction ClairDossier, relus par des avocats. Pédagogie, sans conseil personnalisé.
+Articles écrits par la rédaction ClairDossier, à partir de sources juridiques publiques. Pédagogie, sans conseil personnalisé.
 
 ## Articles publiés
 

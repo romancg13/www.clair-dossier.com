@@ -30,9 +30,9 @@ export function FinalCTA() {
           Prêt à transformer vos dossiers ?
         </h2>
         <p className="mx-auto mt-5 max-w-2xl text-cream-50/75 leading-relaxed">
-          Vous pouvez commencer seul, en cinq minutes, ou demander une démo pour explorer
+          Vous pouvez commencer seul, en quelques minutes, ou demander une démo pour explorer
           l'outil avec votre équipe. Les deux chemins mènent au même endroit — un dossier
-          juridique propre, validé par un professionnel.
+          administratif ou juridique clair, structuré, prêt à transmettre quand vous le décidez.
         </p>
         <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
           <Link

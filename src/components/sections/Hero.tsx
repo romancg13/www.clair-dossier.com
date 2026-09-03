@@ -4,20 +4,23 @@ import { MarkerHighlight } from "../primitives/MarkerHighlight";
 import { SplitWords } from "../primitives/SplitWords";
 import { ArrowRightIcon } from "../icons";
 
+// Données de l'aperçu : uniquement ce que l'application fait réellement
+// (cf. DossierDetail : 5 étapes métier, pièces, échéances renseignées, transmission
+// déclenchée par l'utilisateur). Aucune fonction non livrée n'est suggérée.
 const heroPanelRows = [
-  { label: "Statut", value: "Validation pro (option)", tone: "gold" as const },
+  { label: "Étape", value: "Suivi du dossier", tone: "gold" as const },
   { label: "Pièces déposées", value: "7 / 9" },
-  { label: "Chronologie", value: "4 évènements datés" },
-  { label: "Validation", value: "Sous 24 h ouvrées", tone: "navy" as const },
+  { label: "Échéance", value: "affichée sur le dossier" },
+  { label: "Transmission", value: "à votre validation", tone: "navy" as const },
 ];
 
+// Mêmes 5 étapes que la frise « Avancement du dossier » de la page dossier.
 const timelineSteps = [
-  { state: "done" as const, label: "Brouillon" },
-  { state: "done" as const, label: "Complété" },
-  { state: "done" as const, label: "Attente" },
-  { state: "active" as const, label: "Validation" },
-  { state: "pending" as const, label: "Validé" },
-  { state: "pending" as const, label: "Archivé" },
+  { state: "done" as const, label: "Création" },
+  { state: "done" as const, label: "Contrat" },
+  { state: "active" as const, label: "Suivi" },
+  { state: "pending" as const, label: "Facture" },
+  { state: "pending" as const, label: "Impayé" },
 ];
 
 export function Hero() {
@@ -153,10 +156,10 @@ export function Hero() {
 
             <div className="mt-3 flex items-start justify-between gap-3">
               <h2 className="font-display text-2xl font-semibold leading-tight text-navy-900">
-                Dossier prud'homal — synthèse
+                Dossier client — aperçu
               </h2>
               <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-gold-500/12 px-2.5 py-1 text-[0.7rem] font-medium text-navy-900 border hairline-gold">
-                En attente validation
+                En cours de suivi
               </span>
             </div>
 
@@ -229,7 +232,7 @@ export function Hero() {
                   </div>
                 ))}
               </div>
-              {/* Mobile: étape active uniquement (les 6 labels chevauchent à 360px) */}
+              {/* Mobile: étape active uniquement (les labels chevauchent à 360px) */}
               <div className="mt-2 flex items-center justify-between text-[0.7rem] font-mono uppercase tracking-[0.16em] text-slate-500 sm:hidden">
                 <span>
                   Étape{" "}

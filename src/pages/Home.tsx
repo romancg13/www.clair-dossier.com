@@ -43,8 +43,8 @@ export function Home() {
   return (
     <>
       <Seo
-        title="ClairDossier — Votre dossier juridique, clair, structuré et suivi"
-        description="ClairDossier transforme les demandes juridiques en dossiers structurés et suivis. Plateforme legaltech française pour clients, PME et cabinets d'avocats."
+        title="ClairDossier — Votre dossier administratif et juridique, clair, structuré et suivi"
+        description="ClairDossier structure vos dossiers administratifs et juridiques : pièces dans un espace privé, avancement par étapes, échéances affichées, transmission quand vous le décidez. Pour les PME, artisans, indépendants et professions libérales."
         path="/"
         jsonLd={[orgSchema, websiteSchema, softwareSchema, faqSchema]}
       />

@@ -12,7 +12,7 @@ export const authors: Record<string, Author> = {
     name: 'Rédaction ClairDossier',
     role: 'Cellule éditoriale',
     bio:
-      "Articles écrits par l'équipe éditoriale ClairDossier, à partir d'entretiens avec des praticiens et de relectures par des avocats. Les contenus sont pédagogiques : ils ne constituent pas un conseil juridique personnalisé et n'engagent pas leurs auteurs.",
+      "Articles écrits par l'équipe éditoriale ClairDossier, à partir de sources juridiques publiques (codes, décrets, règlements). Les contenus sont pédagogiques : ils ne constituent pas un conseil juridique personnalisé et n'engagent pas leurs auteurs.",
     initials: 'CD',
   },
 };

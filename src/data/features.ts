@@ -85,9 +85,9 @@ export const features: Feature[] = [
     hero: "Le dossier ne part jamais tout seul. C'est vous qui déclenchez la transmission, par e-mail ou par WhatsApp.",
     body: [
       "ClairDossier prépare votre dossier ; c'est vous qui choisissez quand et à qui le transmettre. Aucun envoi automatique : tant que vous n'avez pas validé, rien ne quitte votre espace.",
-      "Quand votre dossier est prêt, vous le transmettez en un geste, par e-mail ou par WhatsApp. Vous décidez du destinataire et du moment. La transmission est toujours déclenchée par vous, explicitement.",
+      "Quand votre dossier est prêt, vous le transmettez en un geste à l'équipe ClairDossier, par e-mail ou par WhatsApp. Vous décidez du canal et du moment. La transmission est toujours déclenchée par vous, explicitement.",
       "Vous gardez ainsi la main du début à la fin : vous construisez le dossier dans le tunnel, vous relisez le récapitulatif, puis vous transmettez seulement lorsque tout vous convient.",
-      "Ce fonctionnement protège vos données : elles restent dans votre espace privé jusqu'à votre validation, et ne sont partagées qu'avec les personnes que vous avez choisies.",
+      "Ce fonctionnement protège vos données : elles restent dans votre espace privé jusqu'à votre validation, et ne sont partagées que sur votre action explicite.",
     ],
     bullets: [
       "Transmission déclenchée par vous, jamais automatique",
@@ -129,7 +129,7 @@ export const features: Feature[] = [
       "Combien de pièces circulent encore par SMS, par e-mail personnel, par WhatsApp ? C'est un risque de confidentialité et une charge mentale dès qu'il faut retrouver le bon document. ClairDossier rassemble pièces et informations dans un espace privé, rattaché à votre dossier.",
       "L'accès à votre espace passe par une authentification : vous seul ouvrez vos dossiers. Les échanges en transit se font en HTTPS, et vos données sont chiffrées au repos côté hébergeur.",
       "Le stockage des pièces est privé : les fichiers ne sont accessibles que via des liens temporaires signés, jamais en accès libre. Vos documents restent rangés là où vous les avez déposés, dossier par dossier.",
-      "Quand vous le décidez, vous transmettez le dossier par e-mail ou par WhatsApp, à la personne de votre choix. Le partage n'a lieu que sur votre action explicite — rien ne sort de votre espace sans votre validation.",
+      "Quand vous le décidez, vous transmettez le dossier à l'équipe ClairDossier par e-mail ou par WhatsApp. Le partage n'a lieu que sur votre action explicite — rien ne sort de votre espace sans votre validation.",
     ],
     bullets: [
       "Accès à l'espace par authentification",
@@ -190,7 +190,7 @@ export const features: Feature[] = [
     body: [
       "Avant de transmettre un dossier, il faut être sûr de ce qu'il contient : les informations, les pièces, les échéances. ClairDossier réunit l'ensemble dans une étape de récapitulatif, à la fin du tunnel de création.",
       "Le récapitulatif affiche le profil, la nature du dossier, les informations saisies et les pièces déposées. Vous relisez le tout d'un seul écran, vous revenez en arrière pour corriger si besoin, puis vous confirmez. Rien n'est transmis tant que vous n'avez pas validé.",
-      "Une fois le dossier confirmé, vous le transmettez quand vous le décidez, par e-mail ou par WhatsApp, à la personne de votre choix. Vous gardez la main sur le contenu comme sur l'envoi.",
+      "Une fois le dossier confirmé, vous le transmettez quand vous le décidez, par e-mail ou par WhatsApp, à l'équipe ClairDossier. Vous gardez la main sur le contenu comme sur l'envoi.",
     ],
     bullets: [
       "Récapitulatif complet à la fin du tunnel de création",

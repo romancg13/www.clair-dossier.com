@@ -146,7 +146,7 @@ export const plans: Plan[] = [
     audience: "PME / multi-sites",
     name: "Business / PME Pro",
     description:
-      "Pour les structures multi-collaborateurs avec statistiques et workflows avancés.",
+      "Pour les structures multi-collaborateurs : dossiers illimités et support dédié.",
     priceMonthly: 169,
     badge: { label: "Recommandé", tone: "recommended" },
     variant: "dark",
@@ -174,7 +174,7 @@ export const plans: Plan[] = [
     audience: "Entreprise",
     name: "Business / PME Premium",
     description:
-      "Solution entreprise : marque blanche, API, SSO, audit avancé.",
+      "Pour les entreprises : dossiers et utilisateurs illimités, support entreprise.",
     priceMonthly: 299,
     variant: "light",
     ctaLabel: "S'abonner",
