@@ -1,0 +1,62 @@
+name: CI
+
+# Contrôles de qualité avant livraison (PARTIE 10.4 du cahier des charges) :
+# typecheck, build, tests de base de données (migrations réellement appliquées,
+# isolation multi-tenant, invariants). Le déploiement reste dans deploy.yml.
+
+on:
+  pull_request:
+  push:
+    branches-ignore: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualite:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      PGHOST: localhost
+      PGPORT: "5432"
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: clair_test
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Typecheck (application)
+        run: npm run typecheck
+
+      - name: Typecheck (tests et scripts)
+        run: npm run typecheck:tests
+
+      - name: Build
+        run: npm run build
+        env:
+          VITE_BASE_PATH: /
+
+      - name: Fichiers statiques présents dans dist
+        run: test -f dist/robots.txt && test -f dist/sitemap.xml && test -f dist/favicon.svg && test -f dist/llms.txt
+
+      - name: Tests de base de données (migrations + isolation)
+        run: npm run test:db
