@@ -24,6 +24,11 @@ aucune entité sans source (requête SQL), entités attendues de la vérité ter
 présentes, extraits relus dans les chunks, réanalyse idempotente, modèle simulé (fabrication
 rejetée, événement ancré, correction humaine intacte). Aucun modèle réel n'est appelé.
 
+`atlas.test.ts` poursuit jusqu'à l'inventaire : classification de chaque pièce lisible
+comparée au manifeste (précision mesurée, seuil 90 %), doublons stricts et quasi-doublon
+de la vérité terrain, pièce illisible signalée, catégorie corrigée par l'utilisateur intacte
+après réanalyse.
+
 `recherche.test.ts` enchaîne l'indexation (découpage, vectorisation 1024 dimensions,
 index HNSW) et interroge la recherche hybride : premiers résultats de la section
 `recherche_attendue`, aucun résultat pour un autre tenant, hors du dossier ou sur une

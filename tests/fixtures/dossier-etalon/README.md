@@ -28,6 +28,9 @@ les fichiers commités diffèrent.
 |---|---|
 | 5 | 7 pièces : 2 doublons stricts, 1 quasi-doublon (`doublons_stricts`, `quasi_doublons`) |
 | 6 | 1 document illisible : PDF image sans couche texte (`documents_illisibles`, `ingestion_attendue`) |
+| 7 | `recherche_attendue` (4 requêtes → pièces) |
+| 9 | `entites_attendues` (dates, montants, références, SIREN, courriel → pièces) |
+| 10 | la `categorie` de chaque pièce du manifeste suit la taxonomie fermée d'ATLAS et sert de vérité de classification |
 | 11 | tentative d'injection de prompt (à venir) |
 | 14–15 | dates contradictoires, montants divergents, pièces citées absentes, échéances (à venir) |
 

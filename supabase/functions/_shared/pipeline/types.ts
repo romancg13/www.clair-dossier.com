@@ -178,7 +178,25 @@ export interface Store {
   lireChunks(documentId: string): Promise<(Chunk & { id: string })[]>;
   enregistrerEntites(dossierId: string, entites: unknown[]): Promise<{ entite_id: string; verrouillee: boolean; creee: boolean }[]>;
   enregistrerEvenements(dossierId: string, evenements: unknown[]): Promise<{ evenement_id: string; verrouillee: boolean; creee: boolean }[]>;
+  /** Pièces d'un dossier (métadonnées, sans texte), par ordre de dépôt. */
+  lireDocumentsDossier(dossierId: string): Promise<DocumentResume[]>;
+  enregistrerClassification(
+    documentId: string, categorie: string, confiance: number, nomNormalise: string | null,
+    quasiDoublonDeId: string | null, similarite: number | null, traceId: string,
+  ): Promise<{ categorie_appliquee: boolean; categorie_humaine: boolean }>;
 }
+
+export type DocumentResume = {
+  id: string;
+  file_name: string;
+  kind: string;
+  statut_ingestion: string;
+  categorie: string | null;
+  confiance_classification: number | null;
+  pages: number | null;
+  supprime_le: string | null;
+  created_at: string;
+};
 
 /** Accès aux octets d'une pièce (bucket privé en production, fichiers du jeu d'essai en test). */
 export interface Stockage {

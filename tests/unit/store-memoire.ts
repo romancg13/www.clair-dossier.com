@@ -14,11 +14,12 @@ export const TRACE_ID = '44444444-4444-4444-8444-444444444444';
 export type Journal = {
   entites: unknown[][];
   evenements: unknown[][];
+  classifications: { categorie: string; confiance: number; nomNormalise: string | null; quasi: string | null; similarite: number | null }[];
   runs: { agent: string; statut?: string; sortie?: unknown; erreur?: string | null }[];
   statuts: string[];
 };
 
-export function storeMemoire(pagesTexte: string[], options: { statut?: string; fileName?: string } = {}): { store: Store; journal: Journal; travail: Travail } {
+export function storeMemoire(pagesTexte: string[], options: { statut?: string; fileName?: string; type?: string } = {}): { store: Store; journal: Journal; travail: Travail } {
   const pages: PageTexte[] = pagesTexte.map((texte, i) => ({ page: i + 1, texte, methode: texte.trim() ? 'natif' : 'ocr_requis' }));
   const chunks: (Chunk & { id: string })[] = decouperDocument(pages.filter((p) => p.methode === 'natif')).map((c, i) => ({
     ...c,
@@ -29,7 +30,7 @@ export function storeMemoire(pagesTexte: string[], options: { statut?: string; f
     size_bytes: 10, mime: 'application/pdf', hash_sha256: 'a'.repeat(64), kind: 'piece', statut_ingestion: options.statut ?? 'vectorise',
     doublon_de_id: null, supprime_le: null,
   };
-  const journal: Journal = { entites: [], evenements: [], runs: [], statuts: [] };
+  const journal: Journal = { entites: [], evenements: [], classifications: [], runs: [], statuts: [] };
   const store: Store = {
     async prendreTravail() { return null; },
     async terminerTravail() {},
@@ -50,9 +51,16 @@ export function storeMemoire(pagesTexte: string[], options: { statut?: string; f
     async lireChunks() { return chunks; },
     async enregistrerEntites(_d, entites) { journal.entites.push(entites); return entites.map(() => ({ entite_id: 'x', verrouillee: false, creee: true })); },
     async enregistrerEvenements(_d, evenements) { journal.evenements.push(evenements); return evenements.map(() => ({ evenement_id: 'y', verrouillee: false, creee: true })); },
+    async lireDocumentsDossier() {
+      return [{ id: DOCUMENT_ID, file_name: doc.file_name, kind: 'piece', statut_ingestion: doc.statut_ingestion, categorie: null, confiance_classification: null, pages: pages.length, supprime_le: null, created_at: '2026-09-03T00:00:00Z' }];
+    },
+    async enregistrerClassification(_id, categorie, confiance, nomNormalise, quasi, similarite) {
+      journal.classifications.push({ categorie, confiance, nomNormalise, quasi, similarite });
+      return { categorie_appliquee: true, categorie_humaine: false };
+    },
   };
   const travail: Travail = {
-    id: 1, tenant_id: TENANT_ID, dossier_id: DOSSIER_ID, document_id: DOCUMENT_ID, type: 'veritas', charge: {}, priorite: 5,
+    id: 1, tenant_id: TENANT_ID, dossier_id: DOSSIER_ID, document_id: DOCUMENT_ID, type: options.type ?? 'veritas', charge: {}, priorite: 5,
     tentatives: 1, max_tentatives: 3, trace_id: TRACE_ID,
   };
   return { store, journal, travail };

@@ -9,6 +9,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import type {
   Chunk,
   DocumentIngestion,
+  DocumentResume,
   PageExtraite,
   PageTexte,
   Quota,
@@ -108,6 +109,26 @@ export function creerStorePg(sql: Sql): Store {
         [tenantId, dossierId, requete, embedding, limite],
       );
       return rows.map((r) => ({ ...r, score_fusion: Number(r.score_fusion) }));
+    },
+    async lireDocumentsDossier(dossierId) {
+      const rows = await sql<DocumentResume & { created_at: Date | string; supprime_le: Date | string | null }>(
+        `select id, file_name, kind, statut_ingestion, categorie, confiance_classification, pages, supprime_le, created_at
+           from public.dossier_documents where dossier_id = $1::uuid order by created_at, id`,
+        [dossierId],
+      );
+      return rows.map((r) => ({
+        ...r,
+        created_at: new Date(r.created_at).toISOString(),
+        supprime_le: r.supprime_le === null ? null : new Date(r.supprime_le).toISOString(),
+        confiance_classification: r.confiance_classification === null ? null : Number(r.confiance_classification),
+      }));
+    },
+    async enregistrerClassification(documentId, categorie, confiance, nomNormalise, quasiDoublonDeId, similarite, traceId) {
+      const rows = await sql<{ r: { categorie_appliquee: boolean; categorie_humaine: boolean } }>(
+        'select public.enregistrer_classification($1::uuid, $2::text, $3::numeric, $4::text, $5::uuid, $6::numeric, $7::uuid) as r',
+        [documentId, categorie, confiance, nomNormalise, quasiDoublonDeId, similarite, traceId],
+      );
+      return rows[0].r;
     },
   };
 }

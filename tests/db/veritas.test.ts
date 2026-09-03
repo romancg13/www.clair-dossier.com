@@ -22,7 +22,10 @@ async function analyserEtalon(tx: Tx, options: Parameters<typeof executerFile>[2
   await tx.asService();
   await tx.sql("select set_config('clair.acteur', 'agent', true)");
   const store = creerStorePg(tx.sql);
-  const bilan = await executerFile(store, creerStockageEtalon(), { executant: 'test-veritas', maxTravaux: 200, modele: null, ...options });
+  // Jusqu'à VERITAS inclus : l'inventaire (ATLAS, étape 10) a son propre test.
+  const bilan = await executerFile(store, creerStockageEtalon(), {
+    executant: 'test-veritas', maxTravaux: 200, modele: null, types: ['ingestion', 'indexation', 'veritas'], ...options,
+  });
   return { f, store, bilan, ids };
 }
 

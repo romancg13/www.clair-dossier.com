@@ -214,3 +214,26 @@ Format : une entrée par décision, numérotée, datée, avec contexte, décisio
 **Vérification.** Migration appliquée et rejouée ; `npm run test:unit` (46 tests : extracteurs, ancrage, VERITAS simulé — fabrication rejetée, seuil E1, E7, E8, injection —, gabarit du prompt) ; `npm run test:db` (50 tests dont 4 nouveaux : zéro entité sans source, rappel 100 % de la vérité terrain, idempotence, modèle simulé avec F11) ; `deno check` ; `typecheck`, `typecheck:tests`, `build` sans erreur.
 
 **Statut.** Appliquée (localement ; déploiement et clé : action humaine).
+
+---
+
+## D-011 — Agent ATLAS : inventaire, classification par règles d'abord, quasi-doublons (2026-09-03)
+
+**Contexte.** Étape 10 du plan de build (PARTIE 4.2, 7.1 étape 9, 5.1 seuil 0,85, 10.3 précision ≥ 90 % et doublons stricts 100 %). Critère de sortie : « seuils de la PARTIE 10 atteints », mesurés sur le dossier étalon.
+
+**Décisions.**
+1. **Taxonomie fermée** (`categories.ts`, 24 catégories, `autre` inclus) reprise mot pour mot dans le prompt ; un modèle ne peut ni en sortir ni en créer (F10 du prompt).
+2. **Règles avant modèle** (règle 0.2). La nature d'un document se lit dans ses marques structurantes ; les règles portent une **priorité** (la nature prime sur le sujet : une mise en demeure qui réclame une facture est une mise en demeure, un courriel qui parle d'un contrat est un courriel), une confiance et l'extrait justificatif (ancrage de l'assertion de classification). Deux marques de même priorité → confiance abaissée de 0,15 et catégories concurrentes déclarées. Sur le dossier étalon : 5 pièces lisibles sur 5 correctement classées par règles seules (précision 100 % sur cet échantillon, seuil 90 % ; l'échantillon grandira avec l'étalon).
+3. **Modèle simple en secours seulement** : sous 0,85, `claude-haiku-4-5-20251001` (PARTIE 0.2, surchargeable par `MODELE_CLASSIFICATION`) via outil forcé ; sa proposition n'est retenue que si la justification citée se relit dans la pièce, sinon elle est ignorée et dite ignorée. Sans modèle, la pièce reste « à vérifier » et la sortie le dit.
+4. **Sous le seuil : « à vérifier », jamais « certain »** : assertion `a_verifier`, `confiance_classification` conservée telle quelle en base (l'écran Pièces l'affichera), statut de sortie `partiel`.
+5. **Quasi-doublons par similarité de texte** (`similarite.ts`, Jaccard sur shingles de 5 mots normalisés, seuil 0,85) contre les pièces antérieures du même dossier (ordre total dépôt → nom → identifiant, stable même à instant égal). La pièce reste analysée (contrairement au doublon strict, statut inchangé) ; `quasi_doublon_de_id` et `similarite` sont posés. Sur l'étalon : la version « scan » de la facture est rapprochée de l'original (similarité 1,0), aucune autre paire.
+6. **Nom normalisé** `AAAA-MM-JJ_categorie_reference.ext` à partir des extractions déterministes de la pièce ; l'original garde son nom (I3), le nom normalisé est une proposition.
+7. **La catégorie humaine prime (F11)** : un reclassement saisi par le client pose `categorie_humaine = true` (trigger) et `confiance_classification = 1` ; `enregistrer_classification` (serveur uniquement) ne touche alors plus la catégorie, met à jour le reste et journalise `document.classe` avec la mention. Les colonnes d'inventaire (`quasi_doublon_de_id`, `similarite`, `confiance_classification`, `categorie_humaine`) sont réservées au serveur.
+8. **Pièce illisible** : inventoriée comme telle (E4), ni classée ni renommée ; statut `qualite_insuffisante` conservé. **Incomplétude** (pages annoncées absentes, pièce jointe manquante) : signalée par le modèle quand il intervient, escaladée E4.
+9. Manifeste de l'étalon : `correspondance` → `courriel` (la taxonomie fermée fait foi).
+
+**Ce qui reste volontairement ouvert.** Calibration des règles sur un étalon plus large (40–60 pièces) et mesure de la précision du modèle de secours (clé requise) ; quasi-doublons entre dossiers d'un même tenant (décision produit) ; validation par l'utilisateur d'un quasi-doublon (écran Pièces, étape 20).
+
+**Vérification.** Migration appliquée et rejouée ; `npm run test:unit` (57 tests : règles sur l'étalon, priorité nature > sujet, ambiguïté, nom normalisé, similarité, exécution avec et sans modèle, justification introuvable ignorée, illisible, prompt) ; `npm run test:db` (52 tests dont 2 nouveaux : seuils atteints sur l'étalon, catégorie humaine intacte) ; `deno check` ; `typecheck`, `typecheck:tests`, `build` sans erreur.
+
+**Statut.** Appliquée (localement ; déploiement : action humaine).

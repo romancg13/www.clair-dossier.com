@@ -10,6 +10,7 @@
  *        → echec (réception refusée : type, cohérence MIME, quota, fichier vide)
  * Les journaux applicatifs ne portent que des identifiants (PARTIE 11).
  */
+import { executerAtlas, TYPE_TRAVAIL_ATLAS } from "../agents/atlas.ts";
 import type { FournisseurModele } from "../agents/modele.ts";
 import { executerVeritas, TYPE_TRAVAIL_VERITAS } from "../agents/veritas.ts";
 import type { FournisseurEmbedding } from "./embedding.ts";
@@ -35,7 +36,7 @@ import {
 export const VERSION_INGESTION = "1.0";
 export const TYPE_TRAVAIL_INGESTION = "ingestion";
 /** Types de travaux consommés par le même exécutant, dans l'ordre de priorité de la file. */
-export const TYPES_TRAVAUX = [TYPE_TRAVAIL_INGESTION, TYPE_TRAVAIL_INDEXATION, TYPE_TRAVAIL_VERITAS];
+export const TYPES_TRAVAUX = [TYPE_TRAVAIL_INGESTION, TYPE_TRAVAIL_INDEXATION, TYPE_TRAVAIL_VERITAS, TYPE_TRAVAIL_ATLAS];
 
 export type OptionsIngestion = {
   ocr?: FournisseurOcr | null;
@@ -43,6 +44,7 @@ export type OptionsIngestion = {
   /** Fournisseur de modèle pour les agents ; null = extraction déterministe seule, dite comme telle. */
   modele?: FournisseurModele | null;
   nomModeleExtraction?: string;
+  nomModeleClassification?: string;
   maintenant?: () => Date;
   /** Types de travaux à consommer (défaut : tous) — permet des exécutants dédiés. */
   types?: string[];
@@ -271,6 +273,18 @@ export async function traiterProchainTravail(
         nb_entites: bilan.entites.length,
         nb_evenements: bilan.evenements.length,
         nb_rejets_ancrage: bilan.rejets.length,
+        escalades: bilan.sortie.escalades.map((e) => e.code),
+        duree_ms: bilan.sortie.duree_ms,
+      });
+      return { travail, issue: "termine", sortie: bilan.sortie };
+    }
+    if (travail.type === TYPE_TRAVAIL_ATLAS) {
+      const bilan = await executerAtlas(store, travail, { modele: options.modele ?? null, nomModele: options.nomModeleClassification, maintenant: options.maintenant });
+      await store.terminerTravail(travail.id, {
+        statut: bilan.sortie.statut,
+        categorie: bilan.classification?.categorie ?? null,
+        confiance: bilan.classification?.confiance ?? null,
+        quasi_doublon_de_id: bilan.quasi_doublon?.document_id ?? null,
         escalades: bilan.sortie.escalades.map((e) => e.code),
         duree_ms: bilan.sortie.duree_ms,
       });

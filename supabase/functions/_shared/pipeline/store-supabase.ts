@@ -7,6 +7,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
   Chunk,
   DocumentIngestion,
+  DocumentResume,
   PageExtraite,
   PageTexte,
   Quota,
@@ -124,6 +125,26 @@ export function creerStoreSupabase(client: SupabaseClient): Store {
         "rechercher_chunks",
       );
       return ((data as ResultatRecherche[] | null) ?? []).map((r) => ({ ...r, score_fusion: Number(r.score_fusion) }));
+    },
+    async lireDocumentsDossier(dossierId) {
+      const data = verifier(
+        await client.from("dossier_documents")
+          .select("id,file_name,kind,statut_ingestion,categorie,confiance_classification,pages,supprime_le,created_at")
+          .eq("dossier_id", dossierId).order("created_at"),
+        "lireDocumentsDossier",
+      );
+      return ((data as DocumentResume[] | null) ?? []).map((d) => ({
+        ...d, confiance_classification: d.confiance_classification === null ? null : Number(d.confiance_classification),
+      }));
+    },
+    async enregistrerClassification(documentId, categorie, confiance, nomNormalise, quasiDoublonDeId, similarite, traceId) {
+      return verifier(
+        await client.rpc("enregistrer_classification", {
+          p_document_id: documentId, p_categorie: categorie, p_confiance: confiance, p_nom_normalise: nomNormalise,
+          p_quasi_doublon_de_id: quasiDoublonDeId, p_similarite: similarite, p_trace_id: traceId,
+        }),
+        "enregistrer_classification",
+      ) as { categorie_appliquee: boolean; categorie_humaine: boolean };
     },
   };
 }
