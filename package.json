@@ -8,6 +8,7 @@
     "gen:md": "tsx scripts/gen-markdown.ts",
     "gen:etalon": "tsx scripts/gen-dossier-etalon.ts",
     "gen:schema": "tsx scripts/gen-schema.ts",
+    "gen:prompts": "tsx scripts/gen-prompts.ts",
     "build": "npm run gen:md && tsc -p tsconfig.json && vite build",
     "preview": "vite preview --port 4173",
     "typecheck": "tsc -p tsconfig.json --noEmit",

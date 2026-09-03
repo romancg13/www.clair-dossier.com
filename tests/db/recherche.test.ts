@@ -22,7 +22,8 @@ async function indexerEtalon(tx: Tx) {
   const store = creerStorePg(tx.sql);
   // Premier passage : ingestion ; les indexations mises en file par trigger sont
   // consommées dans la même boucle (la file est vidée jusqu'à épuisement).
-  const bilan = await executerFile(store, creerStockageEtalon(), { executant: 'test-index', maxTravaux: 100 });
+  // Étapes 6 et 7 seulement : l'extraction (VERITAS, étape 9) a son propre test.
+  const bilan = await executerFile(store, creerStockageEtalon(), { executant: 'test-index', maxTravaux: 100, types: ['ingestion', 'indexation'] });
   return { f, store, bilan };
 }
 
@@ -135,7 +136,7 @@ describe('découpage, vectorisation, index cloisonné, recherche hybride (PARTIE
         ['05-mise-en-demeure-2026-02-20.pdf'],
       );
       await tx.sql("select public.planifier_travail('indexation', $1::uuid, $2::uuid, $3::uuid)", [f.a.tenantId, f.dossierId, doc.id]);
-      const bilan = await executerFile(store, creerStockageEtalon(), { executant: 'test-reindex' });
+      const bilan = await executerFile(store, creerStockageEtalon(), { executant: 'test-reindex', types: ['indexation'] });
       expect(bilan).toMatchObject({ traites: 1, termines: 1 });
       const [apres] = await tx.sql<{ n: string }>('select count(*)::text as n from public.document_chunks where document_id = $1', [doc.id]);
       expect(apres.n).toBe(doc.n);

@@ -73,10 +73,28 @@ export function creerStorePg(sql: Sql): Store {
       );
       return rows[0].id;
     },
-    async terminerRun(runId, statut: StatutSortie, sortie, confiance, dureeMs, erreur) {
-      await sql('select public.terminer_run($1::uuid, $2::text, $3::jsonb, $4::numeric, $5::integer, $6::text)', [
-        runId, statut, JSON.stringify(sortie), confiance, dureeMs, erreur,
+    async terminerRun(runId, statut: StatutSortie, sortie, confiance, dureeMs, erreur, tokensEntree = null, tokensSortie = null) {
+      await sql('select public.terminer_run($1::uuid, $2::text, $3::jsonb, $4::numeric, $5::integer, $6::text, $7::integer, $8::integer)', [
+        runId, statut, JSON.stringify(sortie), confiance, dureeMs, erreur, tokensEntree, tokensSortie,
       ]);
+    },
+    async lireChunks(documentId) {
+      return sql<Chunk & { id: string }>(
+        'select id, page, offset_debut, offset_fin, texte from public.document_chunks where document_id = $1::uuid order by page, offset_debut',
+        [documentId],
+      );
+    },
+    async enregistrerEntites(dossierId, entites) {
+      return sql<{ entite_id: string; verrouillee: boolean; creee: boolean }>(
+        'select id_entite as entite_id, verrouillee, creee from public.enregistrer_entites($1::uuid, $2::jsonb)',
+        [dossierId, JSON.stringify(entites)],
+      );
+    },
+    async enregistrerEvenements(dossierId, evenements) {
+      return sql<{ evenement_id: string; verrouillee: boolean; creee: boolean }>(
+        'select id_evenement as evenement_id, verrouillee, creee from public.enregistrer_evenements($1::uuid, $2::jsonb)',
+        [dossierId, JSON.stringify(evenements)],
+      );
     },
     async lireDocumentPages(documentId) {
       return sql<PageTexte>('select page, texte, methode from public.document_pages where document_id = $1::uuid order by page', [documentId]);

@@ -78,13 +78,33 @@ export function creerStoreSupabase(client: SupabaseClient): Store {
         "demarrer_run",
       ) as string;
     },
-    async terminerRun(runId, statut: StatutSortie, sortie, confiance, dureeMs, erreur) {
+    async terminerRun(runId, statut: StatutSortie, sortie, confiance, dureeMs, erreur, tokensEntree = null, tokensSortie = null) {
       verifier(
         await client.rpc("terminer_run", {
           p_run_id: runId, p_statut: statut, p_sortie: sortie, p_confiance: confiance, p_duree_ms: dureeMs, p_erreur: erreur,
+          p_tokens_entree: tokensEntree, p_tokens_sortie: tokensSortie,
         }),
         "terminer_run",
       );
+    },
+    async lireChunks(documentId) {
+      const data = verifier(
+        await client.from("document_chunks").select("id,page,offset_debut,offset_fin,texte").eq("document_id", documentId).order("page").order("offset_debut"),
+        "lireChunks",
+      );
+      return ((data as (Chunk & { id: string })[] | null) ?? []);
+    },
+    async enregistrerEntites(dossierId, entites) {
+      const rows = (verifier(await client.rpc("enregistrer_entites", { p_dossier_id: dossierId, p_entites: entites }), "enregistrer_entites") as
+        | { id_entite: string; verrouillee: boolean; creee: boolean }[]
+        | null) ?? [];
+      return rows.map((r) => ({ entite_id: r.id_entite, verrouillee: r.verrouillee, creee: r.creee }));
+    },
+    async enregistrerEvenements(dossierId, evenements) {
+      const rows = (verifier(await client.rpc("enregistrer_evenements", { p_dossier_id: dossierId, p_evenements: evenements }), "enregistrer_evenements") as
+        | { id_evenement: string; verrouillee: boolean; creee: boolean }[]
+        | null) ?? [];
+      return rows.map((r) => ({ evenement_id: r.id_evenement, verrouillee: r.verrouillee, creee: r.creee }));
     },
     async lireDocumentPages(documentId) {
       const data = verifier(

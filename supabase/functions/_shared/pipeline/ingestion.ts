@@ -10,12 +10,15 @@
  *        → echec (réception refusée : type, cohérence MIME, quota, fichier vide)
  * Les journaux applicatifs ne portent que des identifiants (PARTIE 11).
  */
+import type { FournisseurModele } from "../agents/modele.ts";
+import { executerVeritas, TYPE_TRAVAIL_VERITAS } from "../agents/veritas.ts";
 import type { FournisseurEmbedding } from "./embedding.ts";
 import { empreinteSha256 } from "./empreinte.ts";
 import { extrairePagesPdf, type FournisseurOcr } from "./extraction.ts";
 import { indexerDocument, TYPE_TRAVAIL_INDEXATION } from "./indexation.ts";
 import { evaluerQualite, SEUIL_QUALITE } from "./qualite.ts";
 import { controlerReception } from "./reception.ts";
+import type { SortieUniverselle } from "../schema/validateur.ts";
 import {
   ErreurDefinitive,
   type Escalade,
@@ -32,11 +35,14 @@ import {
 export const VERSION_INGESTION = "1.0";
 export const TYPE_TRAVAIL_INGESTION = "ingestion";
 /** Types de travaux consommés par le même exécutant, dans l'ordre de priorité de la file. */
-export const TYPES_TRAVAUX = [TYPE_TRAVAIL_INGESTION, TYPE_TRAVAIL_INDEXATION];
+export const TYPES_TRAVAUX = [TYPE_TRAVAIL_INGESTION, TYPE_TRAVAIL_INDEXATION, TYPE_TRAVAIL_VERITAS];
 
 export type OptionsIngestion = {
   ocr?: FournisseurOcr | null;
   embedding?: FournisseurEmbedding;
+  /** Fournisseur de modèle pour les agents ; null = extraction déterministe seule, dite comme telle. */
+  modele?: FournisseurModele | null;
+  nomModeleExtraction?: string;
   maintenant?: () => Date;
   /** Types de travaux à consommer (défaut : tous) — permet des exécutants dédiés. */
   types?: string[];
@@ -234,7 +240,7 @@ export async function ingererDocument(
 }
 
 export type ResultatTravail =
-  | { travail: Travail; issue: "termine"; sortie: SortieIngestion | SortieIndexation }
+  | { travail: Travail; issue: "termine"; sortie: SortieIngestion | SortieIndexation | SortieUniverselle }
   | { travail: Travail; issue: "reessai" | "echec"; erreur: string };
 
 /** Prend et traite UN travail (ingestion ou indexation) ; null si la file est vide. */
@@ -257,6 +263,18 @@ export async function traiterProchainTravail(
         duree_ms: sortie.duree_ms,
       });
       return { travail, issue: "termine", sortie };
+    }
+    if (travail.type === TYPE_TRAVAIL_VERITAS) {
+      const bilan = await executerVeritas(store, travail, { modele: options.modele ?? null, nomModele: options.nomModeleExtraction, maintenant: options.maintenant });
+      await store.terminerTravail(travail.id, {
+        statut: bilan.sortie.statut,
+        nb_entites: bilan.entites.length,
+        nb_evenements: bilan.evenements.length,
+        nb_rejets_ancrage: bilan.rejets.length,
+        escalades: bilan.sortie.escalades.map((e) => e.code),
+        duree_ms: bilan.sortie.duree_ms,
+      });
+      return { travail, issue: "termine", sortie: bilan.sortie };
     }
     if (travail.type !== TYPE_TRAVAIL_INGESTION) {
       throw new ErreurDefinitive(`TYPE_TRAVAIL_INCONNU:${travail.type}`);

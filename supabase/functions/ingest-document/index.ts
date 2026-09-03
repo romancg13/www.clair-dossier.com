@@ -6,11 +6,16 @@
 // Elle n'accepte aucune donnée d'entrée : un appel superflu ne fait que vider
 // une file déjà vide. Les journaux ne portent que des identifiants (PARTIE 11).
 import { createClient } from "@supabase/supabase-js";
+import { modeleAnthropic } from "../_shared/agents/modele-anthropic.ts";
 import { executerFile } from "../_shared/pipeline/ingestion.ts";
 import { creerStockageSupabase, creerStoreSupabase } from "../_shared/pipeline/store-supabase.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+// Clé Anthropic : secret de l'Edge Function uniquement (jamais côté client). Sans elle,
+// les agents n'exécutent que leurs extractions déterministes et le disent.
+const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY") ?? "";
+const MODELE_EXTRACTION = Deno.env.get("MODELE_EXTRACTION") || undefined;
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
@@ -28,6 +33,8 @@ Deno.serve(async (req) => {
       maxTravaux: 20,
       dureeMaxMs: 50_000,
       ocr: null, // aucun fournisseur OCR configuré (D-007)
+      modele: ANTHROPIC_API_KEY ? modeleAnthropic(ANTHROPIC_API_KEY) : null,
+      nomModeleExtraction: MODELE_EXTRACTION,
     });
     console.log(JSON.stringify({ evenement: "ingestion.file", ...bilan }));
     return json(bilan);

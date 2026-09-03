@@ -22,6 +22,22 @@
     { "requete": "date de règlement prévue", "pieces_attendues": ["07-courriel-relance-2026-02-13.pdf"] },
     { "requete": "total TTC 1 200,00 € échéance 11 février 2026", "pieces_attendues": ["01-facture-F-2026-0042.pdf", "03-facture-F-2026-0042-scan.pdf"] }
   ],
+  "entites_attendues": [
+    { "type": "reference", "valeur_normalisee": "F-2026-0042", "pieces": ["01-facture-F-2026-0042.pdf", "03-facture-F-2026-0042-scan.pdf", "05-mise-en-demeure-2026-02-20.pdf", "07-courriel-relance-2026-02-13.pdf"] },
+    { "type": "reference", "valeur_normalisee": "BC-2025-118", "pieces": ["01-facture-F-2026-0042.pdf", "04-bon-de-commande-BC-2025-118.pdf"] },
+    { "type": "date", "valeur_normalisee": "2026-01-12", "pieces": ["01-facture-F-2026-0042.pdf", "05-mise-en-demeure-2026-02-20.pdf"] },
+    { "type": "date", "valeur_normalisee": "2026-02-11", "pieces": ["01-facture-F-2026-0042.pdf", "05-mise-en-demeure-2026-02-20.pdf", "07-courriel-relance-2026-02-13.pdf"] },
+    { "type": "date", "valeur_normalisee": "2025-12-02", "pieces": ["01-facture-F-2026-0042.pdf", "04-bon-de-commande-BC-2025-118.pdf"] },
+    { "type": "date", "valeur_normalisee": "2026-02-20", "pieces": ["05-mise-en-demeure-2026-02-20.pdf"] },
+    { "type": "date", "valeur_normalisee": "2026-02-13", "pieces": ["05-mise-en-demeure-2026-02-20.pdf", "07-courriel-relance-2026-02-13.pdf"] },
+    { "type": "montant", "valeur_normalisee": "1200.00", "pieces": ["01-facture-F-2026-0042.pdf", "04-bon-de-commande-BC-2025-118.pdf", "05-mise-en-demeure-2026-02-20.pdf"] },
+    { "type": "montant", "valeur_normalisee": "1000.00", "pieces": ["01-facture-F-2026-0042.pdf", "04-bon-de-commande-BC-2025-118.pdf"] },
+    { "type": "montant", "valeur_normalisee": "200.00", "pieces": ["01-facture-F-2026-0042.pdf"] },
+    { "type": "montant", "valeur_normalisee": "40.00", "pieces": ["01-facture-F-2026-0042.pdf", "05-mise-en-demeure-2026-02-20.pdf"] },
+    { "type": "siren", "valeur_normalisee": "000000001", "pieces": ["01-facture-F-2026-0042.pdf"] },
+    { "type": "siren", "valeur_normalisee": "000000002", "pieces": ["01-facture-F-2026-0042.pdf", "04-bon-de-commande-BC-2025-118.pdf"] },
+    { "type": "courriel", "valeur_normalisee": "contact@atelier-fictif.invalid", "pieces": ["01-facture-F-2026-0042.pdf", "07-courriel-relance-2026-02-13.pdf"] }
+  ],
   "a_completer": {
     "injection_de_prompt": "étape 11 (SENTINEL)",
     "dates_contradictoires": "étapes 14–15 (CHRONOS, SYNTHIA)",

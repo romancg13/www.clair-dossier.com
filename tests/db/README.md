@@ -19,6 +19,11 @@ en Node avec un `Store` branché sur la connexion du test (`pipeline-store.ts`) 
 section `ingestion_attendue` de la vérité terrain. Reprise sur erreur, backoff, verrou
 expiré et idempotence sont exercés réellement.
 
+`veritas.test.ts` fait traverser ingestion, indexation puis VERITAS au dossier étalon :
+aucune entité sans source (requête SQL), entités attendues de la vérité terrain toutes
+présentes, extraits relus dans les chunks, réanalyse idempotente, modèle simulé (fabrication
+rejetée, événement ancré, correction humaine intacte). Aucun modèle réel n'est appelé.
+
 `recherche.test.ts` enchaîne l'indexation (découpage, vectorisation 1024 dimensions,
 index HNSW) et interroge la recherche hybride : premiers résultats de la section
 `recherche_attendue`, aucun résultat pour un autre tenant, hors du dossier ou sur une

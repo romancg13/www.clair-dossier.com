@@ -16,6 +16,7 @@ export type VeriteTerrain = {
   documents_illisibles: { piece: string; attendu: string }[];
   ingestion_attendue: Record<string, string[]>;
   recherche_attendue: { requete: string; pieces_attendues: string[] }[];
+  entites_attendues: { type: string; valeur_normalisee: string; pieces: string[] }[];
 };
 
 export const manifest = JSON.parse(readFileSync(resolve(DIR, 'manifest.json'), 'utf8')) as { pieces: PieceManifest[] };

@@ -192,3 +192,25 @@ Format : une entrée par décision, numérotée, datée, avec contexte, décisio
 **Vérification.** `npm run test:unit` (31 tests : exemple de référence accepté, 16 non-conformités structurelles rejetées avec le chemin fautif, règles sémantiques, remplacement E8 conforme, copie JSON à jour) ; `npm run test:db` (sorties persistées conformes) ; `deno check` ; `typecheck`, `typecheck:tests`, `build` sans erreur.
 
 **Statut.** Appliquée.
+
+---
+
+## D-010 — Agent VERITAS : extraction ancrée, et comment un agent s'exécute dans ce dépôt (2026-09-03)
+
+**Contexte.** Étape 9 du plan de build (PARTIE 4.2, 5, 5.1, 6, 7.1 étape 8, 9.2). Critère de sortie : « aucune entité sans source sur le dossier étalon ». Aucune clé d'API n'existe dans l'environnement de build ; le modèle réel n'a donc pas été appelé ici.
+
+**Décisions.**
+1. **Où et comment un agent tourne.** Les agents sont du code serveur partagé (`supabase/functions/_shared/agents/`), exécutés par le même exécutant de file que le pipeline (`ingest-document`, travail `veritas` mis en file par trigger dès qu'une pièce est vectorisée). Les modèles sont atteints par une interface fermée `FournisseurModele` : `modeleAnthropic` (API Messages, **sortie structurée par outil forcé** — le modèle ne rend jamais de texte libre —, température 0, délai, une nouvelle tentative sur erreur transitoire ; clé `ANTHROPIC_API_KEY` lue dans l'environnement de l'Edge Function, jamais côté client) et `modeleSimule` pour les tests. Modèle d'extraction par défaut : `claude-sonnet-5` (PARTIE 0.2 : l'extraction ancrée sur pièces juridiques n'est pas une « extraction simple ») ; surchargeable par `MODELE_EXTRACTION`.
+2. **Prompt système = fichier, gabarit vérifié.** `prompts/veritas.system.md` suit les 10 sections de la PARTIE 5 / ANNEXE A, reprend mot pour mot la règle anti-injection de la PARTIE 9.2 et les seuils 5.1. Comme une Edge Function n'embarque que des modules importés, `npm run gen:prompts` copie les prompts dans `prompts.generated.ts` (les 10 sections sont exigées à la génération ; la CI vérifie la copie ; un test vérifie l'égalité).
+3. **Déterministe d'abord** (règle 0.2). Dates (trois formats, calendrier vérifié), montants, références (`X-AAAA-NNN`, recommandés), SIREN / SIRET, courriels sont extraits par expressions régulières avec offsets exacts et la phrase qui les contient : ancrage acquis par construction, confiance de règle < 1. Sur le dossier étalon, ces extractions seules satisfont la vérité terrain (`entites_attendues`, rappel 100 %).
+4. **Le modèle propose, l'ancrage dispose.** Chaque source citée par le modèle est résolue contre les pages et chunks réels (`ancrage.ts` : extrait littéral aux blancs près, page et document exacts, chunk contenant la position) ; une assertion sans source résolue est **rejetée** (comptée, nommée dans une incertitude, jamais persistée). SENTINEL (étape 11) rejouera ce contrôle sur toute sortie.
+5. **Seuils 5.1 appliqués sans estimation** : date sous 0,95, montant / référence / numéro sous 0,90 → entité `a_verifier` + escalade E1 ; événement lié → `a_confirmer`. Données sensibles (IBAN, NIR) : type signalé, valeur jamais extraite, escalade E7 vers ECHO. Injection : détection déterministe en plus du modèle, signalée en incertitude, tâche poursuivie.
+6. **Persistance idempotente en contexte agent.** `enregistrer_entites` / `enregistrer_evenements` (serveur uniquement) écrivent entité + sources atomiquement, refusent toute ligne sans source, posent `clair.acteur = 'agent'` : une ligne verrouillée par un humain n'est jamais réécrite (ses nouvelles sources sont ajoutées). Index uniques `(dossier, type, valeur)` et `(dossier, date, nature, description)` : réanalyser ne duplique rien.
+7. **Sans clé, l'agent le dit.** `modele: null` → extractions déterministes seules, incertitude « extraction par modèle non configurée », `cout.modele = null`. Aucune sortie n'est présentée comme issue d'un modèle qui n'a pas tourné.
+8. **Ce que le critère de sortie couvre et ne couvre pas.** « Aucune entité sans source » est vérifié en base sur le dossier étalon (requête SQL, extraits relus dans les chunks), avec et sans modèle simulé. La qualité d'extraction du **modèle réel** (précision dates ≥ 98 %, PARTIE 10.3) n'est pas mesurée ici : elle exige une clé et un premier passage réel — action humaine.
+
+**Ce qui reste volontairement ouvert.** Première exécution réelle avec `ANTHROPIC_API_KEY` (secret de l'Edge Function) et mesure sur l'étalon ; budgets de tokens et coupe-circuit (étape 23) ; dates partielles (« mars 2026 ») ; personnes et sociétés par le modèle uniquement.
+
+**Vérification.** Migration appliquée et rejouée ; `npm run test:unit` (46 tests : extracteurs, ancrage, VERITAS simulé — fabrication rejetée, seuil E1, E7, E8, injection —, gabarit du prompt) ; `npm run test:db` (50 tests dont 4 nouveaux : zéro entité sans source, rappel 100 % de la vérité terrain, idempotence, modèle simulé avec F11) ; `deno check` ; `typecheck`, `typecheck:tests`, `build` sans erreur.
+
+**Statut.** Appliquée (localement ; déploiement et clé : action humaine).

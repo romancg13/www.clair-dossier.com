@@ -171,10 +171,13 @@ export interface Store {
   enregistrerPages(documentId: string, pages: PageExtraite[]): Promise<void>;
   marquerIngestion(documentId: string, statut: string, erreur: string | null, pages: number | null, traceId: string): Promise<void>;
   demarrerRun(agent: string, tenantId: string, dossierId: string | null, traceId: string, entreeHash: string, modele: string | null, version: string): Promise<string>;
-  terminerRun(runId: string, statut: StatutSortie, sortie: unknown, confiance: number | null, dureeMs: number, erreur: string | null): Promise<void>;
+  terminerRun(runId: string, statut: StatutSortie, sortie: unknown, confiance: number | null, dureeMs: number, erreur: string | null, tokensEntree?: number | null, tokensSortie?: number | null): Promise<void>;
   lireDocumentPages(documentId: string): Promise<PageTexte[]>;
   enregistrerChunks(documentId: string, chunks: Chunk[]): Promise<void>;
   rechercherChunks(tenantId: string, dossierId: string, requete: string, embedding: string | null, limite: number): Promise<ResultatRecherche[]>;
+  lireChunks(documentId: string): Promise<(Chunk & { id: string })[]>;
+  enregistrerEntites(dossierId: string, entites: unknown[]): Promise<{ entite_id: string; verrouillee: boolean; creee: boolean }[]>;
+  enregistrerEvenements(dossierId: string, evenements: unknown[]): Promise<{ evenement_id: string; verrouillee: boolean; creee: boolean }[]>;
 }
 
 /** Accès aux octets d'une pièce (bucket privé en production, fichiers du jeu d'essai en test). */
