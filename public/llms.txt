@@ -20,7 +20,7 @@ ClairDossier ne se présente ni comme un cabinet d'avocats, ni comme un conseil 
 - /blog                          : Journal éditorial
 - /blog/<slug>                   : 7 articles disponibles (voir Articles ci-dessous)
 - /inscription, /connexion, /compte : Création de compte et espace client (Supabase auth)
-- /dossier/nouveau               : Création de dossier en 4 étapes (typologie, informations, documents, transmission) — compte requis
+- /dossier/nouveau               : Création de dossier en 5 étapes (profil, nature du dossier, informations, documents, récapitulatif) — compte requis
 - /contact                       : WhatsApp + formulaire guidé
 - /mentions-legales              : Éditeur, hébergement, propriété intellectuelle
 - /cgv                           : Conditions générales de vente
