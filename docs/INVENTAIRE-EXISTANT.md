@@ -111,7 +111,7 @@ storage.objects (bucket 'documents')    chemin <user_id>/<dossier_id>/<timestamp
 | `admin_user_emails()` | SQL SECURITY DEFINER | lit `auth.users`, renvoie 0 ligne si non admin | `20260622062648_admin_user_emails.sql:6-19` |
 | bucket `documents` | `public = false`, sans `file_size_limit` ni `allowed_mime_types` | limite globale locale `50MiB` | `…init.sql:103-105`, `config.toml` `[storage]` |
 
-### 2.4 Policies RLS (22 au total)
+### 2.4 Policies RLS (21 au total : 15 sur les tables, 6 sur `storage.objects` — comptage vérifié par application réelle des migrations sur Postgres 16, `pg_policies`)
 
 | Table | Policy | Op. | Expression | Source |
 |---|---|---|---|---|

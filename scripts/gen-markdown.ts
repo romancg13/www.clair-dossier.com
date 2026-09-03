@@ -22,7 +22,6 @@ import {
   COMPARISON_FEATURES,
   TRUST_PILLARS,
   plans,
-  type Plan,
 } from '../src/data/pricing';
 import {
   SECURITY_ARCHITECTURE,
