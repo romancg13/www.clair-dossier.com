@@ -1,0 +1,278 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://www.clair-dossier.com/schemas/sortie-universelle.schema.json",
+  "title": "ClairDossier — sortie universelle d'agent (PARTIE 6)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "agent",
+    "version",
+    "dossier_id",
+    "trace_id",
+    "horodatage",
+    "statut",
+    "confiance_globale",
+    "resultat",
+    "assertions",
+    "incertitudes",
+    "escalades",
+    "donnees_sensibles_detectees",
+    "cout",
+    "duree_ms"
+  ],
+  "properties": {
+    "agent": {
+      "type": "string",
+      "enum": [
+        "CLAIR-OS",
+        "ARIA",
+        "ATLAS",
+        "VERITAS",
+        "CHRONOS",
+        "SYNTHIA",
+        "LEXIA",
+        "HERMES",
+        "SENTINEL",
+        "ECHO",
+        "INGESTION",
+        "INDEXATION"
+      ]
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+(\\.[0-9]+)?$"
+    },
+    "dossier_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "trace_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "horodatage": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "statut": {
+      "type": "string",
+      "enum": [
+        "ok",
+        "partiel",
+        "escalade",
+        "echec"
+      ]
+    },
+    "confiance_globale": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "resultat": {
+      "type": "object"
+    },
+    "assertions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "enonce",
+          "nature",
+          "confiance",
+          "sources"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "enonce": {
+            "type": "string",
+            "minLength": 1
+          },
+          "nature": {
+            "type": "string",
+            "enum": [
+              "piece",
+              "declaration_client",
+              "deduction",
+              "a_verifier"
+            ]
+          },
+          "confiance": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "critique": {
+            "type": "boolean"
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "document_id",
+                "nom_fichier",
+                "page",
+                "extrait"
+              ],
+              "properties": {
+                "document_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "chunk_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "nom_fichier": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "page": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "extrait": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "offset_debut": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "offset_fin": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "incertitudes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "objet",
+          "impact",
+          "action"
+        ],
+        "properties": {
+          "objet": {
+            "type": "string",
+            "minLength": 1
+          },
+          "impact": {
+            "type": "string",
+            "enum": [
+              "faible",
+              "moyen",
+              "fort"
+            ]
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "E1",
+              "E2",
+              "E3",
+              "E4",
+              "E5",
+              "E6",
+              "E7",
+              "E8",
+              "E9",
+              "aucune"
+            ]
+          }
+        }
+      }
+    },
+    "escalades": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "motif",
+          "destinataire"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": [
+              "E1",
+              "E2",
+              "E3",
+              "E4",
+              "E5",
+              "E6",
+              "E7",
+              "E8",
+              "E9"
+            ]
+          },
+          "motif": {
+            "type": "string",
+            "minLength": 1
+          },
+          "destinataire": {
+            "type": "string",
+            "enum": [
+              "utilisateur",
+              "ECHO",
+              "CLAIR-OS",
+              "journal"
+            ]
+          }
+        }
+      }
+    },
+    "donnees_sensibles_detectees": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "cout": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "modele",
+        "tokens_entree",
+        "tokens_sortie"
+      ],
+      "properties": {
+        "modele": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "tokens_entree": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "tokens_sortie": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "duree_ms": {
+      "type": "integer",
+      "minimum": 0
+    }
+  }
+}

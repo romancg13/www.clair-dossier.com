@@ -9,6 +9,7 @@
 import { describe, expect, it } from 'vitest';
 import { executerFile } from '../../supabase/functions/_shared/pipeline/ingestion.ts';
 import { rechercher } from '../../supabase/functions/_shared/pipeline/indexation.ts';
+import { valider } from '../../supabase/functions/_shared/schema/validateur.ts';
 import { deposer, dossierEtalon, manifest, verite } from './etalon';
 import { type Tx, withTx } from './harness';
 import { creerStockageEtalon, creerStorePg } from './pipeline-store';
@@ -67,6 +68,10 @@ describe('découpage, vectorisation, index cloisonné, recherche hybride (PARTIE
         "select agent, statut, count(*)::text as n from public.agent_runs group by agent, statut order by agent, statut",
       );
       expect(runs).toEqual(expect.arrayContaining([{ agent: 'INDEXATION', statut: 'ok', n: String(attendus) }]));
+      // Contrat de schéma : les sorties d'indexation persistées sont conformes au schéma universel.
+      const sorties = await tx.sql<{ sortie: unknown }>("select sortie from public.agent_runs where agent = 'INDEXATION'");
+      expect(sorties.length).toBe(attendus);
+      for (const s of sorties) expect(valider(s.sortie)).toMatchObject({ valide: true });
     });
   });
 

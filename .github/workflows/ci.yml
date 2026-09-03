@@ -58,8 +58,8 @@ jobs:
       - name: Fichiers statiques présents dans dist
         run: test -f dist/robots.txt && test -f dist/sitemap.xml && test -f dist/favicon.svg && test -f dist/llms.txt
 
-      - name: Dossier étalon à jour (génération déterministe)
-        run: npm run gen:etalon && git diff --exit-code -- tests/fixtures
+      - name: Dossier étalon et schéma JSON à jour (génération déterministe)
+        run: npm run gen:etalon && npm run gen:schema && git diff --exit-code -- tests/fixtures docs/schemas
 
       - name: Tests unitaires
         run: npm run test:unit

@@ -1,6 +1,8 @@
 {
   "imports": {
     "@supabase/supabase-js": "npm:@supabase/supabase-js@2.108.2",
-    "unpdf": "npm:unpdf@1.8.1"
+    "unpdf": "npm:unpdf@1.8.1",
+    "ajv/dist/2020": "npm:ajv@8.20.0/dist/2020",
+    "ajv-formats": "npm:ajv-formats@3.0.1"
   }
 }

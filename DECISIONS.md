@@ -175,3 +175,20 @@ Format : une entrée par décision, numérotée, datée, avec contexte, décisio
 **Vérification.** Migration appliquée et rejouée ; `npm run test:unit` (24 tests : offsets exacts, tailles, coupe forcée, déterminisme, vecteurs, reclassement) ; `npm run test:db` (46 tests dont 4 nouveaux : chunks et index en place, résultats de la vérité terrain, filtrage tenant / dossier / pièce retirée y compris pour le rôle de service, idempotence de la réindexation) ; `deno check` ; `typecheck`, `typecheck:tests`, `build` sans erreur.
 
 **Statut.** Appliquée (localement ; déploiement : action humaine).
+
+---
+
+## D-009 — Validateur de schéma de sortie universel (2026-09-03)
+
+**Contexte.** Étape 8 du plan de build (PARTIE 6, section 9 du gabarit d'agent, PARTIE 10.4 « contrat de schéma sur chaque sortie d'agent »). Critère de sortie : « sortie non conforme rejetée en test ».
+
+**Décisions.**
+1. **Un contrat JSON Schema strict + des règles sémantiques.** Source de vérité TypeScript (`supabase/functions/_shared/schema/sortie-universelle.schema.ts`, draft 2020-12, `additionalProperties: false` à tous les niveaux, formats `uuid` / `date-time`, énumérations fermées : agents de la PARTIE 4 et processus `INGESTION` / `INDEXATION`, statuts, natures, impacts, codes E1–E9, destinataires), copiée dans `docs/schemas/sortie-universelle.schema.json` par `npm run gen:schema` (vérifié en CI). Validation par `ajv` (même moteur en Node et en Deno, versions épinglées). Les règles que le schéma n'exprime pas sont dans `validateur.ts` : une assertion sans source n'est admise que pour `declaration_client` et `deduction` (I2, I6) ; `confiance_globale` **égale** la confiance minimale des assertions marquées `critique` (à défaut de toutes), jamais une moyenne ; une sortie qui escalade n'est pas `ok` ; `escalade` sans code est refusée ; identifiants d'assertion uniques ; offsets ordonnés et livrés par paire.
+2. **Champ `critique` ajouté aux assertions.** Le cahier des charges parle d'« assertions critiques » sans les marquer ; le champ booléen optionnel permet à l'agent de le dire et au validateur de le vérifier. Sans marquage, le minimum porte sur toutes les assertions (lecture la plus stricte).
+3. **Rejet = remplacement par une sortie d'échec E8.** `validerOuRejeter` ne laisse jamais passer une sortie non conforme : elle est remplacée par `sortieDeRejet` (statut `echec`, aucune assertion, escalade E8 vers l'utilisateur, motif nommant les chemins fautifs), elle-même conforme et journalisable. La boucle de correction SENTINEL (étape 11) s'appuiera sur les erreurs retournées ; la limite de deux corrections y sera appliquée.
+4. **Les sorties du pipeline y passent déjà.** Les sorties `INGESTION` et `INDEXATION` persistées dans `agent_runs` sont validées dans les tests d'intégration : le contrat s'applique aux processus déterministes comme aux agents.
+5. **Ce que le validateur ne vérifie pas** (et ne prétend pas vérifier) : l'existence réelle des sources citées (document, page, extrait présent dans le chunk) — c'est le rôle de SENTINEL (étape 11, « citation orpheline détectée à 100 % ») avec accès à la base ; le validateur en prépare le terrain en exigeant `document_id`, `page`, `extrait` et, quand ils sont fournis, des offsets cohérents.
+
+**Vérification.** `npm run test:unit` (31 tests : exemple de référence accepté, 16 non-conformités structurelles rejetées avec le chemin fautif, règles sémantiques, remplacement E8 conforme, copie JSON à jour) ; `npm run test:db` (sorties persistées conformes) ; `deno check` ; `typecheck`, `typecheck:tests`, `build` sans erreur.
+
+**Statut.** Appliquée.

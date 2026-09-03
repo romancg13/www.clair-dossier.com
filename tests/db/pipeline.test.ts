@@ -9,6 +9,7 @@
 import { describe, expect, it } from 'vitest';
 import { executerFile, ingererDocument, traiterProchainTravail } from '../../supabase/functions/_shared/pipeline/ingestion.ts';
 import type { Travail } from '../../supabase/functions/_shared/pipeline/types.ts';
+import { valider } from '../../supabase/functions/_shared/schema/validateur.ts';
 import { bytesOf, deposer, dossierEtalon, hashOf, manifest, verite } from './etalon';
 import { type Tx, withTx } from './harness';
 import { creerStockageEtalon, creerStorePg } from './pipeline-store';
@@ -121,6 +122,10 @@ describe('pipeline d’ingestion, étapes 1 à 5 (PARTIE 7.1)', () => {
 
       const illisible = docs.find((d) => d.file_name === verite.documents_illisibles[0].piece)!;
       expect(illisible.ingestion_erreur).toBe('OCR_REQUIS_NON_DISPONIBLE');
+      // Contrat de schéma (PARTIE 10.4) : chaque sortie persistée du pipeline est conforme au schéma universel.
+      const sorties = await tx.sql<{ sortie: unknown; agent: string }>('select sortie, agent from public.agent_runs where sortie is not null');
+      expect(sorties.length).toBeGreaterThan(0);
+      for (const s of sorties) expect(valider(s.sortie), s.agent).toMatchObject({ valide: true });
       const escalades = await tx.sql<{ escalades: { code: string; destinataire: string }[] }>(
         "select escalades from public.agent_runs where statut = 'escalade'",
       );
