@@ -133,6 +133,23 @@ export function creerStorePg(sql: Sql): Store {
     async enregistrerControle(runId, sentinelRunId, verdict, iterations) {
       await sql('select public.enregistrer_controle($1::uuid, $2::uuid, $3::text, $4::integer)', [runId, sentinelRunId, verdict, iterations]);
     },
+    async enregistrerControleEcho(runId, echoRunId, verdict) {
+      await sql('select public.enregistrer_controle_echo($1::uuid, $2::uuid, $3::text)', [runId, echoRunId, verdict]);
+    },
+    async lireContexteConformite(dossierId, finalite) {
+      const [d] = await sql<{ tenant_id: string; typology: string | null }>('select tenant_id, typology from public.dossiers where id = $1::uuid', [dossierId]);
+      const [f] = await sql<{ code: string; base_legale: string; consentement_requis: boolean; categories_sensibles_admises: string[] }>(
+        'select code, base_legale, consentement_requis, categories_sensibles_admises from public.finalites where code = $1::text', [finalite],
+      );
+      const [c] = await sql<{ ok: boolean }>('select public.consentement_effectif($1::uuid, $2::text) as ok', [d.tenant_id, finalite]);
+      return { finalite: f ?? null, consentement_effectif: c.ok === true, typology: d.typology, tenant_id: d.tenant_id };
+    },
+    async journaliser(action, objetType, objetId, tenantId, dossierId, apres, traceId) {
+      await sql(
+        "select public.journaliser($1::text, $2::text, $3::uuid, $4::uuid, $5::uuid, null, $6::jsonb, 'agent', $7::uuid)",
+        [action, objetType, objetId, tenantId, dossierId, JSON.stringify(apres), traceId],
+      );
+    },
   };
 }
 

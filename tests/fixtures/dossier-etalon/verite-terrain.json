@@ -1,5 +1,5 @@
 {
-  "version": "0.1 (étape 5)",
+  "version": "0.2 (étape 12)",
   "avertissement": "Résultat attendu écrit à la main (PARTIE 10.2), sur des données fictives. Chaque section est ajoutée à l'étape qui l'exige ; les sections listées dans « a_completer » ne sont PAS encore couvertes.",
   "doublons_stricts": [
     { "piece": "02-facture-F-2026-0042-copie.pdf", "original": "01-facture-F-2026-0042.pdf" },
@@ -51,6 +51,22 @@
     { "type": "siren", "valeur_normalisee": "000000002", "pieces": ["01-facture-F-2026-0042.pdf", "04-bon-de-commande-BC-2025-118.pdf"] },
     { "type": "courriel", "valeur_normalisee": "contact@atelier-fictif.invalid", "pieces": ["01-facture-F-2026-0042.pdf", "07-courriel-relance-2026-02-13.pdf"] }
   ],
+  "echo_attendu": {
+    "commentaire": "Verdict ECHO attendu par pièce lisible (étape 12). L'IBAN fictif de la facture figure dans un extrait cité (pas dans un énoncé) : l'extrait est masqué dans la sortie livrée, l'assertion conservée. Le numéro de TVA (FR00 000000001) n'est pas un IBAN.",
+    "verdict_par_piece": {
+      "01-facture-F-2026-0042.pdf": "minimise",
+      "03-facture-F-2026-0042-scan.pdf": "minimise",
+      "04-bon-de-commande-BC-2025-118.pdf": "accepte",
+      "05-mise-en-demeure-2026-02-20.pdf": "accepte",
+      "07-courriel-relance-2026-02-13.pdf": "accepte",
+      "09-courrier-debiteur-injection.pdf": "accepte"
+    },
+    "donnees_sensibles_par_piece": {
+      "01-facture-F-2026-0042.pdf": ["iban"],
+      "03-facture-F-2026-0042-scan.pdf": ["iban"]
+    },
+    "valeur_jamais_livree": "FR76 0000 0000 0000 0000 0000 000"
+  },
   "a_completer": {
     "dates_contradictoires": "étapes 14–15 (CHRONOS, SYNTHIA)",
     "montants_divergents": "étape 15 (SYNTHIA)",

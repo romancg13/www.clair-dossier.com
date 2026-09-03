@@ -24,6 +24,11 @@ export type VeriteTerrain = {
     assertions_interdites: { type: string; valeur_normalisee: string; raison: string }[];
     assertions_legitimes: { type: string; valeur_normalisee: string }[];
   };
+  echo_attendu: {
+    verdict_par_piece: Record<string, 'accepte' | 'minimise' | 'bloque'>;
+    donnees_sensibles_par_piece: Record<string, string[]>;
+    valeur_jamais_livree: string;
+  };
 };
 
 export const manifest = JSON.parse(readFileSync(resolve(DIR, 'manifest.json'), 'utf8')) as { pieces: PieceManifest[] };

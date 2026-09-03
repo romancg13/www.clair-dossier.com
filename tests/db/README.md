@@ -28,6 +28,14 @@ rejetée, événement ancré, correction humaine intacte). Aucun modèle réel n
 que dicte l'injection n'est persisté, que chaque exécution contrôlée porte un verdict, et
 qu'un modèle simulé obéissant est corrigé puis escaladé E8 après deux tentatives.
 
+`echo.test.ts` vérifie la chaîne de livraison complète sur l'étalon : chaque exécution
+VERITAS / ATLAS porte un verdict ECHO et une finalité, les verdicts par pièce suivent la
+section `echo_attendu` de la vérité terrain (IBAN fictif de la facture masqué, jamais
+livré), la livraison est journalisée sans contenu ; un modèle simulé qui énonce un IBAN
+est bloqué ; sans consentement quand la finalité l'exige, rien n'est livré ni persisté
+jusqu'au recueil du consentement ; export par le propriétaire, purge serveur journalisée,
+conservation sans purge tant qu'aucune durée n'est fixée.
+
 `atlas.test.ts` poursuit jusqu'à l'inventaire : classification de chaque pièce lisible
 comparée au manifeste (précision mesurée, seuil 90 %), doublons stricts et quasi-doublon
 de la vérité terrain, pièce illisible signalée, catégorie corrigée par l'utilisateur intacte

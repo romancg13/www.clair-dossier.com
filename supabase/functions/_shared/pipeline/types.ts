@@ -186,6 +186,17 @@ export interface Store {
   ): Promise<{ categorie_appliquee: boolean; categorie_humaine: boolean }>;
   /** Verdict SENTINEL porté par l'exécution contrôlée (PARTIE 11 : taux de correction). */
   enregistrerControle(runId: string, sentinelRunId: string | null, verdict: "accepte" | "corrige" | "refuse", iterations: number): Promise<void>;
+  /** Verdict ECHO porté par l'exécution contrôlée. */
+  enregistrerControleEcho(runId: string, echoRunId: string | null, verdict: "accepte" | "minimise" | "bloque"): Promise<void>;
+  /** Finalité déclarée, consentement effectif du tenant et type du dossier (contexte ECHO). */
+  lireContexteConformite(dossierId: string, finalite: string): Promise<{
+    finalite: { code: string; base_legale: string; consentement_requis: boolean; categories_sensibles_admises: string[] } | null;
+    consentement_effectif: boolean;
+    typology: string | null;
+    tenant_id: string;
+  }>;
+  /** Journal d'audit : action serveur, identifiants et compteurs seulement (PARTIE 11). */
+  journaliser(action: string, objetType: string, objetId: string | null, tenantId: string, dossierId: string | null, apres: Record<string, unknown>, traceId: string): Promise<void>;
 }
 
 export type DocumentResume = {

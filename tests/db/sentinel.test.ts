@@ -117,7 +117,11 @@ describe('SENTINEL sur le dossier étalon (anti-hallucination, injection)', () =
         incertitudes: [],
         donnees_sensibles_detectees: [],
       };
-      const modele = modeleSimule([obeissant, obeissant, obeissant, { verdict: 'accepte', anomalies: [], incertitudes: [] }]);
+      const modele = modeleSimule([
+        obeissant, obeissant, obeissant,
+        { verdict: 'accepte', anomalies: [], incertitudes: [] },
+        { verdict: 'accepte', blocages: [], minimisations: [], categories_sensibles: [], incertitudes: [] },
+      ]);
       const bilan = await executerFile(store, creerStockageEtalon(), { executant: 'test-sentinel-obeissant', maxTravaux: 20, modele, types: ['ingestion', 'indexation', 'veritas'] });
       expect(bilan.echecs).toBe(0);
       // Trois productions VERITAS (initiale + deux corrections), puis persistance partielle.
@@ -129,11 +133,12 @@ describe('SENTINEL sur le dossier étalon (anti-hallucination, injection)', () =
         "select e.nature, count(s.chunk_id)::text as nb from public.evenements e join public.evenement_sources s on s.evenement_id = e.id where e.dossier_id = $1 group by e.id", [f.dossierId],
       );
       expect(contestation).toEqual([{ nature: 'contestation', nb: '1' }]);
-      const [run] = await tx.sql<{ sentinel_verdict: string; sentinel_iterations: number; sortie: { statut: string; escalades: { code: string }[]; assertions: { id: string }[] } }>(
-        "select sentinel_verdict, sentinel_iterations, sortie from public.agent_runs where agent = 'VERITAS' and dossier_id = $1", [f.dossierId],
+      const [run] = await tx.sql<{ sentinel_verdict: string; sentinel_iterations: number; echo_verdict: string; sortie: { statut: string; escalades: { code: string }[]; assertions: { id: string }[] } }>(
+        "select sentinel_verdict, sentinel_iterations, echo_verdict, sortie from public.agent_runs where agent = 'VERITAS' and dossier_id = $1", [f.dossierId],
       );
       expect(run.sentinel_verdict).toBe('refuse');
       expect(run.sentinel_iterations).toBe(2);
+      expect(run.echo_verdict).toBe('accepte');
       expect(run.sortie.statut).toBe('escalade');
       expect(run.sortie.escalades.map((e) => e.code)).toContain('E8');
       expect(run.sortie.assertions.map((a) => a.id)).not.toContain('ma1');

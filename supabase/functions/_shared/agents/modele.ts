@@ -36,7 +36,15 @@ export const MODELES = {
   extraction: "claude-sonnet-5",
   classification: "claude-haiku-4-5-20251001",
   raisonnement: "claude-opus-5",
+  /** Contrôle de sens RGPD (ECHO) : nécessité d'une donnée au regard de la finalité — pas une classification simple. */
+  conformite: "claude-sonnet-5",
 } as const;
+
+/** Premier fournisseur explicitement fourni (null compris) ; sinon null. */
+export function choisirModele(...candidats: (FournisseurModele | null | undefined)[]): FournisseurModele | null {
+  for (const c of candidats) if (c !== undefined) return c;
+  return null;
+}
 
 export class ErreurModele extends Error {
   constructor(message: string, public readonly statut?: number, public readonly reessayable = false) {

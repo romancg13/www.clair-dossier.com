@@ -152,6 +152,27 @@ export function creerStoreSupabase(client: SupabaseClient): Store {
         "enregistrer_controle",
       );
     },
+    async enregistrerControleEcho(runId, echoRunId, verdict) {
+      verifier(await client.rpc("enregistrer_controle_echo", { p_run_id: runId, p_echo_run_id: echoRunId, p_verdict: verdict }), "enregistrer_controle_echo");
+    },
+    async lireContexteConformite(dossierId, finalite) {
+      const dossier = verifier(await client.from("dossiers").select("tenant_id,typology").eq("id", dossierId).single(), "lireContexteConformite.dossier") as { tenant_id: string; typology: string | null };
+      const f = verifier(
+        await client.from("finalites").select("code,base_legale,consentement_requis,categories_sensibles_admises").eq("code", finalite).maybeSingle(),
+        "lireContexteConformite.finalite",
+      ) as { code: string; base_legale: string; consentement_requis: boolean; categories_sensibles_admises: string[] } | null;
+      const consentement = verifier(await client.rpc("consentement_effectif", { p_tenant_id: dossier.tenant_id, p_finalite: finalite }), "consentement_effectif") as boolean;
+      return { finalite: f, consentement_effectif: consentement === true, typology: dossier.typology, tenant_id: dossier.tenant_id };
+    },
+    async journaliser(action, objetType, objetId, tenantId, dossierId, apres, traceId) {
+      verifier(
+        await client.rpc("journaliser", {
+          p_action: action, p_objet_type: objetType, p_objet_id: objetId, p_tenant_id: tenantId, p_dossier_id: dossierId,
+          p_avant: null, p_apres: apres, p_acteur_type: "agent", p_trace_id: traceId,
+        }),
+        "journaliser",
+      );
+    },
   };
 }
 

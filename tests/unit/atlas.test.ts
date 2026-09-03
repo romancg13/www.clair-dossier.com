@@ -85,12 +85,18 @@ describe('ATLAS (exécution)', () => {
 
   it('classe par règles sans appeler le modèle, nomme, persiste et termine la pièce ; sortie conforme', async () => {
     const { store, journal, travail } = storeMemoire([FACTURE], { statut: 'analyse', type: 'atlas', fileName: 'scan.pdf' });
-    const modele = modeleSimule([{ verdict: 'accepte', anomalies: [], incertitudes: [] }]);
+    const modele = modeleSimule([
+      { verdict: 'accepte', anomalies: [], incertitudes: [] },
+      { verdict: 'accepte', blocages: [], minimisations: [], categories_sensibles: [], incertitudes: [] },
+    ]);
     const bilan = await executerAtlas(store, travail, { modele });
-    // Les règles concluent : aucun appel de classification ; le seul appel est le contrôle de sens SENTINEL.
-    expect(modele.requetes.map((r) => r.outil.nom)).toEqual(['emettre_verdict']);
+    // Les règles concluent : aucun appel de classification ; les seuls appels sont les contrôles de sens SENTINEL puis ECHO.
+    expect(modele.requetes.map((r) => r.systeme)).toEqual([PROMPTS_SYSTEME.SENTINEL, PROMPTS_SYSTEME.ECHO]);
     expect(bilan.controle).toEqual({ verdict: 'accepte', iterations: 0 });
+    expect(bilan.echo).toEqual({ verdict: 'accepte', livrable: true, assertions_retirees: [] });
     expect(journal.controles.length).toBe(1);
+    expect(journal.controlesEcho).toEqual([expect.objectContaining({ verdict: 'accepte' })]);
+    expect(journal.audit.map((a) => a.action)).toEqual(['sortie.livree']);
     expect(bilan.classification).toMatchObject({ categorie: 'facture', methode: 'regles' });
     expect(bilan.nom_normalise).toBe('2026-01-12_facture_F-2026-0042.pdf');
     expect(journal.classifications).toEqual([{ categorie: 'facture', confiance: 0.95, nomNormalise: '2026-01-12_facture_F-2026-0042.pdf', quasi: null, similarite: null }]);

@@ -22,7 +22,8 @@ import type { Store, Travail } from "../pipeline/types.ts";
 import { type Assertion, type SortieUniverselle, validerOuRejeter } from "../schema/validateur.ts";
 import { type ChunkConnu, type PageConnue, resoudreSource, type SourceResolue } from "./ancrage.ts";
 import { detecterInjection, type Extraction, extrairePage, type TypeEntite } from "./extracteurs.ts";
-import { ErreurModele, type FournisseurModele, MODELES } from "./modele.ts";
+import { passerParEcho } from "./livraison.ts";
+import { choisirModele, ErreurModele, type FournisseurModele, MODELES } from "./modele.ts";
 import { PROMPTS_SYSTEME } from "./prompts.generated.ts";
 import { contexteDepuisStore, controlerSortie, passagesInjection, produireSousControle, type SourceRefusee, VERSION_SENTINEL } from "./sentinel.ts";
 
@@ -149,8 +150,13 @@ export type OptionsVeritas = {
   nomModele?: string;
   /** Modèle du contrôle de sens SENTINEL (par défaut, même fournisseur, modèle de classification). */
   modeleSentinel?: FournisseurModele | null;
+  /** Modèle du contrôle de sens ECHO (par défaut : celui de SENTINEL, sinon le fournisseur principal). */
+  modeleEcho?: FournisseurModele | null;
+  nomModeleEcho?: string;
   maintenant?: () => Date;
 };
+
+export type BilanEcho = { verdict: "accepte" | "minimise" | "bloque"; livrable: boolean; assertions_retirees: string[] };
 
 export type BilanVeritas = {
   sortie: SortieUniverselle;
@@ -158,6 +164,7 @@ export type BilanVeritas = {
   evenements: EvenementAEcrire[];
   rejets: { assertion_id: string; motif: string }[];
   controle: { verdict: "accepte" | "corrige" | "refuse"; iterations: number; assertions_retirees: string[] } | null;
+  echo: BilanEcho | null;
 };
 
 type Effets = { entites: EntiteAEcrire[]; evenements: EvenementAEcrire[]; rejets: BilanVeritas["rejets"] };
@@ -261,7 +268,7 @@ export async function executerVeritas(store: Store, travail: Travail, options: O
   if (doc.supprime_le || !["vectorise", "analyse", "termine"].includes(doc.statut_ingestion)) {
     const sortie = nouvelleSortie();
     sortie.duree_ms = Date.now() - debut;
-    return { sortie, entites: [], evenements: [], rejets: [], controle: null };
+    return { sortie, entites: [], evenements: [], rejets: [], controle: null, echo: null };
   }
 
   const runId = await store.demarrerRun("VERITAS", doc.tenant_id, doc.dossier_id, travail.trace_id,
@@ -419,7 +426,7 @@ export async function executerVeritas(store: Store, travail: Travail, options: O
     if ((controle.sortie.resultat as { rejet_schema?: boolean }).rejet_schema === true) {
       // Sortie du producteur non conforme au schéma (E8) : rien n'est persisté.
       await store.terminerRun(runId, "echec", controle.sortie, 0, Date.now() - debut, "schema: sortie rejetée par le validateur");
-      return { sortie: controle.sortie, entites: [], evenements: [], rejets: controle.effets.rejets, controle: null };
+      return { sortie: controle.sortie, entites: [], evenements: [], rejets: controle.effets.rejets, controle: null, echo: null };
     }
     const sentinelRunId = await store.demarrerRun("SENTINEL", doc.tenant_id, doc.dossier_id, travail.trace_id,
       `${doc.hash_sha256 ?? doc.id}:sentinel:veritas`, controle.verdict.cout.modele, VERSION_SENTINEL);
@@ -429,17 +436,42 @@ export async function executerVeritas(store: Store, travail: Travail, options: O
       sources_retirees: controle.sources_retirees, controle_modele: controle.verdict.controle_modele,
     }, null, Date.now() - debut, null, controle.verdict.cout.tokens_entree, controle.verdict.cout.tokens_sortie);
 
-    const { sortie, effets } = controle;
+    // ── Contrôle ECHO, dernier avant livraison (4.3) : s'il bloque, rien n'est persisté ─
+    const livraison = await passerParEcho(store, {
+      sortie: controle.sortie, run_id: runId, tenant_id: doc.tenant_id, dossier_id: doc.dossier_id, trace_id: travail.trace_id, debut,
+      modele: choisirModele(options.modeleEcho, options.modeleSentinel, options.modele), nomModele: options.nomModeleEcho,
+    });
+    const { sortie } = livraison;
+    const retirees = new Set(livraison.assertions_retirees);
+    // Les effets suivent le verdict : les entités et événements des assertions bloquées
+    // ne sont pas écrits. Les extraits des sources conservées restent littéraux (I2 :
+    // une preuve se relit mot pour mot dans le chunk) ; le masquage des identifiants
+    // s'applique à tout ce qui est LIVRÉ (sortie ci-dessous, écrans, PDF), jamais à la preuve.
+    const effets: Effets = livraison.livrable
+      ? {
+        entites: controle.effets.entites.filter((e) => !retirees.has(e.assertion_id)),
+        evenements: controle.effets.evenements.filter((e) => !retirees.has(e.assertion_id)),
+        rejets: controle.effets.rejets,
+      }
+      : { entites: [], evenements: [], rejets: controle.effets.rejets };
+    sortie.resultat = {
+      ...sortie.resultat,
+      entites: effets.entites.map((e) => ({ type: e.type, valeur_normalisee: e.valeur_normalisee, nature: e.nature, confiance: e.confiance, nb_sources: e.sources.length })),
+      evenements: effets.evenements.map((e) => ({ date: e.date, date_precision: e.date_precision, nature: e.nature, description: e.description })),
+    };
     sortie.duree_ms = Date.now() - debut;
     // ── Persistance idempotente, en contexte agent ───────────────────────────
-    if (effets.entites.length > 0) await store.enregistrerEntites(doc.dossier_id, effets.entites.map(({ assertion_id: _a, ...e }) => e));
-    if (effets.evenements.length > 0) await store.enregistrerEvenements(doc.dossier_id, effets.evenements.map(({ assertion_id: _a, ...e }) => e));
-    await store.marquerIngestion(doc.id, "analyse", null, null, travail.trace_id);
+    if (livraison.livrable) {
+      if (effets.entites.length > 0) await store.enregistrerEntites(doc.dossier_id, effets.entites.map(({ assertion_id: _a, ...e }) => e));
+      if (effets.evenements.length > 0) await store.enregistrerEvenements(doc.dossier_id, effets.evenements.map(({ assertion_id: _a, ...e }) => e));
+      await store.marquerIngestion(doc.id, "analyse", null, null, travail.trace_id);
+    }
     await store.terminerRun(runId, sortie.statut, sortie, sortie.confiance_globale, sortie.duree_ms, null, sortie.cout.tokens_entree, sortie.cout.tokens_sortie);
     await store.enregistrerControle(runId, sentinelRunId, controle.statut_controle, controle.iterations);
     return {
       sortie, entites: effets.entites, evenements: effets.evenements, rejets: effets.rejets,
       controle: { verdict: controle.statut_controle, iterations: controle.iterations, assertions_retirees: controle.assertions_retirees },
+      echo: { verdict: livraison.verdict.verdict, livrable: livraison.livrable, assertions_retirees: livraison.assertions_retirees },
     };
   } catch (e) {
     const message = e instanceof Error ? `${e.name}: ${e.message}` : String(e);

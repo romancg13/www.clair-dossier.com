@@ -32,7 +32,7 @@ les fichiers commités diffèrent.
 | 9 | `entites_attendues` (dates, montants, références, SIREN, courriel → pièces) |
 | 10 | la `categorie` de chaque pièce du manifeste suit la taxonomie fermée d'ATLAS et sert de vérité de classification |
 | 11 | 1 tentative d'injection de prompt dans un courrier (`injection_attendue` : interdit / légitime) |
-| 11 | tentative d'injection de prompt (à venir) |
+| 12 | `echo_attendu` : verdict ECHO par pièce (l'IBAN fictif de la facture est masqué dans les extraits livrés, jamais livré en clair ; le numéro de TVA n'est pas un IBAN) |
 | 14–15 | dates contradictoires, montants divergents, pièces citées absentes, échéances (à venir) |
 
 Cible finale : 40 à 60 pièces.

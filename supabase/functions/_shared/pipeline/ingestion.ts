@@ -45,6 +45,7 @@ export type OptionsIngestion = {
   modele?: FournisseurModele | null;
   nomModeleExtraction?: string;
   nomModeleClassification?: string;
+  nomModeleEcho?: string;
   maintenant?: () => Date;
   /** Types de travaux à consommer (défaut : tous) — permet des exécutants dédiés. */
   types?: string[];
@@ -267,24 +268,32 @@ export async function traiterProchainTravail(
       return { travail, issue: "termine", sortie };
     }
     if (travail.type === TYPE_TRAVAIL_VERITAS) {
-      const bilan = await executerVeritas(store, travail, { modele: options.modele ?? null, nomModele: options.nomModeleExtraction, maintenant: options.maintenant });
+      const bilan = await executerVeritas(store, travail, {
+        modele: options.modele ?? null, nomModele: options.nomModeleExtraction, nomModeleEcho: options.nomModeleEcho, maintenant: options.maintenant,
+      });
       await store.terminerTravail(travail.id, {
         statut: bilan.sortie.statut,
         nb_entites: bilan.entites.length,
         nb_evenements: bilan.evenements.length,
         nb_rejets_ancrage: bilan.rejets.length,
+        sentinel: bilan.controle?.verdict ?? null,
+        echo: bilan.echo?.verdict ?? null,
         escalades: bilan.sortie.escalades.map((e) => e.code),
         duree_ms: bilan.sortie.duree_ms,
       });
       return { travail, issue: "termine", sortie: bilan.sortie };
     }
     if (travail.type === TYPE_TRAVAIL_ATLAS) {
-      const bilan = await executerAtlas(store, travail, { modele: options.modele ?? null, nomModele: options.nomModeleClassification, maintenant: options.maintenant });
+      const bilan = await executerAtlas(store, travail, {
+        modele: options.modele ?? null, nomModele: options.nomModeleClassification, nomModeleEcho: options.nomModeleEcho, maintenant: options.maintenant,
+      });
       await store.terminerTravail(travail.id, {
         statut: bilan.sortie.statut,
         categorie: bilan.classification?.categorie ?? null,
         confiance: bilan.classification?.confiance ?? null,
         quasi_doublon_de_id: bilan.quasi_doublon?.document_id ?? null,
+        sentinel: bilan.controle?.verdict ?? null,
+        echo: bilan.echo?.verdict ?? null,
         escalades: bilan.sortie.escalades.map((e) => e.code),
         duree_ms: bilan.sortie.duree_ms,
       });

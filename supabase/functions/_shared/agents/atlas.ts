@@ -17,10 +17,12 @@ import { type Assertion, type SortieUniverselle, validerOuRejeter } from "../sch
 import { localiser } from "./ancrage.ts";
 import { CATEGORIES, type Categorie, type Classification, classerParRegles, nomNormalise, SEUIL_CLASSIFICATION } from "./categories.ts";
 import { detecterInjection, extrairePage } from "./extracteurs.ts";
-import { ErreurModele, type FournisseurModele, MODELES } from "./modele.ts";
+import { passerParEcho } from "./livraison.ts";
+import { choisirModele, ErreurModele, type FournisseurModele, MODELES } from "./modele.ts";
 import { PROMPTS_SYSTEME } from "./prompts.generated.ts";
 import { contexteDepuisStore, controlerSortie, produireSousControle, VERSION_SENTINEL } from "./sentinel.ts";
 import { SEUIL_QUASI_DOUBLON, shingles, jaccard } from "./similarite.ts";
+import type { BilanEcho } from "./veritas.ts";
 
 export const VERSION_ATLAS = "1.0";
 export const TYPE_TRAVAIL_ATLAS = "atlas";
@@ -64,6 +66,8 @@ export type OptionsAtlas = {
   modele?: FournisseurModele | null;
   nomModele?: string;
   modeleSentinel?: FournisseurModele | null;
+  modeleEcho?: FournisseurModele | null;
+  nomModeleEcho?: string;
   maintenant?: () => Date;
 };
 
@@ -73,6 +77,7 @@ export type BilanAtlas = {
   quasi_doublon: { document_id: string; file_name: string; similarite: number } | null;
   nom_normalise: string | null;
   controle: { verdict: "accepte" | "corrige" | "refuse"; iterations: number } | null;
+  echo: BilanEcho | null;
 };
 
 /** Première date et première référence de la pièce (déterministe) pour le nom normalisé. */
@@ -111,7 +116,7 @@ export async function executerAtlas(store: Store, travail: Travail, options: Opt
     assertions: [], incertitudes: [], escalades: [], donnees_sensibles_detectees: [],
     cout: { modele: null, tokens_entree: 0, tokens_sortie: 0 }, duree_ms: 0,
   };
-  const vide = (): BilanAtlas => ({ sortie, classification: null, quasi_doublon: null, nom_normalise: null, controle: null });
+  const vide = (): BilanAtlas => ({ sortie, classification: null, quasi_doublon: null, nom_normalise: null, controle: null, echo: null });
   if (doc.supprime_le || !["analyse", "termine"].includes(doc.statut_ingestion)) {
     sortie.duree_ms = Date.now() - debut;
     return vide();
@@ -238,7 +243,7 @@ export async function executerAtlas(store: Store, travail: Travail, options: Opt
     const validation = validerOuRejeter(sortie, { agent: "ATLAS", dossier_id: doc.dossier_id, trace_id: travail.trace_id });
     if (validation.rejetee) {
       await store.terminerRun(runId, "echec", validation.sortie, 0, Date.now() - debut, `schema: ${validation.erreurs.map((e) => e.code).join(",")}`);
-      return { sortie: validation.sortie, classification: null, quasi_doublon: null, nom_normalise: null, controle: null };
+      return { sortie: validation.sortie, classification: null, quasi_doublon: null, nom_normalise: null, controle: null, echo: null };
     }
 
     // ── Contrôle SENTINEL avant persistance (4.3) ───────────────────────────
@@ -255,17 +260,26 @@ export async function executerAtlas(store: Store, travail: Travail, options: Opt
       agent_controle: "ATLAS", run_controle: runId, verdict: controle.statut_controle, iterations: controle.iterations,
       anomalies: controle.verdict.anomalies.slice(0, 50), assertions_retirees: controle.assertions_retirees, controle_modele: controle.verdict.controle_modele,
     }, null, Date.now() - debut, null, controle.verdict.cout.tokens_entree, controle.verdict.cout.tokens_sortie);
-    const sortieFinale = controle.sortie;
+    // ── Contrôle ECHO, dernier avant livraison (4.3) : s'il bloque, rien n'est persisté ─
+    const livraison = await passerParEcho(store, {
+      sortie: controle.sortie, run_id: runId, tenant_id: doc.tenant_id, dossier_id: doc.dossier_id, trace_id: travail.trace_id, debut,
+      modele: choisirModele(options.modeleEcho, options.modeleSentinel, options.modele), nomModele: options.nomModeleEcho,
+    });
+    const sortieFinale = livraison.sortie;
     sortieFinale.duree_ms = Date.now() - debut;
-    if (controle.effets.classifiee) {
-      await store.enregistrerClassification(doc.id, classification.categorie, classification.confiance, nom, quasi?.document_id ?? null, quasi?.similarite ?? null, travail.trace_id);
+    const classifiee = livraison.livrable && controle.effets.classifiee && !livraison.assertions_retirees.includes("c1");
+    if (livraison.livrable) {
+      if (classifiee) {
+        await store.enregistrerClassification(doc.id, classification.categorie, classification.confiance, nom, quasi?.document_id ?? null, quasi?.similarite ?? null, travail.trace_id);
+      }
+      await store.marquerIngestion(doc.id, "termine", null, null, travail.trace_id);
     }
-    await store.marquerIngestion(doc.id, "termine", null, null, travail.trace_id);
     await store.terminerRun(runId, sortieFinale.statut, sortieFinale, sortieFinale.confiance_globale, sortieFinale.duree_ms, null, sortieFinale.cout.tokens_entree, sortieFinale.cout.tokens_sortie);
     await store.enregistrerControle(runId, sentinelRunId, controle.statut_controle, controle.iterations);
     return {
-      sortie: sortieFinale, classification: controle.effets.classifiee ? classification : null, quasi_doublon: quasi, nom_normalise: nom,
+      sortie: sortieFinale, classification: classifiee ? classification : null, quasi_doublon: livraison.livrable ? quasi : null, nom_normalise: livraison.livrable ? nom : null,
       controle: { verdict: controle.statut_controle, iterations: controle.iterations },
+      echo: { verdict: livraison.verdict.verdict, livrable: livraison.livrable, assertions_retirees: livraison.assertions_retirees },
     };
   } catch (e) {
     const message = e instanceof Error ? `${e.name}: ${e.message}` : String(e);

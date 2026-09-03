@@ -16,11 +16,25 @@ export type Journal = {
   evenements: unknown[][];
   classifications: { categorie: string; confiance: number; nomNormalise: string | null; quasi: string | null; similarite: number | null }[];
   controles: { runId: string; sentinelRunId: string | null; verdict: string; iterations: number }[];
+  controlesEcho: { runId: string; echoRunId: string | null; verdict: string }[];
+  audit: { action: string; objetType: string; objetId: string | null; tenantId: string; dossierId: string | null; apres: Record<string, unknown>; traceId: string }[];
   runs: { id: string; agent: string; statut?: string; sortie?: unknown; erreur?: string | null }[];
   statuts: string[];
 };
 
-export function storeMemoire(pagesTexte: string[], options: { statut?: string; fileName?: string; type?: string } = {}): { store: Store; journal: Journal; travail: Travail } {
+export type OptionsMemoire = {
+  statut?: string;
+  fileName?: string;
+  type?: string;
+  /** null = aucune finalité déclarée (blocage ECHO attendu). */
+  finalite?: null;
+  consentementRequis?: boolean;
+  consentementEffectif?: boolean;
+  categoriesAdmises?: string[];
+  typology?: string;
+};
+
+export function storeMemoire(pagesTexte: string[], options: OptionsMemoire = {}): { store: Store; journal: Journal; travail: Travail } {
   const pages: PageTexte[] = pagesTexte.map((texte, i) => ({ page: i + 1, texte, methode: texte.trim() ? 'natif' : 'ocr_requis' }));
   const chunks: (Chunk & { id: string })[] = decouperDocument(pages.filter((p) => p.methode === 'natif')).map((c, i) => ({
     ...c,
@@ -31,7 +45,7 @@ export function storeMemoire(pagesTexte: string[], options: { statut?: string; f
     size_bytes: 10, mime: 'application/pdf', hash_sha256: 'a'.repeat(64), kind: 'piece', statut_ingestion: options.statut ?? 'vectorise',
     doublon_de_id: null, supprime_le: null,
   };
-  const journal: Journal = { entites: [], evenements: [], classifications: [], controles: [], runs: [], statuts: [] };
+  const journal: Journal = { entites: [], evenements: [], classifications: [], controles: [], controlesEcho: [], audit: [], runs: [], statuts: [] };
   const store: Store = {
     async prendreTravail() { return null; },
     async terminerTravail() {},
@@ -65,6 +79,20 @@ export function storeMemoire(pagesTexte: string[], options: { statut?: string; f
     },
     async enregistrerControle(runId, sentinelRunId, verdict, iterations) {
       journal.controles.push({ runId, sentinelRunId, verdict, iterations });
+    },
+    async enregistrerControleEcho(runId, echoRunId, verdict) {
+      journal.controlesEcho.push({ runId, echoRunId, verdict });
+    },
+    async lireContexteConformite(_dossierId, finalite) {
+      return {
+        finalite: options.finalite === null ? null : { code: finalite, base_legale: 'contrat', consentement_requis: options.consentementRequis ?? false, categories_sensibles_admises: options.categoriesAdmises ?? [] },
+        consentement_effectif: options.consentementEffectif ?? false,
+        typology: options.typology ?? 'impaye-precontentieux',
+        tenant_id: TENANT_ID,
+      };
+    },
+    async journaliser(action, objetType, objetId, tenantId, dossierId, apres, traceId) {
+      journal.audit.push({ action, objetType, objetId, tenantId, dossierId, apres, traceId });
     },
   };
   const travail: Travail = {

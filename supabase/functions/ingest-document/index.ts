@@ -17,6 +17,7 @@ const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY") ?? "";
 const MODELE_EXTRACTION = Deno.env.get("MODELE_EXTRACTION") || undefined;
 const MODELE_CLASSIFICATION = Deno.env.get("MODELE_CLASSIFICATION") || undefined;
+const MODELE_ECHO = Deno.env.get("MODELE_ECHO") || undefined;
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
@@ -37,6 +38,7 @@ Deno.serve(async (req) => {
       modele: ANTHROPIC_API_KEY ? modeleAnthropic(ANTHROPIC_API_KEY) : null,
       nomModeleExtraction: MODELE_EXTRACTION,
       nomModeleClassification: MODELE_CLASSIFICATION,
+      nomModeleEcho: MODELE_ECHO,
     });
     console.log(JSON.stringify({ evenement: "ingestion.file", ...bilan }));
     return json(bilan);

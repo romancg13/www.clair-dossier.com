@@ -26,6 +26,7 @@ const PAGE_1 = [
 type Sortie = { assertions: unknown[]; resultat: { entites: unknown[]; evenements: unknown[] }; incertitudes: unknown[]; donnees_sensibles_detectees: string[] };
 
 const VERDICT_ACCEPTE = { verdict: 'accepte', anomalies: [], incertitudes: [] };
+const VERDICT_ECHO = { verdict: 'accepte', blocages: [], minimisations: [], categories_sensibles: [], incertitudes: [] };
 
 function reponseModele(options: { avecDateFausse?: boolean } = {}): Sortie {
   const source = (extrait: string) => ({ document_id: DOCUMENT_ID, nom_fichier: 'piece.pdf', page: 1, extrait });
@@ -65,14 +66,18 @@ function reponseModele(options: { avecDateFausse?: boolean } = {}): Sortie {
 describe('VERITAS (modèle simulé)', () => {
   it('ne persiste que les assertions ancrées ; rejette la fabrication ; déclasse le numéro sous seuil (E1) ; signale les sensibles (E7) ; SENTINEL fait corriger la date fausse', async () => {
     const { store, journal, travail } = storeMemoire([PAGE_1]);
-    // 1er tour : date fausse → refus SENTINEL ; 2e tour : corrigée → contrôle de sens (modèle) accepte.
-    const modele = modeleSimule([reponseModele({ avecDateFausse: true }), reponseModele(), VERDICT_ACCEPTE]);
+    // 1er tour : date fausse → refus SENTINEL ; 2e tour : corrigée → contrôle de sens (modèle) accepte ; puis ECHO.
+    const modele = modeleSimule([reponseModele({ avecDateFausse: true }), reponseModele(), VERDICT_ACCEPTE, VERDICT_ECHO]);
     const bilan = await executerVeritas(store, travail, { modele });
 
     expect(valider(bilan.sortie)).toMatchObject({ valide: true });
     expect(bilan.controle).toEqual({ verdict: 'corrige', iterations: 1, assertions_retirees: [] });
+    expect(bilan.echo).toEqual({ verdict: 'accepte', livrable: true, assertions_retirees: [] });
     expect(modele.requetes[1].utilisateur).toMatch(/CORRECTIONS DEMANDÉES PAR LE CONTRÔLE QUALITÉ[\s\S]*assertion ma5/);
-    expect(modele.requetes[2].outil.nom).toBe('emettre_verdict');
+    expect(modele.requetes[2].systeme).toBe(PROMPTS_SYSTEME.SENTINEL);
+    expect(modele.requetes[3].systeme).toBe(PROMPTS_SYSTEME.ECHO);
+    expect(journal.controlesEcho).toEqual([expect.objectContaining({ verdict: 'accepte' })]);
+    expect(journal.audit.map((a) => a.action)).toEqual(['sortie.livree']);
     expect(bilan.rejets).toEqual([{ assertion_id: 'a3', motif: 'extrait_absent' }]);
     const types = bilan.entites.map((e) => `${e.type}:${e.valeur_normalisee}:${e.nature}`);
     // Déterministes (ancrage par construction)…
