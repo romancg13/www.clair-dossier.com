@@ -137,6 +137,13 @@
         "Cordialement,",
         "Claire Fictive — Atelier Fictif SAS"
       ]
+    },
+    {
+      "fichier": "08-releve-bancaire-scan-illisible.pdf",
+      "titre": "Relevé bancaire numérisé (image seule, aucune couche texte)",
+      "categorie": "releve_bancaire",
+      "role": "illisible",
+      "rendu": { "type": "image", "producteur": "Scanner fictif v0" }
     }
   ]
 }

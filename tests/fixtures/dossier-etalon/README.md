@@ -27,7 +27,7 @@ les fichiers commités diffèrent.
 | Étape | Contenu ajouté |
 |---|---|
 | 5 | 7 pièces : 2 doublons stricts, 1 quasi-doublon (`doublons_stricts`, `quasi_doublons`) |
-| 6 | document illisible (à venir) |
+| 6 | 1 document illisible : PDF image sans couche texte (`documents_illisibles`, `ingestion_attendue`) |
 | 11 | tentative d'injection de prompt (à venir) |
 | 14–15 | dates contradictoires, montants divergents, pièces citées absentes, échéances (à venir) |
 

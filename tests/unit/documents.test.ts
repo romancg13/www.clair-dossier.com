@@ -12,7 +12,7 @@ const DIR = resolve(__dirname, '../fixtures/dossier-etalon');
 
 type Piece = {
   fichier: string;
-  role: 'original' | 'doublon_strict' | 'quasi_doublon';
+  role: 'original' | 'doublon_strict' | 'quasi_doublon' | 'illisible';
   copie_de?: string;
   quasi_doublon_de?: string;
   texte?: string[];
@@ -84,13 +84,15 @@ describe('dossier étalon', () => {
     }
   });
 
-  it('chaque pièce est un PDF avec un texte natif non vide', () => {
+  it('chaque pièce est un PDF ; texte natif non vide, sauf la pièce illisible qui n’en a aucun', () => {
     for (const p of manifest.pieces) {
       const buf = bytes(p.fichier);
       expect(buf.subarray(0, 5).toString('latin1'), p.fichier).toBe('%PDF-');
       expect(buf.toString('latin1').trimEnd().endsWith('%%EOF'), p.fichier).toBe(true);
-      expect(textesTj(buf).length, p.fichier).toBeGreaterThan(3);
+      if (p.role === 'illisible') expect(textesTj(buf).length, p.fichier).toBe(0);
+      else expect(textesTj(buf).length, p.fichier).toBeGreaterThan(3);
     }
+    expect(manifest.pieces.filter((p) => p.role === 'illisible').length).toBe(1);
   });
 
   it('ne contient aucune coordonnée réelle : domaines .invalid et SIREN fictifs', () => {

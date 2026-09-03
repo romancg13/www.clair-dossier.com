@@ -2,7 +2,8 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "types": ["node"],
-    "noEmit": true
+    "noEmit": true,
+    "allowImportingTsExtensions": true
   },
   "include": [
     "tests",
@@ -10,6 +11,7 @@
     "vitest.config.ts",
     "src/data",
     "src/components/icons.tsx",
-    "src/lib/documents.ts"
+    "src/lib/documents.ts",
+    "supabase/functions/_shared/**/*.ts"
   ]
 }

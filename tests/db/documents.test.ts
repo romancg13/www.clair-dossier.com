@@ -7,62 +7,9 @@
  * aussi l'immutabilité du stockage (I3) : pas de destruction d'original par le
  * client, suppression logique, bucket sans écrasement ni suppression d'original.
  */
-import { createHash } from 'node:crypto';
-import { existsSync, readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { type Tx, withTx } from './harness';
-
-const DIR = resolve(__dirname, '../fixtures/dossier-etalon');
-type Piece = { fichier: string; role: string };
-type VeriteTerrain = {
-  doublons_stricts: { piece: string; original: string }[];
-  quasi_doublons: { piece: string; original: string }[];
-};
-const manifest = JSON.parse(readFileSync(resolve(DIR, 'manifest.json'), 'utf8')) as { pieces: Piece[] };
-const verite = JSON.parse(readFileSync(resolve(DIR, 'verite-terrain.json'), 'utf8')) as VeriteTerrain;
-const hashOf = (fichier: string) => createHash('sha256').update(readFileSync(resolve(DIR, fichier))).digest('hex');
-const sizeOf = (fichier: string) => readFileSync(resolve(DIR, fichier)).length;
-const estUnePieceEtalon = (fichier: string) => existsSync(resolve(DIR, fichier));
-
-type DocRow = { id: string; file_name: string; statut_ingestion: string; doublon_de_id: string | null };
-
-async function dossierEtalon(tx: Tx) {
-  const a = await tx.createUser('etalon@test.invalid', { full_name: 'A Étalon' });
-  const b = await tx.createUser('autre@test.invalid', { full_name: 'B Autre' });
-  const admin = await tx.createUser('admin-etalon@test.invalid', { full_name: 'Admin' });
-  await tx.sql('insert into public.app_admins (user_id) values ($1)', [admin.id]);
-  await tx.sql("insert into storage.buckets (id, name, public) values ('documents', 'documents', false) on conflict (id) do nothing");
-  await tx.as(a.id);
-  const d = await tx.sql<{ id: string }>(
-    `insert into public.dossiers (user_id, typology, title, status)
-     values ($1, 'impaye-precontentieux', 'Impayé — Atelier Fictif SAS c/ Société Exemple SARL', 'transmis') returning id`,
-    [a.id],
-  );
-  return { a, b, admin, dossierId: d[0].id };
-}
-
-/**
- * Dépose une pièce comme le client : chemin <user>/<dossier>/<nom>, empreinte et MIME
- * transmis. Pour un nom hors dossier étalon, l'empreinte est celle fournie (ou absente).
- */
-async function deposer(
-  tx: Tx,
-  userId: string,
-  dossierId: string,
-  fichier: string,
-  extra: { hash?: string | null; kind?: string } = {},
-) {
-  const etalon = estUnePieceEtalon(fichier);
-  const hash = extra.hash !== undefined ? extra.hash : etalon ? hashOf(fichier) : null;
-  const rows = await tx.sql<DocRow>(
-    `insert into public.dossier_documents (dossier_id, user_id, file_path, file_name, size_bytes, hash_sha256, mime, kind)
-     values ($1::uuid, $2::uuid, $2::text || '/' || $1::text || '/' || $3::text, $3::text, $4::bigint, $5::text, 'application/pdf', $6::text)
-     returning id, file_name, statut_ingestion, doublon_de_id`,
-    [dossierId, userId, fichier, etalon ? sizeOf(fichier) : 10, hash, extra.kind ?? 'piece'],
-  );
-  return rows[0];
-}
+import { type DocRow, deposer, dossierEtalon, hashOf, manifest, sizeOf, verite } from './etalon';
+import { withTx } from './harness';
 
 describe('empreinte et doublons stricts (pipeline 7.1, étape 2)', () => {
   it('détecte 100 % des doublons stricts du dossier étalon, et aucun faux positif', async () => {

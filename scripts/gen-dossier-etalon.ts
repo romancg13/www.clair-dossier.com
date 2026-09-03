@@ -13,6 +13,8 @@ import { fileURLToPath } from "node:url";
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 
 type Rendu = {
+  /** "texte" (défaut) : texte natif ; "image" : page image sans couche texte (numérisation). */
+  type?: "texte" | "image";
   /** Taille de police en points. */
   taille?: number;
   /** Marge gauche en points. */
@@ -25,7 +27,7 @@ type Piece = {
   fichier: string;
   titre: string;
   categorie: string;
-  role: "original" | "doublon_strict" | "quasi_doublon";
+  role: "original" | "doublon_strict" | "quasi_doublon" | "illisible";
   /** Pièce dont celle-ci est la copie octet pour octet. */
   copie_de?: string;
   /** Pièce dont celle-ci reprend le texte avec un rendu différent. */
@@ -73,6 +75,57 @@ function ascii(text: string): number[] {
   return Array.from(Buffer.from(text, "latin1"));
 }
 
+/** Assemble le fichier PDF (en-tête, objets, xref, trailer) à partir des objets numérotés. */
+function assemblerPdf(objets: number[][]): Buffer {
+  const out: number[] = ascii("%PDF-1.4\n%âãÏÓ\n");
+  const offsets: number[] = [];
+  objets.forEach((body, i) => {
+    offsets.push(out.length);
+    out.push(...ascii(`${i + 1} 0 obj\n`), ...body, ...ascii("\nendobj\n"));
+  });
+  const xref = out.length;
+  out.push(...ascii(`xref\n0 ${objets.length + 1}\n0000000000 65535 f \n`));
+  for (const off of offsets) out.push(...ascii(`${String(off).padStart(10, "0")} 00000 n \n`));
+  out.push(
+    ...ascii(`trailer\n<< /Size ${objets.length + 1} /Root 1 0 R /Info 4 0 R >>\nstartxref\n${xref}\n%%EOF\n`),
+  );
+  return Buffer.from(out);
+}
+
+/**
+ * PDF d'une page contenant uniquement une image (numérisation sans couche texte) :
+ * bitmap gris 48×64 en clair (aucun filtre), bruit déterministe façon scan pâle.
+ */
+function buildPdfImage(rendu: Rendu): Buffer {
+  const largeur = 48;
+  const hauteur = 64;
+  const pixels: number[] = [];
+  for (let i = 0; i < largeur * hauteur; i++) {
+    const bruit = (Math.imul(i + 1, 2654435761) >>> 0) % 256;
+    pixels.push(bruit < 36 ? 30 + (bruit % 20) : 214 + (bruit % 40));
+  }
+  const objets: number[][] = [];
+  const add = (bytes: number[]) => objets.push(bytes) && objets.length;
+  add(ascii("<< /Type /Catalog /Pages 2 0 R >>"));
+  add(ascii("<< /Type /Pages /Kids [6 0 R] /Count 1 >>"));
+  add(ascii("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>"));
+  add([...ascii("<< /Producer "), ...pdfString(rendu.producteur ?? "Scanner fictif v0"), ...ascii(" >>")]);
+  add([
+    ...ascii(
+      `<< /Type /XObject /Subtype /Image /Width ${largeur} /Height ${hauteur} /ColorSpace /DeviceGray /BitsPerComponent 8 /Length ${pixels.length} >>\nstream\n`,
+    ),
+    ...pixels,
+    ...ascii("\nendstream"),
+  ]);
+  const content = ascii("q 480 0 0 640 57 101 cm /Im1 Do Q\n");
+  const contentId = add([...ascii(`<< /Length ${content.length} >>\nstream\n`), ...content, ...ascii("endstream")]);
+  // L'objet 6 doit être la page (référencé par /Kids) : on insère la page avant le contenu.
+  objets.splice(5, 0, ascii(
+    `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /XObject << /Im1 5 0 R >> >> /Contents ${contentId + 1} 0 R >>`,
+  ));
+  return assemblerPdf(objets);
+}
+
 /** PDF 1.4 minimal, une police Helvetica, N pages de texte. */
 function buildPdf(lines: string[], rendu: Rendu): Buffer {
   const taille = rendu.taille ?? 11;
@@ -112,20 +165,7 @@ function buildPdf(lines: string[], rendu: Rendu): Buffer {
   }
   objets[0] = ascii("<< /Type /Catalog /Pages 2 0 R >>");
   objets[1] = ascii(`<< /Type /Pages /Kids [${pageIds.map((id) => `${id} 0 R`).join(" ")}] /Count ${pageIds.length} >>`);
-
-  const out: number[] = ascii("%PDF-1.4\n%âãÏÓ\n");
-  const offsets: number[] = [];
-  objets.forEach((body, i) => {
-    offsets.push(out.length);
-    out.push(...ascii(`${i + 1} 0 obj\n`), ...body, ...ascii("\nendobj\n"));
-  });
-  const xref = out.length;
-  out.push(...ascii(`xref\n0 ${objets.length + 1}\n0000000000 65535 f \n`));
-  for (const off of offsets) out.push(...ascii(`${String(off).padStart(10, "0")} 00000 n \n`));
-  out.push(
-    ...ascii(`trailer\n<< /Size ${objets.length + 1} /Root 1 0 R /Info 4 0 R >>\nstartxref\n${xref}\n%%EOF\n`),
-  );
-  return Buffer.from(out);
+  return assemblerPdf(objets);
 }
 
 const parFichier = new Map(manifest.pieces.map((p) => [p.fichier, p]));
@@ -135,7 +175,9 @@ function render(piece: Piece): Buffer {
   const cached = rendus.get(piece.fichier);
   if (cached) return cached;
   let buf: Buffer;
-  if (piece.copie_de) {
+  if (piece.rendu?.type === "image") {
+    buf = buildPdfImage(piece.rendu);
+  } else if (piece.copie_de) {
     const source = parFichier.get(piece.copie_de);
     if (!source) throw new Error(`${piece.fichier} : copie_de introuvable (${piece.copie_de})`);
     buf = render(source);

@@ -12,6 +12,13 @@ annulées (interdit n° 15).
 avec leur empreinte réelle et compare la détection de doublons à `verite-terrain.json` ;
 il vérifie aussi l'immutabilité du stockage (suppression logique, bucket).
 
+`pipeline.test.ts` fait traverser le pipeline d'ingestion (étapes 1 à 5) aux pièces du
+dossier étalon : le code serveur partagé (`supabase/functions/_shared/pipeline/`) tourne
+en Node avec un `Store` branché sur la connexion du test (`pipeline-store.ts`) et un
+`Stockage` qui sert les octets du jeu d'essai ; les statuts obtenus sont comparés à la
+section `ingestion_attendue` de la vérité terrain. Reprise sur erreur, backoff, verrou
+expiré et idempotence sont exercés réellement.
+
 `isolation.test.ts` rejoue aussi les scénarios d'attaque identifiés en revue
 (forge du journal, contournement du verrou humain par suppression, réécriture des
 métadonnées d'ingestion, déplacement de dossier entre tenants, `setval` sur la

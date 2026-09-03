@@ -1,0 +1,107 @@
+/**
+ * Implémentations de test des interfaces du pipeline :
+ *   - Store sur la connexion Postgres du test (mêmes procédures serveur qu'en production) ;
+ *   - Stockage sur les fichiers du dossier étalon, avec injection d'échecs pour
+ *     vérifier la reprise sur erreur.
+ */
+import { resolve } from 'node:path';
+import { existsSync, readFileSync } from 'node:fs';
+import type {
+  DocumentIngestion,
+  PageExtraite,
+  Quota,
+  StatutSortie,
+  Stockage,
+  Store,
+  Travail,
+} from '../../supabase/functions/_shared/pipeline/types.ts';
+import type { Tx } from './harness';
+import { DIR } from './etalon';
+
+type Sql = Tx['sql'];
+
+export function creerStorePg(sql: Sql): Store {
+  return {
+    async prendreTravail(types, executant) {
+      const rows = await sql<Travail & { id: string | number }>(
+        'select * from public.prendre_travail($1::text[], $2::text)',
+        [types, executant],
+      );
+      const t = rows[0];
+      return t ? { ...t, id: Number(t.id) } : null;
+    },
+    async terminerTravail(id, resultat) {
+      await sql('select public.terminer_travail($1::bigint, $2::jsonb)', [id, JSON.stringify(resultat)]);
+    },
+    async echouerTravail(id, erreur, definitif = false) {
+      await sql('select public.echouer_travail($1::bigint, $2::text, $3::boolean)', [id, erreur, definitif]);
+    },
+    async lireDocument(id) {
+      const rows = await sql<DocumentIngestion>(
+        `select id, tenant_id, dossier_id, file_path, file_name, size_bytes, mime, hash_sha256, kind,
+                statut_ingestion, doublon_de_id, supprime_le
+           from public.dossier_documents where id = $1::uuid`,
+        [id],
+      );
+      const d = rows[0];
+      return d ? { ...d, size_bytes: d.size_bytes === null ? null : Number(d.size_bytes) } : null;
+    },
+    async verifierQuota(documentId) {
+      const rows = await sql<{ q: Quota }>('select public.verifier_quota_ingestion($1::uuid) as q', [documentId]);
+      return rows[0].q;
+    },
+    async enregistrerEmpreinte(documentId, hash, mime, taille, pages = null) {
+      await sql('select public.enregistrer_empreinte($1::uuid, $2::text, $3::text, $4::bigint, $5::integer)', [
+        documentId, hash, mime, taille, pages,
+      ]);
+    },
+    async enregistrerPages(documentId, pages: PageExtraite[]) {
+      await sql('select public.enregistrer_pages($1::uuid, $2::jsonb)', [documentId, JSON.stringify(pages)]);
+    },
+    async marquerIngestion(documentId, statut, erreur, pages, traceId) {
+      await sql('select public.marquer_ingestion($1::uuid, $2::text, $3::text, $4::integer, $5::uuid)', [
+        documentId, statut, erreur, pages, traceId,
+      ]);
+    },
+    async demarrerRun(agent, tenantId, dossierId, traceId, entreeHash, modele, version) {
+      const rows = await sql<{ id: string }>(
+        'select public.demarrer_run($1::text, $2::uuid, $3::uuid, $4::uuid, $5::text, $6::text, $7::text) as id',
+        [agent, tenantId, dossierId, traceId, entreeHash, modele, version],
+      );
+      return rows[0].id;
+    },
+    async terminerRun(runId, statut: StatutSortie, sortie, confiance, dureeMs, erreur) {
+      await sql('select public.terminer_run($1::uuid, $2::text, $3::jsonb, $4::numeric, $5::integer, $6::text)', [
+        runId, statut, JSON.stringify(sortie), confiance, dureeMs, erreur,
+      ]);
+    },
+  };
+}
+
+export type OptionsStockageTest = {
+  /** Octets servis pour un nom de fichier donné (prioritaire sur le dossier étalon). */
+  contenus?: Record<string, Uint8Array>;
+  /** Nombre d'échecs à simuler avant de servir le fichier (reprise sur erreur). */
+  echecs?: Record<string, number>;
+};
+
+/** Stockage de test : sert les octets du dossier étalon d'après le nom de fichier du chemin. */
+export function creerStockageEtalon(options: OptionsStockageTest = {}): Stockage & { appels: string[] } {
+  const restants = { ...(options.echecs ?? {}) };
+  const appels: string[] = [];
+  return {
+    appels,
+    async telecharger(filePath) {
+      const nom = filePath.split('/').pop() ?? filePath;
+      appels.push(nom);
+      if ((restants[nom] ?? 0) > 0) {
+        restants[nom]--;
+        throw new Error(`stockage indisponible (simulation) : ${nom}`);
+      }
+      if (options.contenus?.[nom]) return options.contenus[nom];
+      const chemin = resolve(DIR, nom);
+      if (!existsSync(chemin)) throw new Error(`objet absent : ${nom}`);
+      return new Uint8Array(readFileSync(chemin));
+    },
+  };
+}
