@@ -33,6 +33,7 @@ les fichiers commités diffèrent.
 | 10 | la `categorie` de chaque pièce du manifeste suit la taxonomie fermée d'ATLAS et sert de vérité de classification |
 | 11 | 1 tentative d'injection de prompt dans un courrier (`injection_attendue` : interdit / légitime) |
 | 12 | `echo_attendu` : verdict ECHO par pièce (l'IBAN fictif de la facture est masqué dans les extraits livrés, jamais livré en clair ; le numéro de TVA n'est pas un IBAN) |
+| 13 | `orchestration_attendue` : consolidation CLAIR-OS du dossier complet (9 pièces traitées, aucune incohérence inter-agents, une action attendue : la pièce illisible) |
 | 14–15 | dates contradictoires, montants divergents, pièces citées absentes, échéances (à venir) |
 
 Cible finale : 40 à 60 pièces.

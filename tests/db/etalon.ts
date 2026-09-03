@@ -29,6 +29,13 @@ export type VeriteTerrain = {
     donnees_sensibles_par_piece: Record<string, string[]>;
     valeur_jamais_livree: string;
   };
+  orchestration_attendue: {
+    pieces_total: number;
+    pieces_terminees: number;
+    libelle: string;
+    incoherences_e9: number;
+    actions_attendues: { code: string; piece: string }[];
+  };
 };
 
 export const manifest = JSON.parse(readFileSync(resolve(DIR, 'manifest.json'), 'utf8')) as { pieces: PieceManifest[] };

@@ -7,9 +7,13 @@
 import { resolve } from 'node:path';
 import { existsSync, readFileSync } from 'node:fs';
 import type {
+  Budget,
   Chunk,
   DocumentIngestion,
   DocumentResume,
+  DossierResume,
+  Escalade,
+  Orchestration,
   PageExtraite,
   PageTexte,
   Quota,
@@ -112,7 +116,8 @@ export function creerStorePg(sql: Sql): Store {
     },
     async lireDocumentsDossier(dossierId) {
       const rows = await sql<DocumentResume & { created_at: Date | string; supprime_le: Date | string | null }>(
-        `select id, file_name, kind, statut_ingestion, categorie, confiance_classification, pages, supprime_le, created_at
+        `select id, file_name, kind, statut_ingestion, categorie, confiance_classification, pages, supprime_le, created_at,
+                categorie_humaine, quasi_doublon_de_id, similarite
            from public.dossier_documents where dossier_id = $1::uuid order by created_at, id`,
         [dossierId],
       );
@@ -121,6 +126,7 @@ export function creerStorePg(sql: Sql): Store {
         created_at: new Date(r.created_at).toISOString(),
         supprime_le: r.supprime_le === null ? null : new Date(r.supprime_le).toISOString(),
         confiance_classification: r.confiance_classification === null ? null : Number(r.confiance_classification),
+        similarite: r.similarite === null || r.similarite === undefined ? null : Number(r.similarite),
       }));
     },
     async enregistrerClassification(documentId, categorie, confiance, nomNormalise, quasiDoublonDeId, similarite, traceId) {
@@ -149,6 +155,67 @@ export function creerStorePg(sql: Sql): Store {
         "select public.journaliser($1::text, $2::text, $3::uuid, $4::uuid, $5::uuid, null, $6::jsonb, 'agent', $7::uuid)",
         [action, objetType, objetId, tenantId, dossierId, JSON.stringify(apres), traceId],
       );
+    },
+    async lireDossier(dossierId) {
+      const rows = await sql<DossierResume>('select id, tenant_id, typology, title, status from public.dossiers where id = $1::uuid', [dossierId]);
+      return rows[0] ?? null;
+    },
+    async lireRuns(dossierId) {
+      const rows = await sql<{ id: string; agent: string; statut: string; confiance: string | null; sentinel_verdict: string | null; echo_verdict: string | null; document_id: string | null; escalades: Escalade[] | null; resultat: Record<string, unknown> | null; tokens_entree: number | null; tokens_sortie: number | null; created_at: Date; trace_id: string }>(
+        `select id, agent, statut, confiance, sentinel_verdict, echo_verdict, sortie->'resultat'->>'document_id' as document_id,
+                sortie->'escalades' as escalades, sortie->'resultat' as resultat, tokens_entree, tokens_sortie, created_at, trace_id
+           from public.agent_runs where dossier_id = $1::uuid and agent not in ('SENTINEL', 'ECHO') order by created_at desc, id desc`,
+        [dossierId],
+      );
+      return rows.map((r) => ({
+        ...r, confiance: r.confiance === null ? null : Number(r.confiance), escalades: r.escalades ?? [], resultat: r.resultat ?? {},
+        tokens_entree: r.tokens_entree ?? 0, tokens_sortie: r.tokens_sortie ?? 0, created_at: new Date(r.created_at).toISOString(),
+      }));
+    },
+    async lireResumeAnalyses(dossierId) {
+      const [c] = await sql<{ nb_entites: string; nb_a_verifier: string; nb_verrouillees: string; nb_evenements: string; tokens_total: string }>(
+        `select (select count(*) from public.entites where dossier_id = $1::uuid)::text as nb_entites,
+                (select count(*) from public.entites where dossier_id = $1::uuid and nature = 'a_verifier')::text as nb_a_verifier,
+                (select count(*) from public.entites where dossier_id = $1::uuid and verrouille_humain)::text as nb_verrouillees,
+                (select count(*) from public.evenements where dossier_id = $1::uuid)::text as nb_evenements,
+                (select coalesce(sum(coalesce(tokens_entree, 0) + coalesce(tokens_sortie, 0)), 0) from public.agent_runs where dossier_id = $1::uuid)::text as tokens_total`,
+        [dossierId],
+      );
+      const liens = await sql<{ document_id: string; cle: string }>(
+        `select distinct c.document_id, e.type || ':' || e.valeur_normalisee as cle
+           from public.entites e join public.entite_sources s on s.entite_id = e.id join public.document_chunks c on c.id = s.chunk_id
+          where e.dossier_id = $1::uuid order by 1, 2`,
+        [dossierId],
+      );
+      const parDocument: Record<string, string[]> = {};
+      for (const l of liens) (parDocument[l.document_id] ??= []).push(l.cle);
+      return {
+        nb_entites: Number(c.nb_entites), nb_entites_a_verifier: Number(c.nb_a_verifier), nb_entites_verrouillees: Number(c.nb_verrouillees),
+        nb_evenements: Number(c.nb_evenements), entites_par_document: parDocument, tokens_total: Number(c.tokens_total),
+      };
+    },
+    async lireBudget(dossierId) {
+      const [r] = await sql<{ b: Budget }>('select public.budget_dossier($1::uuid) as b', [dossierId]);
+      return { ...r.b, consomme: Number(r.b.consomme), depasse: r.b.depasse === true };
+    },
+    async lireOrchestrationsEnAttente(dossierId) {
+      const rows = await sql<Orchestration & { created_at: Date }>(
+        `select id, tenant_id, dossier_id, trace_id, source, demande, intention, statut, created_at from public.orchestrations
+          where dossier_id = $1::uuid and statut in ('planifiee', 'en_cours') order by created_at, id`,
+        [dossierId],
+      );
+      return rows.map((r) => ({ ...r, created_at: new Date(r.created_at).toISOString() }));
+    },
+    async enregistrerOrchestration(id, statut, intention, plan, agentRunId, escalade, resume) {
+      await sql('select public.enregistrer_orchestration($1::uuid, $2::text, $3::text, $4::jsonb, $5::uuid, $6::text, $7::jsonb)', [
+        id, statut, intention, JSON.stringify(plan), agentRunId, escalade, JSON.stringify(resume),
+      ]);
+    },
+    async planifierTravail(type, tenantId, dossierId, documentId, charge, priorite) {
+      const [r] = await sql<{ id: string | null }>('select public.planifier_travail($1::text, $2::uuid, $3::uuid, $4::uuid, $5::jsonb, $6::integer) as id', [
+        type, tenantId, dossierId, documentId, JSON.stringify(charge), priorite,
+      ]);
+      return r.id === null ? null : Number(r.id);
     },
   };
 }

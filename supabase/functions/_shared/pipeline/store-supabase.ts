@@ -5,9 +5,13 @@
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
+  Budget,
   Chunk,
   DocumentIngestion,
   DocumentResume,
+  DossierResume,
+  Escalade,
+  Orchestration,
   PageExtraite,
   PageTexte,
   Quota,
@@ -129,12 +133,13 @@ export function creerStoreSupabase(client: SupabaseClient): Store {
     async lireDocumentsDossier(dossierId) {
       const data = verifier(
         await client.from("dossier_documents")
-          .select("id,file_name,kind,statut_ingestion,categorie,confiance_classification,pages,supprime_le,created_at")
+          .select("id,file_name,kind,statut_ingestion,categorie,confiance_classification,pages,supprime_le,created_at,categorie_humaine,quasi_doublon_de_id,similarite")
           .eq("dossier_id", dossierId).order("created_at"),
         "lireDocumentsDossier",
       );
       return ((data as DocumentResume[] | null) ?? []).map((d) => ({
         ...d, confiance_classification: d.confiance_classification === null ? null : Number(d.confiance_classification),
+        similarite: d.similarite === null || d.similarite === undefined ? null : Number(d.similarite),
       }));
     },
     async enregistrerClassification(documentId, categorie, confiance, nomNormalise, quasiDoublonDeId, similarite, traceId) {
@@ -172,6 +177,78 @@ export function creerStoreSupabase(client: SupabaseClient): Store {
         }),
         "journaliser",
       );
+    },
+    async lireDossier(dossierId) {
+      const data = verifier(await client.from("dossiers").select("id,tenant_id,typology,title,status").eq("id", dossierId).maybeSingle(), "lireDossier");
+      return (data as DossierResume | null) ?? null;
+    },
+    async lireRuns(dossierId) {
+      const data = verifier(
+        await client.from("agent_runs")
+          .select("id,agent,statut,confiance,sentinel_verdict,echo_verdict,sortie,tokens_entree,tokens_sortie,created_at,trace_id")
+          .eq("dossier_id", dossierId).not("agent", "in", "(SENTINEL,ECHO)").order("created_at", { ascending: false }),
+        "lireRuns",
+      ) as { id: string; agent: string; statut: string; confiance: number | string | null; sentinel_verdict: string | null; echo_verdict: string | null; sortie: { resultat?: Record<string, unknown>; escalades?: Escalade[] } | null; tokens_entree: number | null; tokens_sortie: number | null; created_at: string; trace_id: string }[] | null;
+      return (data ?? []).map((r) => ({
+        id: r.id, agent: r.agent, statut: r.statut, confiance: r.confiance === null ? null : Number(r.confiance),
+        sentinel_verdict: r.sentinel_verdict, echo_verdict: r.echo_verdict,
+        document_id: typeof r.sortie?.resultat?.document_id === "string" ? r.sortie.resultat.document_id : null,
+        escalades: r.sortie?.escalades ?? [], resultat: r.sortie?.resultat ?? {},
+        tokens_entree: r.tokens_entree ?? 0, tokens_sortie: r.tokens_sortie ?? 0, created_at: r.created_at, trace_id: r.trace_id,
+      }));
+    },
+    async lireResumeAnalyses(dossierId) {
+      const entites = verifier(
+        await client.from("entites").select("id,type,valeur_normalisee,nature,verrouille_humain,entite_sources(document_chunks(document_id))").eq("dossier_id", dossierId),
+        "lireResumeAnalyses.entites",
+      ) as { type: string; valeur_normalisee: string; nature: string; verrouille_humain: boolean; entite_sources: { document_chunks: { document_id: string } | null }[] }[] | null;
+      const parDocument: Record<string, Set<string>> = {};
+      for (const e of entites ?? []) {
+        for (const s of e.entite_sources ?? []) {
+          const d = s.document_chunks?.document_id;
+          if (!d) continue;
+          (parDocument[d] ??= new Set()).add(`${e.type}:${e.valeur_normalisee}`);
+        }
+      }
+      const evenements = verifier(await client.from("evenements").select("id", { count: "exact", head: true }).eq("dossier_id", dossierId), "lireResumeAnalyses.evenements");
+      void evenements;
+      const nbEvenements = (await client.from("evenements").select("id", { count: "exact", head: true }).eq("dossier_id", dossierId)).count ?? 0;
+      const runs = verifier(await client.from("agent_runs").select("tokens_entree,tokens_sortie").eq("dossier_id", dossierId), "lireResumeAnalyses.runs") as { tokens_entree: number | null; tokens_sortie: number | null }[] | null;
+      return {
+        nb_entites: (entites ?? []).length,
+        nb_entites_a_verifier: (entites ?? []).filter((e) => e.nature === "a_verifier").length,
+        nb_entites_verrouillees: (entites ?? []).filter((e) => e.verrouille_humain).length,
+        nb_evenements: nbEvenements,
+        entites_par_document: Object.fromEntries(Object.entries(parDocument).map(([k, v]) => [k, Array.from(v).sort()])),
+        tokens_total: (runs ?? []).reduce((s, r) => s + (r.tokens_entree ?? 0) + (r.tokens_sortie ?? 0), 0),
+      };
+    },
+    async lireBudget(dossierId) {
+      const b = verifier(await client.rpc("budget_dossier", { p_dossier_id: dossierId }), "budget_dossier") as Budget;
+      return { ...b, consomme: Number(b.consomme), depasse: b.depasse === true };
+    },
+    async lireOrchestrationsEnAttente(dossierId) {
+      const data = verifier(
+        await client.from("orchestrations").select("id,tenant_id,dossier_id,trace_id,source,demande,intention,statut,created_at")
+          .eq("dossier_id", dossierId).in("statut", ["planifiee", "en_cours"]).order("created_at"),
+        "lireOrchestrationsEnAttente",
+      );
+      return (data as Orchestration[] | null) ?? [];
+    },
+    async enregistrerOrchestration(id, statut, intention, plan, agentRunId, escalade, resume) {
+      verifier(
+        await client.rpc("enregistrer_orchestration", {
+          p_id: id, p_statut: statut, p_intention: intention, p_plan: plan, p_agent_run_id: agentRunId, p_escalade: escalade, p_resume: resume,
+        }),
+        "enregistrer_orchestration",
+      );
+    },
+    async planifierTravail(type, tenantId, dossierId, documentId, charge, priorite) {
+      const id = verifier(
+        await client.rpc("planifier_travail", { p_type: type, p_tenant_id: tenantId, p_dossier_id: dossierId, p_document_id: documentId, p_charge: charge, p_priorite: priorite }),
+        "planifier_travail",
+      ) as number | string | null;
+      return id === null ? null : Number(id);
     },
   };
 }

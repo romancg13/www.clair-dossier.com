@@ -41,6 +41,17 @@ comparée au manifeste (précision mesurée, seuil 90 %), doublons stricts et qu
 de la vérité terrain, pièce illisible signalée, catégorie corrigée par l'utilisateur intacte
 après réanalyse.
 
+`echo.test.ts` vérifie sur l'étalon que chaque exécution VERITAS / ATLAS porte un verdict
+ECHO et une finalité, que la livraison est journalisée sans contenu, qu'un identifiant
+bancaire énoncé par un modèle simulé n'est jamais persisté, que rien n'est livré sans
+consentement quand la finalité l'exige, et exerce export, purge et conservation.
+
+`clair-os.test.ts` vérifie l'orchestration d'un dossier complet : consolidation automatique
+dès la dernière pièce terminée (sous SENTINEL puis ECHO), demande formulée par l'utilisateur
+(membre du tenant seulement, journal sans contenu, capacités non livrées dites « non
+disponibles »), question juridique bloquée (E5), incohérence inter-agents forcée puis
+arbitrée (E9), budget de tokens et coupe-circuit.
+
 `recherche.test.ts` enchaîne l'indexation (découpage, vectorisation 1024 dimensions,
 index HNSW) et interroge la recherche hybride : premiers résultats de la section
 `recherche_attendue`, aucun résultat pour un autre tenant, hors du dossier ou sur une

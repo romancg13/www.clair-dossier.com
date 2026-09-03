@@ -11,6 +11,7 @@
  * Les journaux applicatifs ne portent que des identifiants (PARTIE 11).
  */
 import { executerAtlas, TYPE_TRAVAIL_ATLAS } from "../agents/atlas.ts";
+import { executerClairOs, TYPE_TRAVAIL_CLAIR_OS } from "../agents/clair-os.ts";
 import type { FournisseurModele } from "../agents/modele.ts";
 import { executerVeritas, TYPE_TRAVAIL_VERITAS } from "../agents/veritas.ts";
 import type { FournisseurEmbedding } from "./embedding.ts";
@@ -36,7 +37,9 @@ import {
 export const VERSION_INGESTION = "1.0";
 export const TYPE_TRAVAIL_INGESTION = "ingestion";
 /** Types de travaux consommés par le même exécutant, dans l'ordre de priorité de la file. */
-export const TYPES_TRAVAUX = [TYPE_TRAVAIL_INGESTION, TYPE_TRAVAIL_INDEXATION, TYPE_TRAVAIL_VERITAS, TYPE_TRAVAIL_ATLAS];
+export const TYPES_TRAVAUX = [TYPE_TRAVAIL_INGESTION, TYPE_TRAVAIL_INDEXATION, TYPE_TRAVAIL_VERITAS, TYPE_TRAVAIL_ATLAS, TYPE_TRAVAIL_CLAIR_OS];
+/** Travaux qui peuvent consommer des tokens de modèle : soumis au coupe-circuit de budget (7.4, 11). */
+const TYPES_SOUS_BUDGET = new Set([TYPE_TRAVAIL_VERITAS, TYPE_TRAVAIL_ATLAS]);
 
 export type OptionsIngestion = {
   ocr?: FournisseurOcr | null;
@@ -244,6 +247,7 @@ export async function ingererDocument(
 
 export type ResultatTravail =
   | { travail: Travail; issue: "termine"; sortie: SortieIngestion | SortieIndexation | SortieUniverselle }
+  | { travail: Travail; issue: "bloque"; motif: string }
   | { travail: Travail; issue: "reessai" | "echec"; erreur: string };
 
 /** Prend et traite UN travail (ingestion ou indexation) ; null si la file est vide. */
@@ -256,6 +260,36 @@ export async function traiterProchainTravail(
   const travail = await store.prendreTravail(options.types ?? TYPES_TRAVAUX, executant);
   if (!travail) return null;
   try {
+    // Coupe-circuit : budget de tokens du dossier atteint → le travail est clos
+    // « bloqué » et journalisé (identifiants et compteurs), jamais exécuté en silence.
+    if (TYPES_SOUS_BUDGET.has(travail.type) && travail.dossier_id) {
+      const budget = await store.lireBudget(travail.dossier_id);
+      if (budget.depasse) {
+        await store.journaliser("budget.coupe_circuit", "travail", null, travail.tenant_id, travail.dossier_id, {
+          travail_id: travail.id, type: travail.type, document_id: travail.document_id, plan: budget.plan,
+          consomme: budget.consomme, budget_tokens_par_dossier: budget.budget_tokens_par_dossier,
+        }, travail.trace_id);
+        await store.terminerTravail(travail.id, { statut: "bloque", motif: "budget_tokens_depasse", consomme: budget.consomme, budget_tokens_par_dossier: budget.budget_tokens_par_dossier });
+        return { travail, issue: "bloque", motif: "budget_tokens_depasse" };
+      }
+    }
+    if (travail.type === TYPE_TRAVAIL_CLAIR_OS) {
+      const bilan = await executerClairOs(store, travail, {
+        modele: options.modele ?? null, nomModeleEcho: options.nomModeleEcho, maintenant: options.maintenant,
+      });
+      await store.terminerTravail(travail.id, {
+        statut: bilan.sortie.statut,
+        agent_run_id: bilan.run_id,
+        orchestrations: bilan.orchestrations.map((o) => ({ id: o.id, intention: o.intention, statut: o.statut, escalade: o.escalade })),
+        nb_incoherences: bilan.consolidation?.incoherences.length ?? 0,
+        reanalyses_planifiees: bilan.reanalyses_planifiees.length,
+        sentinel: bilan.controle?.verdict ?? null,
+        echo: bilan.echo?.verdict ?? null,
+        escalades: bilan.sortie.escalades.map((e) => e.code),
+        duree_ms: bilan.sortie.duree_ms,
+      });
+      return { travail, issue: "termine", sortie: bilan.sortie };
+    }
     if (travail.type === TYPE_TRAVAIL_INDEXATION) {
       const sortie = await indexerDocument(store, travail, { embedding: options.embedding, maintenant: options.maintenant });
       await store.terminerTravail(travail.id, {
@@ -325,6 +359,7 @@ export type BilanFile = {
   executant: string;
   traites: number;
   termines: number;
+  bloques: number;
   reessais: number;
   echecs: number;
   duree_ms: number;
@@ -339,7 +374,7 @@ export async function executerFile(
   params: { executant: string; maxTravaux?: number; dureeMaxMs?: number } & OptionsIngestion,
 ): Promise<BilanFile> {
   const debut = Date.now();
-  const bilan: BilanFile = { executant: params.executant, traites: 0, termines: 0, reessais: 0, echecs: 0, duree_ms: 0, travaux: [] };
+  const bilan: BilanFile = { executant: params.executant, traites: 0, termines: 0, bloques: 0, reessais: 0, echecs: 0, duree_ms: 0, travaux: [] };
   const max = params.maxTravaux ?? 20;
   const dureeMax = params.dureeMaxMs ?? 50_000;
   while (bilan.traites < max && Date.now() - debut < dureeMax) {
@@ -347,6 +382,7 @@ export async function executerFile(
     if (!r) break;
     bilan.traites++;
     if (r.issue === "termine") bilan.termines++;
+    else if (r.issue === "bloque") bilan.bloques++;
     else if (r.issue === "reessai") bilan.reessais++;
     else bilan.echecs++;
     bilan.travaux.push({ id: r.travail.id, document_id: r.travail.document_id, issue: r.issue });

@@ -4,7 +4,7 @@
  * l'agent tente d'écrire.
  */
 import { decouperDocument } from '../../supabase/functions/_shared/pipeline/decoupage.ts';
-import type { Chunk, DocumentIngestion, PageTexte, Store, Travail } from '../../supabase/functions/_shared/pipeline/types.ts';
+import type { Budget, Chunk, DocumentIngestion, Orchestration, PageTexte, RunResume, Store, Travail } from '../../supabase/functions/_shared/pipeline/types.ts';
 
 export const DOSSIER_ID = '11111111-1111-4111-8111-111111111111';
 export const TENANT_ID = '22222222-2222-4222-8222-222222222222';
@@ -20,6 +20,8 @@ export type Journal = {
   audit: { action: string; objetType: string; objetId: string | null; tenantId: string; dossierId: string | null; apres: Record<string, unknown>; traceId: string }[];
   runs: { id: string; agent: string; statut?: string; sortie?: unknown; erreur?: string | null }[];
   statuts: string[];
+  orchestrations: { id: string; statut: string; intention: string | null; plan: unknown; agentRunId: string | null; escalade: string | null; resume: Record<string, unknown> }[];
+  travaux: { type: string; dossierId: string | null; documentId: string | null; charge: Record<string, unknown>; priorite: number }[];
 };
 
 export type OptionsMemoire = {
@@ -32,6 +34,10 @@ export type OptionsMemoire = {
   consentementEffectif?: boolean;
   categoriesAdmises?: string[];
   typology?: string;
+  budget?: Partial<Budget>;
+  orchestrations?: Orchestration[];
+  /** Exécutions antérieures vues par CLAIR-OS (en plus de celles créées dans le test). */
+  runs?: RunResume[];
 };
 
 export function storeMemoire(pagesTexte: string[], options: OptionsMemoire = {}): { store: Store; journal: Journal; travail: Travail } {
@@ -45,7 +51,7 @@ export function storeMemoire(pagesTexte: string[], options: OptionsMemoire = {})
     size_bytes: 10, mime: 'application/pdf', hash_sha256: 'a'.repeat(64), kind: 'piece', statut_ingestion: options.statut ?? 'vectorise',
     doublon_de_id: null, supprime_le: null,
   };
-  const journal: Journal = { entites: [], evenements: [], classifications: [], controles: [], controlesEcho: [], audit: [], runs: [], statuts: [] };
+  const journal: Journal = { entites: [], evenements: [], classifications: [], controles: [], controlesEcho: [], audit: [], runs: [], statuts: [], orchestrations: [], travaux: [] };
   const store: Store = {
     async prendreTravail() { return null; },
     async terminerTravail() {},
@@ -93,6 +99,24 @@ export function storeMemoire(pagesTexte: string[], options: OptionsMemoire = {})
     },
     async journaliser(action, objetType, objetId, tenantId, dossierId, apres, traceId) {
       journal.audit.push({ action, objetType, objetId, tenantId, dossierId, apres, traceId });
+    },
+    async lireDossier(id) {
+      return id === DOSSIER_ID ? { id, tenant_id: TENANT_ID, typology: options.typology ?? 'impaye-precontentieux', title: 'Dossier de test', status: 'transmis' } : null;
+    },
+    async lireRuns() { return options.runs ?? []; },
+    async lireResumeAnalyses() {
+      const cles = journal.entites.flat().map((e) => { const x = e as { type: string; valeur_normalisee: string }; return `${x.type}:${x.valeur_normalisee}`; });
+      const parDocument: Record<string, string[]> = cles.length ? { [DOCUMENT_ID]: cles } : {};
+      return { nb_entites: cles.length, nb_entites_a_verifier: 0, nb_entites_verrouillees: 0, nb_evenements: journal.evenements.flat().length, entites_par_document: parDocument, tokens_total: 0 };
+    },
+    async lireBudget() { return { plan: 'gratuit', budget_tokens_par_dossier: null, consomme: 0, depasse: false, ...(options.budget ?? {}) }; },
+    async lireOrchestrationsEnAttente() { return options.orchestrations ?? []; },
+    async enregistrerOrchestration(id, statut, intention, plan, agentRunId, escalade, resume) {
+      journal.orchestrations.push({ id, statut, intention, plan, agentRunId, escalade, resume });
+    },
+    async planifierTravail(type, _tenantId, dossierId, documentId, charge, priorite) {
+      journal.travaux.push({ type, dossierId, documentId, charge, priorite });
+      return journal.travaux.length;
     },
   };
   const travail: Travail = {

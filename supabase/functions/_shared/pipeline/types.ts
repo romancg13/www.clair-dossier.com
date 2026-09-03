@@ -197,7 +197,62 @@ export interface Store {
   }>;
   /** Journal d'audit : action serveur, identifiants et compteurs seulement (PARTIE 11). */
   journaliser(action: string, objetType: string, objetId: string | null, tenantId: string, dossierId: string | null, apres: Record<string, unknown>, traceId: string): Promise<void>;
+  // ── Orchestration (étape 13, CLAIR-OS) ──────────────────────────────────
+  lireDossier(dossierId: string): Promise<DossierResume | null>;
+  /** Exécutions d'agents producteurs du dossier, la plus récente d'abord (SENTINEL et ECHO exclus). */
+  lireRuns(dossierId: string): Promise<RunResume[]>;
+  lireResumeAnalyses(dossierId: string): Promise<ResumeAnalyses>;
+  lireBudget(dossierId: string): Promise<Budget>;
+  lireOrchestrationsEnAttente(dossierId: string): Promise<Orchestration[]>;
+  enregistrerOrchestration(id: string, statut: StatutOrchestration, intention: string | null, plan: unknown, agentRunId: string | null, escalade: string | null, resume: Record<string, unknown>): Promise<void>;
+  /** Mise en file d'un travail (serveur uniquement) ; renvoie l'identifiant du travail actif. */
+  planifierTravail(type: string, tenantId: string, dossierId: string | null, documentId: string | null, charge: Record<string, unknown>, priorite: number): Promise<number | null>;
 }
+
+export type DossierResume = { id: string; tenant_id: string; typology: string | null; title: string | null; status: string | null };
+
+export type RunResume = {
+  id: string;
+  agent: string;
+  /** Pièce concernée (résultat de l'agent), null pour une exécution de portée dossier. */
+  document_id: string | null;
+  statut: string;
+  confiance: number | null;
+  sentinel_verdict: string | null;
+  echo_verdict: string | null;
+  escalades: Escalade[];
+  resultat: Record<string, unknown>;
+  tokens_entree: number;
+  tokens_sortie: number;
+  created_at: string;
+  trace_id: string;
+};
+
+export type ResumeAnalyses = {
+  nb_entites: number;
+  nb_entites_a_verifier: number;
+  nb_entites_verrouillees: number;
+  nb_evenements: number;
+  /** Par pièce : clés « type:valeur_normalisee » des entités qui s'y ancrent. */
+  entites_par_document: Record<string, string[]>;
+  tokens_total: number;
+};
+
+export type Budget = { plan: string | null; budget_tokens_par_dossier: number | null; consomme: number; depasse: boolean };
+
+export type StatutOrchestration = "planifiee" | "en_cours" | "terminee" | "bloquee" | "echec";
+
+export type Orchestration = {
+  id: string;
+  tenant_id: string;
+  dossier_id: string;
+  trace_id: string;
+  source: "utilisateur" | "autopilot";
+  demande: string | null;
+  intention: string | null;
+  statut: StatutOrchestration;
+  created_at: string;
+};
 
 export type DocumentResume = {
   id: string;
@@ -209,6 +264,10 @@ export type DocumentResume = {
   pages: number | null;
   supprime_le: string | null;
   created_at: string;
+  /** Inventaire ATLAS (étape 10) ; absents des lignes antérieures à la migration correspondante. */
+  categorie_humaine?: boolean;
+  quasi_doublon_de_id?: string | null;
+  similarite?: number | null;
 };
 
 /** Accès aux octets d'une pièce (bucket privé en production, fichiers du jeu d'essai en test). */

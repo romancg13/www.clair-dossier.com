@@ -7,7 +7,8 @@
  * purge serveur journalisée ; conservation : aucune purge sans durée fixée.
  */
 import { describe, expect, it } from 'vitest';
-import { modeleSimule } from '../../supabase/functions/_shared/agents/modele.ts';
+import { type FournisseurModele, type RequeteModele } from '../../supabase/functions/_shared/agents/modele.ts';
+import { PROMPTS_SYSTEME } from '../../supabase/functions/_shared/agents/prompts.generated.ts';
 import { executerFile } from '../../supabase/functions/_shared/pipeline/ingestion.ts';
 import { valider } from '../../supabase/functions/_shared/schema/validateur.ts';
 import { deposer, dossierEtalon, manifest, verite } from './etalon';
@@ -16,6 +17,27 @@ import { creerStockageEtalon, creerStorePg } from './pipeline-store';
 
 // Valeur d'exemple au format IBAN (jeu d'essai, aucune donnée réelle).
 const IBAN = 'FR76 3000 6000 0112 3456 7890 189';
+
+/**
+ * Modèle simulé qui répond selon la requête (l'ordre des travaux de la file n'est
+ * pas garanti dans une même transaction) : la sortie préparée pour la pièce visée,
+ * une sortie vide pour les autres pièces, un verdict d'acceptation pour SENTINEL et ECHO.
+ */
+function modeleCible(documentId: string, sortie: unknown): FournisseurModele & { requetes: RequeteModele[] } {
+  const requetes: RequeteModele[] = [];
+  const repondre = (req: RequeteModele, s: unknown) => ({ modele: req.modele, sortie: s, tokens_entree: 100, tokens_sortie: 50, arret: 'tool_use' });
+  return {
+    nom: 'simule-cible',
+    requetes,
+    async completer(req) {
+      requetes.push(req);
+      if (req.systeme === PROMPTS_SYSTEME.SENTINEL) return repondre(req, { verdict: 'accepte', anomalies: [], incertitudes: [] });
+      if (req.systeme === PROMPTS_SYSTEME.ECHO) return repondre(req, { verdict: 'accepte', blocages: [], minimisations: [], categories_sensibles: [], incertitudes: [] });
+      if (req.utilisateur.includes(`document_id : ${documentId}`)) return repondre(req, sortie);
+      return repondre(req, { assertions: [], resultat: { entites: [], evenements: [] }, incertitudes: [], donnees_sensibles_detectees: [] });
+    },
+  };
+}
 
 async function preparer(tx: Tx) {
   const f = await dossierEtalon(tx);
@@ -44,9 +66,10 @@ describe('ECHO sur le dossier étalon (RGPD, données sensibles, traçabilité)'
       );
       expect(controles.map((c) => [c.agent, c.sans_verdict, c.sans_finalite])).toEqual([['ATLAS', '0', '0'], ['VERITAS', '0', '0']]);
       const nbControles = Number(controles[0].n) + Number(controles[1].n);
+      // (La consolidation CLAIR-OS, étape 13, passe aussi par ECHO : on ne compte ici que les contrôles de VERITAS et ATLAS.)
       const echos = await tx.sql<{ n: string; verdicts: string[]; agents: string[] }>(
         `select count(*)::text as n, array_agg(distinct statut) as verdicts, array_agg(distinct sortie->>'agent_controle') as agents
-           from public.agent_runs where dossier_id = $1 and agent = 'ECHO'`, [f.dossierId],
+           from public.agent_runs where dossier_id = $1 and agent = 'ECHO' and sortie->>'agent_controle' in ('VERITAS', 'ATLAS')`, [f.dossierId],
       );
       expect(Number(echos[0].n)).toBe(nbControles);
       expect(echos[0].verdicts).toEqual(['ok']);
@@ -80,7 +103,7 @@ describe('ECHO sur le dossier étalon (RGPD, données sensibles, traçabilité)'
                 array_agg(distinct acteur_type) as acteurs,
                 (select array_agg(distinct k order by k) from public.audit_log a2, jsonb_object_keys(a2.apres) k where a2.dossier_id = $1 and a2.action = 'sortie.livree') as cles,
                 count(*) filter (where apres::text ~ 'F-2026-0042|1 200,00|Exemple SARL|Atelier')::text as fuite
-           from public.audit_log where dossier_id = $1 and action = 'sortie.livree' and objet_type = 'agent_run'`, [f.dossierId],
+           from public.audit_log where dossier_id = $1 and action = 'sortie.livree' and objet_type = 'agent_run' and apres->>'agent' in ('VERITAS', 'ATLAS')`, [f.dossierId],
       );
       expect(Number(journal[0].n)).toBe(nbControles);
       expect(journal[0].sans_trace).toBe('0');
@@ -99,28 +122,25 @@ describe('ECHO sur le dossier étalon (RGPD, données sensibles, traçabilité)'
       const piece = '05-mise-en-demeure-2026-02-20.pdf';
       const docId = ids.get(piece)!;
       const src = (extrait: string) => ({ document_id: docId, nom_fichier: piece, page: 1, extrait });
-      const modele = modeleSimule([
-        {
-          assertions: [
-            { id: 'a1', enonce: "L'expéditeur de la mise en demeure est Atelier Fictif SAS.", nature: 'piece', confiance: 0.97, sources: [src('ATELIER FICTIF SAS')] },
-            { id: 'a2', enonce: `Le règlement à Atelier Fictif SAS est attendu sur le compte ${IBAN}.`, nature: 'piece', confiance: 0.95, sources: [src('ATELIER FICTIF SAS')] },
+      const modele = modeleCible(docId, {
+        assertions: [
+          { id: 'a1', enonce: "L'expéditeur de la mise en demeure est Atelier Fictif SAS.", nature: 'piece', confiance: 0.97, sources: [src('ATELIER FICTIF SAS')] },
+          { id: 'a2', enonce: `Le règlement à Atelier Fictif SAS est attendu sur le compte ${IBAN}.`, nature: 'piece', confiance: 0.95, sources: [src('ATELIER FICTIF SAS')] },
+        ],
+        resultat: {
+          entites: [
+            { assertion_id: 'a1', type: 'societe', valeur_normalisee: 'Atelier Fictif SAS', valeur_brute: 'ATELIER FICTIF SAS' },
+            { assertion_id: 'a2', type: 'reference', valeur_normalisee: IBAN.replace(/ /g, ''), valeur_brute: IBAN },
           ],
-          resultat: {
-            entites: [
-              { assertion_id: 'a1', type: 'societe', valeur_normalisee: 'Atelier Fictif SAS', valeur_brute: 'ATELIER FICTIF SAS' },
-              { assertion_id: 'a2', type: 'reference', valeur_normalisee: IBAN.replace(/ /g, ''), valeur_brute: IBAN },
-            ],
-            evenements: [],
-          },
-          incertitudes: [],
-          donnees_sensibles_detectees: [],
+          evenements: [],
         },
-        { verdict: 'accepte', anomalies: [], incertitudes: [] },
-        { verdict: 'accepte', blocages: [], minimisations: [], categories_sensibles: [], incertitudes: [] },
-      ]);
+        incertitudes: [],
+        donnees_sensibles_detectees: [],
+      });
       const bilan = await executerFile(store, creerStockageEtalon(), { executant: 'test-echo-iban', modele, types: ['veritas'] });
       expect(bilan.echecs).toBe(0);
-      expect(bilan.termines).toBeGreaterThan(0);
+      expect(bilan.termines).toBe(verite.ingestion_attendue.extraction.length);
+      expect(modele.requetes.some((r) => r.utilisateur.includes(`document_id : ${docId}`))).toBe(true);
       expect((await tx.sql("select 1 from public.entites where dossier_id = $1 and valeur_normalisee like 'FR76%'", [f.dossierId])).length).toBe(0);
       expect((await tx.sql("select 1 from public.entites where dossier_id = $1 and type = 'societe' and valeur_normalisee = 'Atelier Fictif SAS'", [f.dossierId])).length).toBe(1);
       const [run] = await tx.sql<{ echo_verdict: string; statut: string; sortie: { assertions: { id: string }[]; escalades: { code: string }[]; donnees_sensibles_detectees: string[] }; texte: string }>(

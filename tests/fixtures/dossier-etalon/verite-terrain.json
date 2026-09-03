@@ -67,6 +67,14 @@
     },
     "valeur_jamais_livree": "FR76 0000 0000 0000 0000 0000 000"
   },
+  "orchestration_attendue": {
+    "commentaire": "Consolidation CLAIR-OS attendue après passage complet du dossier (étape 13) : une orchestration automatique, aucune incohérence inter-agents sur ce dossier, une action attendue (pièce illisible).",
+    "pieces_total": 9,
+    "pieces_terminees": 9,
+    "libelle": "Analyse terminée — 9 pièces",
+    "incoherences_e9": 0,
+    "actions_attendues": [{ "code": "E4", "piece": "08-releve-bancaire-scan-illisible.pdf" }]
+  },
   "a_completer": {
     "dates_contradictoires": "étapes 14–15 (CHRONOS, SYNTHIA)",
     "montants_divergents": "étape 15 (SYNTHIA)",

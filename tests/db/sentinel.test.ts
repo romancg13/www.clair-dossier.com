@@ -71,8 +71,9 @@ describe('SENTINEL sur le dossier étalon (anti-hallucination, injection)', () =
            from public.agent_runs where dossier_id = $1 and agent in ('VERITAS', 'ATLAS') group by agent order by agent`, [f.dossierId],
       );
       expect(controles.map((c) => [c.agent, c.sans_verdict])).toEqual([['ATLAS', '0'], ['VERITAS', '0']]);
+      // (La consolidation CLAIR-OS, étape 13, passe aussi par SENTINEL : on ne compte ici que les contrôles de VERITAS et ATLAS.)
       const sentinels = await tx.sql<{ n: string; sortie: { agent_controle: string; verdict: string } }>(
-        "select count(*)::text as n, min(sortie::text)::jsonb as sortie from public.agent_runs where dossier_id = $1 and agent = 'SENTINEL'", [f.dossierId],
+        "select count(*)::text as n, min(sortie::text)::jsonb as sortie from public.agent_runs where dossier_id = $1 and agent = 'SENTINEL' and sortie->>'agent_controle' in ('VERITAS', 'ATLAS')", [f.dossierId],
       );
       expect(Number(sentinels[0].n)).toBe(Number(controles[0].n) + Number(controles[1].n));
       const orphelines = await tx.sql<{ n: string }>(
