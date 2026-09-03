@@ -4,6 +4,7 @@ import { zipSync } from "fflate";
 import { Seo } from "../lib/seo";
 import { useAuth } from "../lib/auth";
 import { supabase } from "../lib/supabase";
+import { isUnknownColumnError, pieceMetadata } from "../lib/documents";
 import { ArrowRightIcon, CheckIcon } from "../components/icons";
 
 type DossierRow = {
@@ -22,7 +23,30 @@ type DocumentRow = {
   file_name: string;
   file_path: string;
   kind: string; // 'piece' (déposée par le client) | 'deliverable' (livrée par ClairDossier)
+  statut_ingestion?: string | null; // 'doublon' : copie stricte d'une autre pièce du dossier
 };
+
+// Colonnes lues : la version étendue (empreinte, suppression logique) puis, si la
+// migration n'est pas encore appliquée en base, la version historique.
+const DOCUMENT_COLUMNS_V2 = "id,file_name,file_path,kind,statut_ingestion";
+const DOCUMENT_COLUMNS_V1 = "id,file_name,file_path,kind";
+
+async function fetchDocumentRows(dossierId: string): Promise<DocumentRow[]> {
+  const v2 = await supabase
+    .from("dossier_documents")
+    .select(DOCUMENT_COLUMNS_V2)
+    .eq("dossier_id", dossierId)
+    .is("supprime_le", null)
+    .order("created_at", { ascending: true });
+  if (!v2.error) return (v2.data as DocumentRow[] | null) ?? [];
+  if (!isUnknownColumnError(v2.error)) return [];
+  const v1 = await supabase
+    .from("dossier_documents")
+    .select(DOCUMENT_COLUMNS_V1)
+    .eq("dossier_id", dossierId)
+    .order("created_at", { ascending: true });
+  return (v1.data as DocumentRow[] | null) ?? [];
+}
 
 const STATUS_LABELS: Record<string, string> = {
   brouillon: "Brouillon",
@@ -177,6 +201,14 @@ function DocLine({
         {doc.file_name}
       </span>
       <div className="flex shrink-0 items-center gap-3">
+        {doc.statut_ingestion === "doublon" && (
+          <span
+            className="font-mono text-[0.65rem] uppercase tracking-[0.18em] text-slate-500"
+            title="Copie strictement identique d'une autre pièce de ce dossier"
+          >
+            Doublon
+          </span>
+        )}
         {viewHref ? (
           <>
             <a
@@ -268,13 +300,8 @@ export function DossierDetail() {
       }
 
       if (row) {
-        const { data: docs } = await supabase
-          .from("dossier_documents")
-          .select("id,file_name,file_path,kind")
-          .eq("dossier_id", id)
-          .order("created_at", { ascending: true });
+        const list = await fetchDocumentRows(id);
         if (!active) return;
-        const list = (docs as DocumentRow[] | null) ?? [];
         setDocuments(list);
 
         // Pré-génère les URL signées (valides 1 h) pour le téléchargement.
@@ -312,12 +339,7 @@ export function DossierDetail() {
   // Recharge la liste des documents + URL signées après une livraison.
   async function reloadDocuments() {
     if (!id) return;
-    const { data: docs } = await supabase
-      .from("dossier_documents")
-      .select("id,file_name,file_path,kind")
-      .eq("dossier_id", id)
-      .order("created_at", { ascending: true });
-    const list = (docs as DocumentRow[] | null) ?? [];
+    const list = await fetchDocumentRows(id);
     setDocuments(list);
     const signed: Record<string, string> = {};
     await Promise.all(
@@ -341,18 +363,24 @@ export function DossierDetail() {
       for (const file of Array.from(fileList)) {
         const safe = file.name.replace(/[^a-zA-Z0-9._-]+/g, "_").slice(0, 80);
         const path = `${dossier.user_id}/${dossier.id}/deliverable-${Date.now()}-${safe}`;
+        const meta = await pieceMetadata(file);
         const up = await supabase.storage
           .from("documents")
           .upload(path, file, { upsert: false });
         if (up.error) throw up.error;
-        const ins = await supabase.from("dossier_documents").insert({
+        const row = {
           dossier_id: dossier.id,
           user_id: dossier.user_id, // propriété au CLIENT → il y accède via sa policy _own
           file_path: path,
           file_name: file.name,
           size_bytes: file.size,
           kind: "deliverable",
-        });
+        };
+        let ins = await supabase.from("dossier_documents").insert({ ...row, ...meta });
+        if (ins.error && isUnknownColumnError(ins.error)) {
+          // Migration d'empreinte pas encore appliquée côté base : comportement historique.
+          ins = await supabase.from("dossier_documents").insert(row);
+        }
         if (ins.error) throw ins.error;
       }
       await reloadDocuments();

@@ -1,0 +1,20 @@
+{
+  "version": "0.1 (étape 5)",
+  "avertissement": "Résultat attendu écrit à la main (PARTIE 10.2), sur des données fictives. Chaque section est ajoutée à l'étape qui l'exige ; les sections listées dans « a_completer » ne sont PAS encore couvertes.",
+  "doublons_stricts": [
+    { "piece": "02-facture-F-2026-0042-copie.pdf", "original": "01-facture-F-2026-0042.pdf" },
+    { "piece": "06-mise-en-demeure-2026-02-20-copie.pdf", "original": "05-mise-en-demeure-2026-02-20.pdf" }
+  ],
+  "quasi_doublons": [
+    { "piece": "03-facture-F-2026-0042-scan.pdf", "original": "01-facture-F-2026-0042.pdf", "attendu": "non signalé comme doublon strict ; rapprochement par ATLAS à l'étape 10" }
+  ],
+  "a_completer": {
+    "document_illisible": "étape 6 (qualité, E4)",
+    "injection_de_prompt": "étape 11 (SENTINEL)",
+    "dates_contradictoires": "étapes 14–15 (CHRONOS, SYNTHIA)",
+    "montants_divergents": "étape 15 (SYNTHIA)",
+    "pieces_citees_absentes": "étape 15 (SYNTHIA)",
+    "echeances": "étape 14 (CHRONOS)",
+    "volume_cible": "40 à 60 pièces (PARTIE 10.1) — 7 pièces à l'étape 5"
+  }
+}

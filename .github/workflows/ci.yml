@@ -58,5 +58,11 @@ jobs:
       - name: Fichiers statiques présents dans dist
         run: test -f dist/robots.txt && test -f dist/sitemap.xml && test -f dist/favicon.svg && test -f dist/llms.txt
 
-      - name: Tests de base de données (migrations + isolation)
+      - name: Dossier étalon à jour (génération déterministe)
+        run: npm run gen:etalon && git diff --exit-code -- tests/fixtures
+
+      - name: Tests unitaires
+        run: npm run test:unit
+
+      - name: Tests de base de données (migrations + isolation + stockage)
         run: npm run test:db

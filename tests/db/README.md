@@ -8,6 +8,10 @@ sources, journal d'audit immuable, validation humaine, protection des correction
 Aucune donnée réelle : les jeux d'essai sont générés dans des transactions
 annulées (interdit n° 15).
 
+`documents.test.ts` dépose les pièces du dossier étalon (`tests/fixtures/dossier-etalon/`)
+avec leur empreinte réelle et compare la détection de doublons à `verite-terrain.json` ;
+il vérifie aussi l'immutabilité du stockage (suppression logique, bucket).
+
 `isolation.test.ts` rejoue aussi les scénarios d'attaque identifiés en revue
 (forge du journal, contournement du verrou humain par suppression, réécriture des
 métadonnées d'ingestion, déplacement de dossier entre tenants, `setval` sur la

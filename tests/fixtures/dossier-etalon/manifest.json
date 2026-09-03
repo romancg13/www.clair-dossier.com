@@ -1,0 +1,142 @@
+{
+  "avertissement": "Dossier FICTIF construit pour les tests (PARTIE 10.1). Toute ressemblance avec des personnes, sociétés, numéros ou adresses réels serait fortuite. Aucune donnée réelle de client (interdit n° 15).",
+  "dossier": {
+    "titre": "Impayé — Atelier Fictif SAS c/ Société Exemple SARL",
+    "typology": "impaye-precontentieux",
+    "creancier": "Atelier Fictif SAS, 1 rue de l'Exemple, 75000 Paris-Test — SIREN 000 000 001 (fictif)",
+    "debiteur": "Société Exemple SARL, 12 avenue Imaginaire, 69000 Lyon-Test — SIREN 000 000 002 (fictif)"
+  },
+  "pieces": [
+    {
+      "fichier": "01-facture-F-2026-0042.pdf",
+      "titre": "Facture F-2026-0042 du 12 janvier 2026",
+      "categorie": "facture",
+      "role": "original",
+      "texte": [
+        "ATELIER FICTIF SAS",
+        "1 rue de l'Exemple — 75000 Paris-Test",
+        "SIREN 000 000 001 (fictif) — TVA FR00 000000001",
+        "contact@atelier-fictif.invalid",
+        "",
+        "FACTURE N° F-2026-0042",
+        "Date d'émission : 12 janvier 2026",
+        "Référence commande : BC-2025-118 du 2 décembre 2025",
+        "",
+        "Client : Société Exemple SARL",
+        "12 avenue Imaginaire — 69000 Lyon-Test",
+        "SIREN 000 000 002 (fictif)",
+        "",
+        "Désignation                                   Montant HT",
+        "Prestation de maintenance — décembre 2025      1 000,00 €",
+        "",
+        "Total HT                                       1 000,00 €",
+        "TVA 20 %                                         200,00 €",
+        "Total TTC                                      1 200,00 €",
+        "",
+        "Échéance de paiement : 11 février 2026 (30 jours date de facture).",
+        "Pénalités de retard : trois fois le taux d'intérêt légal.",
+        "Indemnité forfaitaire pour frais de recouvrement : 40 €.",
+        "Règlement par virement — IBAN FR76 0000 0000 0000 0000 0000 000 (fictif)."
+      ]
+    },
+    {
+      "fichier": "02-facture-F-2026-0042-copie.pdf",
+      "titre": "Facture F-2026-0042 (copie strictement identique)",
+      "categorie": "facture",
+      "role": "doublon_strict",
+      "copie_de": "01-facture-F-2026-0042.pdf"
+    },
+    {
+      "fichier": "03-facture-F-2026-0042-scan.pdf",
+      "titre": "Facture F-2026-0042 (même contenu, rendu différent)",
+      "categorie": "facture",
+      "role": "quasi_doublon",
+      "quasi_doublon_de": "01-facture-F-2026-0042.pdf",
+      "rendu": { "taille": 10, "marge": 64, "producteur": "Scanner fictif v0" }
+    },
+    {
+      "fichier": "04-bon-de-commande-BC-2025-118.pdf",
+      "titre": "Bon de commande BC-2025-118 du 2 décembre 2025",
+      "categorie": "bon_de_commande",
+      "role": "original",
+      "texte": [
+        "SOCIÉTÉ EXEMPLE SARL",
+        "12 avenue Imaginaire — 69000 Lyon-Test",
+        "SIREN 000 000 002 (fictif)",
+        "",
+        "BON DE COMMANDE N° BC-2025-118",
+        "Date : 2 décembre 2025",
+        "Fournisseur : Atelier Fictif SAS",
+        "",
+        "Objet : prestation de maintenance des équipements, mois de décembre 2025.",
+        "Montant convenu : 1 000,00 € HT, soit 1 200,00 € TTC.",
+        "Conditions de règlement : 30 jours date de facture.",
+        "",
+        "Signé pour accord — M. Jean Exemple, gérant (signature fictive)."
+      ]
+    },
+    {
+      "fichier": "05-mise-en-demeure-2026-02-20.pdf",
+      "titre": "Mise en demeure du 20 février 2026",
+      "categorie": "mise_en_demeure",
+      "role": "original",
+      "texte": [
+        "ATELIER FICTIF SAS",
+        "1 rue de l'Exemple — 75000 Paris-Test",
+        "",
+        "Lettre recommandée avec accusé de réception n° 1A 000 000 0000 0 (fictif)",
+        "",
+        "Société Exemple SARL",
+        "12 avenue Imaginaire — 69000 Lyon-Test",
+        "",
+        "Paris-Test, le 20 février 2026",
+        "",
+        "Objet : mise en demeure de payer la facture F-2026-0042",
+        "",
+        "Madame, Monsieur,",
+        "",
+        "Malgré notre relance du 13 février 2026, la facture F-2026-0042 du 12 janvier 2026,",
+        "d'un montant de 1 200,00 € TTC, échue le 11 février 2026, demeure impayée.",
+        "",
+        "Nous vous mettons en demeure de nous régler cette somme sous huit jours à compter",
+        "de la réception de la présente, majorée des pénalités de retard et de l'indemnité",
+        "forfaitaire de 40 € prévues à la facture.",
+        "",
+        "À défaut, nous engagerons toute procédure de recouvrement utile.",
+        "",
+        "Veuillez agréer, Madame, Monsieur, nos salutations distinguées.",
+        "",
+        "Mme Claire Fictive, présidente (signature fictive)"
+      ]
+    },
+    {
+      "fichier": "06-mise-en-demeure-2026-02-20-copie.pdf",
+      "titre": "Mise en demeure du 20 février 2026 (copie strictement identique)",
+      "categorie": "mise_en_demeure",
+      "role": "doublon_strict",
+      "copie_de": "05-mise-en-demeure-2026-02-20.pdf"
+    },
+    {
+      "fichier": "07-courriel-relance-2026-02-13.pdf",
+      "titre": "Courriel de relance amiable du 13 février 2026",
+      "categorie": "correspondance",
+      "role": "original",
+      "texte": [
+        "De : contact@atelier-fictif.invalid",
+        "À : compta@societe-exemple.invalid",
+        "Date : 13 février 2026, 09:14",
+        "Objet : Relance — facture F-2026-0042",
+        "",
+        "Bonjour,",
+        "",
+        "Sauf erreur de notre part, la facture F-2026-0042 du 12 janvier 2026 (1 200,00 € TTC),",
+        "échue le 11 février 2026, ne nous est pas parvenue réglée.",
+        "",
+        "Pourriez-vous nous indiquer la date de règlement prévue ?",
+        "",
+        "Cordialement,",
+        "Claire Fictive — Atelier Fictif SAS"
+      ]
+    }
+  ]
+}

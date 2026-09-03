@@ -4,5 +4,12 @@
     "types": ["node"],
     "noEmit": true
   },
-  "include": ["tests", "scripts/**/*.ts", "vitest.config.ts", "src/data", "src/components/icons.tsx"]
+  "include": [
+    "tests",
+    "scripts/**/*.ts",
+    "vitest.config.ts",
+    "src/data",
+    "src/components/icons.tsx",
+    "src/lib/documents.ts"
+  ]
 }

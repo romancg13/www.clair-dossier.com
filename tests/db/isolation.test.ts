@@ -519,7 +519,7 @@ describe('durcissement vérifié par exécution (scénarios d’attaque rejoués
     });
   });
 
-  it('suppression d’une pièce : les analyses IA orphelines sont supprimées et journalisées ; refusée si une correction humaine en dépend', async () => {
+  it('suppression physique d’une pièce (serveur) : les analyses IA orphelines sont supprimées et journalisées ; une correction humaine bloque, sauf purge « systeme »', async () => {
     await withTx(async (tx) => {
       const f = await fixture(tx);
       await tx.asService();
@@ -529,16 +529,21 @@ describe('durcissement vérifié par exécution (scénarios d’attaque rejoués
       );
       await tx.sql('insert into public.entite_sources (entite_id, chunk_id) values ($1, $2)', [e[0].id, f.chunkA]);
       await tx.checkDeferred();
-      // Flux existant : l'utilisateur supprime sa pièce (docs_delete_own).
+      // Le client ne détruit jamais un original (I3, étape 5) : il le retire logiquement.
       await tx.as(f.a.id);
+      await tx.expectError(
+        () => tx.sql('delete from public.dossier_documents where id = $1', [f.documentA]),
+        /PIECE_ORIGINALE_CONSERVEE/,
+      );
+      // Le serveur supprime physiquement (purge) : l'entité IA sans autre source disparaît.
+      await tx.asService();
       await tx.sql('delete from public.dossier_documents where id = $1', [f.documentA]);
       await tx.checkDeferred();
-      await tx.asService();
       expect((await tx.sql('select 1 from public.entites where id = $1', [e[0].id])).length).toBe(0);
-      const journal = await tx.sql<{ objet_id: string; acteur: string }>(
-        "select objet_id, acteur from public.audit_log where action = 'analyse.orpheline_supprimee'",
+      const journal = await tx.sql<{ objet_id: string; acteur_type: string }>(
+        "select objet_id, acteur_type from public.audit_log where action = 'analyse.orpheline_supprimee'",
       );
-      expect(journal).toEqual([{ objet_id: e[0].id, acteur: f.a.id }]);
+      expect(journal).toEqual([{ objet_id: e[0].id, acteur_type: 'systeme' }]);
     });
     await withTx(async (tx) => {
       const f = await fixture(tx);
@@ -549,13 +554,19 @@ describe('durcissement vérifié par exécution (scénarios d’attaque rejoués
       );
       await tx.sql('insert into public.entite_sources (entite_id, chunk_id) values ($1, $2)', [e[0].id, f.chunkA]);
       await tx.checkDeferred();
-      await tx.as(f.a.id);
+      // Sans contexte « systeme » explicite, une correction humaine bloque la suppression.
       await tx.expectError(
         () => tx.sql('delete from public.dossier_documents where id = $1', [f.documentA]),
         /PIECE_FONDE_CORRECTION_HUMAINE/,
       );
-      await tx.asService();
       expect((await tx.sql('select 1 from public.dossier_documents where id = $1', [f.documentA])).length).toBe(1);
+      // Purge explicite (droit à l'effacement) : tout disparaît, et c'est journalisé.
+      await tx.sql("select set_config('clair.acteur', 'systeme', true)");
+      await tx.sql('delete from public.dossier_documents where id = $1', [f.documentA]);
+      await tx.checkDeferred();
+      await tx.sql("select set_config('clair.acteur', '', true)");
+      expect((await tx.sql('select 1 from public.entites where id = $1', [e[0].id])).length).toBe(0);
+      expect((await tx.sql("select 1 from public.audit_log where action = 'analyse.orpheline_supprimee' and objet_id = $1", [e[0].id])).length).toBe(1);
     });
   });
 

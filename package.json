@@ -6,11 +6,13 @@
   "scripts": {
     "dev": "vite",
     "gen:md": "tsx scripts/gen-markdown.ts",
+    "gen:etalon": "tsx scripts/gen-dossier-etalon.ts",
     "build": "npm run gen:md && tsc -p tsconfig.json && vite build",
     "preview": "vite preview --port 4173",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "typecheck:tests": "tsc -p tsconfig.tests.json --noEmit",
     "test": "vitest run",
+    "test:unit": "vitest run tests/unit",
     "test:db": "tests/db/apply-migrations.sh --reset && vitest run tests/db"
   },
   "dependencies": {
