@@ -36,7 +36,8 @@ export function replier(texte: string): string {
 }
 
 const REGLES: Regle[] = [
-  { categorie: "mise_en_demeure", priorite: 10, confiance: 0.97, motifs: [/mise en demeure|mettons en demeure|met(?:tons|s)? .{0,40}en demeure/] },
+  // Forme performative ou titre ; « votre / cette / la mise en demeure » désigne celle d'un tiers (réponse, contestation).
+  { categorie: "mise_en_demeure", priorite: 10, confiance: 0.97, motifs: [/(?<!votre |cette |ladite |la |une |de la )mise en demeure|mettons en demeure|met(?:tons|s)? .{0,40}en demeure/] },
   { categorie: "assignation", priorite: 10, confiance: 0.95, motifs: [/\bassignation\b/, /tribunal|juridiction|audience/], tous: true },
   { categorie: "decision_justice", priorite: 9, confiance: 0.9, motifs: [/\b(jugement|ordonnance|arret)\b/, /tribunal|cour d'appel|conseil de prud'hommes|juge/], tous: true },
   { categorie: "lettre_licenciement", priorite: 9, confiance: 0.93, motifs: [/licenciement/, /notifi|entretien prealable/], tous: true },

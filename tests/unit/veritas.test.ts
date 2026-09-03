@@ -18,30 +18,39 @@ const PAGE_1 = [
   'FACTURE N° F-2026-0042',
   "Date d'émission : 12 janvier 2026",
   'Client : Société Exemple SARL, représentée par M. Jean Exemple, gérant.',
+  'Tél. du service comptable : 01 23 45 67 89 (fictif).',
   'Total TTC 1 200,00 €',
   'Échéance de paiement : 11 février 2026 (30 jours date de facture).',
 ].join('\n');
 
 type Sortie = { assertions: unknown[]; resultat: { entites: unknown[]; evenements: unknown[] }; incertitudes: unknown[]; donnees_sensibles_detectees: string[] };
 
-function reponseModele(): Sortie {
+const VERDICT_ACCEPTE = { verdict: 'accepte', anomalies: [], incertitudes: [] };
+
+function reponseModele(options: { avecDateFausse?: boolean } = {}): Sortie {
   const source = (extrait: string) => ({ document_id: DOCUMENT_ID, nom_fichier: 'piece.pdf', page: 1, extrait });
+  const assertions: unknown[] = [
+    { id: 'a1', enonce: 'Le client est la société Exemple SARL.', nature: 'piece', confiance: 0.96, sources: [source('Client : Société Exemple SARL')] },
+    { id: 'a2', enonce: 'Le gérant est M. Jean Exemple.', nature: 'piece', confiance: 0.95, sources: [source('représentée par M. Jean Exemple, gérant')] },
+    // Fabriquée : cet extrait n'existe pas dans la page (rejetée à l'ancrage, avant SENTINEL).
+    { id: 'a3', enonce: 'Un acompte de 500 € a été versé.', nature: 'piece', confiance: 0.9, sources: [source('Acompte reçu : 500,00 € le 5 janvier 2026')] },
+    // Numéro lu avec une confiance sous le seuil 0,90 : à vérifier, E1.
+    { id: 'a4', enonce: 'Le téléphone du service comptable est le 01 23 45 67 89.', nature: 'piece', confiance: 0.85, critique: true, sources: [source('Tél. du service comptable : 01 23 45 67 89')] },
+  ];
+  if (options.avecDateFausse) {
+    // Énoncé qui contredit son extrait (13 ≠ 12 janvier) : SENTINEL doit le refuser.
+    assertions.push({ id: 'a5', enonce: 'La facture a été émise le 13 janvier 2026.', nature: 'piece', confiance: 0.97, critique: true, sources: [source("Date d'émission : 12 janvier 2026")] });
+  }
   return {
-    assertions: [
-      { id: 'a1', enonce: 'Le client est la société Exemple SARL.', nature: 'piece', confiance: 0.96, sources: [source('Client : Société Exemple SARL')] },
-      { id: 'a2', enonce: 'Le gérant est M. Jean Exemple.', nature: 'piece', confiance: 0.95, sources: [source('représentée par M. Jean Exemple, gérant')] },
-      // Fabriquée : cet extrait n'existe pas dans la page.
-      { id: 'a3', enonce: 'Un acompte de 500 € a été versé.', nature: 'piece', confiance: 0.9, sources: [source('Acompte reçu : 500,00 € le 5 janvier 2026')] },
-      // Date lue avec une confiance sous le seuil 0,95.
-      { id: 'a4', enonce: 'La facture a été signée le 13 janvier 2026.', nature: 'piece', confiance: 0.8, critique: true, sources: [source("Date d'émission : 12 janvier 2026")] },
-    ],
+    assertions,
     resultat: {
       entites: [
         { assertion_id: 'a1', type: 'societe', valeur_normalisee: 'Société Exemple SARL', valeur_brute: 'Société Exemple SARL' },
         { assertion_id: 'a2', type: 'personne', valeur_normalisee: 'Jean Exemple', valeur_brute: 'M. Jean Exemple' },
         { assertion_id: 'a2', type: 'role', valeur_normalisee: 'gérant', valeur_brute: 'gérant' },
         { assertion_id: 'a3', type: 'montant', valeur_normalisee: '500.00', valeur_brute: '500 €' },
-        { assertion_id: 'a4', type: 'date', valeur_normalisee: '2026-01-13', valeur_brute: '13 janvier 2026' },
+        { assertion_id: 'a4', type: 'telephone', valeur_normalisee: '0123456789', valeur_brute: '01 23 45 67 89' },
+        ...(options.avecDateFausse ? [{ assertion_id: 'a5', type: 'date', valeur_normalisee: '2026-01-13', valeur_brute: '13 janvier 2026' }] : []),
       ],
       evenements: [
         { assertion_id: 'a1', date: '2026-01-12', date_precision: 'certaine', nature: 'emission_facture', description: 'Émission de la facture F-2026-0042 à Société Exemple SARL' },
@@ -54,12 +63,16 @@ function reponseModele(): Sortie {
 }
 
 describe('VERITAS (modèle simulé)', () => {
-  it('ne persiste que les assertions ancrées ; rejette la fabrication ; déclasse la date sous seuil (E1) ; signale les sensibles (E7)', async () => {
+  it('ne persiste que les assertions ancrées ; rejette la fabrication ; déclasse le numéro sous seuil (E1) ; signale les sensibles (E7) ; SENTINEL fait corriger la date fausse', async () => {
     const { store, journal, travail } = storeMemoire([PAGE_1]);
-    const modele = modeleSimule([reponseModele()]);
+    // 1er tour : date fausse → refus SENTINEL ; 2e tour : corrigée → contrôle de sens (modèle) accepte.
+    const modele = modeleSimule([reponseModele({ avecDateFausse: true }), reponseModele(), VERDICT_ACCEPTE]);
     const bilan = await executerVeritas(store, travail, { modele });
 
     expect(valider(bilan.sortie)).toMatchObject({ valide: true });
+    expect(bilan.controle).toEqual({ verdict: 'corrige', iterations: 1, assertions_retirees: [] });
+    expect(modele.requetes[1].utilisateur).toMatch(/CORRECTIONS DEMANDÉES PAR LE CONTRÔLE QUALITÉ[\s\S]*assertion ma5/);
+    expect(modele.requetes[2].outil.nom).toBe('emettre_verdict');
     expect(bilan.rejets).toEqual([{ assertion_id: 'a3', motif: 'extrait_absent' }]);
     const types = bilan.entites.map((e) => `${e.type}:${e.valeur_normalisee}:${e.nature}`);
     // Déterministes (ancrage par construction)…
@@ -67,25 +80,29 @@ describe('VERITAS (modèle simulé)', () => {
     // … et du modèle, uniquement ancrées.
     expect(types).toEqual(expect.arrayContaining(['societe:Société Exemple SARL:piece', 'personne:Jean Exemple:piece', 'role:gérant:piece']));
     expect(types.some((t) => t.startsWith('montant:500.00'))).toBe(false);
-    expect(types).toContain('date:2026-01-13:a_verifier');
+    expect(types.some((t) => t.startsWith('date:2026-01-13'))).toBe(false);
+    expect(types).toContain('telephone:0123456789:a_verifier');
     for (const e of bilan.entites) expect(e.sources.length, `${e.type} ${e.valeur_normalisee}`).toBeGreaterThan(0);
     // Événements : celui rattaché à l'assertion fabriquée disparaît.
     expect(bilan.evenements.map((e) => e.nature)).toEqual(['emission_facture']);
-    // Escalades : E1 (date sous seuil) et E7 (iban signalé), statut « escalade ».
+    // Escalades : E1 (numéro sous seuil) et E7 (iban signalé), statut « escalade ».
     expect(bilan.sortie.escalades.map((e) => e.code).sort()).toEqual(['E1', 'E7']);
     expect(bilan.sortie.statut).toBe('escalade');
     expect(bilan.sortie.donnees_sensibles_detectees).toEqual(['iban']);
     expect(bilan.sortie.incertitudes.some((i) => /rejetée/.test(i.objet))).toBe(true);
-    // Persistance : une seule écriture d'entités, une d'événements, statut « analyse », run « escalade », coût tracé.
+    // Persistance : une seule écriture d'entités, une d'événements, statut « analyse », run « escalade », coût cumulé des deux tours.
     expect(journal.entites.length).toBe(1);
     expect(journal.evenements.length).toBe(1);
     expect(journal.statuts).toEqual(['analyse']);
-    expect(journal.runs[0]).toMatchObject({ agent: 'VERITAS', statut: 'escalade' });
-    expect(bilan.sortie.cout).toEqual({ modele: 'claude-sonnet-5', tokens_entree: 1000, tokens_sortie: 300 });
+    expect(journal.runs.find((r) => r.agent === 'VERITAS')).toMatchObject({ statut: 'escalade' });
+    expect(journal.runs.find((r) => r.agent === 'SENTINEL')).toMatchObject({ statut: 'ok' });
+    expect(journal.controles).toEqual([expect.objectContaining({ verdict: 'corrige', iterations: 1 })]);
+    expect(bilan.sortie.cout).toEqual({ modele: 'claude-sonnet-5', tokens_entree: 2000, tokens_sortie: 600 });
     // Le modèle a reçu le prompt système VERITAS, l'outil forcé et le texte comme donnée.
     expect(modele.requetes[0].systeme).toBe(PROMPTS_SYSTEME.VERITAS);
     expect(modele.requetes[0].outil).toMatchObject({ nom: 'emettre_sortie', schema: SCHEMA_OUTIL_VERITAS });
     expect(modele.requetes[0].utilisateur).toContain('=== PAGE 1 ===');
+    expect(modele.requetes[0].utilisateur).not.toContain('CORRECTIONS DEMANDÉES');
     expect(modele.requetes[0].temperature).toBe(0);
   });
 
@@ -97,7 +114,9 @@ describe('VERITAS (modèle simulé)', () => {
     expect(bilan.entites.every((e) => e.sources.length > 0 && e.nature === 'piece')).toBe(true);
     expect(bilan.entites.map((e) => e.type)).toEqual(expect.arrayContaining(['date', 'montant', 'reference']));
     expect(bilan.sortie.confiance_globale).toBeLessThan(1);
-    expect(journal.runs[0]).toMatchObject({ agent: 'VERITAS', statut: 'ok' });
+    expect(journal.runs.find((r) => r.agent === 'VERITAS')).toMatchObject({ statut: 'ok' });
+    expect(bilan.controle).toEqual({ verdict: 'accepte', iterations: 0, assertions_retirees: [] });
+    expect(bilan.sortie.resultat).toMatchObject({ sentinel: { verdict: 'accepte', controle_modele: 'non_configure' } });
     expect(bilan.sortie.cout.modele).toBeNull();
   });
 
@@ -120,7 +139,8 @@ describe('VERITAS (modèle simulé)', () => {
     expect(journal.entites).toEqual([]);
     expect(journal.evenements).toEqual([]);
     expect(journal.statuts).toEqual([]);
-    expect(journal.runs[0]).toMatchObject({ statut: 'echec' });
+    expect(journal.runs.find((r) => r.agent === 'VERITAS')).toMatchObject({ statut: 'echec' });
+    expect(bilan.controle).toBeNull();
   });
 
   it('ne traite pas une pièce non vectorisée ni une pièce retirée', async () => {

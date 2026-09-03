@@ -12,7 +12,7 @@ const DIR = resolve(__dirname, '../fixtures/dossier-etalon');
 
 type Piece = {
   fichier: string;
-  role: 'original' | 'doublon_strict' | 'quasi_doublon' | 'illisible';
+  role: 'original' | 'doublon_strict' | 'quasi_doublon' | 'illisible' | 'injection';
   copie_de?: string;
   quasi_doublon_de?: string;
   texte?: string[];

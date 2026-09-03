@@ -24,6 +24,10 @@ aucune entité sans source (requête SQL), entités attendues de la vérité ter
 présentes, extraits relus dans les chunks, réanalyse idempotente, modèle simulé (fabrication
 rejetée, événement ancré, correction humaine intacte). Aucun modèle réel n'est appelé.
 
+`sentinel.test.ts` vérifie sur l'étalon (pièce 09, tentative d'injection) que rien de ce
+que dicte l'injection n'est persisté, que chaque exécution contrôlée porte un verdict, et
+qu'un modèle simulé obéissant est corrigé puis escaladé E8 après deux tentatives.
+
 `atlas.test.ts` poursuit jusqu'à l'inventaire : classification de chaque pièce lisible
 comparée au manifeste (précision mesurée, seuil 90 %), doublons stricts et quasi-doublon
 de la vérité terrain, pièce illisible signalée, catégorie corrigée par l'utilisateur intacte

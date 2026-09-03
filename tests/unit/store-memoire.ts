@@ -15,7 +15,8 @@ export type Journal = {
   entites: unknown[][];
   evenements: unknown[][];
   classifications: { categorie: string; confiance: number; nomNormalise: string | null; quasi: string | null; similarite: number | null }[];
-  runs: { agent: string; statut?: string; sortie?: unknown; erreur?: string | null }[];
+  controles: { runId: string; sentinelRunId: string | null; verdict: string; iterations: number }[];
+  runs: { id: string; agent: string; statut?: string; sortie?: unknown; erreur?: string | null }[];
   statuts: string[];
 };
 
@@ -30,7 +31,7 @@ export function storeMemoire(pagesTexte: string[], options: { statut?: string; f
     size_bytes: 10, mime: 'application/pdf', hash_sha256: 'a'.repeat(64), kind: 'piece', statut_ingestion: options.statut ?? 'vectorise',
     doublon_de_id: null, supprime_le: null,
   };
-  const journal: Journal = { entites: [], evenements: [], classifications: [], runs: [], statuts: [] };
+  const journal: Journal = { entites: [], evenements: [], classifications: [], controles: [], runs: [], statuts: [] };
   const store: Store = {
     async prendreTravail() { return null; },
     async terminerTravail() {},
@@ -40,10 +41,14 @@ export function storeMemoire(pagesTexte: string[], options: { statut?: string; f
     async enregistrerEmpreinte() {},
     async enregistrerPages() {},
     async marquerIngestion(_id, statut) { journal.statuts.push(statut); doc.statut_ingestion = statut; },
-    async demarrerRun(agent) { journal.runs.push({ agent }); return `66666666-6666-4666-8666-${String(journal.runs.length).padStart(12, '0')}`; },
-    async terminerRun(_runId, statut, sortie, _confiance, _duree, erreur) {
-      const r = journal.runs[journal.runs.length - 1];
-      r.statut = statut; r.sortie = sortie; r.erreur = erreur;
+    async demarrerRun(agent) {
+      const id = `66666666-6666-4666-8666-${String(journal.runs.length + 1).padStart(12, '0')}`;
+      journal.runs.push({ id, agent });
+      return id;
+    },
+    async terminerRun(runId, statut, sortie, _confiance, _duree, erreur) {
+      const r = journal.runs.find((x) => x.id === runId);
+      if (r) { r.statut = statut; r.sortie = sortie; r.erreur = erreur; }
     },
     async lireDocumentPages() { return pages; },
     async enregistrerChunks() {},
@@ -57,6 +62,9 @@ export function storeMemoire(pagesTexte: string[], options: { statut?: string; f
     async enregistrerClassification(_id, categorie, confiance, nomNormalise, quasi, similarite) {
       journal.classifications.push({ categorie, confiance, nomNormalise, quasi, similarite });
       return { categorie_appliquee: true, categorie_humaine: false };
+    },
+    async enregistrerControle(runId, sentinelRunId, verdict, iterations) {
+      journal.controles.push({ runId, sentinelRunId, verdict, iterations });
     },
   };
   const travail: Travail = {

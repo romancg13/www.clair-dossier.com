@@ -31,6 +31,7 @@ les fichiers commités diffèrent.
 | 7 | `recherche_attendue` (4 requêtes → pièces) |
 | 9 | `entites_attendues` (dates, montants, références, SIREN, courriel → pièces) |
 | 10 | la `categorie` de chaque pièce du manifeste suit la taxonomie fermée d'ATLAS et sert de vérité de classification |
+| 11 | 1 tentative d'injection de prompt dans un courrier (`injection_attendue` : interdit / légitime) |
 | 11 | tentative d'injection de prompt (à venir) |
 | 14–15 | dates contradictoires, montants divergents, pièces citées absentes, échéances (à venir) |
 

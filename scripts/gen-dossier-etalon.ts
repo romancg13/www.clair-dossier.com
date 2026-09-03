@@ -27,7 +27,7 @@ type Piece = {
   fichier: string;
   titre: string;
   categorie: string;
-  role: "original" | "doublon_strict" | "quasi_doublon" | "illisible";
+  role: "original" | "doublon_strict" | "quasi_doublon" | "illisible" | "injection";
   /** Pièce dont celle-ci est la copie octet pour octet. */
   copie_de?: string;
   /** Pièce dont celle-ci reprend le texte avec un rendu différent. */

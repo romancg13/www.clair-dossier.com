@@ -184,6 +184,8 @@ export interface Store {
     documentId: string, categorie: string, confiance: number, nomNormalise: string | null,
     quasiDoublonDeId: string | null, similarite: number | null, traceId: string,
   ): Promise<{ categorie_appliquee: boolean; categorie_humaine: boolean }>;
+  /** Verdict SENTINEL porté par l'exécution contrôlée (PARTIE 11 : taux de correction). */
+  enregistrerControle(runId: string, sentinelRunId: string | null, verdict: "accepte" | "corrige" | "refuse", iterations: number): Promise<void>;
 }
 
 export type DocumentResume = {

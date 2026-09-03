@@ -85,9 +85,12 @@ describe('ATLAS (exécution)', () => {
 
   it('classe par règles sans appeler le modèle, nomme, persiste et termine la pièce ; sortie conforme', async () => {
     const { store, journal, travail } = storeMemoire([FACTURE], { statut: 'analyse', type: 'atlas', fileName: 'scan.pdf' });
-    const modele = modeleSimule([]);
+    const modele = modeleSimule([{ verdict: 'accepte', anomalies: [], incertitudes: [] }]);
     const bilan = await executerAtlas(store, travail, { modele });
-    expect(modele.requetes.length).toBe(0);
+    // Les règles concluent : aucun appel de classification ; le seul appel est le contrôle de sens SENTINEL.
+    expect(modele.requetes.map((r) => r.outil.nom)).toEqual(['emettre_verdict']);
+    expect(bilan.controle).toEqual({ verdict: 'accepte', iterations: 0 });
+    expect(journal.controles.length).toBe(1);
     expect(bilan.classification).toMatchObject({ categorie: 'facture', methode: 'regles' });
     expect(bilan.nom_normalise).toBe('2026-01-12_facture_F-2026-0042.pdf');
     expect(journal.classifications).toEqual([{ categorie: 'facture', confiance: 0.95, nomNormalise: '2026-01-12_facture_F-2026-0042.pdf', quasi: null, similarite: null }]);
@@ -104,7 +107,7 @@ describe('ATLAS (exécution)', () => {
     const modele = modeleSimule([
       { categorie: 'courrier', confiance: 0.9, justification: { page: 1, extrait: 'Veuillez trouver ci-joint les éléments demandés' }, incompletude: 'pièce jointe annoncée absente', incertitudes: [] },
     ]);
-    const bilan = await executerAtlas(store, travail, { modele });
+    const bilan = await executerAtlas(store, travail, { modele, modeleSentinel: null });
     expect(modele.requetes[0].systeme).toBe(PROMPTS_SYSTEME.ATLAS);
     expect(modele.requetes[0].modele).toBe('claude-haiku-4-5-20251001');
     expect(bilan.classification).toMatchObject({ categorie: 'courrier', confiance: 0.9, methode: 'modele' });
@@ -116,7 +119,7 @@ describe('ATLAS (exécution)', () => {
     // Justification introuvable : la proposition est ignorée, la catégorie reste « à vérifier ».
     const second = storeMemoire([VAGUE], { statut: 'analyse', type: 'atlas' });
     const menteur = modeleSimule([{ categorie: 'contrat', confiance: 0.95, justification: { page: 1, extrait: 'Article 1 — Objet du contrat' }, incompletude: null, incertitudes: [] }]);
-    const b2 = await executerAtlas(second.store, second.travail, { modele: menteur });
+    const b2 = await executerAtlas(second.store, second.travail, { modele: menteur, modeleSentinel: null });
     expect(b2.classification).toMatchObject({ categorie: 'autre', methode: 'regles' });
     expect(b2.sortie.assertions[0].nature).toBe('deduction');
     expect(b2.sortie.incertitudes.some((i) => /ignorée/.test(i.objet))).toBe(true);

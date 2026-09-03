@@ -130,6 +130,9 @@ export function creerStorePg(sql: Sql): Store {
       );
       return rows[0].r;
     },
+    async enregistrerControle(runId, sentinelRunId, verdict, iterations) {
+      await sql('select public.enregistrer_controle($1::uuid, $2::uuid, $3::text, $4::integer)', [runId, sentinelRunId, verdict, iterations]);
+    },
   };
 }
 

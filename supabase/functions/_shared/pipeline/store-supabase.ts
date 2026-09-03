@@ -146,6 +146,12 @@ export function creerStoreSupabase(client: SupabaseClient): Store {
         "enregistrer_classification",
       ) as { categorie_appliquee: boolean; categorie_humaine: boolean };
     },
+    async enregistrerControle(runId, sentinelRunId, verdict, iterations) {
+      verifier(
+        await client.rpc("enregistrer_controle", { p_run_id: runId, p_sentinel_run_id: sentinelRunId, p_verdict: verdict, p_iterations: iterations }),
+        "enregistrer_controle",
+      );
+    },
   };
 }
 
