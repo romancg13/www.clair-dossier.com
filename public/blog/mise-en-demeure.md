@@ -12,9 +12,9 @@ url: https://www.clair-dossier.com/blog/mise-en-demeure
 
 *Publié le 15 avril 2026 — 8 min de lecture — catégorie : Procédure amiable*
 
-**Résumé.** Avant tout procès, la loi française demande presque toujours d'avoir tenté un règlement amiable. La mise en demeure est l'outil principal de cette tentative. Bien rédigée, elle débloque souvent la situation sans aller plus loin. Mal rédigée, elle peut être inopposable et faire perdre un temps précieux.
+**Résumé.** Dans de nombreuses situations, une tentative de résolution amiable est obligatoire ou recommandée avant de saisir un juge, selon la nature et le montant du litige. La mise en demeure est souvent le premier outil de cette tentative. Bien rédigée, elle débloque souvent la situation sans aller plus loin. Mal rédigée, elle peut être inopposable et faire perdre un temps précieux.
 
-Vous avez prêté de l'argent à un proche qui ne rend rien. Votre locataire ne paye plus les charges depuis trois mois. Un prestataire vous a livré un travail bâclé. Avant de saisir le tribunal, le réflexe juridique français est presque toujours le même : envoyer une mise en demeure. Ce courrier formel a une efficacité psychologique réelle — il signale à la partie adverse que vous êtes prêt à aller plus loin — mais aussi une portée juridique précise.
+Vous avez prêté de l'argent à un proche qui ne rend rien. Votre locataire ne paye plus les charges depuis trois mois. Un prestataire vous a livré un travail bâclé. Avant de saisir le tribunal, le réflexe juridique français est souvent le même : envoyer une mise en demeure. Ce courrier formel a une efficacité psychologique réelle — il signale à la partie adverse que vous êtes prêt à aller plus loin — mais aussi une portée juridique précise.
 
 ## Qu'est-ce qu'une mise en demeure
 
@@ -38,7 +38,7 @@ Pour être pleinement efficace juridiquement — c'est-à-dire faire courir les 
 
 C'est le canal standard. L'AR prouve que le destinataire a reçu (ou refusé de recevoir) le courrier. Coût : environ 6 à 8 euros à La Poste. Une lettre recommandée électronique (LRE) via un service certifié a la même valeur juridique depuis le décret de 2018, à coût équivalent ou inférieur.
 
-### Mentions obligatoires
+### Mentions recommandées
 
 - Identité complète de l'expéditeur (vous) et du destinataire.
 - Référence claire à l'obligation invoquée (contrat, facture, courrier précédent).
@@ -89,7 +89,7 @@ Oui, pour une dette d'argent, la mise en demeure fait courir les intérêts mora
 
 ## Méthode étape par étape
 
-_Structure et mentions obligatoires d'une mise en demeure opposable juridiquement, conforme à l'article 1344 du Code civil._
+_Structure et mentions recommandées pour une mise en demeure claire et opposable (article 1344 du Code civil : sommation ou acte portant interpellation suffisante)._
 
 Temps estimé : 20 minutes.
 

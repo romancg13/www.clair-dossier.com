@@ -57,7 +57,7 @@ Cet élément — invisible sans une chronologie rigoureuse — a transformé la
 
 ## Outil ou méthode
 
-Construire une chronologie est une discipline avant d'être un outil. Mais quand l'outil est conçu autour de cette discipline, il fait gagner du temps sans la dégrader. ClairDossier extrait automatiquement les dates des pièces déposées par le client, propose une frise éditable, et permet à l'avocat de requalifier chaque évènement. La méthode reste celle de l'avocat — l'outil enlève seulement la friction administrative.
+Construire une chronologie est une discipline avant d'être un outil. Mais quand l'outil est conçu autour de cette discipline, il fait gagner du temps sans la dégrader. ClairDossier rassemble les pièces déposées et les dates renseignées par le client sur la page d'avancement du dossier ; le professionnel dispose ainsi d'une base datée pour construire et qualifier la chronologie. La méthode reste celle de l'avocat — l'outil enlève seulement la friction administrative.
 
 > **Note —** Une chronologie qui sort de l'app prête à être versée comme pièce 1 du dossier, c'est trente minutes économisées par dossier — et un débat qui démarre sur le bon terrain.
 

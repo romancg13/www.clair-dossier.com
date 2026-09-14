@@ -523,3 +523,30 @@ Chaque exécution produit `docs/baseline/runs/<AAAA-MM-JJ>/NON_REGRESSION_RUN.md
 | Q7 | Comportement réel du rôle `anon` face aux policies admin (`is_admin()` sans EXECUTE pour `anon`, R11) : `[]` ou erreur 42501 ? | T-108 |
 | Q8 | Décision WhatsApp Business sur le 04 91 95 90 32 ou ligne vocale seule (I.5, [IL §5.2]) : détermine la forme « REPLACED WITH EQUIVALENT » des tests T-043, T-060, T-062, T-090, T-091. | Contact / Tarifs / Tunnel |
 | Q9 | Les mesures Core Web Vitals (T-145) n'ont jamais été réalisées : la première campagne fixe la baseline chiffrée. | T-145 |
+
+---
+
+## Addendum — Phase 4 « Homepage elevation » (2026-09-14)
+
+Composition cinématique montée derrière le flag `HOME_CINEMATIC` (`src/lib/flags.ts`, ON par défaut sur la branche ; `VITE_HOME_CINEMATIC=false` rétablit la composition historique de `src/pages/Home.tsx`, intacte). Mapping complet : `docs/HOMEPAGE_ELEVATION.md`. Statut de chaque test F-HOME avec le flag ON :
+
+| Test | Statut | Équivalent dans la composition cinématique |
+|---|---|---|
+| T-017 Hero textes et CTA | **REPLACED WITH EQUIVALENT** | H1 « Des documents dispersés. Un dossier clair. » ; kicker « Plateforme française · dossiers administratifs & juridiques » ; sous-titre conservant l'audience « PME, artisans, indépendants et professions libérales » ; CTA « Commencer avec ClairDossier » → `/inscription`, « Voir comment ça fonctionne » → `#comment-ca-fonctionne` ; lien « Découvrir le parcours dédié » → `/grands-comptes` conservé ; « Demander une démo » → `/rendez-vous` (CTA milieu de page et final). Pills remplacées par la ligne « Compte gratuit, confirmé par e-mail · Sans engagement · Aucune lecture automatique de vos pièces. » (`src/components/landing/HeroCinematic.tsx`) |
+| T-018 Hero animations | **REPLACED WITH EQUIVALENT** | Entrée CSS pure : nav 300 ms, mots 300–900 ms (`.cd-word-mask`), sous-titre 0,9 s, CTA 1,1 s, produit 1,3 s ; surligneur sky sur « clair. » (délai 1,05 s) |
+| T-019 Hero card | **REPLACED WITH EQUIVALENT** | Carte « Dossier de démonstration » (`demo-dossier.ts`) : référence CD-2026-0918, 5 étapes métier réelles, pièces, échéance, transmission « à votre validation », bloc « Ce que vous devez faire maintenant » ; 3 cartes satellites (sm+) ; flottement CSS 9/11/13 s, parallaxe pointeur desktop |
+| T-020 Avant / Après | **REPLACED WITH EQUIVALENT** | `landing/BeforeAfter.tsx` : mêmes 5 + 5 textes (exportés de `AvantApres.tsx`), titres « Le dossier vit dans le désordre. » / « Le dossier vit dans l'ordre. » en `h3` de colonnes, trait or scroll-driven |
+| T-021 Grille fonctionnalités | **REPLACED WITH EQUIVALENT** | `landing/FeaturesBento.tsx` : 9 briques, liens « Voir » → `/fonctionnalites/{slug}`, titre « Neuf briques pour structurer un dossier juridique. » (écart n°1 résolu) |
+| T-022 Onglets Espaces dédiés | **PASS** | `WorkspacesTabs` réutilisé tel quel (déplacé après « Pour qui ») |
+| T-023 Workflow 6 statuts | **MERGED** | Chapitre 03 `landing/ChapterTimeline.tsx` : les 6 statuts de `statuses.ts` dans l'ordre, phrase « Six statuts, aucun « entre-deux » » conservée ; trait qui se dessine au scroll |
+| T-024 Cycle de vie | **PASS** | `DossierLifecycle` réutilisé tel quel |
+| T-025 Bloc sécurité | **REPLACED WITH EQUIVALENT** | `landing/TrustChapter.tsx` : mêmes 6 titres et textes (exportés de `SecurityBlock.tsx`), CTA « Centre de confiance » → `/securite` + « État du produit, daté » → `/etat-du-produit` |
+| T-026 Aperçu tarifs | **REPLACED WITH EQUIVALENT** | `landing/PricingCinematic.tsx` : mêmes 3 formules et `href` Stripe exacts (mensuel) ; sélecteur Mensuel / Annuel (liens `ctaHrefYearly`) ; lien « Voir les 7 formules et le détail » → `/tarifs` |
+| T-027 Aperçu journal | **PASS (écart n°2 résolu)** | `BlogPreview limit={3}` — 3 cartes, conformément au titre |
+| T-028 FAQ | **PASS** | `FaqBlock` réutilisé tel quel |
+| T-029 CTA final | **REPLACED WITH EQUIVALENT** | `landing/FinalCinematic.tsx` : « Transformez vos dossiers en décisions claires. », CTA `/inscription` + `/rendez-vous` + lien « Se connecter » |
+| T-030 JSON-LD Home | **PASS** | Mêmes 4 schémas (Organization, WebSite, SoftwareApplication, FAQPage) |
+| T-004 Header scrollé | **PASS (augmenté)** | Classe `cd-nav-enter` (fondu 300 ms) ; padding vertical réduit au-delà de 24 px sur ≥ 1024 px uniquement (`lg:py-2.5`), menu mobile inchangé |
+| T-015 Reduced motion | **PASS (augmenté)** | Toutes les scènes rendent leur état final statique ; sélecteurs « Pour qui » et « Mensuel / Annuel » sans transition |
+
+Nouveaux tests : `tests/home-landing.test.ts` (flag, étiquetage « Dossier de démonstration », libellés réels, frise = 6 statuts, aucune capacité non opérationnelle mise en scène, calendrier cohérent).

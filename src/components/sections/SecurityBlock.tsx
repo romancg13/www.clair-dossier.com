@@ -10,7 +10,7 @@ import {
   ArrowRightIcon,
 } from "../icons";
 
-const TRUST = [
+export const TRUST = [
   {
     Icon: HostingFranceIcon,
     title: "Hébergeur conforme RGPD",

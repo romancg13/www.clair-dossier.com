@@ -108,7 +108,7 @@ export const features: Feature[] = [
       "La première difficulté quand on suit plusieurs affaires, c'est de savoir lesquelles sont en cours et où chacune en est. ClairDossier répond à ce besoin avec une liste claire de vos dossiers, dans votre espace de compte.",
       "Après création de votre compte, gratuite et confirmée par e-mail, vous accédez à votre espace. Chaque dossier que vous créez s'y ajoute, identifié par le nom que vous lui avez donné. Vous ouvrez celui que vous voulez d'un clic.",
       "Depuis la liste, vous entrez sur la page d'avancement de chaque dossier : ses cinq étapes, ses pièces, ses échéances. Vous passez d'un dossier à l'autre sans rien perdre de vue.",
-      "Vos dossiers restent isolés : votre espace ne contient que les vôtres. Cette séparation par utilisateur garantit que vos informations ne se mélangent jamais avec celles d'un autre compte.",
+      "Vos dossiers restent isolés : votre espace ne contient que les vôtres. Cette séparation par utilisateur assure que vos informations ne se mélangent jamais avec celles d'un autre compte.",
     ],
     bullets: [
       "Création de compte gratuite, confirmée par e-mail",
@@ -148,7 +148,7 @@ export const features: Feature[] = [
     hero: "Vos données n'appartiennent qu'à vous. Vous pouvez en demander l'accès, l'export ou la suppression.",
     body: [
       "Le RGPD n'est pas une case à cocher. ClairDossier traite vos informations avec le souci de la protection des données, et vous conservez vos droits sur ce qui vous concerne.",
-      "Vos données sont hébergées chez un sous-traitant conforme RGPD, chiffrées au repos côté hébergeur et transmises en HTTPS. L'isolation par utilisateur garantit que vos dossiers restent séparés de ceux des autres comptes ; l'accès se fait par authentification.",
+      "Vos données sont hébergées chez un sous-traitant conforme RGPD, chiffrées au repos côté hébergeur et transmises en HTTPS. L'isolation par utilisateur assure que vos dossiers restent séparés de ceux des autres comptes ; l'accès se fait par authentification.",
       "Vous gardez la main sur vos droits : accès, export et suppression de vos données. Ces demandes se font via le contact ou votre espace, et sont traitées dans un délai raisonnable (jusqu'à 30 jours), sauf obligation légale de conservation.",
       "Tant que vous ne demandez pas de modification, vos données restent là où vous les avez placées, dans votre espace privé. Vous décidez de ce que vous transmettez, et à qui.",
     ],

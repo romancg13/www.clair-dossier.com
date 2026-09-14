@@ -1,7 +1,7 @@
 import { Reveal } from "../primitives/Reveal";
 import { ArrowRightIcon, CheckIcon, CrossIcon } from "../icons";
 
-const AVANT = [
+export const AVANT = [
   "Pièces dispersées dans 4 emails, 2 fils WhatsApp et un dossier carton.",
   "Chronologie reconstituée à la main avant chaque consultation, recommencée à chaque rebondissement.",
   "Le client ignore où en est son dossier — il appelle pour demander.",
@@ -9,7 +9,7 @@ const AVANT = [
   "Validation par mail informel, signature scannée, conservation aléatoire.",
 ];
 
-const AVEC = [
+export const AVEC = [
   "Pièces déposées une fois dans un espace privé sécurisé, consultables et téléchargeables.",
   "Avancement suivi sur 5 étapes métier claires, avec les échéances réunies au même endroit.",
   "Vous consultez l'avancement de votre dossier à tout moment, depuis votre espace.",
@@ -66,7 +66,7 @@ export function AvantApres() {
 
           {/* Avec */}
           <div className="rounded-2xl bg-navy-900 p-7 text-cream-50 sm:p-9">
-            <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">
+            <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-400">
               Avec ClairDossier
             </p>
             <h2 className="mt-3 font-display text-3xl font-semibold leading-tight text-cream-50 sm:text-4xl">

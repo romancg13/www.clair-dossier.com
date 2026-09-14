@@ -123,7 +123,7 @@ export const orgSchema = {
   url: SITE_URL,
   logo: `${SITE_URL}/favicon.svg`,
   description:
-    "ClairDossier est une plateforme legaltech française qui transforme les demandes juridiques en dossiers structurés, suivis et validés par des professionnels habilités.",
+    "ClairDossier est une plateforme legaltech française qui aide à constituer, structurer et suivre des dossiers administratifs et juridiques, transmis sur validation de l'utilisateur. Elle ne se substitue pas à un professionnel du droit.",
   foundingDate: '2025',
   contactPoint: {
     '@type': 'ContactPoint',

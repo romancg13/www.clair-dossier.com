@@ -123,7 +123,7 @@ export function DossierLifecycle() {
               </p>
             </div>
             <div className="rounded-2xl bg-navy-900 p-7 text-cream-50 sm:p-9">
-              <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">
+              <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-400">
                 Professionnel du droit
               </p>
               <p className="mt-3 text-sm leading-relaxed text-cream-50/80">

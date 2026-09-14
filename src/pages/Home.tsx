@@ -11,6 +11,10 @@ import { BlogPreview } from "../components/sections/BlogPreview";
 import { FaqBlock } from "../components/sections/FaqBlock";
 import { FinalCTA } from "../components/sections/FinalCTA";
 import { homeFaq } from "../data/faq";
+// Phase 4 — Homepage elevation : composition cinématique derrière un flag
+// (src/lib/flags.ts). VITE_HOME_CINEMATIC=false rétablit la composition ci-dessous.
+import { HOME_CINEMATIC } from "../lib/flags";
+import { HomeCinematic } from "../components/landing/HomeCinematic";
 
 const softwareSchema = {
   "@context": "https://schema.org",
@@ -40,6 +44,7 @@ const faqSchema = {
 };
 
 export function Home() {
+  if (HOME_CINEMATIC) return <HomeCinematic />;
   return (
     <>
       <Seo

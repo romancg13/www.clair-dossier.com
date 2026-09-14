@@ -30,7 +30,7 @@ Lire : https://www.clair-dossier.com/blog/chronologie-prud-homale · Markdown : 
 
 *15 avril 2026 — 8 min — Procédure amiable*
 
-Avant tout procès, la loi française demande presque toujours d'avoir tenté un règlement amiable. La mise en demeure est l'outil principal de cette tentative. Bien rédigée, elle débloque souvent la situation sans aller plus loin. Mal rédigée, elle peut être inopposable et faire perdre un temps précieux.
+Dans de nombreuses situations, une tentative de résolution amiable est obligatoire ou recommandée avant de saisir un juge, selon la nature et le montant du litige. La mise en demeure est souvent le premier outil de cette tentative. Bien rédigée, elle débloque souvent la situation sans aller plus loin. Mal rédigée, elle peut être inopposable et faire perdre un temps précieux.
 
 Lire : https://www.clair-dossier.com/blog/mise-en-demeure · Markdown : https://www.clair-dossier.com/blog/mise-en-demeure.md
 
