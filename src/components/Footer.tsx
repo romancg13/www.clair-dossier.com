@@ -19,6 +19,7 @@ const PARCOURS = [
 const RESSOURCES = [
   { to: "/blog", label: "Journal" },
   { to: "/contact", label: "Contact & démo" },
+  { to: "/marseille", label: "ClairDossier à Marseille" },
   { to: "/securite#conformite", label: "Conformité" },
   { to: "/securite#dpa", label: "DPA" },
 ];
@@ -42,6 +43,19 @@ export function Footer() {
               du brouillon à la transmission, avec dépôt de pièces sécurisé,
               suivi de l'avancement et échéances réunies au même endroit.
             </p>
+            <address className="mt-5 space-y-1.5 text-sm not-italic leading-relaxed text-slate-500">
+              <p>Château-Gombert, 13013 Marseille</p>
+              <p>
+                <a href="tel:0491959032" className="transition-colors hover:text-navy-900">
+                  04 91 95 90 32
+                </a>
+              </p>
+              <p>
+                <a href="mailto:contact.clairdossier@icloud.com" className="transition-colors hover:text-navy-900">
+                  contact.clairdossier@icloud.com
+                </a>
+              </p>
+            </address>
           </div>
 
           <FooterCol title="Produit" items={PRODUIT} />

@@ -50,7 +50,7 @@ export function Seo({
   description,
   path = '/',
   type = 'website',
-  image = '/og-default.svg',
+  image = '/og-default.jpg',
   jsonLd,
   noindex = false,
 }: SeoProps) {
@@ -125,9 +125,22 @@ export const orgSchema = {
   description:
     "ClairDossier est une plateforme legaltech française qui aide à constituer, structurer et suivre des dossiers administratifs et juridiques, transmis sur validation de l'utilisateur. Elle ne se substitue pas à un professionnel du droit.",
   foundingDate: '2025',
+  telephone: '+33491959032',
+  email: 'contact.clairdossier@icloud.com',
+  // Siège publié dans les mentions légales (Château-Gombert, 13013 Marseille).
+  address: {
+    '@type': 'PostalAddress',
+    addressLocality: 'Marseille',
+    postalCode: '13013',
+    addressRegion: 'Bouches-du-Rhône',
+    addressCountry: 'FR',
+  },
+  areaServed: 'FR',
   contactPoint: {
     '@type': 'ContactPoint',
     contactType: 'customer support',
+    telephone: '+33491959032',
+    email: 'contact.clairdossier@icloud.com',
     availableLanguage: ['French'],
     areaServed: 'FR',
   },

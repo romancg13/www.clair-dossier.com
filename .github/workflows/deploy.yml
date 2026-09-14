@@ -34,6 +34,14 @@ jobs:
 
       - run: npm ci
 
+      # Garde-fous : une régression TypeScript, de tests (SEO, routes,
+      # cinématiques) ou de pré-rendu bloque le déploiement.
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Tests
+        run: node --import tsx --test tests/*.test.ts
+
       - name: Build
         run: npm run build
         env:

@@ -35,6 +35,7 @@ const staticRoutes: PublicRoute[] = [
   { path: '/experts-comptables', changefreq: 'monthly', priority: 0.8 },
   { path: '/grands-comptes', changefreq: 'monthly', priority: 0.8 },
   { path: '/rendez-vous', changefreq: 'monthly', priority: 0.7 },
+  { path: '/marseille', changefreq: 'monthly', priority: 0.7 },
 ];
 
 export function publicRoutes(): PublicRoute[] {

@@ -102,7 +102,26 @@ const { render } = (await import(pathToFileURL(join(distSsr, 'entry-server.js'))
 };
 
 // ── 2. Coquille SPA vierge (avant de réécrire dist/index.html) ──────────
-const template = readFileSync(join(dist, 'index.html'), 'utf-8');
+let template = readFileSync(join(dist, 'index.html'), 'utf-8');
+
+// CSS critique : la feuille est inlinée dans chaque HTML pré-rendu pour
+// retirer une requête bloquante du chemin de rendu (LCP mobile). Les URLs
+// du bundle CSS sont absolues (/assets/…), l'inline est donc sans risque.
+const cssLink = template.match(/<link rel="stylesheet" crossorigin href="(\/assets\/[^"]+\.css)">/);
+if (!cssLink) throw new Error('prerender: lien stylesheet introuvable dans dist/index.html — inline CSS impossible.');
+const cssText = readFileSync(join(dist, cssLink[1].slice(1)), 'utf-8');
+if (cssText.includes('</style>')) throw new Error('prerender: le CSS contient « </style> », inline refusé.');
+template = template.replace(cssLink[0], `<style>${cssText}</style>`);
+
+// Chemin critique mobile : le script module (différé par nature) part en fin
+// de <body> et les modulepreload sont retirés — la page étant entièrement
+// pré-rendue, le premier rendu n'a besoin d'aucun JavaScript ; les chunks se
+// chargent après le paint au lieu de disputer la bande passante au contenu.
+const scriptTag = template.match(/<script type="module" crossorigin src="[^"]+"><\/script>/);
+if (!scriptTag) throw new Error('prerender: script module introuvable dans dist/index.html.');
+template = template.replace(scriptTag[0], '').replace('</body>', `${scriptTag[0]}</body>`);
+template = template.replace(/\s*<link rel="modulepreload"[^>]*>/g, '');
+
 writeFileSync(join(dist, 'spa-shell.html'), template);
 
 // ── 3. Rendu de chaque route publique ────────────────────────────────────
