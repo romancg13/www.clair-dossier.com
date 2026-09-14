@@ -45,6 +45,10 @@ DENY_PATTERNS = [
 # Motifs AUTORISÉS malgré une correspondance ci-dessus (vérifiés avant DENY).
 # À n'étendre qu'avec une justification commitée.
 ALLOWLIST = [
+    # Déploiement production du 2026-09-15, demandé explicitement par le
+    # propriétaire (message « MASTER PROMPT — INTÉGRATION … EN PRODUCTION »).
+    # Forme préfixée volontairement : la commande nue reste bloquée.
+    r"\bCLAIRDOSSIER_DEPLOY=20260915\s+git\s+push\s+origin\s+main\b",
     r"\brm\s+-rf\s+(\./)?(dist|node_modules|\.vite|\.netlify|coverage|playwright-report|test-results)(/|\s|$)",
     r"\bgit\s+branch\s+-D\s+(tmp|wip)/",  # branches jetables explicitement préfixées
 ]
