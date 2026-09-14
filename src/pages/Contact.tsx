@@ -121,6 +121,12 @@ export function Contact() {
 
               <div className="mt-10 space-y-5 border-t hairline pt-8">
                 <ContactInfo
+                  label="Téléphone"
+                  value="04 91 95 90 32"
+                  href="tel:0491959032"
+                  detail="Service Assistance ClairDossier, 9 h – 19 h, lundi-vendredi"
+                />
+                <ContactInfo
                   label="Email"
                   value="contact.clairdossier@icloud.com"
                   href="mailto:contact.clairdossier@icloud.com"

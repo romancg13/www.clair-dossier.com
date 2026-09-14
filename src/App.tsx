@@ -67,7 +67,9 @@ export async function preloadForPath(pathname: string): Promise<void> {
                           ? 'ProductStatus'
                           : clean === '/rendez-vous'
                             ? 'RendezVous'
-                            : null;
+                            : clean === '/marseille'
+                              ? 'Marseille'
+                              : null;
   if (!name) return;
   const entry = pageRegistry.find((e) => e.name === name);
   if (!entry || clientPages.has(name)) return;
@@ -130,6 +132,7 @@ const ExpertsComptables = named(() => import('./pages/SegmentPage'), 'ExpertsCom
 const GrandsComptes = named(() => import('./pages/SegmentPage'), 'GrandsComptes');
 const ProductStatus = named(() => import('./pages/ProductStatus'), 'ProductStatus');
 const RendezVous = named(() => import('./pages/RendezVous'), 'RendezVous');
+const Marseille = named(() => import('./pages/Marseille'), 'Marseille');
 
 function RouteFallback() {
   return (
@@ -321,6 +324,14 @@ export default function App() {
           element={
             <Suspense fallback={<RouteFallback />}>
               <RendezVous />
+            </Suspense>
+          }
+        />
+        <Route
+          path="marseille"
+          element={
+            <Suspense fallback={<RouteFallback />}>
+              <Marseille />
             </Suspense>
           }
         />

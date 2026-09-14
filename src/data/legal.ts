@@ -45,7 +45,7 @@ const mentionsLegales: LegalPage = {
         },
         {
           type: "p",
-          text: "Contact : contact.clairdossier@icloud.com — WhatsApp : +33 7 82 98 36 44.",
+          text: "Contact : contact.clairdossier@icloud.com — Téléphone : 04 91 95 90 32 — WhatsApp : +33 7 82 98 36 44.",
         },
         {
           type: "p",
