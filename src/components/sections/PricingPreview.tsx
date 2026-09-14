@@ -1,13 +1,22 @@
-import { Link } from 'react-router-dom';
-import { Reveal, Stagger, StaggerItem } from '../primitives/Reveal';
-import { plans, formatEuro, type Plan } from '../../data/pricing';
-import { ArrowRightIcon, FilePagesIcon, UsersIcon, HeadsetIcon } from '../icons';
+import { Link } from "react-router-dom";
+import { Reveal, Stagger, StaggerItem } from "../primitives/Reveal";
+import { plans, formatEuro, perDay, type Plan } from "../../data/pricing";
+import {
+  ArrowRightIcon,
+  FilePagesIcon,
+  UsersIcon,
+  HeadsetIcon,
+} from "../icons";
 
 // 3 plans à mettre en avant sur la home : entrée, populaire, recommandé.
-const PREVIEW_IDS = ['essentiel', 'business-pme-20', 'business-pme-pro'] as const;
-const previewPlans = PREVIEW_IDS
-  .map((id) => plans.find((p) => p.id === id))
-  .filter((p): p is Plan => Boolean(p));
+const PREVIEW_IDS = [
+  "essentiel",
+  "business-pme-20",
+  "business-pme-pro",
+] as const;
+const previewPlans = PREVIEW_IDS.map((id) =>
+  plans.find((p) => p.id === id),
+).filter((p): p is Plan => Boolean(p));
 
 export function PricingPreview() {
   return (
@@ -21,12 +30,16 @@ export function PricingPreview() {
             Une formule par usage. Pas de surprise.
           </h2>
           <p className="mt-4 text-base leading-relaxed text-slate-500">
-            Sept formules, de l'indépendant à l'entreprise. Compte gratuit, abonnement sans
-            engagement — et 10 % de réduction en facturation annuelle.
+            Sept formules, de l'indépendant à l'entreprise. Compte gratuit,
+            abonnement sans engagement — et 10 % de réduction en facturation
+            annuelle.
           </p>
         </div>
 
-        <Stagger inView className="mt-14 grid items-stretch gap-5 sm:gap-6 md:grid-cols-3">
+        <Stagger
+          inView
+          className="mt-14 grid items-stretch gap-5 sm:gap-6 md:grid-cols-3"
+        >
           {previewPlans.map((plan) => (
             <StaggerItem key={plan.id}>
               <CompactPlanCard plan={plan} />
@@ -49,57 +62,78 @@ export function PricingPreview() {
 }
 
 function CompactPlanCard({ plan }: { plan: Plan }) {
-  const isDark = plan.variant === 'dark';
+  const isDark = plan.variant === "dark";
   const cardSkin = isDark
-    ? 'border-navy-900 bg-navy-900 text-cream-50'
-    : 'hairline bg-white text-navy-900 shadow-card';
-  const eyebrow = isDark ? 'text-cream-50/60' : 'text-slate-500';
-  const description = isDark ? 'text-cream-50/75' : 'text-slate-500';
-  const hairlineClass = isDark ? 'border-cream-50/15' : 'border-[rgba(13,27,61,0.08)]';
-  const specIconClass = isDark ? 'text-cream-50/65' : 'text-slate-300';
-  const specLabel = isDark ? 'text-cream-50/90' : 'text-navy-900';
+    ? "border-navy-900 bg-navy-900 text-cream-50"
+    : "hairline bg-white text-navy-900 shadow-card";
+  const eyebrow = isDark ? "text-cream-50/60" : "text-slate-500";
+  const description = isDark ? "text-cream-50/75" : "text-slate-500";
+  const hairlineClass = isDark
+    ? "border-cream-50/15"
+    : "border-[rgba(13,27,61,0.08)]";
+  const specIconClass = isDark ? "text-cream-50/65" : "text-slate-300";
+  const specLabel = isDark ? "text-cream-50/90" : "text-navy-900";
   const ctaClass = isDark
-    ? 'border border-cream-50/25 bg-transparent text-cream-50 hover:border-cream-50/55 hover:bg-cream-50/5'
-    : 'border hairline bg-white text-navy-900 hover:border-navy-900 hover:bg-cream-100/60';
+    ? "border border-cream-50/25 bg-transparent text-cream-50 hover:border-cream-50/55 hover:bg-cream-50/5"
+    : "border hairline bg-white text-navy-900 hover:border-navy-900 hover:bg-cream-100/60";
 
   return (
-    <article className={`relative flex h-full flex-col rounded-2xl border p-6 sm:p-7 ${cardSkin}`}>
+    <article
+      className={`relative flex h-full flex-col rounded-2xl border p-6 sm:p-7 ${cardSkin}`}
+    >
       {plan.badge && (
         <span
           className={`absolute -top-3 left-1/2 -translate-x-1/2 rounded-full px-3 py-1 font-mono text-[0.68rem] font-semibold uppercase tracking-[0.18em] ${
-            plan.badge.tone === 'gratuit'
-              ? 'bg-emerald-100 text-emerald-700'
-              : 'bg-cream-100 text-navy-900'
+            plan.badge.tone === "gratuit"
+              ? "bg-emerald-100 text-emerald-700"
+              : "bg-cream-100 text-navy-900"
           }`}
         >
           {plan.badge.label}
         </span>
       )}
 
-      <p className={`font-mono text-[0.7rem] uppercase tracking-[0.18em] ${eyebrow}`}>
+      <p
+        className={`font-mono text-[0.7rem] uppercase tracking-[0.18em] ${eyebrow}`}
+      >
         {plan.audience}
       </p>
-      <h3 className={`mt-3 font-display text-2xl font-semibold leading-tight sm:text-3xl ${isDark ? 'text-cream-50' : 'text-navy-900'}`}>
+      <h3
+        className={`mt-3 font-display text-2xl font-semibold leading-tight sm:text-3xl ${isDark ? "text-cream-50" : "text-navy-900"}`}
+      >
         {plan.name}
       </h3>
-      <p className={`mt-2 text-sm leading-relaxed ${description}`}>{plan.description}</p>
+      <p className={`mt-2 text-sm leading-relaxed ${description}`}>
+        {plan.description}
+      </p>
 
       <div className={`mt-5 border-t ${hairlineClass} pt-5`}>
         {plan.priceMonthly === 0 ? (
-          <p className="font-display text-4xl font-semibold leading-none">Gratuit</p>
+          <p className="font-display text-4xl font-semibold leading-none">
+            Gratuit
+          </p>
         ) : plan.priceMonthly === null ? (
-          <p className="font-display text-4xl font-semibold leading-none">Sur devis</p>
+          <p className="font-display text-4xl font-semibold leading-none">
+            Sur devis
+          </p>
         ) : (
-          <div className="flex items-baseline gap-2">
-            <span className="font-display text-4xl font-semibold leading-none">
-              {formatEuro(plan.priceMonthly)}
-            </span>
-            <span className={`text-sm ${description}`}>/mois</span>
-          </div>
+          <>
+            <div className="flex items-baseline gap-2">
+              <span className="font-display text-4xl font-semibold leading-none">
+                {formatEuro(plan.priceMonthly)}
+              </span>
+              <span className={`text-sm ${description}`}>/mois</span>
+            </div>
+            <p className={`mt-1.5 text-xs ${description}`}>
+              soit ≈ {formatEuro(perDay(plan.priceMonthly))} / jour
+            </p>
+          </>
         )}
       </div>
 
-      <ul className={`mt-5 flex-1 space-y-2.5 border-t ${hairlineClass} pt-5 text-sm ${specLabel}`}>
+      <ul
+        className={`mt-5 flex-1 space-y-2.5 border-t ${hairlineClass} pt-5 text-sm ${specLabel}`}
+      >
         <li className="flex items-center gap-2.5">
           <FilePagesIcon width={16} height={16} className={specIconClass} />
           {plan.specs.dossiers}

@@ -255,6 +255,11 @@ export function yearlyTotal(priceMonthly: number): number {
   return priceMonthly * 12 * (1 - YEARLY_DISCOUNT);
 }
 
+/** Prix mensuel ramené au jour (÷ 31) — pour une meilleure perception du prix. */
+export function perDay(priceMonthly: number): number {
+  return priceMonthly / 31;
+}
+
 export function formatEuro(amount: number): string {
   return new Intl.NumberFormat("fr-FR", {
     style: "currency",
