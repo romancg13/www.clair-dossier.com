@@ -1,0 +1,209 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   ClairDossier — couche « landing cinématique » (Phase 4, 2026-09-14)
+
+   Fichier NOUVEAU, importé une seule fois depuis src/index.css.
+   Tout ce qui suit est préfixé `cd-` : aucune règle ne cible un composant
+   existant (MASTER_PROMPT II.7.3 : style isolé, jamais une feuille partagée).
+
+   Design system 2.0 — logique des valeurs :
+   · Couleurs : la palette signature (navy-900 #0d1b3d, or, crème, Cormorant)
+     reste la base. On lui ajoute UNE profondeur (navy-950/925) pour les
+     chapitres cinéma et UN argent froid (silver) pour les textes sur fond
+     sombre. Aucun violet, aucun cyan, aucun néon.
+   · Durées : micro 160 ms · UI 320 ms · reveal 640 ms · récit = scroll.
+   · Easings : expo-out (déjà en @theme) pour les entrées, cinema pour les
+     mouvements de caméra très amortis.
+   ──────────────────────────────────────────────────────────────────────── */
+
+@theme {
+  --color-navy-950: #060d22;
+  --color-navy-925: #0a1530;
+  --color-silver-200: #d6dbe6;
+  --color-silver-400: #9aa3b8;
+  --color-sky-glow: #b3d2ef;
+
+  --shadow-stage:
+    0 40px 120px -24px rgba(2, 8, 28, 0.75),
+    0 0 0 1px rgba(214, 219, 230, 0.06);
+  --shadow-float: 0 18px 50px -18px rgba(13, 27, 61, 0.35);
+  --shadow-paper: 0 10px 30px -12px rgba(2, 8, 28, 0.6);
+
+  --ease-cinema: cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+/* ─── Navigation : apparition 0 → 300 ms (opacité seule, sticky-safe) ─── */
+@keyframes cd-nav-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.cd-nav-enter {
+  animation: cd-nav-in 300ms var(--ease-out-soft) both;
+}
+
+/* ─── Hero : mots du H1 (300 → ~900 ms), CSS pur, lisible sans JS ──────── */
+.cd-word-mask {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: bottom;
+  padding-bottom: 0.06em;
+  margin-bottom: -0.06em;
+}
+.cd-word-mask > span {
+  display: inline-block;
+  animation: word-rise 0.75s var(--ease-out-expo) both;
+  animation-delay: calc(300ms + var(--w, 0) * 55ms);
+}
+
+/* ─── Flottements très lents des cartes satellites (desktop) ──────────── */
+@keyframes cd-float-a {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(0, -7px, 0); }
+}
+@keyframes cd-float-b {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(0, 6px, 0); }
+}
+@keyframes cd-float-c {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(0, -5px, 0); }
+}
+.cd-float-a { animation: cd-float-a 9s ease-in-out infinite; }
+.cd-float-b { animation: cd-float-b 11s ease-in-out infinite; }
+.cd-float-c { animation: cd-float-c 13s ease-in-out infinite; }
+
+/* ─── Fonds ───────────────────────────────────────────────────────────── */
+/* Grille presque invisible sur crème (hero, bento). */
+.cd-grid-light {
+  background-image:
+    linear-gradient(rgba(13, 27, 61, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(13, 27, 61, 0.045) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 30%, transparent 100%);
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 30%, transparent 100%);
+}
+
+/* Chapitres cinéma : profondeur continue, halos diffus, aucune forme décorative. */
+.cd-cinema {
+  background-color: var(--color-navy-950);
+  background-image:
+    radial-gradient(60% 40% at 12% 8%, rgba(179, 210, 239, 0.10), transparent 70%),
+    radial-gradient(50% 35% at 88% 92%, rgba(196, 164, 86, 0.08), transparent 70%),
+    radial-gradient(40% 30% at 50% 50%, rgba(21, 35, 72, 0.6), transparent 80%);
+}
+
+/* Grain imperceptible (matière) — opacité très faible, aucun coût JS. */
+.cd-grain {
+  position: relative;
+}
+.cd-grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.055;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.6 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  background-size: 180px 180px;
+}
+.cd-grain > * {
+  position: relative;
+  z-index: 1;
+}
+/* Calque 3D posé directement dans une section cinéma : sous le contenu, plein cadre. */
+.cd-grain > .cd-gl {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+/* ─── Surfaces ────────────────────────────────────────────────────────── */
+/* Scène sombre : panneau translucide, bordure hairline, lumière haute. */
+.cd-stage {
+  position: relative;
+  isolation: isolate;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent 38%),
+    rgba(10, 21, 48, 0.72);
+  border: 1px solid rgba(214, 219, 230, 0.10);
+  box-shadow: var(--shadow-stage);
+}
+
+/* « Papier » : une pièce déposée, sur fond sombre. */
+.cd-paper {
+  background: var(--color-cream-50);
+  color: var(--color-navy-900);
+  border: 1px solid rgba(13, 27, 61, 0.08);
+  box-shadow: var(--shadow-paper);
+}
+
+/* Hairlines sur fond sombre. */
+.cd-hairline { border-color: rgba(214, 219, 230, 0.12); }
+.cd-hairline-strong { border-color: rgba(214, 219, 230, 0.2); }
+
+/* ─── Tuiles bento : lumière suivant le pointeur (desktop, souris) ────── */
+.cd-tile {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  transition:
+    transform 320ms var(--ease-out-expo),
+    border-color 320ms var(--ease-out-soft),
+    box-shadow 320ms var(--ease-out-expo);
+}
+.cd-tile::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(
+    260px circle at var(--mx, 50%) var(--my, 50%),
+    rgba(196, 164, 86, 0.16),
+    transparent 62%
+  );
+  transition: opacity 320ms var(--ease-out-soft);
+}
+.cd-tile > * { position: relative; z-index: 1; }
+
+@media (hover: hover) and (pointer: fine) {
+  .cd-tile:hover {
+    transform: translate3d(0, -3px, 0);
+    border-color: rgba(196, 164, 86, 0.55);
+    box-shadow: var(--shadow-card-hover);
+  }
+  .cd-tile:hover::before { opacity: 1; }
+}
+
+/* ─── Bouton primaire : profondeur + feedback tactile ─────────────────── */
+.cd-btn-primary {
+  box-shadow:
+    var(--shadow-gold),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+.cd-btn-primary:active {
+  transform: translateY(1px) scale(0.99);
+}
+
+/* ─── Frise : trait qui se dessine ────────────────────────────────────── */
+.cd-draw {
+  transform-origin: top center;
+}
+
+/* ─── Motion réduite : tout est statique, rien n'est perdu ────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .cd-float-a, .cd-float-b, .cd-float-c, .cd-nav-enter, .cd-word-mask > span {
+    animation: none;
+  }
+  .cd-tile:hover { transform: none; }
+}
+
+/* ─── Rendu différé des sections hors écran (perf mobile) ─────────────
+   content-visibility: auto saute style/mise en page/peinture tant que la
+   section est loin du viewport ; contain-intrinsic-size réserve une
+   hauteur estimée (puis mémorisée) pour ne pas faire sauter l'ascenseur.
+   Réservé aux sections sans calcul scroll-driven dépendant de leur hauteur. */
+.cd-cv {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 900px;
+}

@@ -1,0 +1,47 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash(rm -rf:*)",
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)",
+      "Bash(git push origin main:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(supabase db reset:*)",
+      "Bash(stripe products delete:*)",
+      "Bash(stripe prices delete:*)",
+      "Bash(stripe customers delete:*)",
+      "Bash(stripe subscriptions cancel:*)",
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./supabase/.env)"
+    ],
+    "ask": [
+      "Bash(git push:*)",
+      "Bash(git merge:*)",
+      "Bash(git rebase:*)",
+      "Bash(supabase migration:*)",
+      "Bash(supabase db push:*)",
+      "Bash(supabase functions deploy:*)",
+      "Bash(supabase secrets set:*)",
+      "Bash(stripe:*)",
+      "Bash(netlify deploy:*)",
+      "Bash(gh workflow run:*)"
+    ],
+    "additionalDirectories": []
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/scripts/guard_destructive.py\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  },
+  "defaultMode": "default"
+}

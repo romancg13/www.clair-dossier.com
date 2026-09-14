@@ -25,6 +25,13 @@ import {
   type Plan,
 } from '../src/data/pricing';
 import { statuses } from '../src/data/statuses';
+import {
+  TRUST_UPDATED,
+  openTodos,
+  retentionRows,
+  securityChangelog,
+  subprocessors,
+} from '../src/data/trust';
 import { workspaces } from '../src/data/workspaces';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -377,63 +384,92 @@ function generatePricing(): void {
   write('tarifs.md', lines.join('\n'));
 }
 
-// ─── Sécurité ──────────────────────────────────────────────────────
+// ─── Sécurité — centre de confiance ────────────────────────────────
+// Généré depuis src/data/trust.ts : mêmes données que la page /securite.
+// Règle : rien d'invérifiable — les éléments en attente sont marqués
+// « À CONFIRMER », jamais comblés par une formulation vague.
 function generateSecurity(): void {
   const path = '/securite';
   const lines: string[] = [
     '---',
-    'title: "Sécurité & conformité ClairDossier"',
-    'description: "Hébergement OVH France, chiffrement AES-256 et TLS 1.3, RGPD natif, conformité RIN, audit annuel par tiers."',
+    'title: "Sécurité & centre de confiance ClairDossier"',
+    'description: "Sous-traitants nommés, localisation et durées de conservation, secret professionnel, continuité, DPA sur demande, journal daté des changements de sécurité."',
+    `lastUpdate: ${TRUST_UPDATED}`,
     `url: ${SITE}${path}`,
     '---',
     '',
-    '# Sécurité et conformité',
+    '# Sécurité & centre de confiance',
     '',
-    "La sécurité juridique commence par la sécurité technique. Pour une legaltech, la conformité n'est pas une case à cocher — c'est la condition d'existence.",
+    "Ce centre de confiance expose ce que nous faisons concrètement : chiffrement, isolation par utilisateur, sous-traitants nommés, durées de conservation et journal des changements. Ce que nous ne pouvons pas encore prouver est marqué « À CONFIRMER » — jamais maquillé.",
     '',
-    '## Architecture',
+    `*Dernière mise à jour : ${TRUST_UPDATED}*`,
     '',
-    '1. **Client** — navigateur, application, API.',
-    '2. **TLS 1.3** — HSTS preload, pinning.',
-    '3. **Bastion** — WAF, rate-limit, audit.',
-    '4. **Application** — hébergée en France, 2FA admin obligatoire.',
-    '5. **Coffre chiffré** — AES-256, réplique France.',
+    '## Ce qui est en place',
     '',
-    'Chaque flèche est chiffrée. Chaque nœud est journalisé. Aucune donnée client n\'est lisible en clair sur les sauvegardes.',
+    '- Connexion chiffrée (HTTPS) entre le navigateur et l\'application ; données chiffrées au repos côté hébergeur.',
+    '- Isolation des données par utilisateur appliquée en base (Row Level Security) — y compris pour le stockage des pièces (bucket privé, liens signés temporaires).',
+    "- Accès à l'espace par authentification (compte confirmé par e-mail) ; consultation support limitée à un administrateur unique.",
+    "- Aucune lecture, extraction ou analyse automatique des documents déposés — engagement contractuel (CGV).",
+    "- Transmission d'un dossier uniquement sur action explicite de l'utilisateur (e-mail ou WhatsApp).",
     '',
-    '## Six piliers',
+    '## Sous-traitants',
     '',
-    '### Infrastructure',
-    "Datacenters OVH France (Roubaix, Strasbourg). Aucun datacenter hors UE, ni pour la production, ni pour les sauvegardes. Bare-metal souverain, pas de cloud public américain. Architecture trois tiers avec bastion de sortie et VPN administrateur 2FA obligatoire.",
-    '',
-    '### Chiffrement',
-    'AES-256 au repos pour la base de données et le coffre-fort de pièces. TLS 1.3 obligatoire pour tous les flux client ↔ serveur (HSTS preload). Clés chiffrées par KMS, rotation automatique tous les 90 jours, séparation stricte clés / données.',
-    '',
-    '### Accès',
-    "Authentification obligatoire à deux facteurs pour les accès administrateurs internes. Journalisation des consultations sensibles avec conservation des logs 12 mois. Aucune donnée client accessible par défaut aux équipes ClairDossier — accès sur demande tracée et justifiée.",
-    '',
-    '### Conformité',
-    "RGPD (UE 2016/679) appliqué dès la conception : registre des traitements, DPIA réalisée, DPA standard et version renforcée disponibles. Conformité RIN (Règlement Intérieur National des avocats) sur le périmètre IA : préparation autorisée, conseil interdit. Hébergement HDS en cours pour les dossiers contenant des données de santé.",
-    '',
-    '### Continuité',
-    'Sauvegardes 3-2-1 : trois copies de chaque donnée, sur deux supports différents, dont une hors site. Restauration testée chaque trimestre. RPO 15 minutes, RTO inférieur à 4 heures.',
-    '',
-    '### Audit et incident',
-    "Audit annuel par cabinet de pentest indépendant — rapport remis aux clients Entreprise. Politique de divulgation responsable publiée. Procédure d'incident documentée avec notification CNIL sous 72 h, notification client sous 24 h.",
-    '',
-    '## Cadres réglementaires',
-    '',
-    '- **RGPD** : conforme.',
-    '- **RIN 2024** : conforme — IA encadrée.',
-    '- **HDS** : en cours (objectif 2026 T3).',
-    '- **ISO 27001** : objectif 2027.',
-    '',
-    '## Divulgation responsable',
-    '',
-    'Vulnérabilités à signaler à contact.clairdossier@icloud.com. Réponse sous 24 h ouvrées. Programme de récompense informel pour les contributions confirmées. Aucune action en justice contre les chercheurs de bonne foi.',
-    '',
-    footer(path),
   ];
+
+  for (const s of subprocessors) {
+    lines.push(`### ${s.name}`);
+    lines.push('');
+    lines.push(`- **Finalité** : ${s.finalite}`);
+    lines.push(`- **Données** : ${s.donnees}`);
+    lines.push(`- **Localisation** : ${s.localisation}${s.localisationTodo ? ' *(À CONFIRMER)*' : ''}`);
+    lines.push(`- **Conservation** : ${s.retention}`);
+    lines.push(`- **DPA** : ${s.dpa}${s.dpaTodo ? ' *(À CONFIRMER)*' : ''}`);
+    lines.push('');
+  }
+
+  lines.push('## Durées de conservation (politique publiée)');
+  lines.push('');
+  for (const r of retentionRows) {
+    lines.push(`- **${r.label}** : ${r.value}`);
+  }
+  lines.push('');
+  lines.push('## Secret professionnel');
+  lines.push('');
+  lines.push(
+    "Aucune lecture automatique des pièces (engagement contractuel, CGV). Cloisonnement entre comptes appliqué en base, pas seulement dans l'interface. Rien ne sort de l'espace d'un utilisateur sans son action explicite ; le professionnel destinataire, choisi par l'utilisateur, reste responsable de son propre cadre déontologique. Accès support limité à un administrateur unique et identifié."
+  );
+  lines.push('');
+  lines.push('## Sauvegarde, restauration & incident');
+  lines.push('');
+  lines.push("- Sauvegardes automatiques de la base par l'hébergeur ; fréquence et profondeur exactes selon le plan souscrit *(À CONFIRMER)*.");
+  lines.push("- Test de restauration documenté et daté : à publier au journal *(À CONFIRMER)*.");
+  lines.push("- Incident : notification CNIL sous 72 h et information des personnes en cas de risque élevé (RGPD art. 33-34). Procédure écrite détaillée *(À CONFIRMER)*.");
+  lines.push('');
+  lines.push('## DPA');
+  lines.push('');
+  lines.push(
+    "Le DPA s'obtient sans formulaire : demande par e-mail à contact.clairdossier@icloud.com, envoi sous 24 h ouvrées. Téléchargement direct depuis la page /securite en préparation *(À CONFIRMER)*."
+  );
+  lines.push('');
+  lines.push('## Journal des changements de sécurité');
+  lines.push('');
+  for (const c of securityChangelog) {
+    lines.push(`- **${c.date}** — ${c.entry}`);
+  }
+  lines.push('');
+  lines.push('## En attente de vérification (affiché tel quel)');
+  lines.push('');
+  for (const t of openTodos) {
+    lines.push(`- À CONFIRMER : ${t}`);
+  }
+  lines.push('');
+  lines.push('## Divulgation responsable');
+  lines.push('');
+  lines.push(
+    'Vulnérabilités à signaler à contact.clairdossier@icloud.com — réponse sous 24 h ouvrées. Aucune action en justice contre les chercheurs de bonne foi qui respectent une démarche responsable.'
+  );
+  lines.push('');
+  lines.push(footer(path));
   write('securite.md', lines.join('\n'));
 }
 

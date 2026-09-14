@@ -38,7 +38,7 @@ Le RGPD impose une chaîne de responsabilité documentée. Le cabinet (responsab
 
 ## Étape 3 : la sécurité technique
 
-L'article 32 du RGPD exige des mesures de sécurité « appropriées au risque ». Pour des données juridiques — qui sont presque toujours des données sensibles ou révélant des informations sensibles — le standard minimal est :
+L'article 32 du RGPD exige des mesures de sécurité « appropriées au risque ». Pour des données juridiques — souvent confidentielles, et qui peuvent contenir des données sensibles au sens de l'article 9 du RGPD — le standard minimal est :
 
 - Chiffrement au repos (AES-256) pour les pièces et les bases de données
 - Chiffrement en transit (TLS 1.3) pour tous les flux entre le navigateur et le serveur

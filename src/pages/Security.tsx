@@ -1,5 +1,7 @@
+import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Seo, breadcrumbSchema } from "../lib/seo";
+import { trackEvent } from "../lib/analytics";
 import { Reveal, Stagger, StaggerItem } from "../components/primitives/Reveal";
 import {
   HostingFranceIcon,
@@ -10,6 +12,24 @@ import {
   AuditIcon,
   ArrowRightIcon,
 } from "../components/icons";
+import {
+  TRUST_UPDATED,
+  openTodos,
+  retentionRows,
+  securityChangelog,
+  subprocessors,
+} from "../data/trust";
+
+const formatTrustDate = (iso: string) =>
+  new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+
+function TodoBadge() {
+  return (
+    <span className="inline-flex shrink-0 items-center rounded-full border hairline-gold bg-gold-500/10 px-2.5 py-0.5 font-mono text-[0.62rem] font-medium uppercase tracking-[0.14em] text-gold-700">
+      À confirmer
+    </span>
+  );
+}
 
 const PILLARS = [
   {
@@ -75,11 +95,16 @@ const PILLARS = [
 ];
 
 export function Security() {
+  // Mesure sans cookie (Lot 2.1) : une consultation du centre de confiance.
+  useEffect(() => {
+    trackEvent("consultation_trust_center");
+  }, []);
+
   return (
     <>
       <Seo
-        title="Sécurité &amp; conformité"
-        description="Chiffrement en transit et au repos, isolation des données par utilisateur, stockage privé des pièces et hébergeur conforme RGPD. Les engagements sécurité de ClairDossier."
+        title="Sécurité &amp; centre de confiance"
+        description="Le centre de confiance ClairDossier : sous-traitants nommés, localisation et durées de conservation, secret professionnel, continuité, DPA sur demande et journal daté des changements de sécurité. Ce qui n'est pas vérifié est marqué « à confirmer »."
         path="/securite"
         jsonLd={breadcrumbSchema([
           { name: "Accueil", path: "/" },
@@ -99,10 +124,14 @@ export function Security() {
               technique.
             </h1>
             <p className="mt-5 text-base leading-relaxed text-slate-500 sm:text-lg">
-              Pour une legaltech, la confiance se mérite. Cette page expose,
-              sans jargon, ce que nous faisons concrètement pour protéger vos
-              données : chiffrement, isolation par utilisateur, stockage privé
-              de vos pièces et respect de vos droits RGPD.
+              Pour une legaltech, la confiance se mérite. Ce centre de confiance
+              expose, sans jargon, ce que nous faisons concrètement : chiffrement,
+              isolation par utilisateur, sous-traitants nommés, durées de
+              conservation et journal des changements. Ce que nous ne pouvons pas
+              encore prouver est marqué « à confirmer » — jamais maquillé.
+            </p>
+            <p className="mt-4 font-mono text-[0.7rem] uppercase tracking-[0.16em] text-slate-500">
+              Dernière mise à jour : {formatTrustDate(TRUST_UPDATED)}
             </p>
           </div>
         </div>
@@ -220,8 +249,229 @@ export function Security() {
         </div>
       </Reveal>
 
+      {/* ── Centre de confiance (Vague 1 — 5.3) ─────────────────────────── */}
+
+      {/* Sous-traitants */}
+      <Reveal id="sous-traitants" as="section" className="bg-cream-50">
+        <div className="mx-auto max-w-7xl px-5 py-14 sm:py-16 sm:px-8 lg:px-12">
+          <p className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-700">
+            Sous-traitants
+          </p>
+          <h2 className="mt-3 font-display text-4xl font-semibold leading-tight text-navy-900 sm:text-5xl">
+            Qui traite quoi, où, et combien de temps.
+          </h2>
+          <p className="mt-4 max-w-3xl text-base leading-relaxed text-slate-500">
+            Chaque prestataire est nommé, avec sa finalité, les données
+            concernées, leur localisation et la durée de conservation. Les
+            éléments en attente de vérification sont marqués — pas masqués.
+          </p>
+          <div className="mt-8 space-y-4">
+            {subprocessors.map((s) => (
+              <article key={s.name} className="rounded-2xl border hairline bg-white p-6 sm:p-7">
+                <h3 className="font-display text-xl font-semibold text-navy-900">{s.name}</h3>
+                <dl className="mt-4 grid gap-x-8 gap-y-3 text-sm sm:grid-cols-2">
+                  <div>
+                    <dt className="font-mono text-[0.65rem] uppercase tracking-[0.16em] text-slate-500">Finalité</dt>
+                    <dd className="mt-1 leading-relaxed text-navy-900">{s.finalite}</dd>
+                  </div>
+                  <div>
+                    <dt className="font-mono text-[0.65rem] uppercase tracking-[0.16em] text-slate-500">Données</dt>
+                    <dd className="mt-1 leading-relaxed text-navy-900">{s.donnees}</dd>
+                  </div>
+                  <div>
+                    <dt className="flex items-center gap-2 font-mono text-[0.65rem] uppercase tracking-[0.16em] text-slate-500">
+                      Localisation {s.localisationTodo && <TodoBadge />}
+                    </dt>
+                    <dd className="mt-1 leading-relaxed text-slate-500">{s.localisation}</dd>
+                  </div>
+                  <div>
+                    <dt className="font-mono text-[0.65rem] uppercase tracking-[0.16em] text-slate-500">Conservation</dt>
+                    <dd className="mt-1 leading-relaxed text-slate-500">{s.retention}</dd>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <dt className="flex items-center gap-2 font-mono text-[0.65rem] uppercase tracking-[0.16em] text-slate-500">
+                      DPA {s.dpaTodo && <TodoBadge />}
+                    </dt>
+                    <dd className="mt-1 leading-relaxed text-slate-500">{s.dpa}</dd>
+                  </div>
+                </dl>
+              </article>
+            ))}
+          </div>
+        </div>
+      </Reveal>
+
+      {/* Conservation */}
+      <Reveal id="conservation" as="section" className="border-y hairline bg-cream-100/40">
+        <div className="mx-auto max-w-7xl px-5 py-14 sm:py-16 sm:px-8 lg:px-12">
+          <div className="grid gap-10 lg:grid-cols-2">
+            <div>
+              <p className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-700">
+                Durées de conservation
+              </p>
+              <h2 className="mt-3 font-display text-3xl font-semibold leading-tight text-navy-900 sm:text-4xl">
+                Des durées chiffrées, publiées.
+              </h2>
+              <p className="mt-3 text-sm leading-relaxed text-slate-500">
+                Reprises de la{" "}
+                <Link to="/politique-confidentialite" className="border-b hairline-gold text-navy-900 hover:text-gold-700">
+                  politique de confidentialité
+                </Link>{" "}
+                — le document qui fait foi.
+              </p>
+              <div className="mt-6 space-y-3">
+                {retentionRows.map((r) => (
+                  <div key={r.label} className="rounded-xl border hairline bg-white px-5 py-4">
+                    <p className="font-medium text-navy-900">{r.label}</p>
+                    <p className="mt-0.5 text-sm text-slate-500">{r.value}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div id="secret-professionnel">
+              <p className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-700">
+                Secret professionnel
+              </p>
+              <h2 className="mt-3 font-display text-3xl font-semibold leading-tight text-navy-900 sm:text-4xl">
+                Vos pièces ne parlent qu'à vous.
+              </h2>
+              <ul className="mt-6 space-y-3 text-sm leading-relaxed text-slate-500">
+                <li className="rounded-xl border hairline bg-white px-5 py-4">
+                  <span className="font-medium text-navy-900">Aucune lecture automatique.</span>{" "}
+                  Le service ne procède à aucune lecture, extraction ou analyse
+                  automatique des documents déposés — engagement contractuel
+                  (voir <Link to="/cgv" className="border-b hairline-gold text-navy-900 hover:text-gold-700">CGV</Link>).
+                </li>
+                <li className="rounded-xl border hairline bg-white px-5 py-4">
+                  <span className="font-medium text-navy-900">Cloisonnement appliqué en base.</span>{" "}
+                  L'isolation entre comptes est une propriété du système
+                  (Row Level Security), pas une consigne d'usage — y compris
+                  pour le stockage des pièces.
+                </li>
+                <li className="rounded-xl border hairline bg-white px-5 py-4">
+                  <span className="font-medium text-navy-900">Transmission maîtrisée.</span>{" "}
+                  Rien ne sort de votre espace sans votre action explicite ;
+                  vous choisissez le destinataire et le canal. Adapté aux
+                  échanges couverts par le secret professionnel : c'est le
+                  professionnel destinataire, choisi par vous, qui reste
+                  responsable de son propre cadre déontologique.
+                </li>
+                <li className="rounded-xl border hairline bg-white px-5 py-4">
+                  <span className="font-medium text-navy-900">Accès support minimal.</span>{" "}
+                  Un administrateur unique et identifié peut consulter les
+                  dossiers côté support ; aucun autre accès interne n'existe.
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </Reveal>
+
+      {/* Continuité & incident */}
+      <Reveal id="continuite" as="section" className="bg-cream-50">
+        <div className="mx-auto max-w-7xl px-5 py-14 sm:py-16 sm:px-8 lg:px-12">
+          <p className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-700">
+            Sauvegarde, restauration &amp; incident
+          </p>
+          <h2 className="mt-3 font-display text-3xl font-semibold leading-tight text-navy-900 sm:text-4xl">
+            Ce qui est en place, ce qui reste à prouver.
+          </h2>
+          <div className="mt-8 grid gap-4 md:grid-cols-3">
+            <div className="rounded-2xl border hairline bg-white p-6">
+              <h3 className="font-display text-lg font-semibold text-navy-900">Sauvegardes</h3>
+              <p className="mt-2 text-sm leading-relaxed text-slate-500">
+                Sauvegardes automatiques de la base de données assurées par
+                l'hébergeur (Supabase). Fréquence et profondeur exactes selon le
+                plan souscrit : <TodoBadge />
+              </p>
+            </div>
+            <div className="rounded-2xl border hairline bg-white p-6">
+              <h3 className="font-display text-lg font-semibold text-navy-900">Restauration</h3>
+              <p className="mt-2 text-sm leading-relaxed text-slate-500">
+                Un test de restauration documenté et daté sera publié dans le
+                journal ci-dessous. Tant qu'il n'a pas été réalisé, nous ne
+                l'affirmons pas : <TodoBadge />
+              </p>
+            </div>
+            <div className="rounded-2xl border hairline bg-white p-6">
+              <h3 className="font-display text-lg font-semibold text-navy-900">Incident</h3>
+              <p className="mt-2 text-sm leading-relaxed text-slate-500">
+                En cas de violation de données : notification à la CNIL sous
+                72 h et information des personnes concernées en cas de risque
+                élevé (RGPD art. 33-34). Procédure écrite détaillée : <TodoBadge />
+              </p>
+            </div>
+          </div>
+        </div>
+      </Reveal>
+
+      {/* DPA */}
+      <Reveal id="dpa" as="section" className="border-y hairline bg-cream-100/40">
+        <div className="mx-auto max-w-7xl px-5 py-14 sm:py-16 sm:px-8 lg:px-12">
+          <div className="flex flex-col items-start justify-between gap-6 lg:flex-row lg:items-center">
+            <div className="max-w-2xl">
+              <p className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-700">
+                DPA — accord de traitement des données
+              </p>
+              <h2 className="mt-3 font-display text-3xl font-semibold leading-tight text-navy-900 sm:text-4xl">
+                Le DPA s'obtient sans formulaire.
+              </h2>
+              <p className="mt-3 text-sm leading-relaxed text-slate-500">
+                Écrivez-nous : le DPA vous est envoyé par e-mail, sans
+                qualification préalable, sous 24 h ouvrées. Le téléchargement
+                direct depuis cette page est en préparation <TodoBadge />
+              </p>
+            </div>
+            <a
+              href="mailto:contact.clairdossier@icloud.com?subject=Demande%20de%20DPA%20ClairDossier"
+              onClick={() => trackEvent('telechargement_dpa', { mode: 'email' })}
+              className="sheen inline-flex shrink-0 items-center gap-2 rounded-full bg-gold-500 px-6 py-3.5 text-sm font-semibold text-navy-900 shadow-gold transition-all duration-300 hover:-translate-y-0.5"
+            >
+              Demander le DPA
+              <ArrowRightIcon width={14} height={14} strokeWidth={2} />
+            </a>
+          </div>
+        </div>
+      </Reveal>
+
+      {/* Journal des changements de sécurité */}
+      <Reveal id="journal" as="section" className="bg-cream-50">
+        <div className="mx-auto max-w-7xl px-5 py-14 sm:py-16 sm:px-8 lg:px-12">
+          <p className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-700">
+            Journal des changements de sécurité
+          </p>
+          <h2 className="mt-3 font-display text-3xl font-semibold leading-tight text-navy-900 sm:text-4xl">
+            Daté, vérifiable, tenu à jour.
+          </h2>
+          <ol className="mt-8 space-y-4 border-l hairline pl-6">
+            {securityChangelog.map((c) => (
+              <li key={c.date} className="relative">
+                <span aria-hidden="true" className="absolute -left-[1.85rem] top-1.5 h-2 w-2 rounded-full bg-gold-500" />
+                <p className="font-mono text-[0.7rem] uppercase tracking-[0.16em] text-gold-700">
+                  {formatTrustDate(c.date)}
+                </p>
+                <p className="mt-1 max-w-3xl text-sm leading-relaxed text-slate-500">{c.entry}</p>
+              </li>
+            ))}
+          </ol>
+          <div className="mt-10 rounded-2xl border hairline bg-white p-6">
+            <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-slate-500">
+              En attente de vérification — affiché tel quel
+            </p>
+            <ul className="mt-3 space-y-2 text-sm leading-relaxed text-slate-500">
+              {openTodos.map((t) => (
+                <li key={t} className="flex items-start gap-2.5">
+                  <TodoBadge />
+                  <span>{t}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </Reveal>
+
       {/* Téléchargements */}
-      <Reveal id="dpa" as="section" className="bg-cream-50">
+      <Reveal as="section" className="bg-cream-50">
         <div className="mx-auto max-w-7xl px-5 py-14 sm:py-20 lg:py-24 sm:px-8 lg:px-12">
           <div className="max-w-3xl">
             <p className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-700">

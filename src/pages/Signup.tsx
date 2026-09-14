@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Seo } from "../lib/seo";
 import { useAuth, type CompanyType } from "../lib/auth";
+import { trackEvent } from "../lib/analytics";
 import { ArrowRightIcon } from "../components/icons";
 
 const COMPANY_TYPES: { value: CompanyType; label: string }[] = [
@@ -45,6 +46,7 @@ export function Signup() {
       setError(res.error);
       return;
     }
+    trackEvent('creation_compte');
     navigate(next, { replace: true });
   }
 

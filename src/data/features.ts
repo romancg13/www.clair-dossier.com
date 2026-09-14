@@ -34,7 +34,7 @@ export const features: Feature[] = [
     ],
   },
   {
-    slug: "pieces-ocr",
+    slug: "depot-de-pieces",
     title: "Dépôt de pièces dans un espace privé",
     shortTitle: "Dépôt de pièces",
     icon: "scan-ocr",
@@ -76,7 +76,7 @@ export const features: Feature[] = [
     ],
   },
   {
-    slug: "validation-avocat",
+    slug: "transmission-validee",
     title: "Transmission validée par vous",
     shortTitle: "Transmission",
     icon: "validate",
@@ -108,7 +108,7 @@ export const features: Feature[] = [
       "La première difficulté quand on suit plusieurs affaires, c'est de savoir lesquelles sont en cours et où chacune en est. ClairDossier répond à ce besoin avec une liste claire de vos dossiers, dans votre espace de compte.",
       "Après création de votre compte, gratuite et confirmée par e-mail, vous accédez à votre espace. Chaque dossier que vous créez s'y ajoute, identifié par le nom que vous lui avez donné. Vous ouvrez celui que vous voulez d'un clic.",
       "Depuis la liste, vous entrez sur la page d'avancement de chaque dossier : ses cinq étapes, ses pièces, ses échéances. Vous passez d'un dossier à l'autre sans rien perdre de vue.",
-      "Vos dossiers restent isolés : votre espace ne contient que les vôtres. Cette séparation par utilisateur garantit que vos informations ne se mélangent jamais avec celles d'un autre compte.",
+      "Vos dossiers restent isolés : votre espace ne contient que les vôtres. Cette séparation par utilisateur assure que vos informations ne se mélangent jamais avec celles d'un autre compte.",
     ],
     bullets: [
       "Création de compte gratuite, confirmée par e-mail",
@@ -118,7 +118,7 @@ export const features: Feature[] = [
     ],
   },
   {
-    slug: "messagerie-securisee",
+    slug: "espace-securise",
     title: "Espace privé et sécurisé",
     shortTitle: "Espace sécurisé",
     icon: "message-secure",
@@ -139,7 +139,7 @@ export const features: Feature[] = [
     ],
   },
   {
-    slug: "coffre-fort",
+    slug: "donnees-protegees",
     title: "Vos données protégées et maîtrisées",
     shortTitle: "Données RGPD",
     icon: "vault",
@@ -148,7 +148,7 @@ export const features: Feature[] = [
     hero: "Vos données n'appartiennent qu'à vous. Vous pouvez en demander l'accès, l'export ou la suppression.",
     body: [
       "Le RGPD n'est pas une case à cocher. ClairDossier traite vos informations avec le souci de la protection des données, et vous conservez vos droits sur ce qui vous concerne.",
-      "Vos données sont hébergées chez un sous-traitant conforme RGPD, chiffrées au repos côté hébergeur et transmises en HTTPS. L'isolation par utilisateur garantit que vos dossiers restent séparés de ceux des autres comptes ; l'accès se fait par authentification.",
+      "Vos données sont hébergées chez un sous-traitant conforme RGPD, chiffrées au repos côté hébergeur et transmises en HTTPS. L'isolation par utilisateur assure que vos dossiers restent séparés de ceux des autres comptes ; l'accès se fait par authentification.",
       "Vous gardez la main sur vos droits : accès, export et suppression de vos données. Ces demandes se font via le contact ou votre espace, et sont traitées dans un délai raisonnable (jusqu'à 30 jours), sauf obligation légale de conservation.",
       "Tant que vous ne demandez pas de modification, vos données restent là où vous les avez placées, dans votre espace privé. Vous décidez de ce que vous transmettez, et à qui.",
     ],
@@ -180,7 +180,7 @@ export const features: Feature[] = [
     ],
   },
   {
-    slug: "reponse-auto-mails",
+    slug: "recapitulatif-transmission",
     title: "Récapitulatif avant transmission",
     shortTitle: "Récapitulatif",
     icon: "ai-brief",
@@ -200,6 +200,20 @@ export const features: Feature[] = [
     ],
   },
 ];
+
+/**
+ * Anciennes adresses (positionnement historique) → slugs actuels.
+ * Les redirections 301 côté hébergeur (netlify.toml) et côté client
+ * (FeatureDetail) s'appuient sur cette même carte. Ne jamais supprimer une
+ * entrée : une URL indexée doit rester redirigée en permanence (VII.1).
+ */
+export const LEGACY_FEATURE_SLUGS: Record<string, string> = {
+  "pieces-ocr": "depot-de-pieces",
+  "validation-avocat": "transmission-validee",
+  "messagerie-securisee": "espace-securise",
+  "coffre-fort": "donnees-protegees",
+  "reponse-auto-mails": "recapitulatif-transmission",
+};
 
 export function getFeatureBySlug(
   slug: string | undefined,

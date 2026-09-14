@@ -1,8 +1,22 @@
+import type { CSSProperties, ReactNode } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { Link } from "react-router-dom";
 import { MarkerHighlight } from "../primitives/MarkerHighlight";
-import { SplitWords } from "../primitives/SplitWords";
 import { ArrowRightIcon } from "../icons";
+
+// Titre du hero — élément critique (Lot 3) : rendu en texte statique avec
+// animation d'entrée CSS pure (.word-mask), lisible sans JavaScript.
+const heroTitleWords: Array<string | { node: ReactNode }> = [
+  "Votre",
+  "dossier",
+  "administratif",
+  "et",
+  "juridique,",
+  { node: <MarkerHighlight delay={0.6}>clair,</MarkerHighlight> },
+  { node: <MarkerHighlight delay={0.85}>structuré</MarkerHighlight> },
+  "et",
+  { node: <MarkerHighlight delay={1.1}>suivi.</MarkerHighlight> },
+];
 
 const heroPanelRows = [
   { label: "Statut", value: "Validation pro (option)", tone: "gold" as const },
@@ -35,55 +49,36 @@ export function Hero() {
       />
       <div className="mx-auto max-w-7xl px-5 pb-14 pt-12 sm:px-8 sm:pb-20 sm:pt-16 lg:grid lg:grid-cols-[1.15fr_0.85fr] lg:gap-16 lg:px-12 lg:pb-32 lg:pt-24">
         <div>
-          <motion.p
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-            className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-700"
-          >
-            Legaltech pour PME · artisans · indépendants
-          </motion.p>
+          <p className="rise-in font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-700">
+            Legaltech française · dossiers administratifs &amp; juridiques
+          </p>
 
           <h1 className="mt-5 font-display text-[clamp(2.1rem,7vw,5.4rem)] font-semibold leading-[0.98] tracking-tight text-navy-900 sm:leading-[0.96]">
-            <SplitWords
-              segments={[
-                "Votre",
-                "dossier",
-                "administratif",
-                "et",
-                "juridique,",
-                { node: <MarkerHighlight delay={0.6}>clair,</MarkerHighlight> },
-                {
-                  node: (
-                    <MarkerHighlight delay={0.85}>structuré</MarkerHighlight>
-                  ),
-                },
-                "et",
-                { node: <MarkerHighlight delay={1.1}>suivi.</MarkerHighlight> },
-              ]}
-              text="Votre dossier administratif et juridique, clair, structuré et suivi."
-              stagger={0.06}
-              duration={0.85}
-            />
+            {heroTitleWords.map((w, i) => (
+              <span key={i}>
+                <span className="word-mask">
+                  <span style={{ "--w": i } as CSSProperties}>
+                    {typeof w === "string" ? w : w.node}
+                  </span>
+                </span>
+                {i < heroTitleWords.length - 1 ? " " : ""}
+              </span>
+            ))}
           </h1>
 
-          <motion.p
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.5, ease: [0.16, 1, 0.3, 1] }}
-            className="mt-6 max-w-2xl text-base leading-relaxed text-slate-500 sm:text-lg"
+          <p
+            className="rise-in mt-6 max-w-2xl text-base leading-relaxed text-slate-500 sm:text-lg"
+            style={{ "--rise-delay": "0.5s" } as CSSProperties}
           >
             Créez des dossiers administratifs et juridiques structurés : déposez
             vos pièces dans un espace privé, suivez l'avancement et vos
             échéances, puis transmettez quand vous le décidez. Pour les PME,
             artisans, entreprises individuelles et professions libérales.
-          </motion.p>
+          </p>
 
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.7, ease: [0.16, 1, 0.3, 1] }}
-            className="mt-8 flex flex-wrap items-center gap-3"
+          <div
+            className="rise-in mt-8 flex flex-wrap items-center gap-3"
+            style={{ "--rise-delay": "0.7s" } as CSSProperties}
           >
             <Link
               to="/dossier/nouveau"
@@ -103,18 +98,29 @@ export function Hero() {
             >
               Demander une démo
             </Link>
-          </motion.div>
+          </div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.9, ease: [0.16, 1, 0.3, 1] }}
-            className="mt-8 flex flex-wrap items-center gap-2.5"
+          <p
+            className="rise-in mt-4 text-sm text-slate-500"
+            style={{ "--rise-delay": "0.8s" } as CSSProperties}
+          >
+            Vous êtes un cabinet ou une structure à fort volume documentaire ?{" "}
+            <Link
+              to="/grands-comptes"
+              className="border-b hairline-gold font-medium text-navy-900 transition-colors hover:text-gold-700"
+            >
+              Découvrir le parcours dédié
+            </Link>
+          </p>
+
+          <div
+            className="rise-in mt-8 flex flex-wrap items-center gap-2.5"
+            style={{ "--rise-delay": "0.9s" } as CSSProperties}
           >
             <FactPill>Suivi étape par étape</FactPill>
             <FactPill>Pièces chiffrées</FactPill>
             <FactPill>Conçu pour le RGPD</FactPill>
-          </motion.div>
+          </div>
         </div>
 
         {/* Right: preview card */}

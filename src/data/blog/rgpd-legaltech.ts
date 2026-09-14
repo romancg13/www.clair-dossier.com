@@ -54,7 +54,7 @@ export const rgpdLegaltech: BlogPost = {
     { type: 'h2', text: "Étape 3 : la sécurité technique" },
     {
       type: 'p',
-      text: "L'article 32 du RGPD exige des mesures de sécurité « appropriées au risque ». Pour des données juridiques — qui sont presque toujours des données sensibles ou révélant des informations sensibles — le standard minimal est :",
+      text: "L'article 32 du RGPD exige des mesures de sécurité « appropriées au risque ». Pour des données juridiques — souvent confidentielles, et qui peuvent contenir des données sensibles au sens de l'article 9 du RGPD — le standard minimal est :",
     },
     {
       type: 'list',

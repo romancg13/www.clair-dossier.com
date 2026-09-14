@@ -7,7 +7,7 @@ function formatDate(iso: string): string {
   return new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' }).format(new Date(iso));
 }
 
-export function BlogPreview() {
+export function BlogPreview({ limit }: { limit?: number } = {}) {
   return (
     <Reveal as="section" className="bg-cream-50">
       <div className="mx-auto max-w-7xl px-5 py-14 sm:py-20 lg:py-24 sm:px-8 lg:px-12">
@@ -30,7 +30,7 @@ export function BlogPreview() {
         </div>
 
         <Stagger inView className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {blogPosts.map((post) => (
+          {(limit ? blogPosts.slice(0, limit) : blogPosts).map((post) => (
             <StaggerItem key={post.slug}>
               <Link
                 to={`/blog/${post.slug}`}

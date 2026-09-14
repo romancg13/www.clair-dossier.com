@@ -72,7 +72,7 @@ export const iaDroit: BlogPost = {
     },
     {
       type: 'p',
-      text: "ClairDossier interdit techniquement ce cas d'usage. Les outputs IA sont accessibles uniquement à un avocat habilité, dans son espace professionnel. Le client ne voit jamais une analyse juridique générée par IA — il voit l'analyse validée par son avocat.",
+      text: "C'est pourquoi ClairDossier ne produit aujourd'hui aucune analyse juridique automatisée : la plateforme organise les pièces et les informations que l'utilisateur renseigne lui-même, et laisse l'analyse au professionnel. Ce qui est réellement opérationnel est publié, daté, sur la page « État du produit ».",
     },
     {
       type: 'h3',
@@ -80,7 +80,7 @@ export const iaDroit: BlogPost = {
     },
     {
       type: 'p',
-      text: "Aucun dossier ne quitte le statut « brouillon » sans la signature d'un avocat habilité. Cette signature est une responsabilité juridique. Elle engage l'assurance professionnelle du cabinet, elle engage la déontologie du barreau, elle engage l'avenir du client. Aucun système automatique ne peut prendre cette responsabilité — et tout système qui prétend le pouvoir doit être refusé.",
+      text: "Valider un dossier est une responsabilité juridique : elle engage l'assurance professionnelle du cabinet, la déontologie du barreau et l'avenir du client. Aucun système automatique ne peut prendre cette responsabilité à la place du professionnel.",
     },
     {
       type: 'h3',
@@ -93,11 +93,11 @@ export const iaDroit: BlogPost = {
     { type: 'h2', text: "La position éthique de ClairDossier" },
     {
       type: 'p',
-      text: "Nous avons formalisé cette frontière en interne sous une forme courte : « l'IA prépare, l'avocat décide ». Cette formule n'est pas un slogan — c'est une règle technique. Chaque fonctionnalité IA de ClairDossier est conçue pour produire un livrable destiné à l'avocat, jamais au client en direct.",
+      text: "Nous avons formalisé cette frontière en interne sous une forme courte : « l'outil prépare, le professionnel décide ». Elle guide la conception de ClairDossier : les fonctions d'assistance envisagées sont pensées pour préparer le travail du professionnel, jamais pour délivrer un conseil juridique au client.",
     },
     {
       type: 'p',
-      text: "Le brief préparatoire avant consultation est un document interne. Les suggestions de qualification juridique sont des hypothèses présentées à l'avocat. Les références jurisprudentielles sont sourcées et vérifiables. Aucune décision juridique ne sort de ClairDossier sans la signature électronique d'un professionnel habilité.",
+      text: "Concrètement, aujourd'hui, ClairDossier rassemble les pièces, les informations et les échéances que l'utilisateur renseigne, présente un récapitulatif relu avant validation, et ne transmet rien sans son accord explicite. Aucune lecture ni exploitation automatique des pièces n'est effectuée.",
     },
     {
       type: 'quote',
@@ -106,11 +106,11 @@ export const iaDroit: BlogPost = {
     { type: 'h2', text: "Ce que dit le RIN" },
     {
       type: 'p',
-      text: "Le Règlement Intérieur National des avocats, dans sa version actualisée 2024, intègre des dispositions explicites sur l'usage de l'IA générative. L'article 6.3.1 rappelle que l'avocat reste personnellement responsable du contenu de tout acte qu'il signe, quel qu'en soit l'auteur initial — y compris quand cet auteur est un système automatique.",
+      text: "Le Règlement Intérieur National (RIN) de la profession d'avocat pose des principes qui s'appliquent quel que soit l'outil employé : l'avocat reste personnellement responsable des actes qu'il signe, et il est tenu à la loyauté et à l'information de son client. Le Conseil national des barreaux a par ailleurs publié des ressources sur l'usage de l'IA générative par les avocats ; il convient de se reporter aux textes et recommandations en vigueur.",
     },
     {
       type: 'p',
-      text: "L'article 11.5 impose une transparence vis-à-vis du client quant à l'usage d'outils automatisés dans la préparation de son dossier. ClairDossier respecte cette obligation par défaut : le client est informé, au moment de la création de son compte, que des outils d'assistance peuvent être utilisés par l'avocat assigné, et qu'aucun de ces outils ne se substitue à la validation professionnelle.",
+      text: "L'information du client sur les outils utilisés dans la préparation de son dossier relève de ce devoir de loyauté. ClairDossier, de son côté, indique clairement ce que la plateforme fait et ne fait pas, sur sa page « État du produit ».",
     },
     { type: 'h2', text: "L'avenir, raisonnablement" },
     {
@@ -126,7 +126,7 @@ export const iaDroit: BlogPost = {
     "L'IA excelle sur synthèses, chronologies, recherche jurisprudentielle et détection d'incohérences.",
     "Conseil juridique direct au client, validation du dossier et plaidoirie restent hors champ de l'IA.",
     "Toute référence jurisprudentielle IA sans citation vérifiable est une hallucination potentielle.",
-    "Le RIN 2024 impose la responsabilité personnelle de l'avocat et la transparence sur l'usage d'outils IA.",
+    "Le RIN rappelle la responsabilité personnelle de l'avocat sur ses actes et son devoir de loyauté envers le client, quel que soit l'outil utilisé.",
   ],
   faq: [
     {
@@ -135,7 +135,7 @@ export const iaDroit: BlogPost = {
     },
     {
       q: "L'avocat doit-il informer son client de l'usage d'IA dans son dossier ?",
-      a: "Oui, depuis la mise à jour 2024 du RIN. L'information peut être générique (dans les CGU du cabinet) ou spécifique (au cas par cas). ClairDossier la fournit par défaut à l'inscription du client.",
+      a: "L'information loyale du client relève des règles déontologiques de la profession ; en pratique, de nombreux cabinets la prévoient dans leurs conditions d'intervention. Se reporter aux textes et recommandations en vigueur (Conseil national des barreaux, barreau de rattachement).",
     },
   ],
   relatedSlugs: ['chronologie-prud-homale', 'rgpd-legaltech'],

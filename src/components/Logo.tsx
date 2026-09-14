@@ -5,7 +5,7 @@ export function Logo({ size = 40, withWordmark = true }: { size?: number; withWo
     <Link
       to="/"
       className="group inline-flex items-center gap-3"
-      aria-label="ClairDossier — accueil"
+      aria-label={withWordmark ? undefined : 'CD — ClairDossier, accueil'}
     >
       <span
         className="grid place-items-center rounded-md bg-navy-900 font-display font-bold leading-none text-gold-500 transition-colors group-hover:bg-navy-800"
