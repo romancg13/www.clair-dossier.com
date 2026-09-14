@@ -1,19 +1,20 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { motion } from 'motion/react';
-import { Seo, breadcrumbSchema } from '../lib/seo';
-import { Reveal, Stagger, StaggerItem } from '../components/primitives/Reveal';
-import { Accordion } from '../components/ui/Accordion';
+import { useState } from "react";
+import { Link } from "react-router-dom";
+import { motion } from "motion/react";
+import { Seo, breadcrumbSchema } from "../lib/seo";
+import { Reveal, Stagger, StaggerItem } from "../components/primitives/Reveal";
+import { Accordion } from "../components/ui/Accordion";
 import {
   plans,
   formatEuro,
+  perDay,
   yearlyMonthlyEquivalent,
   yearlyTotal,
   COMPARISON_FEATURES,
   TRUST_PILLARS,
   type Plan,
   type FeatureStatus,
-} from '../data/pricing';
+} from "../data/pricing";
 import {
   ArrowRightIcon,
   CheckIcon,
@@ -30,66 +31,66 @@ import { trackEvent } from '../lib/analytics';
 
 const DEVIS_CAPABILITIES = [
   {
-    title: 'Marque blanche complète',
+    title: "Marque blanche complète",
     body: "Logo, palette, domaine, exports : votre identité, votre clientèle ne saura pas qu'il s'agit de ClairDossier.",
   },
   {
-    title: 'API et webhooks dédiés',
+    title: "API et webhooks dédiés",
     body: "Intégration avec votre CRM, votre outil de gestion ou votre stack maison. SDK Node et Python disponibles.",
   },
   {
-    title: 'SSO et audit renforcé',
+    title: "SSO et audit renforcé",
     body: "SAML 2.0, OIDC, journalisation détaillée, DPA personnalisé négocié avec votre DPO.",
   },
   {
-    title: 'Onboarding sur site',
+    title: "Onboarding sur site",
     body: "Deux jours dans vos locaux, reprise de vos dossiers existants, formation de l'équipe entière.",
   },
 ];
 
 const PRICING_FAQ = [
   {
-    id: 'engagement',
+    id: "engagement",
     question: "Y a-t-il un engagement de durée ?",
     answer:
       "Aucun. Tous les plans payants sont sans engagement, résiliables à tout moment depuis l'espace facturation. Le remboursement au prorata est appliqué automatiquement.",
   },
   {
-    id: 'changement',
+    id: "changement",
     question: "Puis-je changer de plan en cours de mois ?",
     answer:
       "Oui, à la hausse comme à la baisse. La facturation est ajustée au prorata des jours restants.",
   },
   {
-    id: 'tva',
+    id: "tva",
     question: "Les prix affichés sont-ils HT ou TTC ?",
     answer:
       "HT. La TVA française à 20 % s'applique pour les clients établis en France. Les clients UE B2B avec numéro de TVA intracommunautaire valide sont autoliquidés.",
   },
   {
-    id: 'essai',
-    question: 'Faut-il payer pour créer un compte ?',
+    id: "essai",
+    question: "Faut-il payer pour créer un compte ?",
     answer:
       "Non. La création de compte est gratuite et vous pouvez constituer vos dossiers immédiatement. Un abonnement n'est nécessaire que pour débloquer plus de dossiers, d'utilisateurs et les fonctions IA avancées. Sans engagement, résiliable à tout moment.",
   },
   {
-    id: 'annuel',
+    id: "annuel",
     question: "Comment fonctionne la facturation annuelle ?",
     answer:
       "L'abonnement annuel est facturé en une fois et bénéficie de 10 % de réduction par rapport au cumul mensuel. Il reste sans engagement : en cas de résiliation en cours d'année, le solde non consommé est remboursé au prorata, comme pour le mensuel.",
   },
 ];
 
-type Billing = 'monthly' | 'yearly';
+type Billing = "monthly" | "yearly";
 
 const TRUST_ICONS = {
-  'donnees-chiffrees': LockIcon,
-  'ia-supervisee': CheckIcon,
-  'sans-engagement': CrossIcon,
+  "donnees-chiffrees": LockIcon,
+  "ia-supervisee": CheckIcon,
+  "sans-engagement": CrossIcon,
 } as const;
 
 export function Pricing() {
-  const [billing, setBilling] = useState<Billing>('monthly');
+  const [billing, setBilling] = useState<Billing>("monthly");
 
   return (
     <>
@@ -99,26 +100,28 @@ export function Pricing() {
         path="/tarifs"
         jsonLd={[
           breadcrumbSchema([
-            { name: 'Accueil', path: '/' },
-            { name: 'Tarifs', path: '/tarifs' },
+            { name: "Accueil", path: "/" },
+            { name: "Tarifs", path: "/tarifs" },
           ]),
           {
-            '@context': 'https://schema.org',
-            '@type': 'SoftwareApplication',
-            name: 'ClairDossier',
-            applicationCategory: 'BusinessApplication',
-            operatingSystem: 'Web',
+            "@context": "https://schema.org",
+            "@type": "SoftwareApplication",
+            name: "ClairDossier",
+            applicationCategory: "BusinessApplication",
+            operatingSystem: "Web",
             description:
-              'Plateforme de gestion de dossiers administratifs et juridiques pour PME, artisans, indépendants et professions libérales.',
+              "Plateforme de gestion de dossiers administratifs et juridiques pour PME, artisans, indépendants et professions libérales.",
             offers: {
-              '@type': 'AggregateOffer',
-              priceCurrency: 'EUR',
-              lowPrice: '19',
-              highPrice: '299',
+              "@type": "AggregateOffer",
+              priceCurrency: "EUR",
+              lowPrice: "19",
+              highPrice: "299",
               offerCount: String(
-                plans.filter((p) => p.priceMonthly !== null && p.priceMonthly > 0).length
+                plans.filter(
+                  (p) => p.priceMonthly !== null && p.priceMonthly > 0,
+                ).length,
               ),
-              availability: 'https://schema.org/InStock',
+              availability: "https://schema.org/InStock",
             },
           },
         ]}
@@ -135,8 +138,8 @@ export function Pricing() {
               Une formule par usage. Pas de surprise.
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-relaxed text-slate-500">
-              De l'indépendant à l'entreprise — sept niveaux de service couvrent tous les usages.
-              Compte gratuit, abonnement sans engagement.
+              De l'indépendant à l'entreprise — sept niveaux de service couvrent
+              tous les usages. Compte gratuit, abonnement sans engagement.
             </p>
 
             {/* Toggle Mensuel / Annuel */}
@@ -147,34 +150,38 @@ export function Pricing() {
             >
               <button
                 type="button"
-                onClick={() => setBilling('monthly')}
-                aria-pressed={billing === 'monthly'}
+                onClick={() => setBilling("monthly")}
+                aria-pressed={billing === "monthly"}
                 className={`relative min-h-[40px] rounded-full px-5 py-2 text-sm font-medium transition-colors ${
-                  billing === 'monthly' ? 'text-navy-900' : 'text-slate-500 hover:text-navy-900'
+                  billing === "monthly"
+                    ? "text-navy-900"
+                    : "text-slate-500 hover:text-navy-900"
                 }`}
               >
-                {billing === 'monthly' && (
+                {billing === "monthly" && (
                   <motion.span
                     layoutId="billing-pill"
                     className="absolute inset-0 rounded-full bg-cream-100"
-                    transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+                    transition={{ type: "spring", stiffness: 380, damping: 32 }}
                   />
                 )}
                 <span className="relative z-10">Mensuel</span>
               </button>
               <button
                 type="button"
-                onClick={() => setBilling('yearly')}
-                aria-pressed={billing === 'yearly'}
+                onClick={() => setBilling("yearly")}
+                aria-pressed={billing === "yearly"}
                 className={`relative min-h-[40px] rounded-full px-5 py-2 text-sm font-medium transition-colors ${
-                  billing === 'yearly' ? 'text-navy-900' : 'text-slate-500 hover:text-navy-900'
+                  billing === "yearly"
+                    ? "text-navy-900"
+                    : "text-slate-500 hover:text-navy-900"
                 }`}
               >
-                {billing === 'yearly' && (
+                {billing === "yearly" && (
                   <motion.span
                     layoutId="billing-pill"
                     className="absolute inset-0 rounded-full bg-cream-100"
-                    transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+                    transition={{ type: "spring", stiffness: 380, damping: 32 }}
                   />
                 )}
                 <span className="relative z-10 inline-flex items-center gap-1.5">
@@ -192,7 +199,10 @@ export function Pricing() {
       {/* 6 plans en grille 2 colonnes (desktop) */}
       <section className="bg-cream-50">
         <div className="mx-auto max-w-7xl px-5 pb-20 sm:px-8 lg:px-12">
-          <Stagger inView className="grid items-stretch gap-6 sm:gap-7 lg:grid-cols-2">
+          <Stagger
+            inView
+            className="grid items-stretch gap-6 sm:gap-7 lg:grid-cols-2"
+          >
             {plans.map((plan) => (
               <StaggerItem key={plan.id}>
                 <PlanCard plan={plan} billing={billing} />
@@ -217,7 +227,9 @@ export function Pricing() {
                     <h3 className="font-display text-xl font-semibold leading-tight text-navy-900">
                       {pillar.title}
                     </h3>
-                    <p className="mt-1.5 text-sm leading-relaxed text-slate-500">{pillar.body}</p>
+                    <p className="mt-1.5 text-sm leading-relaxed text-slate-500">
+                      {pillar.body}
+                    </p>
                   </div>
                 </div>
               );
@@ -239,9 +251,10 @@ export function Pricing() {
                 Au-delà du plan Premium ?
               </h2>
               <p className="mt-5 max-w-md text-base leading-relaxed text-cream-50/75">
-                Pour les structures avec exigences de marque blanche, intégration API,
-                conformité interne ou volumétrie au-dessus du Premium, on construit une offre
-                sur-mesure avec proposition chiffrée sous 48 h.
+                Pour les structures avec exigences de marque blanche,
+                intégration API, conformité interne ou volumétrie au-dessus du
+                Premium, on construit une offre sur-mesure avec proposition
+                chiffrée sous 48 h.
               </p>
 
               <ul className="mt-9 grid gap-4 sm:grid-cols-2">
@@ -255,7 +268,9 @@ export function Pricing() {
                       <h3 className="font-display text-lg font-semibold leading-tight text-cream-50">
                         {cap.title}
                       </h3>
-                      <p className="mt-1 text-sm leading-relaxed text-cream-50/70">{cap.body}</p>
+                      <p className="mt-1 text-sm leading-relaxed text-cream-50/70">
+                        {cap.body}
+                      </p>
                     </div>
                   </li>
                 ))}
@@ -275,7 +290,7 @@ export function Pricing() {
                 {/* WhatsApp */}
                 <a
                   href={buildWhatsAppUrl(
-                    "Bonjour ClairDossier, je souhaite un devis sur-mesure (marque blanche / API / SSO / autre). Pouvons-nous échanger ?"
+                    "Bonjour ClairDossier, je souhaite un devis sur-mesure (marque blanche / API / SSO / autre). Pouvons-nous échanger ?",
                   )}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -290,7 +305,9 @@ export function Pricing() {
                       <p className="font-mono text-[0.65rem] uppercase tracking-[0.16em] text-cream-50/70">
                         WhatsApp · réponse sous 1 h
                       </p>
-                      <p className="mt-0.5 font-medium text-cream-50">{WHATSAPP_DISPLAY}</p>
+                      <p className="mt-0.5 font-medium text-cream-50">
+                        {WHATSAPP_DISPLAY}
+                      </p>
                     </div>
                   </div>
                   <ArrowRightIcon
@@ -326,7 +343,9 @@ export function Pricing() {
                       <p className="font-mono text-[0.65rem] uppercase tracking-[0.16em] text-cream-50/70">
                         Email · réponse sous 24 h ouvrées
                       </p>
-                      <p className="mt-0.5 font-medium text-cream-50">contact.clairdossier@icloud.com</p>
+                      <p className="mt-0.5 font-medium text-cream-50">
+                        contact.clairdossier@icloud.com
+                      </p>
                     </div>
                   </div>
                   <ArrowRightIcon
@@ -364,7 +383,9 @@ export function Pricing() {
                       <p className="font-mono text-[0.65rem] uppercase tracking-[0.16em] text-cream-50/70">
                         Formulaire détaillé
                       </p>
-                      <p className="mt-0.5 font-medium text-cream-50">Décrire le contexte complet</p>
+                      <p className="mt-0.5 font-medium text-cream-50">
+                        Décrire le contexte complet
+                      </p>
                     </div>
                   </div>
                   <ArrowRightIcon
@@ -377,8 +398,9 @@ export function Pricing() {
               </div>
 
               <p className="mt-7 border-t border-cream-50/15 pt-5 text-xs leading-relaxed text-cream-50/70">
-                Engagement ClairDossier : proposition chiffrée écrite sous 48 h ouvrées, sans
-                ré-engagement après échange initial. Vos données restent en France.
+                Engagement ClairDossier : proposition chiffrée écrite sous 48 h
+                ouvrées, sans ré-engagement après échange initial. Vos données
+                restent en France.
               </p>
             </div>
           </div>
@@ -415,8 +437,8 @@ export function Pricing() {
             Une dernière question avant de signer ?
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-cream-50/75">
-            Notre équipe répond aux questions tarifs sous 1 h en journée via WhatsApp. Démo
-            possible la même semaine.
+            Notre équipe répond aux questions tarifs sous 1 h en journée via
+            WhatsApp. Démo possible la même semaine.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Link
@@ -440,31 +462,34 @@ export function Pricing() {
 }
 
 function PlanCard({ plan, billing }: { plan: Plan; billing: Billing }) {
-  const isDark = plan.variant === 'dark';
-  const isYearly = billing === 'yearly';
+  const isDark = plan.variant === "dark";
+  const isYearly = billing === "yearly";
 
-  const cardBase = 'relative flex h-full flex-col rounded-2xl border p-7 transition-colors duration-300 sm:p-8';
+  const cardBase =
+    "relative flex h-full flex-col rounded-2xl border p-7 transition-colors duration-300 sm:p-8";
   const cardSkin = isDark
-    ? 'border-navy-900 bg-navy-900 text-cream-50'
-    : 'hairline bg-white text-navy-900 shadow-card';
-  const eyebrow = isDark ? 'text-cream-50/60' : 'text-slate-500';
-  const description = isDark ? 'text-cream-50/75' : 'text-slate-500';
-  const hairlineClass = isDark ? 'border-cream-50/15' : 'border-[rgba(13,27,61,0.08)]';
-  const specsLabel = isDark ? 'text-cream-50/90' : 'text-navy-900';
-  const featureMuted = isDark ? 'text-cream-50/60' : 'text-slate-300';
-  const featureOn = isDark ? 'text-cream-50' : 'text-navy-900';
+    ? "border-navy-900 bg-navy-900 text-cream-50"
+    : "hairline bg-white text-navy-900 shadow-card";
+  const eyebrow = isDark ? "text-cream-50/60" : "text-slate-500";
+  const description = isDark ? "text-cream-50/75" : "text-slate-500";
+  const hairlineClass = isDark
+    ? "border-cream-50/15"
+    : "border-[rgba(13,27,61,0.08)]";
+  const specsLabel = isDark ? "text-cream-50/90" : "text-navy-900";
+  const featureMuted = isDark ? "text-cream-50/60" : "text-slate-300";
+  const featureOn = isDark ? "text-cream-50" : "text-navy-900";
   const ctaClass = isDark
-    ? 'border border-cream-50/25 bg-transparent text-cream-50 hover:border-cream-50/55 hover:bg-cream-50/5'
-    : 'border hairline bg-white text-navy-900 hover:border-navy-900 hover:bg-cream-100/60';
+    ? "border border-cream-50/25 bg-transparent text-cream-50 hover:border-cream-50/55 hover:bg-cream-50/5"
+    : "border hairline bg-white text-navy-900 hover:border-navy-900 hover:bg-cream-100/60";
 
   return (
     <article className={`premium-card ${isDark ? 'premium-recommended-plan' : ''} ${cardBase} ${cardSkin}`}>
       {plan.badge && (
         <span
           className={`absolute -top-3 left-1/2 -translate-x-1/2 rounded-full px-3 py-1 font-mono text-[0.68rem] font-semibold uppercase tracking-[0.18em] ${
-            plan.badge.tone === 'gratuit'
-              ? 'bg-emerald-100 text-emerald-700'
-              : 'bg-cream-100 text-navy-900'
+            plan.badge.tone === "gratuit"
+              ? "bg-emerald-100 text-emerald-700"
+              : "bg-cream-100 text-navy-900"
           }`}
         >
           {plan.badge.label}
@@ -473,17 +498,21 @@ function PlanCard({ plan, billing }: { plan: Plan; billing: Billing }) {
 
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1">
-          <p className={`font-mono text-[0.7rem] uppercase tracking-[0.18em] ${eyebrow}`}>
+          <p
+            className={`font-mono text-[0.7rem] uppercase tracking-[0.18em] ${eyebrow}`}
+          >
             {plan.audience}
           </p>
           <h3
             className={`mt-3 font-display text-2xl font-semibold leading-tight sm:text-3xl ${
-              isDark ? 'text-cream-50' : 'text-navy-900'
+              isDark ? "text-cream-50" : "text-navy-900"
             }`}
           >
             {plan.name}
           </h3>
-          <p className={`mt-3 text-sm leading-relaxed ${description}`}>{plan.description}</p>
+          <p className={`mt-3 text-sm leading-relaxed ${description}`}>
+            {plan.description}
+          </p>
         </div>
       </div>
 
@@ -492,19 +521,36 @@ function PlanCard({ plan, billing }: { plan: Plan; billing: Billing }) {
         {plan.priceMonthly === null ? (
           <p className="font-display text-4xl font-semibold">Sur devis</p>
         ) : plan.priceMonthly === 0 ? (
-          <p className="font-display text-5xl font-semibold leading-none">Gratuit</p>
+          <p className="font-display text-5xl font-semibold leading-none">
+            Gratuit
+          </p>
         ) : (
           <>
             <div className="flex items-baseline gap-2">
               <span className="font-display text-5xl font-semibold leading-none">
-                {formatEuro(isYearly ? yearlyMonthlyEquivalent(plan.priceMonthly) : plan.priceMonthly)}
+                {formatEuro(
+                  isYearly
+                    ? yearlyMonthlyEquivalent(plan.priceMonthly)
+                    : plan.priceMonthly,
+                )}
               </span>
               <span className={`text-sm ${description}`}>/mois</span>
             </div>
+            <p className={`mt-1.5 text-xs ${description}`}>
+              soit ≈{" "}
+              {formatEuro(
+                perDay(
+                  isYearly
+                    ? yearlyMonthlyEquivalent(plan.priceMonthly)
+                    : plan.priceMonthly,
+                ),
+              )}{" "}
+              / jour
+            </p>
             {isYearly && (
               <p className={`mt-2 text-xs leading-relaxed ${description}`}>
-                Facturé {formatEuro(yearlyTotal(plan.priceMonthly))} par an — économie de 10 %
-                sur le tarif mensuel.
+                Facturé {formatEuro(yearlyTotal(plan.priceMonthly))} par an —
+                économie de 10 % sur le tarif mensuel.
               </p>
             )}
           </>
@@ -512,7 +558,9 @@ function PlanCard({ plan, billing }: { plan: Plan; billing: Billing }) {
       </div>
 
       {/* Specs */}
-      <ul className={`mt-6 space-y-2.5 border-t ${hairlineClass} pt-6 text-sm ${specsLabel}`}>
+      <ul
+        className={`mt-6 space-y-2.5 border-t ${hairlineClass} pt-6 text-sm ${specsLabel}`}
+      >
         <li className="flex items-center gap-2.5">
           <FilePagesIcon width={16} height={16} className={featureMuted} />
           {plan.specs.dossiers}
@@ -528,12 +576,14 @@ function PlanCard({ plan, billing }: { plan: Plan; billing: Billing }) {
       </ul>
 
       {/* Features comparison */}
-      <ul className={`mt-5 flex-1 space-y-2.5 border-t ${hairlineClass} pt-5 text-sm`}>
+      <ul
+        className={`mt-5 flex-1 space-y-2.5 border-t ${hairlineClass} pt-5 text-sm`}
+      >
         {COMPARISON_FEATURES.map((feat) => (
           <FeatureRow
             key={feat.id}
             label={feat.label}
-            status={plan.features[feat.id] ?? 'no'}
+            status={plan.features[feat.id] ?? "no"}
             isDark={isDark}
             mutedClass={featureMuted}
             onClass={featureOn}
@@ -564,27 +614,43 @@ function FeatureRow({
   mutedClass: string;
   onClass: string;
 }) {
-  const labelClass = status === 'no' ? mutedClass : onClass;
-  const labelWeight = status === 'no' ? 'font-normal' : 'font-medium';
+  const labelClass = status === "no" ? mutedClass : onClass;
+  const labelWeight = status === "no" ? "font-normal" : "font-medium";
   const labelText =
-    status === 'limited' ? (
+    status === "limited" ? (
       <>
-        {label}{' '}
-        <span className={isDark ? 'text-cream-50/70' : 'text-slate-500'}>(limité)</span>
+        {label}{" "}
+        <span className={isDark ? "text-cream-50/70" : "text-slate-500"}>
+          (limité)
+        </span>
       </>
     ) : (
       label
     );
 
   return (
-    <li className={`flex items-start gap-2.5 leading-tight ${labelClass} ${labelWeight}`}>
+    <li
+      className={`flex items-start gap-2.5 leading-tight ${labelClass} ${labelWeight}`}
+    >
       <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center">
-        {status === 'yes' && (
-          <CheckIcon width={14} height={14} strokeWidth={2.2} className="text-emerald-500" />
+        {status === "yes" && (
+          <CheckIcon
+            width={14}
+            height={14}
+            strokeWidth={2.2}
+            className="text-emerald-500"
+          />
         )}
-        {status === 'no' && <CrossIcon width={14} height={14} className={mutedClass} />}
-        {status === 'limited' && (
-          <InfoIcon width={14} height={14} strokeWidth={2} className="text-gold-700" />
+        {status === "no" && (
+          <CrossIcon width={14} height={14} className={mutedClass} />
+        )}
+        {status === "limited" && (
+          <InfoIcon
+            width={14}
+            height={14}
+            strokeWidth={2}
+            className="text-gold-700"
+          />
         )}
       </span>
       <span>{labelText}</span>

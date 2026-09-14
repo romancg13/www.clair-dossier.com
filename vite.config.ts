@@ -21,6 +21,10 @@ function spaFallback(): Plugin {
 const base = process.env.VITE_BASE_PATH ?? '/';
 
 export default defineConfig({
+  // Le dossier statique s'appelle "public/" (CNAME, favicon, mirrors .md, brochure).
+  // Un commit l'avait pointé vers "publique/" (dossier inexistant) → assets + CNAME
+  // perdus au build. On réaligne sur le dossier réellement présent dans le dépôt.
+  publicDir: 'public',
   base,
   // Flags injectés comme littéraux (voir src/lib/flags.ts) — branche inactive éliminée du bundle.
   define: {
