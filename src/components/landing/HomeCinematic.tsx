@@ -1,7 +1,6 @@
 import { Seo, orgSchema, websiteSchema } from '../../lib/seo';
 import { homeFaq } from '../../data/faq';
 import { WorkspacesTabs } from '../sections/WorkspacesTabs';
-import { DossierLifecycle } from '../sections/DossierLifecycle';
 import { BlogPreview } from '../sections/BlogPreview';
 import { FaqBlock } from '../sections/FaqBlock';
 import { HeroCinematic } from './HeroCinematic';
@@ -97,9 +96,6 @@ export function HomeCinematic() {
       </div>
       <div className="cd-cv" style={{ containIntrinsicSize: 'auto 800px' }}>
         <WorkspacesTabs />
-      </div>
-      <div className="cd-cv" style={{ containIntrinsicSize: 'auto 1200px' }}>
-        <DossierLifecycle />
       </div>
       <div className="cd-cv" style={{ containIntrinsicSize: 'auto 900px' }}>
         <TrustChapter />

@@ -23,7 +23,7 @@ const mentionsLegales: LegalPage = {
   title: "Mentions légales",
   metaDescription:
     "Mentions légales du site clair-dossier.com — éditeur, hébergeur, directeur de publication, propriété intellectuelle.",
-  lastUpdate: "2026-05-26",
+  lastUpdate: "2026-09-15",
   intro:
     "Conformément à la loi pour la confiance dans l'économie numérique (LCEN, n° 2004-575 du 21 juin 2004), il est précisé aux utilisateurs du site clair-dossier.com l'identité des différents intervenants dans le cadre de sa réalisation et de son suivi.",
   sections: [
@@ -83,7 +83,7 @@ const mentionsLegales: LegalPage = {
       blocks: [
         {
           type: "p",
-          text: "L'ensemble des contenus du site (textes, images, vidéos, structure, code source, marques, logos) est la propriété exclusive de la société ClairDossier ou de ses partenaires, et est protégé par les lois françaises et internationales relatives à la propriété intellectuelle.",
+          text: "L'ensemble des contenus du site (textes, images, vidéos, structure, code source, marques, logos) est la propriété exclusive de l'Éditeur (Roman Gomes, entreprise individuelle exploitant le service sous la marque ClairDossier) ou de ses partenaires, et est protégé par les lois françaises et internationales relatives à la propriété intellectuelle.",
         },
         {
           type: "p",
@@ -123,7 +123,7 @@ const cgv: LegalPage = {
   title: "Conditions générales de vente",
   metaDescription:
     "Conditions générales de vente du service ClairDossier — souscription, tarifs, durée, résiliation, responsabilité, propriété intellectuelle.",
-  lastUpdate: "2026-05-26",
+  lastUpdate: "2026-09-15",
   intro:
     "Les présentes conditions générales de vente (« CGV ») régissent l'accès au service ClairDossier et son utilisation par tout client souscrivant à une offre. La création de compte est gratuite ; seul l'abonnement est payant. Toute souscription emporte acceptation pleine et entière des présentes CGV.",
   sections: [
@@ -161,7 +161,7 @@ const cgv: LegalPage = {
       blocks: [
         {
           type: "p",
-          text: "Les tarifs en vigueur sont ceux publiés sur la page /tarifs du site clair-dossier.com au jour de la souscription. Les prix sont exprimés en euros, hors taxes. La TVA française à 20 % s'applique aux clients établis en France. Les clients établis dans un autre État membre de l'Union européenne et disposant d'un numéro de TVA intracommunautaire valide bénéficient du régime de l'autoliquidation.",
+          text: "Les tarifs en vigueur sont ceux publiés sur la page /tarifs du site clair-dossier.com au jour de la souscription. Les prix sont exprimés en euros. TVA non applicable, article 293 B du Code général des impôts (franchise en base) : le prix affiché est le prix payé. Si le régime de TVA de l'Éditeur venait à changer, les factures des périodes postérieures en tiendraient compte, après information du Client.",
         },
         {
           type: "p",
@@ -237,7 +237,7 @@ const cgv: LegalPage = {
       blocks: [
         {
           type: "p",
-          text: "Les présentes CGV sont régies par le droit français. Tout litige relatif à leur interprétation ou à leur exécution sera porté devant les tribunaux compétents de Paris, sauf disposition impérative contraire.",
+          text: "Les présentes CGV sont régies par le droit français. En cas de litige relatif à leur interprétation ou à leur exécution, et à défaut de résolution amiable, la juridiction compétente est déterminée selon les règles de droit commun. Entre commerçants, compétence est attribuée aux juridictions du ressort du siège de l'Éditeur, à Marseille.",
         },
       ],
     },
@@ -249,7 +249,7 @@ const politiqueConfidentialite: LegalPage = {
   title: "Politique de confidentialité",
   metaDescription:
     "Politique de confidentialité ClairDossier — données collectées, finalités, base légale, durées de conservation, vos droits RGPD.",
-  lastUpdate: "2026-05-26",
+  lastUpdate: "2026-09-15",
   intro:
     "ClairDossier traite des données personnelles dans le strict respect du Règlement général sur la protection des données (RGPD) et de la loi française Informatique et Libertés. Cette politique décrit les données collectées, leurs finalités, et les droits dont vous disposez.",
   sections: [
@@ -389,7 +389,7 @@ const cookies: LegalPage = {
   title: "Cookies",
   metaDescription:
     "Politique cookies ClairDossier — cookies techniques uniquement, aucun cookie de mesure d'audience ou marketing tiers.",
-  lastUpdate: "2026-05-26",
+  lastUpdate: "2026-09-15",
   intro:
     "Le site clair-dossier.com utilise un nombre minimal de cookies, strictement nécessaires au fonctionnement du service. Aucun cookie marketing, publicitaire ou de mesure d'audience tierce n'est déposé sans votre consentement explicite.",
   sections: [
@@ -409,14 +409,14 @@ const cookies: LegalPage = {
       blocks: [
         {
           type: "p",
-          text: "Nous utilisons exclusivement des cookies dits « strictement nécessaires », exemptés de consentement préalable conformément à l'article 82 de la loi Informatique et Libertés et à la délibération CNIL n° 2020-091 :",
+          text: "En l'état actuel du site, aucun cookie n'est déposé par nos soins : les informations strictement nécessaires au fonctionnement sont conservées dans le stockage local de votre navigateur (localStorage), exempté de consentement préalable au sens de l'article 82 de la loi Informatique et Libertés et de la délibération CNIL n° 2020-091 lorsqu'il est strictement nécessaire :",
         },
         {
           type: "list",
           items: [
-            "Cookie de session — maintient votre connexion authentifiée pendant votre utilisation du service. Durée : session du navigateur.",
-            "Cookie de préférence — mémorise vos choix d'interface (thème, langue). Durée : 1 an.",
-            "Cookie de sécurité — protège contre les attaques CSRF lors des soumissions de formulaire. Durée : session.",
+            "clairdossier-auth (stockage local du navigateur) — maintient votre session authentifiée. Conservé jusqu'à déconnexion ou expiration de la session.",
+            "Mémorisation de la fermeture du bandeau promotionnel (stockage local) — évite de réafficher un bandeau que vous avez fermé.",
+            "Brouillon de formulaire de création de dossier (stockage local) — évite de perdre votre saisie en cas de rechargement ; supprimé après envoi.",
           ],
         },
       ],

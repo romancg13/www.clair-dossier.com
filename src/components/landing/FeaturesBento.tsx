@@ -43,11 +43,10 @@ export function FeaturesBento() {
         <div className="max-w-3xl">
           <p className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-700">Fonctionnalités</p>
           <h2 className="mt-3 font-display text-[clamp(2.1rem,4.4vw,3.75rem)] font-semibold leading-[1.04] tracking-[-0.015em] text-navy-900">
-            Neuf briques pour structurer un dossier juridique.
+            L'essentiel pour structurer un dossier.
           </h2>
           <p className="mt-4 max-w-2xl text-base leading-relaxed text-slate-500">
-            Chaque brique répond à un point de friction identifié auprès de cabinets et de services
-            juridiques français. Aucune n'est décorative.
+            Neuf briques concrètes, aucune décorative — chacune détaillée sur sa propre page.
           </p>
         </div>
 
