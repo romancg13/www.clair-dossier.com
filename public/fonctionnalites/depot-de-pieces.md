@@ -1,7 +1,7 @@
 ---
 title: "Dépôt de pièces dans un espace privé"
 description: "Déposez vos pièces — contrats, courriers, factures — dans un espace privé et sécurisé, rattaché au dossier."
-url: https://www.clair-dossier.com/fonctionnalites/pieces-ocr
+url: https://www.clair-dossier.com/fonctionnalites/depot-de-pieces
 ---
 
 # Dépôt de pièces dans un espace privé
@@ -26,6 +26,6 @@ Le stockage est isolé par utilisateur : un dossier ne voit que ses propres piè
 
 ---
 
-*Source : https://www.clair-dossier.com/fonctionnalites/pieces-ocr — éditeur : Roman Gomes (SIREN 105 490 734, Château-Gombert, 13013 Marseille). Site réalisé par Nouh BENZIDANE.*
+*Source : https://www.clair-dossier.com/fonctionnalites/depot-de-pieces — éditeur : Roman Gomes (SIREN 105 490 734, Château-Gombert, 13013 Marseille). Site réalisé par Nouh BENZIDANE.*
 
-*Citation suggérée : « ClairDossier, [titre de la page], https://www.clair-dossier.com/fonctionnalites/pieces-ocr ».*
+*Citation suggérée : « ClairDossier, [titre de la page], https://www.clair-dossier.com/fonctionnalites/depot-de-pieces ».*

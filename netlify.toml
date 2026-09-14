@@ -6,19 +6,102 @@
 
 [build.environment]
   NODE_VERSION = "22"
+  # ── Capture de prospects (Lot 2.2) — décision humaine, 3 prérequis :
+  #  1. migration supabase/migrations/20260829120000_prospects.sql appliquée
+  #  2. Edge Function submit-prospect déployée (+ secret PROSPECT_HASH_SALT)
+  #  3. politique de confidentialité mise à jour
+  # puis décommenter :
+  # VITE_ENABLE_PROSPECT_CAPTURE = "true"
+  #
+  # ── Analytics sans cookie (Lot 2.1) — décision humaine (compte Plausible),
+  # puis décommenter et ajouter l'hôte à script-src/connect-src de la CSP :
+  # VITE_PLAUSIBLE_DOMAIN = "www.clair-dossier.com"
 
-# SPA fallback: the site uses react-router BrowserRouter, so any unknown path
-# must return index.html. Real files in dist (sitemap.xml, *.md, assets…) are
-# served first; this only catches client-side routes.
+# ── Domaine canonique : une seule forme servie (www), l'apex redirige en 301.
+# (Rendre www.clair-dossier.com "primary domain" dans Netlify → ces règles
+# explicitent la même chose et couvrent le cas où l'ordre des domaines change.)
+[[redirects]]
+  from = "https://clair-dossier.com/*"
+  to = "https://www.clair-dossier.com/:splat"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "http://clair-dossier.com/*"
+  to = "https://www.clair-dossier.com/:splat"
+  status = 301
+  force = true
+
+# ── Anciennes adresses /fonctionnalites/* (positionnement historique) → slugs
+# actuels. Carte identique côté client : LEGACY_FEATURE_SLUGS (src/data/features.ts).
+[[redirects]]
+  from = "/fonctionnalites/pieces-ocr"
+  to = "/fonctionnalites/depot-de-pieces"
+  status = 301
+
+[[redirects]]
+  from = "/fonctionnalites/pieces-ocr.md"
+  to = "/fonctionnalites/depot-de-pieces.md"
+  status = 301
+
+[[redirects]]
+  from = "/fonctionnalites/validation-avocat"
+  to = "/fonctionnalites/transmission-validee"
+  status = 301
+
+[[redirects]]
+  from = "/fonctionnalites/validation-avocat.md"
+  to = "/fonctionnalites/transmission-validee.md"
+  status = 301
+
+[[redirects]]
+  from = "/fonctionnalites/messagerie-securisee"
+  to = "/fonctionnalites/espace-securise"
+  status = 301
+
+[[redirects]]
+  from = "/fonctionnalites/messagerie-securisee.md"
+  to = "/fonctionnalites/espace-securise.md"
+  status = 301
+
+[[redirects]]
+  from = "/fonctionnalites/coffre-fort"
+  to = "/fonctionnalites/donnees-protegees"
+  status = 301
+
+[[redirects]]
+  from = "/fonctionnalites/coffre-fort.md"
+  to = "/fonctionnalites/donnees-protegees.md"
+  status = 301
+
+[[redirects]]
+  from = "/fonctionnalites/reponse-auto-mails"
+  to = "/fonctionnalites/recapitulatif-transmission"
+  status = 301
+
+[[redirects]]
+  from = "/fonctionnalites/reponse-auto-mails.md"
+  to = "/fonctionnalites/recapitulatif-transmission.md"
+  status = 301
+
+# SPA fallback : les routes publiques sont pré-rendues (dist/<route>/index.html,
+# servies comme fichiers réels) ; ce fallback ne capte plus que les routes
+# privées (/compte, /dossier/nouveau…) et inconnues, servies avec la coquille
+# SPA vierge (spa-shell.html) pour éviter toute hydratation croisée.
 [[redirects]]
   from = "/*"
-  to = "/index.html"
+  to = "/spa-shell.html"
   status = 200
 
 # Sécurité (defense-in-depth) — appliqué à toutes les réponses.
+# HSTS : 1 an, sans includeSubDomains ni preload tant que l'inventaire des
+# sous-domaines n'est pas confirmé (décision humaine — voir docs/GO-LIVE-NETLIFY.md).
+# CSP : si l'analytics sans cookie est activée (VITE_PLAUSIBLE_DOMAIN), ajouter
+# https://plausible.io à script-src et connect-src.
 [[headers]]
   for = "/*"
   [headers.values]
+    Strict-Transport-Security = "max-age=31536000"
     X-Frame-Options = "DENY"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"

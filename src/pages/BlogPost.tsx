@@ -153,8 +153,8 @@ export function BlogPost() {
         </div>
       </section>
 
-      {/* Body */}
-      <Reveal as="article" className="bg-cream-50">
+      {/* Body — texte principal de l'article : lisible sans JavaScript (Lot 3). */}
+      <article className="rise-in bg-cream-50">
         <div className="mx-auto max-w-3xl px-5 py-16 sm:px-8 lg:px-12">
           <div className="drop-cap space-y-5 text-base leading-relaxed text-navy-900 sm:text-[1.06rem]">
             {post.content.map((block, i) => (
@@ -194,7 +194,7 @@ export function BlogPost() {
             </section>
           )}
         </div>
-      </Reveal>
+      </article>
 
       {/* Related */}
       {related.length > 0 && (

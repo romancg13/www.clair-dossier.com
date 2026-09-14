@@ -39,13 +39,17 @@ export function Nav() {
 
   return (
     <header
-      className={`sticky top-0 z-40 transition-[background,border-color,box-shadow] duration-300 ${
+      className={`cd-nav-enter sticky top-0 z-40 transition-[background,border-color,box-shadow] duration-300 ${
         scrolled
           ? 'border-b hairline bg-cream-50/92 backdrop-blur-xl shadow-[0_4px_24px_rgba(13,27,61,0.05)]'
           : 'border-b border-transparent bg-cream-50/70 backdrop-blur-md'
       }`}
     >
-      <div className="mx-auto flex max-w-7xl items-center gap-6 px-5 py-3.5 sm:px-8 lg:px-12">
+      <div
+        className={`mx-auto flex max-w-7xl items-center gap-6 px-5 py-3.5 transition-[padding] duration-300 sm:px-8 lg:px-12 ${
+          scrolled ? 'lg:py-2.5' : ''
+        }`}
+      >
         <Logo />
 
         <nav className="ml-auto hidden items-center gap-1 lg:flex" aria-label="Navigation principale">

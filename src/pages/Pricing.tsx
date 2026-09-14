@@ -25,8 +25,9 @@ import {
   UsersIcon,
   HeadsetIcon,
   WhatsAppIcon,
-} from "../components/icons";
-import { WHATSAPP_DISPLAY, buildWhatsAppUrl } from "../lib/whatsapp";
+} from '../components/icons';
+import { WHATSAPP_DISPLAY, buildWhatsAppUrl } from '../lib/whatsapp';
+import { trackEvent } from '../lib/analytics';
 
 const DEVIS_CAPABILITIES = [
   {
@@ -293,6 +294,7 @@ export function Pricing() {
                   )}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={() => trackEvent('devis_grand_compte', { canal: 'whatsapp' })}
                   className="group flex items-center justify-between gap-4 rounded-xl border border-cream-50/15 bg-cream-50/5 p-5 transition-colors hover:border-cream-50/35 hover:bg-cream-50/10"
                 >
                   <div className="flex items-center gap-4">

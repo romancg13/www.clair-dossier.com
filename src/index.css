@@ -1,16 +1,21 @@
 @import "tailwindcss";
 
-@import "@fontsource/cormorant-garamond/400.css";
-@import "@fontsource/cormorant-garamond/500.css";
-@import "@fontsource/cormorant-garamond/500-italic.css";
-@import "@fontsource/cormorant-garamond/600.css";
-@import "@fontsource/cormorant-garamond/700.css";
-@import "@fontsource/inter/300.css";
-@import "@fontsource/inter/400.css";
-@import "@fontsource/inter/500.css";
-@import "@fontsource/inter/600.css";
-@import "@fontsource/jetbrains-mono/400.css";
-@import "@fontsource/jetbrains-mono/500.css";
+/* Sous-ensembles latins uniquement (Phase 4b, perf) : couvrent le français (accents, œ, €) ;
+   12 @font-face au lieu de 65 dans la CSS bloquante. */
+@import "@fontsource/cormorant-garamond/latin-400.css";
+@import "@fontsource/cormorant-garamond/latin-500.css";
+@import "@fontsource/cormorant-garamond/latin-500-italic.css";
+@import "@fontsource/cormorant-garamond/latin-600.css";
+@import "@fontsource/cormorant-garamond/latin-700.css";
+@import "@fontsource/inter/latin-300.css";
+@import "@fontsource/inter/latin-400.css";
+@import "@fontsource/inter/latin-500.css";
+@import "@fontsource/inter/latin-600.css";
+@import "@fontsource/jetbrains-mono/latin-400.css";
+@import "@fontsource/jetbrains-mono/latin-500.css";
+
+/* Phase 4 — couche landing cinématique (tokens @theme + styles préfixés cd-). */
+@import "./styles/landing.css";
 
 @theme {
   /* ─── Palette signature ──────────────────────────────────── */
@@ -372,4 +377,28 @@ form select:focus {
   .premium-card:hover svg {
     transform: none;
   }
+}
+
+/* ─── Entrées critiques sans dépendance JS (Lot 3 — pré-rendu) ─────────
+   Titre, proposition de valeur et CTA de chaque page doivent être présents
+   dans le HTML servi et lisibles sans JavaScript : leur animation d'entrée
+   est en CSS pur (elle se joue et se termine même sans JS). Le bloc global
+   prefers-reduced-motion ci-dessus neutralise déjà ces animations. */
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+.rise-in {
+  animation: rise-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: var(--rise-delay, 0s);
+}
+@keyframes word-rise {
+  from { opacity: 0; transform: translateY(110%); }
+  to { opacity: 1; transform: none; }
+}
+.word-mask { display: inline-block; overflow: hidden; }
+.word-mask > span {
+  display: inline-block;
+  animation: word-rise 0.85s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: calc(var(--w, 0) * 60ms);
 }

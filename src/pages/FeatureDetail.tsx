@@ -1,13 +1,18 @@
-import { Link, useParams } from 'react-router-dom';
+import { Link, Navigate, useParams } from 'react-router-dom';
 import { Seo, breadcrumbSchema } from '../lib/seo';
 import { Reveal } from '../components/primitives/Reveal';
-import { features, getFeatureBySlug } from '../data/features';
+import { LEGACY_FEATURE_SLUGS, features, getFeatureBySlug } from '../data/features';
 import { FEATURE_ICONS, ArrowRightIcon, CheckIcon } from '../components/icons';
 import { NotFound } from './NotFound';
 
 export function FeatureDetail() {
   const { slug } = useParams();
   const feature = getFeatureBySlug(slug);
+
+  // Ancienne adresse → redirection client (le 301 serveur vit dans netlify.toml).
+  if (!feature && slug && LEGACY_FEATURE_SLUGS[slug]) {
+    return <Navigate to={`/fonctionnalites/${LEGACY_FEATURE_SLUGS[slug]}`} replace />;
+  }
 
   if (!feature) return <NotFound />;
 
@@ -51,7 +56,7 @@ export function FeatureDetail() {
       {/* Hero */}
       <section className="bg-cream-50">
         <div className="mx-auto max-w-5xl px-5 pb-12 pt-16 sm:px-8 lg:px-12">
-          <Reveal>
+          <div className="rise-in">
             <span className="inline-grid h-12 w-12 place-items-center rounded-lg bg-cream-100 text-navy-900">
               <Icon width={26} height={26} />
             </span>
@@ -64,7 +69,7 @@ export function FeatureDetail() {
             <p className="mt-5 max-w-3xl font-display text-xl italic leading-relaxed text-navy-700 sm:text-2xl">
               {feature.hero}
             </p>
-          </Reveal>
+          </div>
         </div>
       </section>
 

@@ -1,7 +1,7 @@
 ---
 title: "Récapitulatif avant transmission"
 description: "Avant d'envoyer, ClairDossier vous présente un récapitulatif complet du dossier. Vous relisez, vous corrigez si besoin, puis vous transmettez."
-url: https://www.clair-dossier.com/fonctionnalites/reponse-auto-mails
+url: https://www.clair-dossier.com/fonctionnalites/recapitulatif-transmission
 ---
 
 # Récapitulatif avant transmission
@@ -24,6 +24,6 @@ Une fois le dossier confirmé, vous le transmettez quand vous le décidez, par e
 
 ---
 
-*Source : https://www.clair-dossier.com/fonctionnalites/reponse-auto-mails — éditeur : Roman Gomes (SIREN 105 490 734, Château-Gombert, 13013 Marseille). Site réalisé par Nouh BENZIDANE.*
+*Source : https://www.clair-dossier.com/fonctionnalites/recapitulatif-transmission — éditeur : Roman Gomes (SIREN 105 490 734, Château-Gombert, 13013 Marseille). Site réalisé par Nouh BENZIDANE.*
 
-*Citation suggérée : « ClairDossier, [titre de la page], https://www.clair-dossier.com/fonctionnalites/reponse-auto-mails ».*
+*Citation suggérée : « ClairDossier, [titre de la page], https://www.clair-dossier.com/fonctionnalites/recapitulatif-transmission ».*

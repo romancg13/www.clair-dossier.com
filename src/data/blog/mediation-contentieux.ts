@@ -18,7 +18,7 @@ export const mediationContentieux: BlogPost = {
     {
       type: 'p',
       text:
-        "Face à un litige, le réflexe culturel français reste judiciaire : on saisit le tribunal et on attend la décision. Pourtant, depuis la loi de modernisation de la justice du 18 novembre 2016 et le décret de 2019 qui rend la tentative amiable obligatoire avant la plupart des saisines, la médiation est devenue une étape incontournable — parfois la solution finale. Les chiffres publiés par les conseils départementaux d'accès au droit indiquent que la médiation aboutit dans une majorité de cas, en quelques semaines, pour des coûts inférieurs.",
+        "Face à un litige, le réflexe culturel français reste judiciaire : on saisit le tribunal et on attend la décision. Pourtant, depuis la loi de modernisation de la justice du 18 novembre 2016 et l'article 750-1 du Code de procédure civile (issu du décret du 11 décembre 2019, rétabli par le décret du 11 mai 2023), une tentative de résolution amiable est en principe requise avant de saisir le tribunal judiciaire pour certains litiges — notamment les demandes n'excédant pas 5 000 € et certains conflits de voisinage, sauf exceptions —, et la médiation est devenue une étape à considérer sérieusement — parfois la solution finale. Les chiffres publiés par les conseils départementaux d'accès au droit indiquent que la médiation aboutit dans une majorité de cas, en quelques semaines, pour des coûts inférieurs.",
     },
     {
       type: 'p',

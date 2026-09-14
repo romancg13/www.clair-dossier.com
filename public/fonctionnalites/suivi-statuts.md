@@ -14,7 +14,7 @@ Après création de votre compte, gratuite et confirmée par e-mail, vous accéd
 
 Depuis la liste, vous entrez sur la page d'avancement de chaque dossier : ses cinq étapes, ses pièces, ses échéances. Vous passez d'un dossier à l'autre sans rien perdre de vue.
 
-Vos dossiers restent isolés : votre espace ne contient que les vôtres. Cette séparation par utilisateur garantit que vos informations ne se mélangent jamais avec celles d'un autre compte.
+Vos dossiers restent isolés : votre espace ne contient que les vôtres. Cette séparation par utilisateur assure que vos informations ne se mélangent jamais avec celles d'un autre compte.
 
 ## Concrètement
 

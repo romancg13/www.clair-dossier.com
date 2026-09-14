@@ -1,8 +1,10 @@
-import { useState, type FormEvent } from 'react';
+import { useRef, useState, type CSSProperties, type FormEvent } from 'react';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import { Seo, breadcrumbSchema } from '../lib/seo';
-import { Reveal } from '../components/primitives/Reveal';
 import { ArrowRightIcon, WhatsAppIcon } from '../components/icons';
 import { WHATSAPP_DISPLAY, openWhatsApp, buildWhatsAppUrl } from '../lib/whatsapp';
+import { submitProspect } from '../lib/prospects';
+import { trackEvent } from '../lib/analytics';
 
 type Topic = 'demo' | 'commercial' | 'support' | 'presse';
 
@@ -15,8 +17,12 @@ const TOPICS: { id: Topic; label: string; description: string }[] = [
 
 export function Contact() {
   const [topic, setTopic] = useState<Topic>('demo');
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+  // Anti-robot : durée entre affichage et soumission (voir lib/prospects).
+  const mountedAt = useRef(Date.now());
 
-  function onSubmit(e: FormEvent<HTMLFormElement>) {
+  async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = e.currentTarget;
     const data = new FormData(form);
@@ -33,6 +39,27 @@ export function Contact() {
       `Email : ${email}\n` +
       (organization ? `Structure : ${organization}\n` : '') +
       `\n${message}`;
+
+    // Capture côté serveur AVANT l'ouverture de WhatsApp (Lot 2.2) — la
+    // demande n'est plus perdue si le visiteur n'achève pas le passage.
+    // Silencieuse et non bloquante : en cas d'échec, WhatsApp s'ouvre
+    // exactement comme avant.
+    const surMesure = searchParams.get('plan') === 'sur-mesure';
+    await submitProspect({
+      full_name: name,
+      email,
+      organization: organization || undefined,
+      segment: searchParams.get('segment') ?? 'autre',
+      topic: surMesure ? 'devis' : topic,
+      message,
+      source_page: `${location.pathname}${location.search}`,
+      referrer: document.referrer || undefined,
+      elapsed_ms: Date.now() - mountedAt.current,
+      website: String(data.get('website') ?? ''),
+    });
+
+    if (surMesure) trackEvent('devis_grand_compte', { canal: 'formulaire' });
+    else if (topic === 'demo') trackEvent('demande_demo', { canal: 'formulaire' });
 
     openWhatsApp(text);
   }
@@ -53,7 +80,7 @@ export function Contact() {
         <div className="mx-auto max-w-7xl px-5 py-14 sm:py-20 lg:py-24 sm:px-8 lg:px-12">
           <div className="grid gap-12 lg:grid-cols-[1fr_1.1fr]">
             {/* Left — copy + WhatsApp CTA */}
-            <Reveal>
+            <div className="rise-in">
               <p className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-700">
                 Contact
               </p>
@@ -105,10 +132,10 @@ export function Contact() {
                   detail="Voir les mentions légales pour les coordonnées complètes"
                 />
               </div>
-            </Reveal>
+            </div>
 
             {/* Right — form (pre-fills WhatsApp message) */}
-            <Reveal delay={0.1}>
+            <div className="rise-in" style={{ '--rise-delay': '0.1s' } as CSSProperties}>
               <div className="rounded-2xl border hairline bg-white p-7 shadow-card sm:p-9">
                 <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">
                   Formulaire guidé
@@ -122,6 +149,13 @@ export function Contact() {
                 </p>
 
                 <form onSubmit={onSubmit} className="mt-7 space-y-6" noValidate>
+                  {/* Champ leurre anti-robot : invisible, doit rester vide. */}
+                  <div className="hidden" aria-hidden="true">
+                    <label>
+                      Ne pas remplir ce champ
+                      <input type="text" name="website" tabIndex={-1} autoComplete="off" />
+                    </label>
+                  </div>
                   <div>
                     <span className="font-mono text-[0.7rem] uppercase tracking-[0.16em] text-slate-500">
                       Nature de la demande
@@ -189,7 +223,7 @@ export function Contact() {
                   </p>
                 </form>
               </div>
-            </Reveal>
+            </div>
           </div>
         </div>
       </section>

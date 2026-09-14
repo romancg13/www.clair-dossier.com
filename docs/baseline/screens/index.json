@@ -1,0 +1,434 @@
+[
+  {
+    "route": "/",
+    "label": "desktop",
+    "status": 200,
+    "finalUrl": "https://www.clair-dossier.com/",
+    "title": "ClairDossier — Votre dossier juridique, clair, structuré et suivi",
+    "h1": "Votre dossier administratif et juridique, clair, structuré et suivi.",
+    "file": "screens/home__desktop.png"
+  },
+  {
+    "route": "/",
+    "label": "mobile",
+    "status": 200,
+    "finalUrl": "https://www.clair-dossier.com/",
+    "title": "ClairDossier — Votre dossier juridique, clair, structuré et suivi",
+    "h1": "Votre dossier administratif et juridique, clair, structuré et suivi.",
+    "file": "screens/home__mobile.png"
+  },
+  {
+    "route": "/fonctionnalites",
+    "label": "desktop",
+    "status": 404,
+    "finalUrl": "https://www.clair-dossier.com/fonctionnalites/",
+    "title": "Fonctionnalités — ClairDossier · Dossier juridique clair, structuré et suivi",
+    "h1": "Neuf briques, un dossier administratif et juridique propre.",
+    "file": "screens/fonctionnalites__desktop.png"
+  },
+  {
+    "route": "/fonctionnalites",
+    "label": "mobile",
+    "status": 404,
+    "finalUrl": "https://www.clair-dossier.com/fonctionnalites/",
+    "title": "Fonctionnalités — ClairDossier · Dossier juridique clair, structuré et suivi",
+    "h1": "Neuf briques, un dossier administratif et juridique propre.",
+    "file": "screens/fonctionnalites__mobile.png"
+  },
+  {
+    "route": "/fonctionnalites/creation-guidee",
+    "label": "desktop",
+    "status": 404,
+    "finalUrl": "https://www.clair-dossier.com/fonctionnalites/creation-guidee",
+    "title": "Création guidée par typologie — ClairDossier · Dossier juridique clair, structuré et suivi",
+    "h1": "Création guidée par typologie",
+    "file": "screens/fonctionnalites__creation-guidee__desktop.png"
+  },
+  {
+    "route": "/fonctionnalites/creation-guidee",
+    "label": "mobile",
+    "status": 404,
+    "finalUrl": "https://www.clair-dossier.com/fonctionnalites/creation-guidee",
+    "title": "Création guidée par typologie — ClairDossier · Dossier juridique clair, structuré et suivi",
+    "h1": "Création guidée par typologie",
+    "file": "screens/fonctionnalites__creation-guidee__mobile.png"
+  },
+  {
+    "route": "/fonctionnalites/pieces-ocr",
+    "label": "desktop",
+    "status": 404,
+    "finalUrl": "https://www.clair-dossier.com/fonctionnalites/pieces-ocr",
+    "title": "Dépôt de pièces dans un espace privé — ClairDossier · Dossier juridique clair, structuré et suivi",
+    "h1": "Dépôt de pièces dans un espace privé",
+    "file": "screens/fonctionnalites__pieces-ocr__desktop.png"
+  },
+  {
+    "route": "/fonctionnalites/pieces-ocr",
+    "label": "mobile",
+    "status": 404,
+    "finalUrl": "https://www.clair-dossier.com/fonctionnalites/pieces-ocr",
+    "title": "Dépôt de pièces dans un espace privé — ClairDossier · Dossier juridique clair, structuré et suivi",
+    "h1": "Dépôt de pièces dans un espace privé",
+    "file": "screens/fonctionnalites__pieces-ocr__mobile.png"
+  },
+  {
+    "route": "/fonctionnalites/chronologie",
+    "label": "desktop",
+    "status": 404,
+    "finalUrl": "https://www.clair-dossier.com/fonctionnalites/chronologie",
+    "title": "Avancement du dossier en 5 étapes — ClairDossier · Dossier juridique clair, structuré et suivi",
+    "h1": "Avancement du dossier en 5 étapes",
+    "file": "screens/fonctionnalites__chronologie__desktop.png"
+  },
+  {
+    "route": "/fonctionnalites/chronologie",
+    "label": "mobile",
+    "status": 404,
+    "finalUrl": "https://www.clair-dossier.com/fonctionnalites/chronologie",
+    "title": "Avancement du dossier en 5 étapes — ClairDossier · Dossier juridique clair, structuré et suivi",
+    "h1": "Avancement du dossier en 5 étapes",
+    "file": "screens/fonctionnalites__chronologie__mobile.png"
+  },
+  {
+    "route": "/fonctionnalites/validation-avocat",
+    "label": "desktop",
+    "status": 404,
+    "finalUrl": "https://www.clair-dossier.com/fonctionnalites/validation-avocat",
+    "title": "Transmission validée par vous — ClairDossier · Dossier juridique clair, structuré et suivi",
+    "h1": "Transmission validée par vous",
+    "file": "screens/fonctionnalites__validation-avocat__desktop.png"
+  },
+  {
+    "route": "/fonctionnalites/validation-avocat",
+    "label": "mobile",
+    "status": 404,
+    "finalUrl": "https://www.clair-dossier.com/fonctionnalites/validation-avocat",
+    "title": "Transmission validée par vous — ClairDossier · Dossier juridique clair, structuré et suivi",
+    "h1": "Transmission validée par vous",
+    "file": "screens/fonctionnalites__validation-avocat__mobile.png"
+  },
+  {
+    "route": "/fonctionnalites/suivi-statuts",
+    "label": "desktop",
+    "status": 404,
+    "finalUrl": "https://www.clair-dossier.com/fonctionnalites/suivi-statuts",
+    "title": "Liste de vos dossiers en un espace — ClairDossier · Dossier juridique clair, structuré et suivi",
+    "h1": "Liste de vos dossiers en un espace",
+    "file": "screens/fonctionnalites__suivi-statuts__desktop.png"
+  },
+  {
+    "route": "/fonctionnalites/suivi-statuts",
+    "label": "mobile",
+    "status": 404,
+    "finalUrl": "https://www.clair-dossier.com/fonctionnalites/suivi-statuts",
+    "title": "Liste de vos dossiers en un espace — ClairDossier · Dossier juridique clair, structuré et suivi",
+    "h1": "Liste de vos dossiers en un espace",
+    "file": "screens/fonctionnalites__suivi-statuts__mobile.png"
+  },
+  {
+    "route": "/fonctionnalites/messagerie-securisee",
+    "label": "desktop",
+    "status": 404,
+    "finalUrl": "https://www.clair-dossier.com/fonctionnalites/messagerie-securisee",
+    "title": "Espace privé et sécurisé — ClairDossier · Dossier juridique clair, structuré et suivi",
+    "h1": "Espace privé et sécurisé",
+    "file": "screens/fonctionnalites__messagerie-securisee__desktop.png"
+  },
+  {
+    "route": "/fonctionnalites/messagerie-securisee",
+    "label": "mobile",
+    "status": 404,
+    "finalUrl": "https://www.clair-dossier.com/fonctionnalites/messagerie-securisee",
+    "title": "Espace privé et sécurisé — ClairDossier · Dossier juridique clair, structuré et suivi",
+    "h1": "Espace privé et sécurisé",
+    "file": "screens/fonctionnalites__messagerie-securisee__mobile.png"
+  },
+  {
+    "route": "/fonctionnalites/coffre-fort",
+    "label": "desktop",
+    "status": 404,
+    "finalUrl": "https://www.clair-dossier.com/fonctionnalites/coffre-fort",
+    "title": "Vos données protégées et maîtrisées — ClairDossier · Dossier juridique clair, structuré et suivi",
+    "h1": "Vos données protégées et maîtrisées",
+    "file": "screens/fonctionnalites__coffre-fort__desktop.png"
+  },
+  {
+    "route": "/fonctionnalites/coffre-fort",
+    "label": "mobile",
+    "status": 404,
+    "finalUrl": "https://www.clair-dossier.com/fonctionnalites/coffre-fort",
+    "title": "Vos données protégées et maîtrisées — ClairDossier · Dossier juridique clair, structuré et suivi",
+    "h1": "Vos données protégées et maîtrisées",
+    "file": "screens/fonctionnalites__coffre-fort__mobile.png"
+  },
+  {
+    "route": "/fonctionnalites/calendrier-relances",
+    "label": "desktop",
+    "status": 404,
+    "finalUrl": "https://www.clair-dossier.com/fonctionnalites/calendrier-relances",
+    "title": "Échéances renseignées et affichées — ClairDossier · Dossier juridique clair, structuré et suivi",
+    "h1": "Échéances renseignées et affichées",
+    "file": "screens/fonctionnalites__calendrier-relances__desktop.png"
+  },
+  {
+    "route": "/fonctionnalites/calendrier-relances",
+    "label": "mobile",
+    "status": 404,
+    "finalUrl": "https://www.clair-dossier.com/fonctionnalites/calendrier-relances",
+    "title": "Échéances renseignées et affichées — ClairDossier · Dossier juridique clair, structuré et suivi",
+    "h1": "Échéances renseignées et affichées",
+    "file": "screens/fonctionnalites__calendrier-relances__mobile.png"
+  },
+  {
+    "route": "/fonctionnalites/reponse-auto-mails",
+    "label": "desktop",
+    "status": 404,
+    "finalUrl": "https://www.clair-dossier.com/fonctionnalites/reponse-auto-mails",
+    "title": "Récapitulatif avant transmission — ClairDossier · Dossier juridique clair, structuré et suivi",
+    "h1": "Récapitulatif avant transmission",
+    "file": "screens/fonctionnalites__reponse-auto-mails__desktop.png"
+  },
+  {
+    "route": "/fonctionnalites/reponse-auto-mails",
+    "label": "mobile",
+    "status": 404,
+    "finalUrl": "https://www.clair-dossier.com/fonctionnalites/reponse-auto-mails",
+    "title": "Récapitulatif avant transmission — ClairDossier · Dossier juridique clair, structuré et suivi",
+    "h1": "Récapitulatif avant transmission",
+    "file": "screens/fonctionnalites__reponse-auto-mails__mobile.png"
+  },
+  {
+    "route": "/tarifs",
+    "label": "desktop",
+    "status": 404,
+    "finalUrl": "https://www.clair-dossier.com/tarifs",
+    "title": "Tarifs — ClairDossier · Dossier juridique clair, structuré et suivi",
+    "h1": "Une formule par usage. Pas de surprise.",
+    "file": "screens/tarifs__desktop.png"
+  },
+  {
+    "route": "/tarifs",
+    "label": "mobile",
+    "status": 404,
+    "finalUrl": "https://www.clair-dossier.com/tarifs",
+    "title": "Tarifs — ClairDossier · Dossier juridique clair, structuré et suivi",
+    "h1": "Une formule par usage. Pas de surprise.",
+    "file": "screens/tarifs__mobile.png"
+  },
+  {
+    "route": "/securite",
+    "label": "desktop",
+    "status": 404,
+    "finalUrl": "https://www.clair-dossier.com/securite",
+    "title": "Sécurité & conformité — ClairDossier · Dossier juridique clair, structuré et suivi",
+    "h1": "La sécurité administrative et juridique commence par la sécurité technique.",
+    "file": "screens/securite__desktop.png"
+  },
+  {
+    "route": "/securite",
+    "label": "mobile",
+    "status": 404,
+    "finalUrl": "https://www.clair-dossier.com/securite",
+    "title": "Sécurité & conformité — ClairDossier · Dossier juridique clair, structuré et suivi",
+    "h1": "La sécurité administrative et juridique commence par la sécurité technique.",
+    "file": "screens/securite__mobile.png"
+  },
+  {
+    "route": "/blog",
+    "label": "desktop",
+    "status": 404,
+    "finalUrl": "https://www.clair-dossier.com/blog/",
+    "title": "Journal — ClairDossier · Dossier juridique clair, structuré et suivi",
+    "h1": "Le droit administratif et juridique, expliqué calmement.",
+    "file": "screens/blog__desktop.png"
+  },
+  {
+    "route": "/blog",
+    "label": "mobile",
+    "status": 404,
+    "finalUrl": "https://www.clair-dossier.com/blog/",
+    "title": "Journal — ClairDossier · Dossier juridique clair, structuré et suivi",
+    "h1": "Le droit administratif et juridique, expliqué calmement.",
+    "file": "screens/blog__mobile.png"
+  },
+  {
+    "route": "/blog/mise-en-demeure",
+    "label": "desktop",
+    "status": 404,
+    "finalUrl": "https://www.clair-dossier.com/blog/mise-en-demeure",
+    "title": "Mise en demeure — guide pratique et erreurs à éviter — ClairDossier · Dossier juridique clair, structuré et suivi",
+    "h1": "Mise en demeure : le courrier qui débloque (souvent) la situation",
+    "file": "screens/blog__mise-en-demeure__desktop.png"
+  },
+  {
+    "route": "/blog/mise-en-demeure",
+    "label": "mobile",
+    "status": 404,
+    "finalUrl": "https://www.clair-dossier.com/blog/mise-en-demeure",
+    "title": "Mise en demeure — guide pratique et erreurs à éviter — ClairDossier · Dossier juridique clair, structuré et suivi",
+    "h1": "Mise en demeure : le courrier qui débloque (souvent) la situation",
+    "file": "screens/blog__mise-en-demeure__mobile.png"
+  },
+  {
+    "route": "/contact",
+    "label": "desktop",
+    "status": 404,
+    "finalUrl": "https://www.clair-dossier.com/contact",
+    "title": "Contact — ClairDossier · Dossier juridique clair, structuré et suivi",
+    "h1": "Une réponse sur WhatsApp, dans l'heure.",
+    "file": "screens/contact__desktop.png"
+  },
+  {
+    "route": "/contact",
+    "label": "mobile",
+    "status": 404,
+    "finalUrl": "https://www.clair-dossier.com/contact",
+    "title": "Contact — ClairDossier · Dossier juridique clair, structuré et suivi",
+    "h1": "Une réponse sur WhatsApp, dans l'heure.",
+    "file": "screens/contact__mobile.png"
+  },
+  {
+    "route": "/mentions-legales",
+    "label": "desktop",
+    "status": 404,
+    "finalUrl": "https://www.clair-dossier.com/mentions-legales",
+    "title": "Mentions légales — ClairDossier · Dossier juridique clair, structuré et suivi",
+    "h1": "Mentions légales",
+    "file": "screens/mentions-legales__desktop.png"
+  },
+  {
+    "route": "/mentions-legales",
+    "label": "mobile",
+    "status": 404,
+    "finalUrl": "https://www.clair-dossier.com/mentions-legales",
+    "title": "Mentions légales — ClairDossier · Dossier juridique clair, structuré et suivi",
+    "h1": "Mentions légales",
+    "file": "screens/mentions-legales__mobile.png"
+  },
+  {
+    "route": "/cgv",
+    "label": "desktop",
+    "status": 404,
+    "finalUrl": "https://www.clair-dossier.com/cgv",
+    "title": "Conditions générales de vente — ClairDossier · Dossier juridique clair, structuré et suivi",
+    "h1": "Conditions générales de vente",
+    "file": "screens/cgv__desktop.png"
+  },
+  {
+    "route": "/cgv",
+    "label": "mobile",
+    "status": 404,
+    "finalUrl": "https://www.clair-dossier.com/cgv",
+    "title": "Conditions générales de vente — ClairDossier · Dossier juridique clair, structuré et suivi",
+    "h1": "Conditions générales de vente",
+    "file": "screens/cgv__mobile.png"
+  },
+  {
+    "route": "/politique-confidentialite",
+    "label": "desktop",
+    "status": 404,
+    "finalUrl": "https://www.clair-dossier.com/politique-confidentialite",
+    "title": "Politique de confidentialité — ClairDossier · Dossier juridique clair, structuré et suivi",
+    "h1": "Politique de confidentialité",
+    "file": "screens/politique-confidentialite__desktop.png"
+  },
+  {
+    "route": "/politique-confidentialite",
+    "label": "mobile",
+    "status": 404,
+    "finalUrl": "https://www.clair-dossier.com/politique-confidentialite",
+    "title": "Politique de confidentialité — ClairDossier · Dossier juridique clair, structuré et suivi",
+    "h1": "Politique de confidentialité",
+    "file": "screens/politique-confidentialite__mobile.png"
+  },
+  {
+    "route": "/cookies",
+    "label": "desktop",
+    "status": 404,
+    "finalUrl": "https://www.clair-dossier.com/cookies",
+    "title": "Cookies — ClairDossier · Dossier juridique clair, structuré et suivi",
+    "h1": "Cookies",
+    "file": "screens/cookies__desktop.png"
+  },
+  {
+    "route": "/cookies",
+    "label": "mobile",
+    "status": 404,
+    "finalUrl": "https://www.clair-dossier.com/cookies",
+    "title": "Cookies — ClairDossier · Dossier juridique clair, structuré et suivi",
+    "h1": "Cookies",
+    "file": "screens/cookies__mobile.png"
+  },
+  {
+    "route": "/connexion",
+    "label": "desktop",
+    "status": 404,
+    "finalUrl": "https://www.clair-dossier.com/connexion",
+    "title": "Connexion — ClairDossier · Dossier juridique clair, structuré et suivi",
+    "h1": "Se connecter",
+    "file": "screens/connexion__desktop.png"
+  },
+  {
+    "route": "/connexion",
+    "label": "mobile",
+    "status": 404,
+    "finalUrl": "https://www.clair-dossier.com/connexion",
+    "title": "Connexion — ClairDossier · Dossier juridique clair, structuré et suivi",
+    "h1": "Se connecter",
+    "file": "screens/connexion__mobile.png"
+  },
+  {
+    "route": "/inscription",
+    "label": "desktop",
+    "status": 404,
+    "finalUrl": "https://www.clair-dossier.com/inscription",
+    "title": "Créer un compte — ClairDossier · Dossier juridique clair, structuré et suivi",
+    "h1": "Créer un compte",
+    "file": "screens/inscription__desktop.png"
+  },
+  {
+    "route": "/inscription",
+    "label": "mobile",
+    "status": 404,
+    "finalUrl": "https://www.clair-dossier.com/inscription",
+    "title": "Créer un compte — ClairDossier · Dossier juridique clair, structuré et suivi",
+    "h1": "Créer un compte",
+    "file": "screens/inscription__mobile.png"
+  },
+  {
+    "route": "/dossier/nouveau",
+    "label": "desktop",
+    "status": 404,
+    "finalUrl": "https://www.clair-dossier.com/connexion?next=%2Fdossier%2Fnouveau",
+    "title": "Connexion — ClairDossier · Dossier juridique clair, structuré et suivi",
+    "h1": "Se connecter",
+    "file": "screens/dossier__nouveau__desktop.png"
+  },
+  {
+    "route": "/dossier/nouveau",
+    "label": "mobile",
+    "status": 404,
+    "finalUrl": "https://www.clair-dossier.com/connexion?next=%2Fdossier%2Fnouveau",
+    "title": "Connexion — ClairDossier · Dossier juridique clair, structuré et suivi",
+    "h1": "Se connecter",
+    "file": "screens/dossier__nouveau__mobile.png"
+  },
+  {
+    "route": "/page-inexistante-404",
+    "label": "desktop",
+    "status": 404,
+    "finalUrl": "https://www.clair-dossier.com/page-inexistante-404",
+    "title": "Page introuvable — ClairDossier · Dossier juridique clair, structuré et suivi",
+    "h1": "Cette page n'existe pas.",
+    "file": "screens/page-inexistante-404__desktop.png"
+  },
+  {
+    "route": "/page-inexistante-404",
+    "label": "mobile",
+    "status": 404,
+    "finalUrl": "https://www.clair-dossier.com/page-inexistante-404",
+    "title": "Page introuvable — ClairDossier · Dossier juridique clair, structuré et suivi",
+    "h1": "Cette page n'existe pas.",
+    "file": "screens/page-inexistante-404__mobile.png"
+  }
+]

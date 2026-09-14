@@ -7,7 +7,7 @@ export const miseEnDemeure: BlogPost = {
   metaDescription:
     "La mise en demeure est l'étape qui précède le contentieux. Pourquoi elle fonctionne, comment la rédiger, les cinq erreurs à éviter.",
   summary:
-    "Avant tout procès, la loi française demande presque toujours d'avoir tenté un règlement amiable. La mise en demeure est l'outil principal de cette tentative. Bien rédigée, elle débloque souvent la situation sans aller plus loin. Mal rédigée, elle peut être inopposable et faire perdre un temps précieux.",
+    "Dans de nombreuses situations, une tentative de résolution amiable est obligatoire ou recommandée avant de saisir un juge, selon la nature et le montant du litige. La mise en demeure est souvent le premier outil de cette tentative. Bien rédigée, elle débloque souvent la situation sans aller plus loin. Mal rédigée, elle peut être inopposable et faire perdre un temps précieux.",
   author: 'redaction',
   date: '2026-04-15',
   readMinutes: 8,
@@ -18,7 +18,7 @@ export const miseEnDemeure: BlogPost = {
     {
       type: 'p',
       text:
-        "Vous avez prêté de l'argent à un proche qui ne rend rien. Votre locataire ne paye plus les charges depuis trois mois. Un prestataire vous a livré un travail bâclé. Avant de saisir le tribunal, le réflexe juridique français est presque toujours le même : envoyer une mise en demeure. Ce courrier formel a une efficacité psychologique réelle — il signale à la partie adverse que vous êtes prêt à aller plus loin — mais aussi une portée juridique précise.",
+        "Vous avez prêté de l'argent à un proche qui ne rend rien. Votre locataire ne paye plus les charges depuis trois mois. Un prestataire vous a livré un travail bâclé. Avant de saisir le tribunal, le réflexe juridique français est souvent le même : envoyer une mise en demeure. Ce courrier formel a une efficacité psychologique réelle — il signale à la partie adverse que vous êtes prêt à aller plus loin — mais aussi une portée juridique précise.",
     },
     { type: 'h2', text: "Qu'est-ce qu'une mise en demeure" },
     {
@@ -62,7 +62,7 @@ export const miseEnDemeure: BlogPost = {
     },
     {
       type: 'h3',
-      text: 'Mentions obligatoires',
+      text: 'Mentions recommandées',
     },
     {
       type: 'list',
@@ -133,7 +133,7 @@ export const miseEnDemeure: BlogPost = {
   howTo: {
     name: 'Rédiger une mise en demeure',
     description:
-      "Structure et mentions obligatoires d'une mise en demeure opposable juridiquement, conforme à l'article 1344 du Code civil.",
+      "Structure et mentions recommandées pour une mise en demeure claire et opposable (article 1344 du Code civil : sommation ou acte portant interpellation suffisante).",
     totalTime: 'PT20M',
     steps: [
       { name: "Identifier l'expéditeur et le destinataire", text: 'Indiquer noms, prénoms, adresses postales complètes des deux parties, et qualité (créancier, locataire, particulier, etc.).' },
