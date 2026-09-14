@@ -1,13 +1,13 @@
 ---
 title: "Mentions légales"
 description: "Mentions légales du site clair-dossier.com — éditeur, hébergeur, directeur de publication, propriété intellectuelle."
-lastUpdate: 2026-05-26
+lastUpdate: 2026-09-15
 url: https://www.clair-dossier.com/mentions-legales
 ---
 
 # Mentions légales
 
-*Dernière mise à jour : 26 mai 2026*
+*Dernière mise à jour : 15 septembre 2026*
 
 Conformément à la loi pour la confiance dans l'économie numérique (LCEN, n° 2004-575 du 21 juin 2004), il est précisé aux utilisateurs du site clair-dossier.com l'identité des différents intervenants dans le cadre de sa réalisation et de son suivi.
 
@@ -35,7 +35,7 @@ Les données client du service ClairDossier — dossiers, pièces, échanges —
 
 ## Propriété intellectuelle
 
-L'ensemble des contenus du site (textes, images, vidéos, structure, code source, marques, logos) est la propriété exclusive de la société ClairDossier ou de ses partenaires, et est protégé par les lois françaises et internationales relatives à la propriété intellectuelle.
+L'ensemble des contenus du site (textes, images, vidéos, structure, code source, marques, logos) est la propriété exclusive de l'Éditeur (Roman Gomes, entreprise individuelle exploitant le service sous la marque ClairDossier) ou de ses partenaires, et est protégé par les lois françaises et internationales relatives à la propriété intellectuelle.
 
 Toute reproduction, représentation, modification, publication, adaptation, totale ou partielle, des éléments du site, quel que soit le moyen ou le procédé utilisé, est strictement interdite sauf autorisation écrite préalable de ClairDossier.
 

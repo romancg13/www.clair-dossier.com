@@ -47,7 +47,7 @@ const PILLARS = [
     title: "Chiffrement",
     body: "Tous les échanges entre votre navigateur et l'application passent par une connexion chiffrée (HTTPS). Les pièces déposées sont conservées dans un stockage privé, chiffré au repos côté hébergeur. Les liens de téléchargement sont signés et temporaires.",
     bullets: [
-      "Connexion chiffrée HTTPS de bout en bout",
+      "Chiffrement TLS (HTTPS) des données en transit",
       "Stockage des pièces chiffré au repos",
       "Liens de téléchargement signés et temporaires",
     ],

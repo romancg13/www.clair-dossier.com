@@ -1,13 +1,13 @@
 ---
 title: "Politique de confidentialité"
 description: "Politique de confidentialité ClairDossier — données collectées, finalités, base légale, durées de conservation, vos droits RGPD."
-lastUpdate: 2026-05-26
+lastUpdate: 2026-09-15
 url: https://www.clair-dossier.com/politique-confidentialite
 ---
 
 # Politique de confidentialité
 
-*Dernière mise à jour : 26 mai 2026*
+*Dernière mise à jour : 15 septembre 2026*
 
 ClairDossier traite des données personnelles dans le strict respect du Règlement général sur la protection des données (RGPD) et de la loi française Informatique et Libertés. Cette politique décrit les données collectées, leurs finalités, et les droits dont vous disposez.
 

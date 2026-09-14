@@ -1,13 +1,13 @@
 ---
 title: "Conditions générales de vente"
 description: "Conditions générales de vente du service ClairDossier — souscription, tarifs, durée, résiliation, responsabilité, propriété intellectuelle."
-lastUpdate: 2026-05-26
+lastUpdate: 2026-09-15
 url: https://www.clair-dossier.com/cgv
 ---
 
 # Conditions générales de vente
 
-*Dernière mise à jour : 26 mai 2026*
+*Dernière mise à jour : 15 septembre 2026*
 
 Les présentes conditions générales de vente (« CGV ») régissent l'accès au service ClairDossier et son utilisation par tout client souscrivant à une offre. La création de compte est gratuite ; seul l'abonnement est payant. Toute souscription emporte acceptation pleine et entière des présentes CGV.
 
@@ -25,7 +25,7 @@ L'abonnement est souscrit sans engagement de durée minimale. Le Client peut ré
 
 ## Article 3 — Tarifs et facturation
 
-Les tarifs en vigueur sont ceux publiés sur la page /tarifs du site clair-dossier.com au jour de la souscription. Les prix sont exprimés en euros, hors taxes. La TVA française à 20 % s'applique aux clients établis en France. Les clients établis dans un autre État membre de l'Union européenne et disposant d'un numéro de TVA intracommunautaire valide bénéficient du régime de l'autoliquidation.
+Les tarifs en vigueur sont ceux publiés sur la page /tarifs du site clair-dossier.com au jour de la souscription. Les prix sont exprimés en euros. TVA non applicable, article 293 B du Code général des impôts (franchise en base) : le prix affiché est le prix payé. Si le régime de TVA de l'Éditeur venait à changer, les factures des périodes postérieures en tiendraient compte, après information du Client.
 
 La facturation est mensuelle, prélevée d'avance le jour anniversaire de la souscription. Tout changement de plan en cours de mois est facturé au prorata des jours restants. Les paiements sont opérés via le prestataire Stripe (Stripe Payments Europe Ltd., Irlande).
 
@@ -57,7 +57,7 @@ ClairDossier ne saurait être tenue responsable des décisions prises par le Cli
 
 ## Article 9 — Droit applicable et juridiction
 
-Les présentes CGV sont régies par le droit français. Tout litige relatif à leur interprétation ou à leur exécution sera porté devant les tribunaux compétents de Paris, sauf disposition impérative contraire.
+Les présentes CGV sont régies par le droit français. En cas de litige relatif à leur interprétation ou à leur exécution, et à défaut de résolution amiable, la juridiction compétente est déterminée selon les règles de droit commun. Entre commerçants, compétence est attribuée aux juridictions du ressort du siège de l'Éditeur, à Marseille.
 
 
 ---

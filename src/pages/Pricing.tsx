@@ -36,11 +36,11 @@ const DEVIS_CAPABILITIES = [
   },
   {
     title: "API et webhooks dédiés",
-    body: "Intégration avec votre CRM, votre outil de gestion ou votre stack maison. SDK Node et Python disponibles.",
+    body: "Intégration avec votre CRM, votre outil de gestion ou votre stack maison — périmètre défini ensemble, sur cadrage.",
   },
   {
     title: "SSO et audit renforcé",
-    body: "SAML 2.0, OIDC, journalisation détaillée, DPA personnalisé négocié avec votre DPO.",
+    body: "SSO (SAML 2.0 / OIDC), journalisation renforcée et DPA personnalisé — mis en place sur cadrage avec votre DPO.",
   },
   {
     title: "Onboarding sur site",
@@ -65,7 +65,7 @@ const PRICING_FAQ = [
     id: "tva",
     question: "Les prix affichés sont-ils HT ou TTC ?",
     answer:
-      "HT. La TVA française à 20 % s'applique pour les clients établis en France. Les clients UE B2B avec numéro de TVA intracommunautaire valide sont autoliquidés.",
+      "Les prix sont nets : TVA non applicable, article 293 B du CGI (franchise en base). Le prix affiché est le prix payé.",
   },
   {
     id: "essai",
@@ -399,8 +399,8 @@ export function Pricing() {
 
               <p className="mt-7 border-t border-cream-50/15 pt-5 text-xs leading-relaxed text-cream-50/70">
                 Engagement ClairDossier : proposition chiffrée écrite sous 48 h
-                ouvrées, sans ré-engagement après échange initial. Vos données
-                restent en France.
+                ouvrées, sans ré-engagement après échange initial. Hébergement et
+                sous-traitants détaillés dans le centre de confiance.
               </p>
             </div>
           </div>

@@ -61,7 +61,7 @@ const AUDIENCES: Audience[] = [
     ],
     link: { to: '/fonctionnalites/suivi-statuts', label: 'Voir l’espace « Mes dossiers »' },
   },
-  ...segmentPages.map<Audience>((s) => ({
+  ...segmentPages.filter((s) => s.slug === 'cabinets-avocats').map<Audience>((s) => ({
     id: s.slug,
     label: s.navLabel,
     surtitre: s.surtitre,
@@ -180,6 +180,17 @@ export function AudienceSwitcher() {
               </ul>
             </motion.div>
           </AnimatePresence>
+
+          <p className="mt-6 text-sm text-slate-500">
+            Parcours dédiés :{' '}
+            <Link to="/experts-comptables" className="font-medium text-navy-900 underline decoration-gold-500/60 underline-offset-2 hover:text-gold-700">
+              experts-comptables
+            </Link>
+            {' '}·{' '}
+            <Link to="/grands-comptes" className="font-medium text-navy-900 underline decoration-gold-500/60 underline-offset-2 hover:text-gold-700">
+              grands comptes
+            </Link>
+          </p>
         </div>
       </div>
     </Reveal>

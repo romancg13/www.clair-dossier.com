@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 // Promo LB13 : −20 % / 4 mois, code à activer avant le 21 septembre 2026.
@@ -7,15 +7,20 @@ const DEADLINE = new Date("2026-09-21T23:59:59+02:00").getTime();
 const DISMISS_KEY = "clairdossier_promo_lb13_dismissed";
 
 export function PromoBanner() {
-  const [dismissed, setDismissed] = useState(() => {
+  // Premier rendu client identique au HTML prérendu (pas d'écart d'hydratation) :
+  // la fermeture mémorisée et la date limite ne sont évaluées qu'après montage.
+  const [dismissed, setDismissed] = useState(false);
+  useEffect(() => {
+    let gone = false;
     try {
-      return localStorage.getItem(DISMISS_KEY) === "1";
+      gone = localStorage.getItem(DISMISS_KEY) === "1";
     } catch {
-      return false;
+      gone = false;
     }
-  });
+    if (gone || Date.now() > DEADLINE) setDismissed(true);
+  }, []);
 
-  if (dismissed || Date.now() > DEADLINE) return null;
+  if (dismissed) return null;
 
   function dismiss() {
     setDismissed(true);
