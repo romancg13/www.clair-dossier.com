@@ -1,7 +1,8 @@
-import { useEffect, useRef } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
-import { Nav } from './Nav';
-import { Footer } from './Footer';
+import { useEffect, useRef } from "react";
+import { Outlet, useLocation } from "react-router-dom";
+import { Nav } from "./Nav";
+import { Footer } from "./Footer";
+import { PromoBanner } from "./PromoBanner";
 
 export function Layout() {
   const location = useLocation();
@@ -23,9 +24,17 @@ export function Layout() {
 
   return (
     <div className="flex min-h-dvh flex-col bg-cream-50 text-ink">
-      <a className="skip-nav" href="#main">Aller au contenu principal</a>
+      <a className="skip-nav" href="#main">
+        Aller au contenu principal
+      </a>
+      <PromoBanner />
       <Nav />
-      <main id="main" ref={mainRef} tabIndex={-1} className="flex-1 outline-none">
+      <main
+        id="main"
+        ref={mainRef}
+        tabIndex={-1}
+        className="flex-1 outline-none"
+      >
         <Outlet />
       </main>
       <Footer />
