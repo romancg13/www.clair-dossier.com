@@ -227,7 +227,7 @@ function DocRow({
             checked={Boolean(selected)}
             onChange={onToggleSelect}
             aria-label={`Sélectionner ${doc.file_name}`}
-            className="h-4 w-4 shrink-0 accent-[#0d1b3d]"
+            className="h-5 w-5 shrink-0 accent-[#0d1b3d]"
           />
         )}
         <div className="min-w-0 flex-1">
@@ -246,13 +246,13 @@ function DocRow({
                 href={viewHref}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="font-medium text-navy-900 border-b hairline-gold pb-0.5 transition-colors hover:text-gold-700"
+                className="inline-flex min-h-[40px] items-center font-medium text-navy-900 border-b hairline-gold transition-colors hover:text-gold-700"
               >
                 Visualiser
               </a>
               <a
                 href={dlHref}
-                className="font-medium text-navy-900 border-b hairline-gold pb-0.5 transition-colors hover:text-gold-700"
+                className="inline-flex min-h-[40px] items-center font-medium text-navy-900 border-b hairline-gold transition-colors hover:text-gold-700"
               >
                 Télécharger
               </a>
@@ -267,7 +267,7 @@ function DocRow({
               aria-expanded={menuOpen}
               aria-label={`Autres actions pour ${doc.file_name}`}
               disabled={busy}
-              className="rounded-full px-2 py-1 font-semibold text-slate-500 transition-colors hover:bg-cream-100 hover:text-navy-900 disabled:opacity-50"
+              className="grid min-h-[40px] min-w-[40px] place-items-center rounded-full px-2 font-semibold text-slate-500 transition-colors hover:bg-cream-100 hover:text-navy-900 disabled:opacity-50"
             >
               •••
             </button>
@@ -1072,7 +1072,7 @@ export function DossierDetail() {
               )}
 
               {/* ── Onglets ───────────────────────────────────────────── */}
-              <div className="mt-8 flex flex-wrap gap-1 border-b hairline" role="tablist">
+              <div className="mt-8 flex gap-1 overflow-x-auto whitespace-nowrap border-b hairline" role="tablist">
                 {TABS.map((t) => (
                   <button
                     key={t.id}
@@ -1080,7 +1080,7 @@ export function DossierDetail() {
                     role="tab"
                     aria-selected={activeTab === t.id}
                     onClick={() => setActiveTab(t.id)}
-                    className={`-mb-px rounded-t-lg px-4 py-2.5 text-sm font-medium transition-colors ${
+                    className={`-mb-px shrink-0 rounded-t-lg px-4 py-2.5 text-sm font-medium transition-colors ${
                       activeTab === t.id
                         ? "border-b-2 border-gold-500 text-navy-900"
                         : "text-slate-500 hover:text-navy-900"
@@ -1258,7 +1258,7 @@ export function DossierDetail() {
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         placeholder="Rechercher un document…"
-                        className="w-64 max-w-full rounded-full border hairline-strong bg-cream-50 px-4 py-2 text-sm text-navy-900 placeholder:text-slate-500"
+                        className="w-full sm:w-64 rounded-full border hairline-strong bg-cream-50 px-4 py-2 text-sm text-navy-900 placeholder:text-slate-500"
                       />
                       <label htmlFor="piece-sort" className="sr-only">
                         Trier les documents

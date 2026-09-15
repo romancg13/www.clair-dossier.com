@@ -84,6 +84,15 @@ body {
   min-height: 100dvh;
 }
 
+/* Mobile : Safari iOS zoome sur tout champ < 16px — on garantit 16px au
+   focus sans changer le rendu desktop (les classes text-sm reprennent la
+   main au-delà de 640px). */
+@media (max-width: 640px) {
+  input, select, textarea {
+    font-size: max(16px, 1rem);
+  }
+}
+
 ::selection {
   background: var(--color-sky-marker);
   color: var(--color-navy-900);
