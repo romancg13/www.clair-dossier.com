@@ -470,7 +470,7 @@ export function AdminConsole() {
           </div>
 
           {/* Navigation sections */}
-          <div className="mt-6 flex flex-wrap gap-1 border-b hairline" role="tablist">
+          <div className="mt-6 flex gap-1 overflow-x-auto whitespace-nowrap border-b hairline" role="tablist">
             {SECTIONS.map((s) => (
               <button
                 key={s.id}
@@ -478,7 +478,7 @@ export function AdminConsole() {
                 role="tab"
                 aria-selected={section === s.id}
                 onClick={() => setSection(s.id)}
-                className={`-mb-px rounded-t-lg px-4 py-2.5 text-sm font-medium transition-colors ${
+                className={`-mb-px shrink-0 rounded-t-lg px-4 py-2.5 text-sm font-medium transition-colors ${
                   section === s.id
                     ? "border-b-2 border-gold-500 text-navy-900"
                     : "text-slate-500 hover:text-navy-900"
