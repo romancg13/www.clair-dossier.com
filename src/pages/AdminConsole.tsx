@@ -11,7 +11,7 @@ import {
   hasDossierTrash,
   logAudit,
 } from "../lib/admin";
-import { CATEGORY_LABELS, effectiveCategory, formatBytes, hasDocExtras } from "../lib/dossier-workspace";
+import { CATEGORY_LABELS, effectiveCategory, formatBytes, hasDocExtras, isGenericTitle } from "../lib/dossier-workspace";
 
 /**
  * Console d'administration (/admin) — réservée à l'admin global.
@@ -243,6 +243,7 @@ export function AdminConsole() {
       docsSansDossier: activeDocs.filter((d) => !dossierIds.has(d.dossier_id)),
       dossiersSansProfil: activeDossiers.filter((d) => !profileIds.has(d.user_id)),
       dossiersSansTitre: activeDossiers.filter((d) => !d.title?.trim()),
+      titresGeneriques: activeDossiers.filter((d) => d.title?.trim() && isGenericTitle(d.title)),
       docsNonClasses: caps.docExtras
         ? activeDocs.filter((d) => d.kind !== "deliverable" && effectiveCategory(d.file_name, d.category) === "autres")
         : [],
@@ -498,6 +499,34 @@ export function AdminConsole() {
             <>
               {section === "dashboard" && (
                 <div className="mt-8 space-y-6">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Link
+                      to="/dossier/nouveau"
+                      className="rounded-full bg-gold-500 px-4 py-2 text-xs font-semibold text-navy-900 shadow-gold transition-transform hover:-translate-y-0.5"
+                    >
+                      + Dossier
+                    </Link>
+                    {(
+                      [
+                        ["corbeille", "Corbeille"],
+                        ["diagnostic", "Diagnostic"],
+                        ["clients", "Clients"],
+                        ["activite", "Activité"],
+                      ] as const
+                    ).map(([id, label]) => (
+                      <button
+                        key={id}
+                        type="button"
+                        onClick={() => setSection(id)}
+                        className="rounded-full border hairline-strong bg-white px-4 py-2 text-xs font-medium text-navy-900 hover:bg-cream-100"
+                      >
+                        {label}
+                      </button>
+                    ))}
+                    <span className="ml-auto font-mono text-[0.65rem] uppercase tracking-[0.12em] text-slate-500">
+                      Base de données : {profiles.length + dossiers.length > 0 || emails ? "opérationnelle" : "à vérifier"} · Stripe : voir dashboard
+                    </span>
+                  </div>
                   <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                     <Stat label="Clients" value={profiles.length} />
                     <Stat label="Dossiers actifs" value={activeDossiers.length} />
@@ -835,6 +864,11 @@ export function AdminConsole() {
                       label: "Dossiers dont le propriétaire n'a pas de profil",
                       items: diagnostics.dossiersSansProfil.map((d) => `${d.title || d.typology} (${d.id.slice(0, 8)})`),
                       grave: true,
+                    },
+                    {
+                      label: "Titres génériques (à renommer avec le client)",
+                      items: diagnostics.titresGeneriques.map((d) => `${d.title} (${emails[d.user_id] ?? d.id.slice(0, 8)})`),
+                      grave: false,
                     },
                     {
                       label: "Dossiers sans titre",

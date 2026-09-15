@@ -102,6 +102,24 @@ export function formatBytes(bytes?: number | null): string {
   return `${(bytes / (1024 * 1024)).toFixed(1).replace('.', ',')} Mo`;
 }
 
+/* ── Doublons documentaires (règles prudentes, jamais bloquantes) ───────── */
+
+export type ExistingDoc = { file_name: string; size_bytes: number | null };
+
+/** Message d'avertissement si le fichier semble déjà présent, sinon null.
+ *  Même nom (insensible à la casse) = quasi-certain ; même taille exacte
+ *  (> 0) = possible. On avertit, on ne bloque jamais. */
+export function duplicateWarning(file: { name: string; size: number }, existing: ExistingDoc[]): string | null {
+  const name = file.name.trim().toLowerCase();
+  if (existing.some((d) => d.file_name.trim().toLowerCase() === name)) {
+    return `« ${file.name} » est déjà présent dans ce dossier (même nom).`;
+  }
+  if (file.size > 0 && existing.some((d) => d.size_bytes === file.size)) {
+    return `« ${file.name} » semble déjà présent (taille identique à une pièce existante).`;
+  }
+  return null;
+}
+
 /* ── Détection des capacités (migration appliquée ou non) ───────────────── */
 
 const capabilityCache: Record<string, Promise<boolean>> = {};

@@ -54,3 +54,15 @@ test("validation d'upload : format, taille, fichier vide", () => {
   const big = new File([new Uint8Array(26 * 1024 * 1024)], 'gros.pdf');
   assert.match(validateUpload(big) ?? '', /volumineux/);
 });
+
+test('détection de doublons documentaires', async () => {
+  const { duplicateWarning } = await import('../src/lib/dossier-workspace.ts');
+  const existing = [
+    { file_name: 'Devis signé.pdf', size_bytes: 1200 },
+    { file_name: 'facture.pdf', size_bytes: 800 },
+  ];
+  assert.match(duplicateWarning({ name: 'devis signé.PDF', size: 999 }, existing) ?? '', /même nom/);
+  assert.match(duplicateWarning({ name: 'autre.pdf', size: 800 }, existing) ?? '', /taille identique/);
+  assert.equal(duplicateWarning({ name: 'nouveau.pdf', size: 555 }, existing), null);
+  assert.equal(duplicateWarning({ name: 'vide.pdf', size: 0 }, existing), null);
+});

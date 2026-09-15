@@ -1,0 +1,14 @@
+{
+  "name": "ClairDossier",
+  "short_name": "ClairDossier",
+  "description": "Dossiers administratifs et juridiques, clairs, structurés et suivis.",
+  "start_url": "/compte",
+  "display": "standalone",
+  "background_color": "#fbf9f4",
+  "theme_color": "#0d1b3d",
+  "lang": "fr",
+  "icons": [
+    { "src": "/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

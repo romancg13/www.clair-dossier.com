@@ -32,3 +32,9 @@ Généré le 2026-09-14 (passe optimisation). Rien de ce qui suit n'a été inve
 ## Migration super admin à appliquer (2026-09-15)
 - Fichier : `supabase/migrations/20260915150000_super_admin.sql` (ADDITIF : rôle super_admin sur app_admins, journal d'audit immuable, notes internes, corbeille + corrections admin sur dossiers/documents/échéances). À exécuter APRÈS la migration « gestion documentaire », dans le SQL Editor Supabase. La console /admin fonctionne en lecture avant ; corbeille/statuts/notes/audit s'activent automatiquement après.
 - Non couvert sans backend dédié (service_role côté serveur — à cadrer) : suspension de comptes, création de client par invitation, impersonation réelle « voir comme le client », MFA imposée aux admins, comparaison Storage↔base fichier par fichier, actions Stripe depuis l'admin. L'admin voit déjà tout dossier client via l'espace normal (bandeau « Propriétaire · e-mail »).
+
+## Finalisation production (2026-09-15)
+- **Sauvegardes** : vérifier dans le dashboard Supabase que les backups automatiques (PITR ou daily) sont actifs pour le projet ; aucune stratégie de sauvegarde n'est pilotable depuis ce dépôt — ne pas supposer qu'elle existe.
+- **En-têtes de sécurité** : GitHub Pages ne permet PAS de définir CSP/HSTS/X-Frame-Options (seuls `<meta>` referrer sont posés). Si besoin d'en-têtes complets, basculer sur Netlify (netlify.toml prêt) qui les supporte.
+- **Rate limiting** : ceux de Supabase Auth s'appliquent ; rien d'additionnel possible côté site statique.
+- **PWA** : manifest installable ajouté, volontairement SANS service worker (aucun cache hors ligne de documents sensibles).
