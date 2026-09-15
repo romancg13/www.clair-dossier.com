@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { isGenericTitle } from '../lib/dossier-workspace';
+import { hasDossierTrash } from '../lib/admin';
 import { Seo } from '../lib/seo';
 import { useAuth } from '../lib/auth';
 import { supabase } from '../lib/supabase';
@@ -45,10 +46,14 @@ export function Account() {
 
       // Les politiques RLS renvoient automatiquement TOUS les dossiers à l'admin,
       // et uniquement les siens à un utilisateur normal.
-      const { data } = await supabase
+      const trashAware = await hasDossierTrash();
+      const { data: rawRows } = await supabase
         .from('dossiers')
-        .select('id,user_id,typology,title,status,created_at')
+        .select(`id,user_id,typology,title,status,created_at${trashAware ? ',deleted_at' : ''}`)
         .order('created_at', { ascending: false });
+      const data = ((rawRows as (DossierRow & { deleted_at?: string | null })[] | null) ?? []).filter(
+        (r) => !r.deleted_at,
+      );
 
       const ownerMap: Record<string, string> = {};
       const emailMap: Record<string, string> = {};
@@ -107,6 +112,12 @@ export function Account() {
                 Vous voyez l'intégralité des dossiers de la plateforme. Cliquez un dossier pour le
                 détail (5 étapes) et le téléchargement des pièces.
               </p>
+              <Link
+                to="/admin"
+                className="mt-4 inline-flex items-center gap-2 rounded-full bg-gold-500 px-4 py-2 text-xs font-semibold text-navy-900 shadow-gold transition-transform hover:-translate-y-0.5"
+              >
+                Ouvrir la console d'administration →
+              </Link>
             </div>
           )}
 

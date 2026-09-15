@@ -5,6 +5,7 @@ import { Seo } from "../lib/seo";
 import { useAuth } from "../lib/auth";
 import { supabase } from "../lib/supabase";
 import { ArrowRightIcon, CheckIcon } from "../components/icons";
+import { hasDossierTrash } from "../lib/admin";
 import {
   ACCEPT_ATTR,
   CATEGORY_LABELS,
@@ -400,17 +401,22 @@ export function DossierDetail() {
       setEventsOn(evOk);
 
       // La RLS limite déjà la lecture au propriétaire — le filtre id suffit.
+      const trashAware = await hasDossierTrash();
       const { data } = await supabase
         .from("dossiers")
-        .select("id,user_id,typology,title,status,answers,legal_review_requested,created_at")
+        .select(
+          `id,user_id,typology,title,status,answers,legal_review_requested,created_at${trashAware ? ",deleted_at" : ""}`,
+        )
         .eq("id", id)
         .maybeSingle();
       if (!active) return;
-      const row = (data as DossierRow | null) ?? null;
-      setDossier(row);
+      let row = (data as (DossierRow & { deleted_at?: string | null }) | null) ?? null;
 
       const { data: adminFlag } = await supabase.rpc("is_admin");
       const admin = adminFlag === true;
+      // Dossier en corbeille : invisible pour le client (l'admin le gère depuis /admin).
+      if (row?.deleted_at && !admin) row = null;
+      setDossier(row);
       if (!active) return;
       setIsAdmin(admin);
       if (admin && row) {
