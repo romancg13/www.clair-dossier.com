@@ -23,3 +23,8 @@ Généré le 2026-09-14 (passe optimisation). Rien de ce qui suit n'a été inve
 - **TODO_LEGAL — juridiction CGV** : clause réécrite prudemment (droit commun ; entre commerçants, tribunaux du siège à Marseille). Faire valider par un professionnel du droit.
 - **Stripe / LB13 (vérification côté dashboard, impossible depuis le code)** : confirmer que le coupon LB13 = −20 % pendant 4 mois, expiration 21 septembre, s'applique aux 7 Payment Links mensuels ; vérifier qu'aucun prix Stripe n'est configuré avec TVA 20 % automatique contradictoire avec le 293 B.
 - **API / SSO / marque blanche** : reformulés « sur cadrage » sur /tarifs — valider que c'est bien l'engagement commercial souhaité.
+
+## Migration base de données à appliquer (2026-09-15 — gestion documentaire)
+- Fichier : `supabase/migrations/20260915120000_gestion_documentaire.sql` (ADDITIF : catégorie+corbeille sur les pièces, tables échéances et journal d'activité, politique UPDATE propriétaire). À exécuter dans le SQL Editor du dashboard Supabase (projet buzgokfmxpmyceppvjpp). Le site fonctionne à l'identique tant qu'elle n'est pas appliquée ; les nouvelles fonctions (corbeille, reclassement, échéances gérées, activité enrichie) s'activent automatiquement après.
+- Après application : tester avec deux comptes que A ne voit jamais les échéances/événements de B.
+- Paiement : la page /tarifs exige désormais une connexion avant d'ouvrir Stripe (garde frontend). Une vraie imposition côté serveur (Checkout Sessions + webhooks + droits) reste à cadrer — architecture non déployable sans clés (voir rapport).
