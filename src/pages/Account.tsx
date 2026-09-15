@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { isGenericTitle } from '../lib/dossier-workspace';
 import { Seo } from '../lib/seo';
 import { useAuth } from '../lib/auth';
 import { supabase } from '../lib/supabase';
@@ -160,7 +161,7 @@ export function Account() {
                   >
                     <div>
                       <p className="font-display text-lg font-semibold text-navy-900">
-                        {d.title || d.typology}
+                        {d.title || d.typology}{isGenericTitle(d.title) ? ' · à renommer' : ''}
                       </p>
                       <p className="mt-0.5 font-mono text-[0.7rem] uppercase tracking-[0.14em] text-slate-500">
                         {isAdmin && (

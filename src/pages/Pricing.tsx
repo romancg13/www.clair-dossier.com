@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "motion/react";
+import { useAuth } from "../lib/auth";
 import { Seo, breadcrumbSchema } from "../lib/seo";
 import { Reveal, Stagger, StaggerItem } from "../components/primitives/Reveal";
 import { Accordion } from "../components/ui/Accordion";
@@ -591,13 +592,42 @@ function PlanCard({ plan, billing }: { plan: Plan; billing: Billing }) {
         ))}
       </ul>
 
-      <Link
-        to={isYearly && plan.ctaHrefYearly ? plan.ctaHrefYearly : plan.ctaHref}
+      <PlanCta
+        href={isYearly && plan.ctaHrefYearly ? plan.ctaHrefYearly : plan.ctaHref}
+        label={plan.ctaLabel}
         className={`mt-7 inline-flex items-center justify-center gap-1.5 rounded-xl px-5 py-3.5 text-sm font-medium transition-colors ${ctaClass}`}
-      >
-        {plan.ctaLabel}
-      </Link>
+      />
     </article>
+  );
+}
+
+/**
+ * CTA d'abonnement : le paiement Stripe n'est proposé qu'à un utilisateur
+ * authentifié. Un visiteur passe d'abord par la connexion / création de
+ * compte, puis revient sur les tarifs (?next). Les liens internes (devis,
+ * contact) restent inchangés.
+ */
+function PlanCta({ href, label, className }: { href: string; label: string; className: string }) {
+  const { user } = useAuth();
+  const isCheckout = href.startsWith("https://buy.stripe.com/");
+  if (isCheckout && !user) {
+    return (
+      <Link to={`/connexion?next=${encodeURIComponent("/tarifs")}`} className={className}>
+        {label}
+      </Link>
+    );
+  }
+  if (isCheckout && !user) {
+    return (
+      <a href={href} className={className}>
+        {label}
+      </a>
+    );
+  }
+  return (
+    <Link to={href} className={className}>
+      {label}
+    </Link>
   );
 }
 

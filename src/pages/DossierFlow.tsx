@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { Seo, breadcrumbSchema } from "../lib/seo";
 import { ArrowRightIcon, CheckIcon, WhatsAppIcon } from "../components/icons";
 import { openWhatsApp } from "../lib/whatsapp";
+import { validateUpload } from "../lib/dossier-workspace";
 import { useAuth } from "../lib/auth";
 import { supabase } from "../lib/supabase";
 
@@ -193,6 +194,7 @@ function sanitizeName(name: string): string {
 
 export function DossierFlow() {
   const { user } = useAuth();
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [draft, setDraft] = useState<Draft>({
     answers: {},
     step: 1,
@@ -505,10 +507,16 @@ export function DossierFlow() {
                 {draft.step === 4 && draft.typology && (
                   <StepDocuments
                     files={files}
-                    onAdd={(fl) => setFiles((cur) => [...cur, ...fl])}
+                    onAdd={(fl) => {
+                      const rejected = fl.map(validateUpload).find(Boolean);
+                      setUploadError(rejected ?? null);
+                      const ok = fl.filter((f) => !validateUpload(f));
+                      if (ok.length) setFiles((cur) => [...cur, ...ok]);
+                    }}
                     onRemove={(i) =>
                       setFiles((cur) => cur.filter((_, idx) => idx !== i))
                     }
+                    uploadError={uploadError}
                     onBack={() => setDraft((d) => ({ ...d, step: 3 }))}
                     onNext={() =>
                       setDraft((d) => ({
@@ -785,12 +793,14 @@ function StepDocuments({
   onRemove,
   onBack,
   onNext,
+  uploadError,
 }: {
   files: File[];
   onAdd: (files: File[]) => void;
   onRemove: (index: number) => void;
   onBack: () => void;
   onNext: () => void;
+  uploadError?: string | null;
 }) {
   return (
     <div className="rounded-2xl border hairline bg-white p-7 shadow-card sm:p-9">
@@ -821,6 +831,12 @@ function StepDocuments({
           }}
         />
       </label>
+
+      {uploadError && (
+        <p className="mt-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {uploadError}
+        </p>
+      )}
 
       {files.length > 0 && (
         <ul className="mt-5 space-y-2">
