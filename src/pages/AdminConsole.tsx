@@ -114,10 +114,185 @@ function Stat({ label, value, warn = false }: { label: string; value: string | n
   );
 }
 
+/**
+ * Porte MFA (§ sécurité admin) — TOTP natif Supabase, aucun système maison.
+ * Après is_admin() : la console n'est rendue qu'en AAL2.
+ *  - aucun facteur vérifié → enrôlement (QR + secret) puis vérification ;
+ *  - facteur vérifié mais session AAL1 → challenge à 6 chiffres ;
+ *  - erreur réseau → message + réessayer, jamais de contournement.
+ * Les utilisateurs normaux ne passent jamais par cette porte.
+ */
+function MfaGate({ onReady }: { onReady: () => void }) {
+  const [mode, setMode] = useState<"verification" | "enroll" | "challenge">("verification");
+  const [factorId, setFactorId] = useState<string | null>(null);
+  const [qr, setQr] = useState<string | null>(null);
+  const [secret, setSecret] = useState<string | null>(null);
+  const [code, setCode] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function bootstrap() {
+    setErr(null);
+    setMode("verification");
+    try {
+      const { data: aal, error: aalErr } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      if (aalErr) throw aalErr;
+      if (aal.currentLevel === "aal2") {
+        onReady();
+        return;
+      }
+      const { data: factors, error: fErr } = await supabase.auth.mfa.listFactors();
+      if (fErr) throw fErr;
+      const verified = factors.totp.find((f) => f.status === "verified");
+      if (verified) {
+        setFactorId(verified.id);
+        setMode("challenge");
+        return;
+      }
+      // Facteurs non vérifiés abandonnés : repartir proprement.
+      for (const f of factors.all.filter((x) => x.status === "unverified")) {
+        await supabase.auth.mfa.unenroll({ factorId: f.id }).catch(() => {});
+      }
+      const { data: enr, error: eErr } = await supabase.auth.mfa.enroll({
+        factorType: "totp",
+        friendlyName: "ClairDossier admin",
+      });
+      if (eErr) throw eErr;
+      setFactorId(enr.id);
+      setQr(enr.totp.qr_code);
+      setSecret(enr.totp.secret);
+      setMode("enroll");
+    } catch {
+      setErr("Vérification MFA impossible pour le moment. Réessayez.");
+    }
+  }
+
+  useEffect(() => {
+    void bootstrap();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function submitCode() {
+    if (!factorId || code.trim().length < 6) return;
+    setBusy(true);
+    setErr(null);
+    try {
+      const { data: ch, error: cErr } = await supabase.auth.mfa.challenge({ factorId });
+      if (cErr) throw cErr;
+      const { error: vErr } = await supabase.auth.mfa.verify({
+        factorId,
+        challengeId: ch.id,
+        code: code.trim(),
+      });
+      if (vErr) throw vErr;
+      onReady();
+    } catch {
+      setErr("Code invalide ou expiré. Réessayez.");
+    } finally {
+      setBusy(false);
+      setCode("");
+    }
+  }
+
+  return (
+    <section className="bg-cream-50">
+      <div className="mx-auto max-w-md px-5 py-20 sm:px-8">
+        <p className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-700">
+          Console d'administration
+        </p>
+        <h1 className="mt-2 font-display text-2xl font-semibold text-navy-900">
+          Vérification en deux étapes
+        </h1>
+
+        {mode === "verification" && !err && (
+          <p className="mt-4 text-sm text-slate-500">Vérification du niveau de session…</p>
+        )}
+
+        {mode === "enroll" && (
+          <div className="mt-5 rounded-2xl border hairline bg-white p-6 shadow-card">
+            <p className="text-sm leading-relaxed text-slate-500">
+              Scannez ce QR code avec votre application d'authentification (ou saisissez la clé),
+              puis entrez le code à 6 chiffres pour activer la protection de la console.
+            </p>
+            {qr && (
+              <img
+                src={`data:image/svg+xml;utf8,${encodeURIComponent(qr)}`}
+                alt="QR code d'enrôlement MFA"
+                width={180}
+                height={180}
+                className="mx-auto mt-4 rounded-lg border hairline bg-white p-2"
+              />
+            )}
+            {secret && (
+              <p className="mt-3 break-all text-center font-mono text-[0.7rem] text-slate-500">
+                Clé : {secret}
+              </p>
+            )}
+          </div>
+        )}
+
+        {mode === "challenge" && (
+          <p className="mt-4 text-sm leading-relaxed text-slate-500">
+            Entrez le code à 6 chiffres de votre application d'authentification.
+          </p>
+        )}
+
+        {(mode === "enroll" || mode === "challenge") && (
+          <form
+            className="mt-5 flex flex-wrap items-center gap-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void submitCode();
+            }}
+          >
+            <label htmlFor="mfa-code" className="sr-only">
+              Code à 6 chiffres
+            </label>
+            <input
+              id="mfa-code"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              pattern="[0-9]*"
+              maxLength={6}
+              value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+              placeholder="000000"
+              className="w-40 rounded-xl border hairline-strong bg-white px-4 py-3 text-center font-mono text-lg tracking-[0.3em] text-navy-900"
+            />
+            <button
+              type="submit"
+              disabled={busy || code.length < 6}
+              className="rounded-full bg-navy-900 px-5 py-3 text-sm font-semibold text-cream-50 transition-colors hover:bg-navy-800 disabled:opacity-60"
+            >
+              {busy ? "Vérification…" : "Valider"}
+            </button>
+          </form>
+        )}
+
+        {err && (
+          <p className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {err}{" "}
+            <button type="button" onClick={() => void bootstrap()} className="underline">
+              Réessayer
+            </button>
+          </p>
+        )}
+
+        <p className="mt-6 text-xs text-slate-500">
+          <Link to="/compte" className="underline">
+            ← Revenir à mon compte
+          </Link>
+        </p>
+      </div>
+    </section>
+  );
+}
+
 export function AdminConsole() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const [allowed, setAllowed] = useState<boolean | null>(null);
+  const [mfaOk, setMfaOk] = useState(false);
   const [superAdmin, setSuperAdmin] = useState(false);
   const [section, setSection] = useState<SectionId>("dashboard");
   const [error, setError] = useState<string | null>(null);
@@ -404,6 +579,7 @@ export function AdminConsole() {
     );
   }
   if (!allowed) return null;
+  if (!mfaOk) return <MfaGate onReady={() => setMfaOk(true)} />;
 
   return (
     <>

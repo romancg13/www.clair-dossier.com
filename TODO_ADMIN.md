@@ -38,3 +38,7 @@ Généré le 2026-09-14 (passe optimisation). Rien de ce qui suit n'a été inve
 - **En-têtes de sécurité** : GitHub Pages ne permet PAS de définir CSP/HSTS/X-Frame-Options (seuls `<meta>` referrer sont posés). Si besoin d'en-têtes complets, basculer sur Netlify (netlify.toml prêt) qui les supporte.
 - **Rate limiting** : ceux de Supabase Auth s'appliquent ; rien d'additionnel possible côté site statique.
 - **PWA** : manifest installable ajouté, volontairement SANS service worker (aucun cache hors ligne de documents sensibles).
+
+## MFA super admin (2026-09-15)
+- La console /admin exige désormais une session AAL2 : au premier accès, enrôlement TOTP (QR + clé) via le MFA natif Supabase, ensuite code à 6 chiffres à chaque nouvelle session. Prévoir une app d'authentification (ex. Google Authenticator). En cas de perte du facteur : le retirer via le dashboard Supabase (Authentication → Users → votre compte → Factors) puis ré-enrôler.
+- Vérifier dans le dashboard Supabase que la MFA (TOTP) est bien AUTORISÉE : Authentication → Sign In / Up → Multi-Factor. Sans cela, l'enrôlement échouera avec un message « Réessayer ».
