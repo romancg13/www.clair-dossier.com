@@ -20,6 +20,7 @@ import {
   logDossierEvent,
   sanitizeFileName,
   validateUpload,
+  duplicateWarning,
 } from "../lib/dossier-workspace";
 
 type DossierRow = {
@@ -616,6 +617,11 @@ export function DossierDetail() {
         setActionError(err);
         return;
       }
+    }
+    // Doublons : avertir, jamais bloquer (§ le client peut ajouter quand même).
+    for (const f of files) {
+      const warn = duplicateWarning(f, documents.filter((d) => d.kind !== "deliverable"));
+      if (warn && !window.confirm(`${warn}\n\nAjouter quand même ?`)) return;
     }
     setUploading(true);
     try {
