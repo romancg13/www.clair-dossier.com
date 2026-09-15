@@ -3,6 +3,7 @@ Allow: /
 # Espaces privés et écrans d'authentification (routes réelles du routeur src/App.tsx)
 Disallow: /dossier/
 Disallow: /compte
+Disallow: /admin
 Disallow: /connexion
 Disallow: /inscription
 
