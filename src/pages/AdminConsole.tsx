@@ -612,7 +612,7 @@ export function AdminConsole() {
 
           {(error || notice) && (
             <p
-              role="status"
+              role={error ? "alert" : "status"}
               className={`mt-4 rounded-xl border px-4 py-3 text-sm ${
                 error ? "border-red-200 bg-red-50 text-red-700" : "hairline-gold bg-gold-500/10 text-navy-900"
               }`}
@@ -646,14 +646,14 @@ export function AdminConsole() {
             />
           </div>
 
-          {/* Navigation sections */}
-          <div className="mt-6 flex gap-1 overflow-x-auto whitespace-nowrap border-b hairline" role="tablist">
+          {/* Navigation sections (aria-pressed : boutons de section, pas de
+              role="tab" sans tabpanel associé) */}
+          <div className="mt-6 flex gap-1 overflow-x-auto whitespace-nowrap border-b hairline">
             {SECTIONS.map((s) => (
               <button
                 key={s.id}
                 type="button"
-                role="tab"
-                aria-selected={section === s.id}
+                aria-pressed={section === s.id}
                 onClick={() => setSection(s.id)}
                 className={`-mb-px shrink-0 rounded-t-lg px-4 py-2.5 text-sm font-medium transition-colors ${
                   section === s.id

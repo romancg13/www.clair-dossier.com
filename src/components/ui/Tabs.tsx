@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 
 export type TabItem = {
@@ -18,15 +18,35 @@ export function Tabs({
 }) {
   const [active, setActive] = useState(defaultId ?? items[0]?.id);
   const activeItem = items.find((i) => i.id === active) ?? items[0];
+  const tabsRef = useRef<Array<HTMLButtonElement | null>>([]);
+
+  // Pattern tabs WAI-ARIA : le tabindex tournant retire les onglets inactifs
+  // du parcours Tab — les flèches (+ Home/End) prennent le relais, comme dans
+  // AudienceSwitcher.
+  function onKeyDown(e: KeyboardEvent<HTMLDivElement>) {
+    const idx = items.findIndex((i) => i.id === active);
+    let next = idx;
+    if (e.key === 'ArrowRight') next = (idx + 1) % items.length;
+    else if (e.key === 'ArrowLeft') next = (idx - 1 + items.length) % items.length;
+    else if (e.key === 'Home') next = 0;
+    else if (e.key === 'End') next = items.length - 1;
+    else return;
+    e.preventDefault();
+    setActive(items[next].id);
+    tabsRef.current[next]?.focus();
+  }
 
   return (
     <div className={className}>
-      <div role="tablist" aria-label="Espaces dédiés" className="inline-flex flex-wrap gap-2 rounded-full border border-cream-50/15 bg-navy-800/40 p-1 backdrop-blur">
-        {items.map((item) => {
+      <div role="tablist" aria-label="Espaces dédiés" onKeyDown={onKeyDown} className="inline-flex flex-wrap gap-2 rounded-full border border-cream-50/15 bg-navy-800/40 p-1 backdrop-blur">
+        {items.map((item, i) => {
           const isActive = item.id === active;
           return (
             <button
               key={item.id}
+              ref={(el) => {
+                tabsRef.current[i] = el;
+              }}
               id={`tab-${item.id}`}
               type="button"
               role="tab"
