@@ -1,0 +1,17 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["__TEAM_ID__.com.clairdossier.app"],
+        "components": [
+          { "/": "/compte/dossier/*", "comment": "Ouvre le dossier dans l'application" },
+          { "/": "/compte", "comment": "Ouvre l'espace personnel" },
+          { "/": "/dossier/nouveau", "comment": "Ouvre la création de dossier" }
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": ["__TEAM_ID__.com.clairdossier.app"]
+  }
+}

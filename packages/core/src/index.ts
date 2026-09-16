@@ -6,5 +6,6 @@ export * from './documents';
 export * from './deadlines';
 export * from './dossiers';
 export * from './events';
+export * from './links';
 export * from './entitlements';
 export * from './errors';

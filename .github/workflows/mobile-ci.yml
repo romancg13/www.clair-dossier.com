@@ -1,0 +1,74 @@
+name: Mobile CI
+
+# Garde-fous de l'application mobile : types, tests et bundle de production.
+# Ne déclenche AUCUN build natif (EAS) ni aucune publication : ces étapes
+# coûtent des crédits et engagent les magasins, elles restent manuelles.
+
+on:
+  pull_request:
+    paths:
+      - 'mobile/**'
+      - 'packages/**'
+      - '.github/workflows/mobile-ci.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'mobile/**'
+      - 'packages/**'
+  workflow_dispatch:
+
+concurrency:
+  group: mobile-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - run: npm ci
+
+      # 1. Types stricts (application + logique métier partagée).
+      - name: Typecheck
+        run: npm run typecheck
+
+      # 2. Tests unitaires de l'application.
+      - name: Tests mobile
+        run: npm test
+
+      # 3. Tests de la logique partagée (packages/core), exécutés à la racine.
+      - name: Tests logique partagée
+        working-directory: .
+        run: |
+          npm ci
+          node --import tsx --test tests/core-*.test.ts
+
+      # 4. Cohérence des versions Expo et des dépendances natives.
+      - name: expo-doctor
+        run: npx expo-doctor
+        continue-on-error: true
+
+      # 5. Bundle de production : valide tout le graphe d'imports (iOS + Android).
+      - name: Bundle iOS
+        run: npx expo export --platform ios --output-dir .ci-export-ios
+        env:
+          EXPO_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder
+          EXPO_PUBLIC_ENV: preview
+
+      - name: Bundle Android
+        run: npx expo export --platform android --output-dir .ci-export-android
+        env:
+          EXPO_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder
+          EXPO_PUBLIC_ENV: preview

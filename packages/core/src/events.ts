@@ -12,6 +12,7 @@ export type EventType =
   | 'document_restaure'
   | 'document_supprime'
   | 'dossier_renomme'
+  | 'dossier_transmis'
   | 'echeance_creee'
   | 'echeance_modifiee'
   | 'echeance_terminee'
@@ -26,6 +27,8 @@ export const EVENT_LABELS: Record<EventType, string> = {
   document_restaure: 'Document restauré',
   document_supprime: 'Document supprimé définitivement',
   dossier_renomme: 'Dossier renommé',
+  // Ajout mobile (2026-09-16) : la transmission est une action utilisateur explicite.
+  dossier_transmis: 'Dossier transmis',
   echeance_creee: 'Échéance ajoutée',
   echeance_modifiee: 'Échéance modifiée',
   echeance_terminee: 'Échéance terminée',
