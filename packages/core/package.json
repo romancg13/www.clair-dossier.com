@@ -1,0 +1,13 @@
+{
+  "name": "@clairdossier/core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Logique métier ClairDossier partagée par le site web (Vite/React) et l'application mobile (Expo/React Native). Aucune dépendance, aucun accès réseau, aucun DOM.",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "sideEffects": false
+}

@@ -6,6 +6,19 @@ import { useAuth } from "../lib/auth";
 import { supabase } from "../lib/supabase";
 import { ArrowRightIcon, CheckIcon } from "../components/icons";
 import { hasDossierTrash } from "../lib/admin";
+// Statuts, typologies, étapes et libellés de réponses : source unique partagée
+// avec l'application mobile (packages/core) — mêmes libellés des deux côtés.
+import {
+  STATUS_LABELS,
+  TYPOLOGY_LABELS,
+  TIMELINE_STEPS as TIMELINE,
+  STEP_PANELS,
+  STEP_MESSAGES,
+  STEP_NEXT_ACTIONS,
+  currentStep,
+  answerLabel as labelFor,
+  isDateKey,
+} from "../../packages/core/src/index";
 import {
   ACCEPT_ATTR,
   CATEGORY_LABELS,
@@ -56,116 +69,6 @@ type DeadlineRow = {
 };
 
 type EventRow = { id: string; label: string; created_at: string };
-
-const STATUS_LABELS: Record<string, string> = {
-  brouillon: "Brouillon",
-  transmis: "Transmis",
-  "en-cours": "En cours",
-  valide: "Validé",
-  archive: "Archivé",
-};
-
-const TYPOLOGY_LABELS: Record<string, string> = {
-  // Catégories actuelles (tunnel de création — profils PME / artisans / indépendants).
-  "dossier-client": "Dossier client",
-  "facture-paiement": "Facture / paiement",
-  "impaye-precontentieux": "Impayé / pré-contentieux",
-  administratif: "Dossier administratif",
-  comptable: "Documents comptables",
-  rh: "Personnel / RH",
-  autre: "Autre",
-  // Anciennes typologies — conservées pour les dossiers déjà enregistrés.
-  "litige-commercial": "Litige commercial",
-  recouvrement: "Recouvrement",
-  bail: "Bail & immobilier",
-  consommation: "Litige client / fournisseur",
-  "prud-hommes": "Prud'hommes",
-  divorce: "Divorce / famille",
-  succession: "Succession",
-};
-
-// Avancement du dossier — 5 étapes métier (étapes cliquables + message dynamique).
-const TIMELINE = [
-  "Création du dossier",
-  "Devis, contrat ou accord",
-  "Suivi du dossier",
-  "Facture et paiement",
-  "Option impayé / pré-contentieux",
-];
-
-const STEP_PANELS: string[] = [
-  "Le dossier est créé : profil, nature, informations clés et premières pièces sont réunis dans un espace unique.",
-  "Les documents qui fondent la relation (devis, contrat, bon de commande, accord) sont rassemblés et datés.",
-  "Le dossier vit : échanges, relances, pièces complémentaires et échéances sont suivis au même endroit.",
-  "La facturation et les règlements sont tracés : montants, échéances, acomptes et solde restant dû.",
-  "En cas d'impayé, le dossier est prêt : relances, mise en demeure et pièces sont organisées pour être transmises à un professionnel habilité.",
-];
-
-const STEP_MESSAGES: Record<number, string> = {
-  1: "Votre dossier vient d'être créé. Complétez les informations et déposez vos pièces pour le structurer.",
-  2: "Rassemblez les documents qui fondent l'accord (devis, contrat, commande) pour sécuriser la suite.",
-  3: "Votre dossier est suivi. Ajoutez les nouveaux échanges et pièces au fur et à mesure.",
-  4: "Suivez la facturation et les règlements : renseignez les montants et les échéances de paiement.",
-  5: "Le dossier est prêt à être transmis à un professionnel du droit en cas de contentieux.",
-};
-
-const STEP_NEXT_ACTIONS: Record<number, string> = {
-  1: "Vérifiez les informations du dossier et déposez les premières pièces.",
-  2: "Ajoutez le devis, le contrat ou l’accord signé au dossier.",
-  3: "Mettez à jour le suivi : nouveaux courriers, relances, pièces reçues.",
-  4: "Renseignez la facture, le montant dû et l’échéance de paiement.",
-  5: "Préparez la transmission à un professionnel habilité si le litige persiste.",
-};
-
-// Statut ≠ étape : le statut est l'état général, l'étape la position workflow.
-function currentStep(status: string): number {
-  switch (status) {
-    case "brouillon":
-      return 1;
-    case "transmis":
-    case "en-cours":
-      return 3;
-    case "valide":
-      return 4;
-    case "archive":
-      return 5;
-    default:
-      return 1;
-  }
-}
-
-const ANSWER_LABELS: Record<string, string> = {
-  counterparty: "Partie adverse",
-  contractDate: "Date du contrat",
-  amount: "Montant en jeu",
-  deadline: "Échéance",
-  situation: "Situation",
-  debtor: "Débiteur",
-  invoiceDate: "Date de la facture",
-  organisme: "Organisme concerné",
-  refDossier: "Référence du dossier",
-  role: "Rôle",
-  address: "Adresse du local",
-  startDate: "Date d'entrée dans les lieux",
-  merchant: "Vendeur / prestataire / client",
-  purchaseDate: "Date d'achat ou de souscription",
-  employer: "Nom de l'employeur",
-  contractStart: "Date d'embauche",
-  ruptureDate: "Date de la rupture",
-  marriageDate: "Date du mariage",
-  separationDate: "Date de séparation",
-  children: "Nombre d'enfants concernés",
-  deathDate: "Date du décès",
-  heirCount: "Nombre d'héritiers connus",
-};
-
-function labelFor(key: string): string {
-  return ANSWER_LABELS[key] ?? key;
-}
-
-function isDateKey(key: string): boolean {
-  return /date|deadline|echeance|échéance/i.test(key);
-}
 
 function fmtDate(iso: string, withTime = false): string {
   const d = new Date(iso);

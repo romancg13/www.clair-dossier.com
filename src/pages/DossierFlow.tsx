@@ -4,25 +4,18 @@ import { Link } from "react-router-dom";
 import { Seo, breadcrumbSchema } from "../lib/seo";
 import { ArrowRightIcon, CheckIcon, WhatsAppIcon } from "../components/icons";
 import { openWhatsApp } from "../lib/whatsapp";
-import { validateUpload } from "../lib/dossier-workspace";
+import { validateUpload, sanitizeFileName } from "../lib/dossier-workspace";
+// Profils, typologies et champs du tunnel : source unique partagée avec
+// l'application mobile (packages/core) — mêmes valeurs écrites en base.
+import {
+  CATEGORIES,
+  PROFILS,
+  fieldsFor,
+  type Category,
+  type Profil,
+} from "../../packages/core/src/index";
 import { useAuth } from "../lib/auth";
 import { supabase } from "../lib/supabase";
-
-type Profil =
-  | "artisan"
-  | "independant"
-  | "profession-liberale"
-  | "entreprise-pme"
-  | "autre";
-
-type Category =
-  | "dossier-client"
-  | "facture-paiement"
-  | "impaye-precontentieux"
-  | "administratif"
-  | "comptable"
-  | "rh"
-  | "autre";
 
 type DraftAnswers = Record<string, string>;
 type Step = 1 | 2 | 3 | 4 | 5;
@@ -39,158 +32,8 @@ type Draft = {
 const STORAGE_KEY = "clairdossier_draft";
 const TEAM_EMAIL = "contact.clairdossier@icloud.com";
 
-const PROFILS: { id: Profil; label: string; description: string }[] = [
-  {
-    id: "artisan",
-    label: "Artisan",
-    description:
-      "Bâtiment, métiers de bouche, services à la personne, fabrication.",
-  },
-  {
-    id: "independant",
-    label: "Indépendant",
-    description: "Auto-entrepreneur, freelance, micro-entreprise.",
-  },
-  {
-    id: "profession-liberale",
-    label: "Profession libérale",
-    description: "Santé, conseil, droit, expertise, technique.",
-  },
-  {
-    id: "entreprise-pme",
-    label: "Entreprise individuelle / PME",
-    description: "TPE, PME, société avec quelques salariés.",
-  },
-  {
-    id: "autre",
-    label: "Autre",
-    description: "Association, particulier, autre structure.",
-  },
-];
-
-const CATEGORIES: { id: Category; label: string; description: string }[] = [
-  {
-    id: "dossier-client",
-    label: "Dossier client",
-    description: "Contrat, devis, commande, prestation, suivi d'un client.",
-  },
-  {
-    id: "facture-paiement",
-    label: "Facture / paiement",
-    description: "Facturation, échéances, acomptes, conditions de règlement.",
-  },
-  {
-    id: "impaye-precontentieux",
-    label: "Impayé / pré-contentieux",
-    description: "Facture non réglée, relances, mise en demeure, litige.",
-  },
-  {
-    id: "administratif",
-    label: "Dossier administratif",
-    description: "URSSAF, impôts, déclaration, contrôle, demande d'aide.",
-  },
-  {
-    id: "comptable",
-    label: "Documents comptables",
-    description: "Pièces comptables, justificatifs, bilan, TVA.",
-  },
-  {
-    id: "rh",
-    label: "Personnel / RH",
-    description: "Contrat de travail, salarié, congés, fin de collaboration.",
-  },
-  {
-    id: "autre",
-    label: "Autre",
-    description: "Tout dossier qui n'entre pas dans les cases ci-dessus.",
-  },
-];
-
-type Field = {
-  id: string;
-  label: string;
-  help?: string;
-  type?: "text" | "date" | "textarea";
-};
-
-const COMMON_FIELDS: Field[] = [
-  {
-    id: "counterparty",
-    label: "Personne ou société concernée",
-    help: "Client, fournisseur, organisme, salarié…",
-  },
-  {
-    id: "startDate",
-    label: "Date de référence",
-    type: "date",
-    help: "Contrat, facture, échange — la date qui compte.",
-  },
-  {
-    id: "amount",
-    label: "Montant en jeu (€)",
-    help: "Laissez vide si non applicable.",
-  },
-  {
-    id: "deadline",
-    label: "Échéance / date limite",
-    type: "date",
-    help: "Pour les relances et le suivi des délais.",
-  },
-  {
-    id: "situation",
-    label: "Décrivez la situation",
-    type: "textarea",
-    help: "Quelques phrases : ce qui s'est passé, quand, et ce que vous attendez.",
-  },
-];
-
-// Jeu de champs générique, légèrement adapté par catégorie (sans mapping complexe).
-const FIELD_OVERRIDES: Partial<Record<Category, Field[]>> = {
-  "impaye-precontentieux": [
-    { id: "counterparty", label: "Débiteur (client ou société)" },
-    { id: "startDate", label: "Date de la facture", type: "date" },
-    { id: "amount", label: "Montant dû (€)" },
-    {
-      id: "deadline",
-      label: "Échéance de paiement",
-      type: "date",
-      help: "Pour suivre les délais de paiement.",
-    },
-    {
-      id: "situation",
-      label: "Historique des relances",
-      type: "textarea",
-      help: "Relances déjà envoyées, réponses obtenues, suite souhaitée.",
-    },
-  ],
-  rh: [
-    { id: "counterparty", label: "Salarié concerné" },
-    { id: "startDate", label: "Date d'embauche", type: "date" },
-    {
-      id: "deadline",
-      label: "Échéance / date limite",
-      type: "date",
-      help: "Fin de contrat, entretien, délai à respecter.",
-    },
-    {
-      id: "situation",
-      label: "Situation actuelle",
-      type: "textarea",
-      help: "Quelques phrases : ce qui s'est passé, quand, et ce que vous attendez.",
-    },
-  ],
-};
-
-function fieldsFor(category: Category): Field[] {
-  return FIELD_OVERRIDES[category] ?? COMMON_FIELDS;
-}
-
 const AI_OPTION_TEXT =
   "Obtenez un premier résumé du dossier, identifiez les pièces utiles et préparez les éléments à faire valider par un professionnel du droit.";
-
-function sanitizeName(name: string): string {
-  return name.replace(/[^a-zA-Z0-9._-]+/g, "_").slice(0, 80);
-}
 
 export function DossierFlow() {
   const { user } = useAuth();
@@ -359,7 +202,7 @@ export function DossierFlow() {
       }
       const dossierId = data.id as string;
       for (const file of files) {
-        const path = `${user.id}/${dossierId}/${Date.now()}-${sanitizeName(file.name)}`;
+        const path = `${user.id}/${dossierId}/${Date.now()}-${sanitizeFileName(file.name)}`;
         const up = await supabase.storage
           .from("documents")
           .upload(path, file, { upsert: false });
