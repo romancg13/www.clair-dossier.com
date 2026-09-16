@@ -13,7 +13,7 @@
  *   2. l'Edge Function submit-prospect déployée (secret PROSPECT_HASH_SALT créé) ;
  *   3. la politique de confidentialité mise à jour (décision de Roman).
  */
-import { isSupabaseConfigured } from './supabase';
+import { isSupabaseConfigured } from './supabase-env';
 
 export type ProspectPayload = {
   full_name: string;

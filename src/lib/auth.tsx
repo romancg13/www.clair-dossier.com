@@ -6,7 +6,18 @@ import {
   type ReactNode,
 } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
-import { supabase, isSupabaseConfigured } from './supabase';
+import { isSupabaseConfigured } from './supabase-env';
+
+// Perf (audit 2026-09) : le SDK Supabase (~209 Ko) était tiré dans le chunk
+// d'entrée via cet import statique, donc téléchargé et parsé sur toutes les
+// pages vitrine avant le premier rendu. On ne le charge plus que par import
+// dynamique (mis en cache par Vite) : après hydratation pour l'état de
+// session, ou au premier appel signUp/signIn/signOut. Comportement identique,
+// chemin critique allégé.
+async function getSupabase() {
+  const { supabase } = await import('./supabase');
+  return supabase;
+}
 
 export type CompanyType =
   | 'pme'
@@ -58,22 +69,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
     let active = true;
-    supabase.auth.getSession().then(({ data }) => {
+    let unsubscribe: (() => void) | null = null;
+    void getSupabase().then((supabase) => {
       if (!active) return;
-      setSession(data.session);
-      setLoading(false);
-    });
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      setSession(nextSession);
+      supabase.auth.getSession().then(({ data }) => {
+        if (!active) return;
+        setSession(data.session);
+        setLoading(false);
+      });
+      const { data: sub } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+        setSession(nextSession);
+      });
+      unsubscribe = () => sub.subscription.unsubscribe();
     });
     return () => {
       active = false;
-      sub.subscription.unsubscribe();
+      unsubscribe?.();
     };
   }, []);
 
   async function signUp(email: string, password: string, info?: SignUpInfo): Promise<AuthResult> {
     if (!isSupabaseConfigured) return { error: "Le service de comptes n'est pas configuré." };
+    const supabase = await getSupabase();
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -92,6 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function signIn(email: string, password: string): Promise<AuthResult> {
     if (!isSupabaseConfigured) return { error: "Le service de comptes n'est pas configuré." };
+    const supabase = await getSupabase();
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) return { error: translateError(error.message) };
     setSession(data.session);
@@ -99,6 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function signOut(): Promise<void> {
+    const supabase = await getSupabase();
     await supabase.auth.signOut();
     setSession(null);
   }
