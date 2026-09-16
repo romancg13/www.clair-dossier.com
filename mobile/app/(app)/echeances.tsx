@@ -9,7 +9,13 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { SectionList, StyleSheet, View, RefreshControl } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { deadlineStatus, userMessage, type Deadline, type DeadlineStatus } from '@clairdossier/core';
+import {
+  deadlineStatus,
+  dossierDisplayTitle,
+  userMessage,
+  type Deadline,
+  type DeadlineStatus,
+} from '@clairdossier/core';
 import { ScreenHeader } from '../../src/features/ScreenHeader';
 import { DeadlineItem } from '../../src/features/DeadlineItem';
 import { Banner, EmptyState, ErrorState, SkeletonList, Text } from '../../src/ui';
@@ -19,7 +25,6 @@ import { useDossiers } from '../../src/data/dossiers';
 import { loadPrefs } from '../../src/lib/storage';
 import { rescheduleReminders } from '../../src/lib/notifications';
 import { colors, spacing } from '../../src/theme/tokens';
-import { dossierDisplayTitle } from '@clairdossier/core';
 
 const ORDER: DeadlineStatus[] = ['retard', 'a-venir', 'terminee'];
 const TITLES: Record<DeadlineStatus, string> = {

@@ -133,8 +133,11 @@ export async function savePrefs(patch: Partial<Prefs>): Promise<Prefs> {
 /** Efface session + préférences (déconnexion, suppression de compte). */
 export async function wipeLocalData(keepOnboarding = true): Promise<void> {
   const prefs = await loadPrefs();
-  await deleteChunked(`${SESSION_PREFIX}.clairdossier-auth`);
-  // Les autres clés de session éventuelles portent le même préfixe.
+  // Jetons + artefacts d'authentification (vérificateur PKCE compris).
+  for (const key of ['clairdossier-auth', 'clairdossier-auth-code-verifier']) {
+    await deleteChunked(`${SESSION_PREFIX}.${key}`).catch(() => {});
+    await SecureStore.deleteItemAsync(`${SESSION_PREFIX}.${key}`).catch(() => {});
+  }
   await SecureStore.deleteItemAsync(PREFS_KEY).catch(() => {});
   cache = null;
   if (keepOnboarding && prefs.onboardingDone) {

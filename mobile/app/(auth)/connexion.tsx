@@ -1,7 +1,7 @@
 /** Connexion — mêmes comptes que le site : aucun compte à recréer (§49). */
 import { useState } from 'react';
 import { View } from 'react-native';
-import { Link, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { AuthShell } from '../../src/features/AuthShell';
 import { Banner, Button, Input, Text } from '../../src/ui';
 import { useAuth } from '../../src/lib/auth';
@@ -37,16 +37,22 @@ export default function Connexion() {
       subtitle="Retrouvez vos dossiers, vos pièces et vos échéances."
       footer={
         <View style={{ gap: spacing.sm }}>
-          <Link href="/mot-de-passe-oublie" asChild>
-            <Text variant="smallStrong" tone="accent" accessibilityRole="link">
-              Mot de passe oublié ?
-            </Text>
-          </Link>
-          <Link href="/inscription" asChild>
-            <Text variant="small" tone="secondary" accessibilityRole="link">
-              Pas encore de compte ? Créer un compte gratuit
-            </Text>
-          </Link>
+          <Text
+            variant="smallStrong"
+            tone="accent"
+            accessibilityRole="link"
+            onPress={() => router.push('/mot-de-passe-oublie')}
+          >
+            Mot de passe oublié ?
+          </Text>
+          <Text
+            variant="small"
+            tone="secondary"
+            accessibilityRole="link"
+            onPress={() => router.push('/inscription')}
+          >
+            Pas encore de compte ? Créer un compte gratuit
+          </Text>
         </View>
       }
     >

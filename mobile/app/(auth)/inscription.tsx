@@ -5,7 +5,7 @@
  */
 import { useState } from 'react';
 import { View } from 'react-native';
-import { Link, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { AuthShell } from '../../src/features/AuthShell';
 import { Banner, Button, Card, Input, Text } from '../../src/ui';
 import { useAuth, type CompanyType } from '../../src/lib/auth';
@@ -85,11 +85,14 @@ export default function Inscription() {
               Confidentialité
             </Text>
           </View>
-          <Link href="/connexion" asChild>
-            <Text variant="small" tone="secondary" accessibilityRole="link">
-              J'ai déjà un compte
-            </Text>
-          </Link>
+          <Text
+            variant="small"
+            tone="secondary"
+            accessibilityRole="link"
+            onPress={() => router.replace('/connexion')}
+          >
+            J'ai déjà un compte
+          </Text>
         </View>
       }
     >

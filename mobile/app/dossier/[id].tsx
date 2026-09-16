@@ -395,7 +395,11 @@ export default function DossierDetail() {
       ) : null}
 
       {/* ── Actions sur une pièce ── */}
-      <Sheet visible={!!actionDoc} title={actionDoc?.file_name ?? ''} onClose={() => setActionDoc(null)}>
+      <Sheet
+        visible={!!actionDoc && !categorySheet && !renameTarget}
+        title={actionDoc?.file_name ?? ''}
+        onClose={() => setActionDoc(null)}
+      >
         {actionDoc ? (
           <View style={styles.rows}>
             {!actionDoc.deleted_at ? (

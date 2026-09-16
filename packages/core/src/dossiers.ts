@@ -69,9 +69,9 @@ export const STEP_MESSAGES: Record<number, string> = {
 
 export const STEP_NEXT_ACTIONS: Record<number, string> = {
   1: 'Vérifiez les informations du dossier et déposez les premières pièces.',
-  2: "Ajoutez le devis, le contrat ou l'accord signé au dossier.",
+  2: "Ajoutez le devis, le contrat ou l’accord signé au dossier.",
   3: 'Mettez à jour le suivi : nouveaux courriers, relances, pièces reçues.',
-  4: "Renseignez la facture, le montant dû et l'échéance de paiement.",
+  4: "Renseignez la facture, le montant dû et l’échéance de paiement.",
   5: 'Préparez la transmission à un professionnel habilité si le litige persiste.',
 };
 

@@ -7,7 +7,7 @@
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.tests.json --noEmit",
     "test": "node --import tsx --test tests/*.test.ts",
     "doctor": "npx expo-doctor",
     "bundle:check": "expo export --platform ios --output-dir .expo-export-check --clear"
@@ -53,6 +53,7 @@
     "react-native-worklets": "0.10.1"
   },
   "devDependencies": {
+    "@types/node": "^22.20.3",
     "@types/react": "~19.2.2",
     "babel-preset-expo": "~57.0.12",
     "tsx": "^4.19.0",
