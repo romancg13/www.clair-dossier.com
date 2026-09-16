@@ -377,7 +377,24 @@ export function DossierFlow() {
           file_name: file.name,
           size_bytes: file.size,
         });
-        if (ins.error) failedUploads += 1;
+        if (ins.error) {
+          failedUploads += 1;
+          // Fichier uploadé mais sans ligne de métadonnées : invisible dans
+          // l'interface → on retire l'objet orphelin du bucket. Garde-fou :
+          // la requête a pu échouer APRÈS le commit de l'insert, donc on ne
+          // supprime que si aucune ligne n'existe réellement pour ce chemin.
+          const { data: existing, error: lookupError } = await supabase
+            .from("dossier_documents")
+            .select("id")
+            .eq("file_path", path)
+            .maybeSingle();
+          if (!lookupError && !existing) {
+            const cleanup = await supabase.storage.from("documents").remove([path]);
+            if (cleanup.error) console.error("Nettoyage du document orphelin impossible", cleanup.error);
+          } else if (lookupError) {
+            console.error("Vérification des métadonnées du document impossible", lookupError);
+          }
+        }
       }
       if (failedUploads > 0) {
         setSaveWarning(

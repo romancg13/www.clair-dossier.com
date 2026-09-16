@@ -81,6 +81,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(nextSession);
       });
       unsubscribe = () => sub.subscription.unsubscribe();
+    }).catch(() => {
+      // Échec de chargement du chunk (réseau, déploiement entre deux hashes) :
+      // ne jamais laisser RequireAuth sur « Chargement… » indéfiniment.
+      if (active) setLoading(false);
     });
     return () => {
       active = false;
@@ -90,7 +94,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function signUp(email: string, password: string, info?: SignUpInfo): Promise<AuthResult> {
     if (!isSupabaseConfigured) return { error: "Le service de comptes n'est pas configuré." };
-    const supabase = await getSupabase();
+    const supabase = await getSupabase().catch(() => null);
+    if (!supabase) return { error: 'Service momentanément indisponible. Vérifiez votre connexion, puis réessayez.' };
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -109,7 +114,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function signIn(email: string, password: string): Promise<AuthResult> {
     if (!isSupabaseConfigured) return { error: "Le service de comptes n'est pas configuré." };
-    const supabase = await getSupabase();
+    const supabase = await getSupabase().catch(() => null);
+    if (!supabase) return { error: 'Service momentanément indisponible. Vérifiez votre connexion, puis réessayez.' };
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) return { error: translateError(error.message) };
     setSession(data.session);
@@ -117,8 +123,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function signOut(): Promise<void> {
-    const supabase = await getSupabase();
-    await supabase.auth.signOut();
+    // Si le chunk ne charge pas, on déconnecte au moins l'état local (le SDK
+    // aura de toute façon échoué à charger la session dans le même contexte).
+    const supabase = await getSupabase().catch(() => null);
+    if (supabase) await supabase.auth.signOut();
     setSession(null);
   }
 
