@@ -132,4 +132,7 @@ Suppression    → fonction Edge delete-account (jeton vérifié) → fichiers +
 | `npm test` (mobile) | 6/6 |
 | `npx expo export` iOS / Android | bundles produits (5,2 Mo / 5,4 Mo) |
 | `npx expo-doctor` | 19/21 (2 contrôles nécessitent l'API Expo, injoignable depuis l'environnement d'exécution) |
-| Build natif iOS/Android | **impossible ici** : nécessite comptes Apple/Google/Expo (voir README mobile) |
+| `npx expo prebuild` iOS | projet natif généré ; Info.plist (permissions FR), entitlements (liens universels), PrivacyInfo.xcprivacy vérifiés |
+| `npx expo prebuild` Android | AndroidManifest vérifié : permissions, filtres d'intention `autoVerify`, RECORD_AUDIO retiré, `targetSdkVersion 36` |
+| Absence de dérive web | contrôle automatisé : tous les libellés déplacés dans `packages/core` sont mot pour mot ceux des pages d'origine, aucune clé perdue |
+| Build natif iOS/Android (compilation) | **impossible sur ce poste** : ni Xcode, ni CocoaPods, ni JDK, ni SDK Android. Passe par EAS Build (compte Expo requis) — voir `mobile-store-checklist.md` |
