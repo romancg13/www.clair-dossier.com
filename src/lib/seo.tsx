@@ -57,6 +57,7 @@ export function Seo({
   const fullTitle = title.includes(SITE_NAME) ? title : `${title} — ${SITE_NAME} · Dossier juridique clair, structuré et suivi`;
   const url = `${SITE_URL}${path}`;
   const absImage = image.startsWith('http') ? image : `${SITE_URL}${image}`;
+  const jsonLdKey = jsonLd ? JSON.stringify(jsonLd) : '';
 
   if (import.meta.env.SSR) {
     ssrSeoCollector?.({
@@ -91,13 +92,19 @@ export function Seo({
     upsertMeta('meta[name="twitter:description"]', 'name', 'twitter:description', description);
     upsertMeta('meta[name="twitter:image"]', 'name', 'twitter:image', absImage);
 
+    // Pas de canonique sur une page noindex (signaux contradictoires — et le
+    // 404 pointait l'accueil, transformant toute URL inconnue en soft-404).
     let canonical = document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]');
-    if (!canonical) {
-      canonical = document.createElement('link');
-      canonical.rel = 'canonical';
-      document.head.appendChild(canonical);
+    if (noindex) {
+      canonical?.remove();
+    } else {
+      if (!canonical) {
+        canonical = document.createElement('link');
+        canonical.rel = 'canonical';
+        document.head.appendChild(canonical);
+      }
+      canonical.href = url;
     }
-    canonical.href = url;
 
     document.head.querySelectorAll('script[data-seo-jsonld="true"]').forEach((n) => n.remove());
     if (jsonLd) {
@@ -110,7 +117,10 @@ export function Seo({
         document.head.appendChild(s);
       });
     }
-  }, [title, description, path, type, image, jsonLd, noindex]);
+    // jsonLd est comparé par valeur sérialisée : les appelants passent un
+    // littéral neuf à chaque rendu, qui purgeait/réinjectait les <script>
+    // JSON-LD à chaque re-render.
+  }, [title, description, path, type, image, jsonLdKey, noindex]);
 
   return null;
 }
