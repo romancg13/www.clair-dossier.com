@@ -358,20 +358,33 @@ export function DossierFlow() {
         return;
       }
       const dossierId = data.id as string;
+      // Un échec d'upload ne doit pas être avalé : le dossier est bien créé,
+      // mais l'utilisateur doit savoir quelles pièces n'ont pas suivi.
+      let failedUploads = 0;
       for (const file of files) {
         const path = `${user.id}/${dossierId}/${Date.now()}-${sanitizeName(file.name)}`;
         const up = await supabase.storage
           .from("documents")
           .upload(path, file, { upsert: false });
-        if (!up.error) {
-          await supabase.from("dossier_documents").insert({
-            dossier_id: dossierId,
-            user_id: user.id,
-            file_path: path,
-            file_name: file.name,
-            size_bytes: file.size,
-          });
+        if (up.error) {
+          failedUploads += 1;
+          continue;
         }
+        const ins = await supabase.from("dossier_documents").insert({
+          dossier_id: dossierId,
+          user_id: user.id,
+          file_path: path,
+          file_name: file.name,
+          size_bytes: file.size,
+        });
+        if (ins.error) failedUploads += 1;
+      }
+      if (failedUploads > 0) {
+        setSaveWarning(
+          failedUploads === 1
+            ? "Votre dossier a été enregistré, mais 1 document n'a pas pu être joint. Vous pourrez l'ajouter depuis votre espace « Mon compte »."
+            : `Votre dossier a été enregistré, mais ${failedUploads} documents n'ont pas pu être joints. Vous pourrez les ajouter depuis votre espace « Mon compte ».`,
+        );
       }
     } catch {
       setSaveWarning(
