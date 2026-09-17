@@ -89,6 +89,28 @@ export function hasEvents(): Promise<boolean> {
   });
 }
 
+/** Moteur de quota + idempotence (migration 20260917120000) disponible ? */
+export function hasQuotaEngine(): Promise<boolean> {
+  return probe('quota-engine', async () => {
+    const { error } = await (await client())
+      .from('dossiers')
+      .select('id,submitted_at,client_request_id')
+      .limit(1);
+    return !error;
+  });
+}
+
+/** Droits publiés par le serveur pour l'utilisateur connecté (null si indisponible). */
+export async function fetchMyEntitlement(): Promise<unknown | null> {
+  try {
+    if (!(await hasQuotaEngine())) return null;
+    const { data, error } = await (await client()).rpc('get_my_dossier_entitlement');
+    return error ? null : data;
+  } catch {
+    return null;
+  }
+}
+
 /* ── Journal d'activité (meilleur effort, jamais bloquant) ──────────────── */
 
 /** Journalise un événement ; silencieux si la table n'existe pas encore. */

@@ -89,3 +89,79 @@ export function confirmIrreversible(what: string): boolean {
   );
   return typed?.trim().toUpperCase() === 'SUPPRIMER';
 }
+
+/* ── Automatisation (migration 20260917120000) ──────────────────────────── */
+
+/** Moteur de droits / notifications administrateur disponible ? */
+export function hasAutomationEngine(): Promise<boolean> {
+  return probe('automation-engine', async () => {
+    const { error } = await (await client()).from('admin_notifications').select('id').limit(1);
+    return !error;
+  });
+}
+
+export type AdminEntitlementRow = {
+  user_id: string;
+  email: string | null;
+  suspended_at: string | null;
+  plan_id: string | null;
+  subscription_status: string | null;
+  stripe_customer_id: string | null;
+  plan_limit: number | null;
+  override_mode: 'unlimited' | 'custom_limit' | 'bonus' | null;
+  override_limit: number | null;
+  override_reason: string | null;
+  applies: boolean;
+  unlimited: boolean;
+  effective_limit: number | null;
+  used: number;
+  period_end: string | null;
+};
+
+export async function fetchAdminEntitlements(): Promise<AdminEntitlementRow[] | null> {
+  try {
+    if (!(await hasAutomationEngine())) return null;
+    const { data, error } = await (await client()).rpc('admin_list_entitlements');
+    return error ? null : ((data as AdminEntitlementRow[] | null) ?? []);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Authentification RÉCENTE avant une action irréversible : le facteur TOTP
+ * doit avoir été vérifié dans les `maxAgeMinutes` dernières minutes, sinon un
+ * nouveau code est demandé. La base exige en plus une session AAL2.
+ */
+export async function requireRecentMfa(maxAgeMinutes = 10): Promise<boolean> {
+  const sb = await client();
+  const { data: aal } = await sb.auth.mfa.getAuthenticatorAssuranceLevel();
+  const methods = (aal?.currentAuthenticationMethods ?? []) as Array<string | { method: string; timestamp: number }>;
+  const totp = methods.find((m): m is { method: string; timestamp: number } => typeof m === 'object' && m.method === 'totp');
+  if (aal?.currentLevel === 'aal2' && totp && Date.now() / 1000 - totp.timestamp < maxAgeMinutes * 60) {
+    return true;
+  }
+  const { data: factors } = await sb.auth.mfa.listFactors();
+  const factor = factors?.totp.find((f) => f.status === 'verified');
+  if (!factor) return false;
+  const code = window.prompt('Action sensible : saisissez un nouveau code à 6 chiffres de votre application d’authentification.');
+  if (!code || !/^[0-9]{6}$/.test(code.trim())) return false;
+  const { data: challenge, error: cErr } = await sb.auth.mfa.challenge({ factorId: factor.id });
+  if (cErr || !challenge) return false;
+  const { error: vErr } = await sb.auth.mfa.verify({ factorId: factor.id, challengeId: challenge.id, code: code.trim() });
+  return !vErr;
+}
+
+/** Appel d'une fonction serveur d'administration (jeton de session joint). */
+export async function invokeAdminFunction(
+  name: 'admin-users' | 'notify-lead',
+  body: Record<string, unknown>,
+): Promise<{ ok: boolean; error: string | null }> {
+  try {
+    const { data, error } = await (await client()).functions.invoke(name, { body });
+    if (error) return { ok: false, error: error.message };
+    return { ok: true, error: (data as { error?: string } | null)?.error ?? null };
+  } catch {
+    return { ok: false, error: 'network' };
+  }
+}

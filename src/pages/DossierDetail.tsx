@@ -6,6 +6,7 @@ import { useAuth } from "../lib/auth";
 import { supabase } from "../lib/supabase";
 import { ArrowRightIcon, CheckIcon } from "../components/icons";
 import { hasDossierTrash } from "../lib/admin";
+import { hasQuotaEngine } from "../lib/dossier-workspace";
 // Statuts, typologies, étapes et libellés de réponses : source unique partagée
 // avec l'application mobile (packages/core) — mêmes libellés des deux côtés.
 import {
@@ -45,6 +46,9 @@ type DossierRow = {
   answers: Record<string, string> | null;
   legal_review_requested: boolean;
   created_at: string;
+  /** Étape forcée par l'administration (migration 20260917120000), sinon déduite du statut. */
+  current_step?: number | null;
+  admin_seen_at?: string | null;
 };
 
 type DocumentRow = {
@@ -305,11 +309,11 @@ export function DossierDetail() {
       setEventsOn(evOk);
 
       // La RLS limite déjà la lecture au propriétaire — le filtre id suffit.
-      const trashAware = await hasDossierTrash();
+      const [trashAware, quotaAware] = await Promise.all([hasDossierTrash(), hasQuotaEngine()]);
       const { data } = await supabase
         .from("dossiers")
         .select(
-          `id,user_id,typology,title,status,answers,legal_review_requested,created_at${trashAware ? ",deleted_at" : ""}`,
+          `id,user_id,typology,title,status,answers,legal_review_requested,created_at${trashAware ? ",deleted_at" : ""}${quotaAware ? ",current_step,admin_seen_at" : ""}`,
         )
         .eq("id", id)
         .maybeSingle();
@@ -323,6 +327,10 @@ export function DossierDetail() {
       setDossier(row);
       if (!active) return;
       setIsAdmin(admin);
+      // Dossier d'un client ouvert par l'administration : il quitte « Nouveau ».
+      if (admin && row && row.user_id !== user?.id && quotaAware && !row.admin_seen_at) {
+        void supabase.from("dossiers").update({ admin_seen_at: new Date().toISOString() }).eq("id", row.id);
+      }
       if (admin && row) {
         if (row.user_id === user?.id) {
           setOwnerEmail(user?.email ?? null);
@@ -425,7 +433,7 @@ export function DossierDetail() {
   const answerEntries = Object.entries(answers).filter(([, v]) => v?.trim());
   const dateEntries = answerEntries.filter(([k]) => isDateKey(k));
   const situation = answers.situation?.trim();
-  const step = dossier ? currentStep(dossier.status) : 1;
+  const step = dossier ? (dossier.current_step ?? currentStep(dossier.status)) : 1;
   const shownStep = openStep || step;
 
   const pieces = documents.filter((d) => d.kind !== "deliverable" && !d.deleted_at);
