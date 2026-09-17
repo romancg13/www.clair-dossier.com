@@ -278,9 +278,12 @@ auth_token = "env(SUPABASE_AUTH_SMS_TWILIO_AUTH_TOKEN)"
 max_enrolled_factors = 10
 
 # Control MFA via App Authenticator (TOTP)
+# Requis par la console /admin (porte AAL2, src/pages/AdminConsole.tsx). Doit
+# aussi être activé sur le projet HÉBERGÉ : Dashboard → Authentication →
+# Multi-Factor Authentication → TOTP (sinon l'enrôlement échoue en 422).
 [auth.mfa.totp]
-enroll_enabled = false
-verify_enabled = false
+enroll_enabled = true
+verify_enabled = true
 
 # Configure MFA via Phone Messaging
 [auth.mfa.phone]

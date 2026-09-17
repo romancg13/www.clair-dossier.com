@@ -12,6 +12,7 @@ import {
   logAudit,
 } from "../lib/admin";
 import { CATEGORY_LABELS, effectiveCategory, formatBytes, hasDocExtras, isGenericTitle } from "../lib/dossier-workspace";
+import { mfaErrorDetails, mfaErrorMessage, mfaQrSrc } from "../lib/mfa-errors";
 
 /**
  * Console d'administration (/admin) — réservée à l'admin global.
@@ -153,17 +154,25 @@ function MfaGate({ onReady }: { onReady: () => void }) {
       for (const f of factors.all.filter((x) => x.status === "unverified")) {
         await supabase.auth.mfa.unenroll({ factorId: f.id }).catch(() => {});
       }
-      const { data: enr, error: eErr } = await supabase.auth.mfa.enroll({
+      let enr = await supabase.auth.mfa.enroll({
         factorType: "totp",
         friendlyName: "ClairDossier admin",
       });
-      if (eErr) throw eErr;
-      setFactorId(enr.id);
-      setQr(enr.totp.qr_code);
-      setSecret(enr.totp.secret);
+      if (enr.error?.code === "mfa_factor_name_conflict") {
+        // Un facteur homonyme n'a pas pu être nettoyé : repli sur un nom unique.
+        enr = await supabase.auth.mfa.enroll({
+          factorType: "totp",
+          friendlyName: `ClairDossier admin ${new Date().toISOString().slice(0, 16)}`,
+        });
+      }
+      if (enr.error) throw enr.error;
+      setFactorId(enr.data.id);
+      setQr(enr.data.totp.qr_code);
+      setSecret(enr.data.totp.secret);
       setMode("enroll");
-    } catch {
-      setErr("Vérification MFA impossible pour le moment. Réessayez.");
+    } catch (e) {
+      console.error("[ClairDossier] MFA admin :", mfaErrorDetails(e));
+      setErr(mfaErrorMessage(e, "bootstrap"));
     }
   }
 
@@ -173,7 +182,7 @@ function MfaGate({ onReady }: { onReady: () => void }) {
   }, []);
 
   async function submitCode() {
-    if (!factorId || code.trim().length < 6) return;
+    if (!factorId || code.trim().length < 6 || busy) return;
     setBusy(true);
     setErr(null);
     try {
@@ -185,9 +194,21 @@ function MfaGate({ onReady }: { onReady: () => void }) {
         code: code.trim(),
       });
       if (vErr) throw vErr;
+      // N'ouvrir la console qu'une fois la session réellement en AAL2 (jamais
+      // de redirect sur un état obsolète) ; un seul refresh de rattrapage.
+      let { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      if (aal?.currentLevel !== "aal2") {
+        await supabase.auth.refreshSession();
+        ({ data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel());
+      }
+      if (aal?.currentLevel !== "aal2") {
+        setErr("La session n'a pas atteint le niveau de sécurité requis. Réessayez.");
+        return;
+      }
       onReady();
-    } catch {
-      setErr("Code invalide ou expiré. Réessayez.");
+    } catch (e) {
+      console.error("[ClairDossier] MFA admin :", mfaErrorDetails(e));
+      setErr(mfaErrorMessage(e, "verify"));
     } finally {
       setBusy(false);
       setCode("");
@@ -216,7 +237,7 @@ function MfaGate({ onReady }: { onReady: () => void }) {
             </p>
             {qr && (
               <img
-                src={`data:image/svg+xml;utf8,${encodeURIComponent(qr)}`}
+                src={mfaQrSrc(qr)}
                 alt="QR code d'enrôlement MFA"
                 width={180}
                 height={180}
