@@ -59,7 +59,7 @@ export const operational: ProductStatusEntry[] = [
   {
     label: 'Transmission déclenchée par vous, jamais automatique',
     detail:
-      'Envoi du dossier par e-mail ou WhatsApp sur action explicite de l’utilisateur. Aucune lecture ni exploitation automatique des pièces (engagement contractuel).',
+      'Le dossier validé est enregistré dans votre compte ; aucun envoi automatique. Vous téléchargez vos pièces et transmettez le dossier vous-même au destinataire de votre choix. Aucune lecture ni exploitation automatique des pièces (engagement contractuel).',
     verification: '/fonctionnalites/transmission-validee · /cgv',
   },
   {
@@ -83,14 +83,14 @@ export const operational: ProductStatusEntry[] = [
 
 export const partial: ProductStatusEntry[] = [
   {
-    label: 'Quotas des formules affichés mais non appliqués',
+    label: 'Quotas de dossiers des formules',
     detail:
-      'Les plafonds de la grille tarifaire (nombre de dossiers, utilisateurs) sont affichés sur /tarifs mais ne sont pas encore appliqués techniquement dans l’application. Définition et application en cours d’arbitrage.',
+      'Le contrôle serveur des plafonds de dossiers (vérification et décompte à la validation, exceptions gérées par l’équipe) est livré ; son activation en production est en cours de déploiement. Aucune limite n’est appliquée à un abonné tant que son abonnement n’est pas rattaché.',
   },
   {
-    label: 'Paiement non relié automatiquement aux droits',
+    label: 'Rattachement automatique de l’abonnement aux droits',
     detail:
-      'L’abonnement Stripe n’active pas automatiquement de capacités dans l’application (pas de webhook) : le rapprochement est effectué manuellement par l’équipe.',
+      'Le rattachement de l’abonnement Stripe au compte via un webhook signé est livré ; son activation est en cours de déploiement. D’ici là, le rapprochement est effectué par l’équipe.',
   },
   {
     label: 'Capture des demandes de contact et de rendez-vous',

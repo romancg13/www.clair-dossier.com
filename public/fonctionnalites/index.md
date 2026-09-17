@@ -28,7 +28,7 @@ Détail : https://www.clair-dossier.com/fonctionnalites/chronologie · Markdown 
 
 ## Transmission validée par vous
 
-Vous transmettez votre dossier par e-mail ou WhatsApp, quand vous le décidez. Rien ne part sans votre validation explicite.
+Votre dossier validé est enregistré dans votre compte, jamais envoyé automatiquement. Vous le transmettez vous-même, au destinataire et au moment de votre choix.
 
 Détail : https://www.clair-dossier.com/fonctionnalites/transmission-validee · Markdown : https://www.clair-dossier.com/fonctionnalites/transmission-validee.md
 
@@ -58,7 +58,7 @@ Détail : https://www.clair-dossier.com/fonctionnalites/calendrier-relances · M
 
 ## Récapitulatif avant transmission
 
-Avant d'envoyer, ClairDossier vous présente un récapitulatif complet du dossier. Vous relisez, vous corrigez si besoin, puis vous transmettez.
+Avant de valider, ClairDossier vous présente un récapitulatif complet du dossier. Vous relisez, vous corrigez si besoin, puis vous enregistrez le dossier dans votre compte.
 
 Détail : https://www.clair-dossier.com/fonctionnalites/recapitulatif-transmission · Markdown : https://www.clair-dossier.com/fonctionnalites/recapitulatif-transmission.md
 
