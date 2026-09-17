@@ -40,7 +40,7 @@ type DraftAnswers = Record<string, string>;
 const AI_OPTION_TEXT =
   "Obtenez un premier résumé du dossier, identifiez les pièces utiles et préparez les éléments à faire valider par un professionnel du droit.";
 
-type Saved = { dossierId: string; alreadySaved: boolean; warning: string | null };
+type Saved = { dossierId: string; alreadySaved: boolean; warning: string | null; notified: boolean };
 
 export function DossierFlow() {
   const { user } = useAuth();
@@ -240,6 +240,9 @@ export function DossierFlow() {
         warning: failures
           ? `${failures} pièce(s) n'ont pas pu être déposées. Vous pourrez les ajouter depuis la page du dossier.`
           : null,
+        // La notification interne n'existe que lorsque le moteur serveur
+        // (migration 20260917120000) est actif : la confirmation reste exacte.
+        notified: withKey,
       });
     } catch {
       setSubmitError("Votre dossier n'a pas pu être enregistré. Vérifiez votre connexion puis réessayez.");
@@ -812,8 +815,8 @@ function StepRecap({
       <div className="mt-7 rounded-xl bg-cream-100 p-5">
         <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">Enregistrement</p>
         <p className="mt-2 text-sm leading-relaxed text-navy-900">
-          En validant, votre dossier est enregistré dans votre compte ClairDossier et notre équipe est
-          informée de sa création. Rien n'est envoyé par e-mail ou WhatsApp.
+          En validant, votre dossier est enregistré dans votre compte ClairDossier. Rien n'est envoyé
+          par e-mail ou WhatsApp.
         </p>
       </div>
 
@@ -863,8 +866,9 @@ function SuccessCard({ saved, onNew }: { saved: Saved; onNew: () => void }) {
         {saved.alreadySaved ? "Votre dossier a déjà été enregistré." : "Dossier enregistré"}
       </h2>
       <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-slate-500">
-        Votre dossier a bien été enregistré dans votre compte ClairDossier. Nous avons été informés de sa
-        création. Vous pouvez le retrouver et suivre son évolution depuis votre espace.
+        Votre dossier a bien été enregistré dans votre compte ClairDossier.
+        {saved.notified ? " Notre équipe a été informée de sa création." : ""} Vous pouvez le retrouver
+        et suivre son évolution depuis votre espace.
       </p>
       {saved.warning && (
         <p className="mx-auto mt-4 max-w-md rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-700">{saved.warning}</p>
