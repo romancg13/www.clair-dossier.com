@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "motion/react";
 import { useAuth } from "../lib/auth";
+import { useCheckoutEmail } from "../lib/profile";
 import { Seo, breadcrumbSchema } from "../lib/seo";
 import { Reveal, Stagger, StaggerItem } from "../components/primitives/Reveal";
 import { Accordion } from "../components/ui/Accordion";
@@ -610,6 +611,7 @@ function PlanCard({ plan, billing }: { plan: Plan; billing: Billing }) {
 function PlanCta({ href, label, className }: { href: string; label: string; className: string }) {
   const { user } = useAuth();
   const isCheckout = href.startsWith("https://buy.stripe.com/");
+  const checkoutEmail = useCheckoutEmail(isCheckout ? user?.id : undefined, user?.email ?? null);
   if (isCheckout && !user) {
     return (
       <Link to={`/connexion?next=${encodeURIComponent("/tarifs")}`} className={className}>
@@ -617,9 +619,21 @@ function PlanCta({ href, label, className }: { href: string; label: string; clas
       </Link>
     );
   }
-  if (isCheckout && !user) {
+  if (isCheckout && user && !user.email_confirmed_at) {
     return (
-      <a href={href} className={className}>
+      <Link to="/inscription" state={{ verifier: user.email }} className={className}>
+        {label}
+      </Link>
+    );
+  }
+  if (isCheckout && user) {
+    // Rattachement serveur du paiement au compte (webhook Stripe) : identifiant
+    // du compte + e-mail de facturation (facultatif, repli sur le compte).
+    const url = new URL(href);
+    url.searchParams.set("client_reference_id", user.id);
+    if (checkoutEmail) url.searchParams.set("prefilled_email", checkoutEmail);
+    return (
+      <a href={url.toString()} className={className}>
         {label}
       </a>
     );

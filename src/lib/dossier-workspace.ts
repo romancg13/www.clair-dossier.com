@@ -10,114 +10,40 @@
  * données, aucun écran cassé.
  */
 
-/* ── Classification déterministe des pièces ─────────────────────────────
+/* ── Logique métier partagée (web + application mobile) ─────────────────
+ * Ces règles vivent désormais dans packages/core (aucune dépendance, aucun
+ * DOM) pour que le site et l'application iOS/Android classent, valident et
+ * nomment EXACTEMENT de la même façon. L'API publique de ce module est
+ * inchangée : tous les imports existants continuent de fonctionner.
+ *
  * Aucune lecture du CONTENU des documents (engagement CGV) : seules des
- * règles sur le NOM du fichier sont utilisées. La catégorie corrigée par
- * l'utilisateur (colonne `category`) est toujours prioritaire. */
+ * règles sur le NOM du fichier sont utilisées. */
 
-export type PieceCategory = {
-  id: string;
-  label: string;
-  /** Motifs testés sur le nom de fichier, insensibles à la casse/accents. */
-  patterns: RegExp[];
-};
+export {
+  PIECE_CATEGORIES,
+  CATEGORY_LABELS,
+  classifyFileName,
+  effectiveCategory,
+  deadlineStatus,
+  ACCEPTED_EXTENSIONS,
+  ACCEPT_ATTR,
+  MAX_FILE_BYTES,
+  sanitizeFileName,
+  formatBytes,
+  duplicateWarning,
+  isGenericTitle,
+  EVENT_LABELS,
+} from '../../packages/core/src/index';
 
-export const PIECE_CATEGORIES: PieceCategory[] = [
-  { id: 'contrats', label: 'Contrats & conventions', patterns: [/contrat/, /convention/, /avenant/, /cgv/, /conditions[-_ ]generales/, /bail/] },
-  { id: 'devis', label: 'Devis & commandes', patterns: [/devis/, /bon[-_ ]?de[-_ ]?commande/, /\bcommande/, /proposition/] },
-  { id: 'factures', label: 'Factures & avoirs', patterns: [/facture/, /avoir/, /fact[-_ ]?\d/, /invoice/, /note[-_ ]?d[e']?[-_ ]?frais/] },
-  { id: 'courriers', label: 'Courriers', patterns: [/courrier/, /lettre/, /recommande/, /\blrar\b/, /mise[-_ ]?en[-_ ]?demeure/, /relance/] },
-  { id: 'emails', label: 'E-mails & échanges', patterns: [/e?[-_ ]?mail/, /courriel/, /echange/, /whatsapp/, /sms/] },
-  { id: 'procedure', label: 'Pièces de procédure', patterns: [/assignation/, /conclusion/, /jugement/, /ordonnance/, /requete/, /huissier/, /commissaire/, /proces[-_ ]?verbal/, /\bpv\b/] },
-  { id: 'paiements', label: 'Paiements & justificatifs', patterns: [/paiement/, /reglement/, /virement/, /releve/, /recu/, /quittance/, /cheque/] },
-  { id: 'administratif', label: 'Administratif', patterns: [/kbis/, /attestation/, /assurance/, /urssaf/, /impot/, /siren/, /siret/, /declaration/, /certificat/] },
-  { id: 'autres', label: 'Autres pièces', patterns: [] },
-];
+export type { PieceCategory, DeadlineStatus, ExistingDoc, EventType } from '../../packages/core/src/index';
 
-export const CATEGORY_LABELS: Record<string, string> = Object.fromEntries(
-  PIECE_CATEGORIES.map((c) => [c.id, c.label]),
-);
-
-function normalize(name: string): string {
-  return name
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '');
-}
-
-/** Catégorie déterministe d'après le nom de fichier ; « autres » si incertain. */
-export function classifyFileName(fileName: string): string {
-  const n = normalize(fileName);
-  for (const cat of PIECE_CATEGORIES) {
-    if (cat.patterns.some((p) => p.test(n))) return cat.id;
-  }
-  return 'autres';
-}
-
-/** Catégorie effective : correction utilisateur (DB) prioritaire sur la règle. */
-export function effectiveCategory(fileName: string, stored?: string | null): string {
-  if (stored && CATEGORY_LABELS[stored]) return stored;
-  return classifyFileName(fileName);
-}
-
-/* ── Échéances ──────────────────────────────────────────────────────────── */
-
-export type DeadlineStatus = 'retard' | 'a-venir' | 'terminee';
-
-export function deadlineStatus(dueDate: string, done: boolean, today = new Date()): DeadlineStatus {
-  if (done) return 'terminee';
-  const d = new Date(`${dueDate}T23:59:59`);
-  return d.getTime() < today.getTime() ? 'retard' : 'a-venir';
-}
-
-/* ── Upload : validation partagée (création + ajout sur dossier existant) ── */
-
-export const ACCEPTED_EXTENSIONS = ['pdf', 'jpg', 'jpeg', 'png', 'webp', 'doc', 'docx', 'txt'];
-export const ACCEPT_ATTR = ACCEPTED_EXTENSIONS.map((e) => `.${e}`).join(',');
-export const MAX_FILE_BYTES = 25 * 1024 * 1024; // 25 Mo
-
-export function sanitizeFileName(name: string): string {
-  return name.replace(/[^a-zA-Z0-9._-]+/g, '_').slice(0, 80);
-}
+import { validateUploadMeta } from '../../packages/core/src/index';
+import { eventLabel } from '../../packages/core/src/index';
+import type { EventType } from '../../packages/core/src/index';
 
 /** Retourne un message d'erreur (français) ou null si le fichier est accepté. */
 export function validateUpload(file: File): string | null {
-  const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
-  if (!ACCEPTED_EXTENSIONS.includes(ext)) {
-    return `« ${file.name} » : format non accepté (formats : ${ACCEPTED_EXTENSIONS.join(', ')}).`;
-  }
-  if (file.size > MAX_FILE_BYTES) {
-    return `« ${file.name} » : fichier trop volumineux (maximum 25 Mo).`;
-  }
-  if (file.size === 0) {
-    return `« ${file.name} » : fichier vide.`;
-  }
-  return null;
-}
-
-export function formatBytes(bytes?: number | null): string {
-  if (!bytes || bytes <= 0) return '';
-  if (bytes < 1024) return `${bytes} o`;
-  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} Ko`;
-  return `${(bytes / (1024 * 1024)).toFixed(1).replace('.', ',')} Mo`;
-}
-
-/* ── Doublons documentaires (règles prudentes, jamais bloquantes) ───────── */
-
-export type ExistingDoc = { file_name: string; size_bytes: number | null };
-
-/** Message d'avertissement si le fichier semble déjà présent, sinon null.
- *  Même nom (insensible à la casse) = quasi-certain ; même taille exacte
- *  (> 0) = possible. On avertit, on ne bloque jamais. */
-export function duplicateWarning(file: { name: string; size: number }, existing: ExistingDoc[]): string | null {
-  const name = file.name.trim().toLowerCase();
-  if (existing.some((d) => d.file_name.trim().toLowerCase() === name)) {
-    return `« ${file.name} » est déjà présent dans ce dossier (même nom).`;
-  }
-  if (file.size > 0 && existing.some((d) => d.size_bytes === file.size)) {
-    return `« ${file.name} » semble déjà présent (taille identique à une pièce existante).`;
-  }
-  return null;
+  return validateUploadMeta({ name: file.name, size: file.size });
 }
 
 /* ── Détection des capacités (migration appliquée ou non) ───────────────── */
@@ -163,36 +89,29 @@ export function hasEvents(): Promise<boolean> {
   });
 }
 
+/** Moteur de quota + idempotence (migration 20260917120000) disponible ? */
+export function hasQuotaEngine(): Promise<boolean> {
+  return probe('quota-engine', async () => {
+    const { error } = await (await client())
+      .from('dossiers')
+      .select('id,submitted_at,client_request_id')
+      .limit(1);
+    return !error;
+  });
+}
+
+/** Droits publiés par le serveur pour l'utilisateur connecté (null si indisponible). */
+export async function fetchMyEntitlement(): Promise<unknown | null> {
+  try {
+    if (!(await hasQuotaEngine())) return null;
+    const { data, error } = await (await client()).rpc('get_my_dossier_entitlement');
+    return error ? null : data;
+  } catch {
+    return null;
+  }
+}
+
 /* ── Journal d'activité (meilleur effort, jamais bloquant) ──────────────── */
-
-export type EventType =
-  | 'document_ajoute'
-  | 'document_renomme'
-  | 'document_reclasse'
-  | 'document_corbeille'
-  | 'document_restaure'
-  | 'document_supprime'
-  | 'dossier_renomme'
-  | 'echeance_creee'
-  | 'echeance_modifiee'
-  | 'echeance_terminee'
-  | 'echeance_supprimee'
-  | 'telechargement_groupe';
-
-export const EVENT_LABELS: Record<EventType, string> = {
-  document_ajoute: 'Document ajouté',
-  document_renomme: 'Document renommé',
-  document_reclasse: 'Document reclassé',
-  document_corbeille: 'Document placé dans la corbeille',
-  document_restaure: 'Document restauré',
-  document_supprime: 'Document supprimé définitivement',
-  dossier_renomme: 'Dossier renommé',
-  echeance_creee: 'Échéance ajoutée',
-  echeance_modifiee: 'Échéance modifiée',
-  echeance_terminee: 'Échéance terminée',
-  echeance_supprimee: 'Échéance supprimée',
-  telechargement_groupe: 'Téléchargement groupé des pièces',
-};
 
 /** Journalise un événement ; silencieux si la table n'existe pas encore. */
 export async function logDossierEvent(
@@ -207,28 +126,9 @@ export async function logDossierEvent(
       dossier_id: dossierId,
       user_id: userId,
       type,
-      label: detail ? `${EVENT_LABELS[type]} — ${detail}` : EVENT_LABELS[type],
+      label: eventLabel(type, detail),
     });
   } catch {
     /* jamais bloquant */
   }
-}
-
-/* ── Titres génériques (héritage : catégorie utilisée comme titre) ──────── */
-
-const GENERIC_TITLES = new Set(
-  [
-    'autre', 'dossier client', 'facture / paiement', 'impayé / pré-contentieux',
-    'dossier administratif', 'documents comptables', 'personnel / rh',
-    'litige commercial', 'recouvrement', 'bail & immobilier',
-    'litige client / fournisseur', "prud'hommes", 'divorce / famille', 'succession',
-    'dossier-client', 'facture-paiement', 'impaye-precontentieux', 'administratif',
-    'comptable', 'rh',
-  ].map((t) => normalize(t)),
-);
-
-/** Vrai si le titre est vide ou n'est qu'une reprise de catégorie (à renommer). */
-export function isGenericTitle(title: string | null | undefined): boolean {
-  if (!title?.trim()) return true;
-  return GENERIC_TITLES.has(normalize(title.trim()));
 }

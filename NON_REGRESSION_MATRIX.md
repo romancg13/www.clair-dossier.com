@@ -550,3 +550,45 @@ Composition cinématique montée derrière le flag `HOME_CINEMATIC` (`src/lib/fl
 | T-015 Reduced motion | **PASS (augmenté)** | Toutes les scènes rendent leur état final statique ; sélecteurs « Pour qui » et « Mensuel / Annuel » sans transition |
 
 Nouveaux tests : `tests/home-landing.test.ts` (flag, étiquetage « Dossier de démonstration », libellés réels, frise = 6 statuts, aucune capacité non opérationnelle mise en scène, calendrier cohérent).
+
+---
+
+## Addendum — application mobile & extraction de la logique partagée (2026-09-16)
+
+Chantier `feature/mobile-app` : ajout de `mobile/` (Expo) et de `packages/core`
+(logique métier partagée). Le site web n'a subi **aucun changement de
+comportement** ; seules des redéfinitions locales ont été remplacées par des
+imports du cœur partagé.
+
+### Fichiers du site touchés (diffs additifs, API publique inchangée)
+
+| Fichier | Nature du changement | Contrôle |
+|---|---|---|
+| `src/lib/dossier-workspace.ts` | réexporte `packages/core` ; conserve `validateUpload(File)`, les sondes de capacités et `logDossierEvent` | tous les imports existants (`DossierDetail`, `DossierFlow`, `Account`, `AdminConsole`) compilent sans modification |
+| `src/pages/DossierFlow.tsx` | `PROFILS`, `CATEGORIES`, champs et `fieldsFor` importés au lieu d'être redéfinis ; `sanitizeName` → `sanitizeFileName` (implémentation identique) | mêmes valeurs écrites dans `dossiers.typology` et `dossiers.answers` |
+| `src/pages/DossierDetail.tsx` | `STATUS_LABELS`, `TYPOLOGY_LABELS`, étapes, `currentStep`, `ANSWER_LABELS`, `isDateKey` importés au lieu d'être redéfinis | libellés affichés strictement identiques |
+| `tsconfig.json` | `packages/core/src` ajouté à `include` | typecheck vert |
+
+Aucune route, aucune classe CSS, aucune colonne, aucune policy n'a été renommée
+ni supprimée. Aucune migration existante n'a été modifiée.
+
+### Résultats
+
+| Test | Attendu | Obtenu |
+|---|---|---|
+| `npm run typecheck` | 0 erreur | **PASS** |
+| `node --import tsx --test tests/*.test.ts` | tous verts | **PASS** — 70/70 (39 existants + 31 nouveaux sur `packages/core`) |
+| `npm run build` (gen:md + gen:sitemap + tsc + vite + prerender) | 32 routes pré-rendues | **PASS** |
+| Bundle principal | pas de régression de poids | 212,91 Ko / 62,89 Ko gzip |
+| Comportement des écrans dossier / compte / admin | identique | **PASS** (mêmes libellés, mêmes requêtes, mêmes écritures) |
+
+### Base de données
+
+Une migration **additive** est livrée mais **non appliquée** :
+`20260916120000_mobile_push_tokens.sql` (table `device_push_tokens` + RLS
+`_own`). Elle ne touche à aucune table existante ; le site et l'application
+fonctionnent à l'identique tant qu'elle n'est pas appliquée.
+
+La fonction Edge `delete-account` est livrée mais **non déployée** (suppression
+de compte exigée par les magasins ; l'application le détecte et propose la voie
+écrite tant que la fonction est absente).

@@ -1,0 +1,14 @@
+{
+  // Les tests tournent sous Node (node:test via tsx) : ils ont besoin des types
+  // Node, que l'application n'a pas — d'où un projet TypeScript séparé.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "lib": ["ES2023"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx"
+  },
+  "include": ["tests/**/*.ts", "src/lib/format.ts", "src/theme/tokens.ts"],
+  "exclude": []
+}

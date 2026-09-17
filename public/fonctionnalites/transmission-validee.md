@@ -1,27 +1,27 @@
 ---
 title: "Transmission validée par vous"
-description: "Vous transmettez votre dossier par e-mail ou WhatsApp, quand vous le décidez. Rien ne part sans votre validation explicite."
+description: "Votre dossier validé est enregistré dans votre compte, jamais envoyé automatiquement. Vous le transmettez vous-même, au destinataire et au moment de votre choix."
 url: https://www.clair-dossier.com/fonctionnalites/transmission-validee
 ---
 
 # Transmission validée par vous
 
-**Le dossier ne part jamais tout seul. C'est vous qui déclenchez la transmission, par e-mail ou par WhatsApp.**
+**Le dossier ne part jamais tout seul. Il reste dans votre compte tant que vous ne décidez pas de le transmettre.**
 
-ClairDossier prépare votre dossier ; c'est vous qui choisissez quand et à qui le transmettre. Aucun envoi automatique : tant que vous n'avez pas validé, rien ne quitte votre espace.
+ClairDossier prépare votre dossier ; c'est vous qui choisissez quand et à qui le transmettre. Aucun envoi automatique : rien ne quitte votre espace sans votre action.
 
-Quand votre dossier est prêt, vous le transmettez en un geste, par e-mail ou par WhatsApp. Vous décidez du destinataire et du moment. La transmission est toujours déclenchée par vous, explicitement.
+Quand votre dossier est prêt, vous retrouvez toutes ses pièces et informations dans votre compte : vous les téléchargez et transmettez le dossier au destinataire de votre choix, par le canal qui vous convient. La transmission est toujours effectuée par vous, explicitement.
 
-Vous gardez ainsi la main du début à la fin : vous construisez le dossier dans le tunnel, vous relisez le récapitulatif, puis vous transmettez seulement lorsque tout vous convient.
+Vous gardez ainsi la main du début à la fin : vous construisez le dossier dans le tunnel, vous relisez le récapitulatif, vous validez son enregistrement dans votre compte, puis vous transmettez seulement lorsque tout vous convient.
 
-Ce fonctionnement protège vos données : elles restent dans votre espace privé jusqu'à votre validation, et ne sont partagées qu'avec les personnes que vous avez choisies.
+Ce fonctionnement protège vos données : elles restent dans votre espace privé, et ne sont partagées qu'avec les personnes que vous avez choisies, quand vous l'avez décidé.
 
 ## Concrètement
 
-- Transmission déclenchée par vous, jamais automatique
-- Envoi par e-mail ou par WhatsApp, à votre choix
-- Validation explicite avant tout partage
-- Données conservées dans votre espace privé jusqu'à l'envoi
+- Transmission décidée et effectuée par vous, jamais automatique
+- Dossier enregistré dans votre compte, pièces téléchargeables à tout moment
+- Aucun envoi sans votre action explicite
+- Données conservées dans votre espace privé jusqu'au partage que vous décidez
 
 
 ---

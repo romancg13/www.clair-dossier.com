@@ -49,6 +49,13 @@ jobs:
           # Clés Supabase PUBLIQUES (anon) — conçues pour le client, protégées par RLS.
           VITE_SUPABASE_URL: https://buzgokfmxpmyceppvjpp.supabase.co
           VITE_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ1emdva2ZteHBteWNlcHB2anBwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1NDk5NjksImV4cCI6MjA5NzEyNTk2OX0.MBRiuEYKl-b4_dNYpWKjWRm8qaFAXfwHjyAvf3Kzn2U
+          # Lien PUBLIC du portail client Stripe (factures, abonnement) — variable de dépôt, facultative.
+          VITE_STRIPE_PORTAL_URL: ${{ vars.VITE_STRIPE_PORTAL_URL }}
+
+      # Repère de version public (aucun secret) : prouve quel commit est servi
+      # par le domaine — https://www.clair-dossier.com/version.json
+      - name: Version marker
+        run: printf '{"commit":"%s","builtAt":"%s"}\n' "$GITHUB_SHA" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > dist/version.json
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

@@ -18,18 +18,25 @@ export type CompanyType =
 
 export type SignUpInfo = {
   fullName?: string;
+  firstName?: string;
+  lastName?: string;
   companyName?: string;
   companyType?: CompanyType;
+  phone?: string | null;
 };
 
 type AuthResult = { error: string | null };
+/** `needsVerification` : compte créé, e-mail à confirmer avant toute session. */
+type SignUpResult = AuthResult & { needsVerification?: boolean };
 
 type AuthContextValue = {
   session: Session | null;
   user: User | null;
   loading: boolean;
   configured: boolean;
-  signUp: (email: string, password: string, info?: SignUpInfo) => Promise<AuthResult>;
+  signUp: (email: string, password: string, info?: SignUpInfo) => Promise<SignUpResult>;
+  verifyEmailOtp: (email: string, code: string) => Promise<AuthResult>;
+  resendSignupCode: (email: string) => Promise<AuthResult>;
   signIn: (email: string, password: string) => Promise<AuthResult>;
   signOut: () => Promise<void>;
 };
@@ -45,6 +52,12 @@ function translateError(message: string): string {
   if (m.includes('valid email') || m.includes('invalid email')) return 'Adresse email invalide.';
   if (m.includes('rate limit') || m.includes('too many')) return 'Trop de tentatives. Réessayez dans quelques minutes.';
   if (m.includes('email not confirmed')) return "Email non confirmé. Vérifiez votre boîte mail.";
+  if (m.includes('token has expired') || m.includes('expired'))
+    return 'Ce code a expiré. Demandez un nouveau code.';
+  if (m.includes('invalid') && (m.includes('otp') || m.includes('token')))
+    return 'Code incorrect. Vérifiez les 6 chiffres reçus par e-mail.';
+  if (m.includes('for security purposes'))
+    return 'Patientez quelques secondes avant de demander un nouveau code.';
   return message;
 }
 
@@ -72,21 +85,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  async function signUp(email: string, password: string, info?: SignUpInfo): Promise<AuthResult> {
+  async function signUp(email: string, password: string, info?: SignUpInfo): Promise<SignUpResult> {
     if (!isSupabaseConfigured) return { error: "Le service de comptes n'est pas configuré." };
+    const first = info?.firstName?.trim() || null;
+    const last = info?.lastName?.trim() || null;
+    const full = info?.fullName?.trim() || [first, last].filter(Boolean).join(' ') || null;
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
+        emailRedirectTo: typeof window !== 'undefined' ? `${window.location.origin}/compte` : undefined,
         data: {
-          full_name: info?.fullName ?? null,
-          company_name: info?.companyName ?? null,
+          full_name: full,
+          first_name: first,
+          last_name: last,
+          company_name: info?.companyName?.trim() || null,
           company_type: info?.companyType ?? null,
+          phone: info?.phone?.trim() || null,
         },
       },
     });
     if (error) return { error: translateError(error.message) };
+    if (data.session) {
+      setSession(data.session);
+      return { error: null, needsVerification: false };
+    }
+    return { error: null, needsVerification: true };
+  }
+
+  // Vérification e-mail par code à 6 chiffres (Supabase Auth natif).
+  async function verifyEmailOtp(email: string, code: string): Promise<AuthResult> {
+    if (!isSupabaseConfigured) return { error: "Le service de comptes n'est pas configuré." };
+    const { data, error } = await supabase.auth.verifyOtp({ email, token: code.trim(), type: 'signup' });
+    if (error) return { error: translateError(error.message) };
     if (data.session) setSession(data.session);
+    return { error: null };
+  }
+
+  async function resendSignupCode(email: string): Promise<AuthResult> {
+    if (!isSupabaseConfigured) return { error: "Le service de comptes n'est pas configuré." };
+    const { error } = await supabase.auth.resend({ type: 'signup', email });
+    if (error) return { error: translateError(error.message) };
     return { error: null };
   }
 
@@ -109,6 +148,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loading,
     configured: isSupabaseConfigured,
     signUp,
+    verifyEmailOtp,
+    resendSignupCode,
     signIn,
     signOut,
   };
