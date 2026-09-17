@@ -1,185 +1,189 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { Seo, breadcrumbSchema } from "../lib/seo";
-import { ArrowRightIcon, CheckIcon, WhatsAppIcon } from "../components/icons";
-import { openWhatsApp } from "../lib/whatsapp";
-import { validateUpload, sanitizeFileName } from "../lib/dossier-workspace";
+import { ArrowRightIcon, CheckIcon } from "../components/icons";
+import {
+  fetchMyEntitlement,
+  hasQuotaEngine,
+  sanitizeFileName,
+  validateUpload,
+} from "../lib/dossier-workspace";
+import {
+  blankDraft,
+  cleanAnswers,
+  isUuid,
+  loadDraft,
+  removeDraft,
+  saveDraft,
+  type TunnelDraft,
+} from "../lib/drafts";
 // Profils, typologies et champs du tunnel : source unique partagée avec
 // l'application mobile (packages/core) — mêmes valeurs écrites en base.
 import {
   CATEGORIES,
   PROFILS,
   fieldsFor,
+  parseDossierEntitlement,
+  parseSubmissionError,
+  quotaLimitMessage,
+  quotaReached,
   type Category,
+  type DossierEntitlement,
   type Profil,
 } from "../../packages/core/src/index";
 import { useAuth } from "../lib/auth";
 import { supabase } from "../lib/supabase";
 
 type DraftAnswers = Record<string, string>;
-type Step = 1 | 2 | 3 | 4 | 5;
-
-type Draft = {
-  profil?: Profil;
-  typology?: Category;
-  title?: string;
-  answers: DraftAnswers;
-  step: Step;
-  updatedAt: string;
-};
-
-const STORAGE_KEY = "clairdossier_draft";
-const TEAM_EMAIL = "contact.clairdossier@icloud.com";
 
 const AI_OPTION_TEXT =
   "Obtenez un premier résumé du dossier, identifiez les pièces utiles et préparez les éléments à faire valider par un professionnel du droit.";
 
+type Saved = { dossierId: string; alreadySaved: boolean; warning: string | null; notified: boolean };
+
 export function DossierFlow() {
   const { user } = useAuth();
-  const [uploadError, setUploadError] = useState<string | null>(null);
-  const [draft, setDraft] = useState<Draft>({
-    answers: {},
-    step: 1,
-    updatedAt: new Date().toISOString(),
+  const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const requestedDraft = params.get("brouillon");
+
+  // Chaque ouverture sans brouillon demandé = dossier VIERGE (nouvel identifiant).
+  const [draft, setDraft] = useState<TunnelDraft>(() => {
+    const resumed = requestedDraft ? loadDraft(requestedDraft) : null;
+    return resumed ?? blankDraft();
   });
-  const [restored, setRestored] = useState(false);
+  const [restored, setRestored] = useState(() => Boolean(requestedDraft && loadDraft(requestedDraft)));
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [files, setFiles] = useState<File[]>([]);
   const [legalReview, setLegalReview] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [saveWarning, setSaveWarning] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [nameError, setNameError] = useState<string | null>(null);
-  const [done, setDone] = useState(false);
+  const [saved, setSaved] = useState<Saved | null>(null);
+  const [entitlement, setEntitlement] = useState<DossierEntitlement | null>(null);
+  const submittingRef = useRef(false);
 
+  // Chaque navigation vers « nouveau dossier » (même depuis cette page) repart
+  // d'un état VIERGE ; « reprendre » charge uniquement le brouillon demandé.
+  // Le brouillon en cours reste sauvegardé et reprenable depuis « Mon compte ».
+  const location = useLocation();
+  const firstNavigation = useRef(true);
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as Draft;
-        if (parsed && typeof parsed === "object") {
-          setDraft({
-            profil: parsed.profil,
-            typology: parsed.typology,
-            title: parsed.title,
-            answers: parsed.answers ?? {},
-            step: (parsed.step ?? 1) as Step,
-            updatedAt: parsed.updatedAt ?? new Date().toISOString(),
-          });
-          setRestored(true);
-        }
-      }
-    } catch {
-      /* localStorage unavailable */
+    if (firstNavigation.current) {
+      firstNavigation.current = false;
+      return;
     }
-  }, []);
+    const resumed = requestedDraft ? loadDraft(requestedDraft) : null;
+    setRestored(Boolean(resumed));
+    setDraft(resumed ?? blankDraft());
+    setSaved(null);
+    setFiles([]);
+    setLegalReview(false);
+    setSubmitError(null);
+    setNameError(null);
+    setUploadError(null);
+  }, [location.key, requestedDraft]);
 
+  // Sauvegarde automatique — uniquement CE brouillon, sous son identifiant.
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(draft));
-    } catch {
-      /* noop */
-    }
-  }, [draft]);
+    if (!saved) saveDraft(draft);
+  }, [draft, saved]);
+
+  // Information préventive sur le quota (la décision reste au serveur).
+  useEffect(() => {
+    let active = true;
+    void fetchMyEntitlement().then((raw) => {
+      if (active) setEntitlement(parseDossierEntitlement(raw));
+    });
+    return () => {
+      active = false;
+    };
+  }, [user?.id]);
+
+  function update(patch: Partial<TunnelDraft>) {
+    setDraft((d) => ({ ...d, ...patch, updatedAt: new Date().toISOString() }));
+  }
 
   function selectProfil(id: Profil) {
-    setDraft((d) => ({
-      ...d,
-      profil: id,
-      step: 2,
-      updatedAt: new Date().toISOString(),
-    }));
+    update({ profil: id, step: 2 });
   }
 
   // Sélection d'une catégorie prédéfinie — reste sur l'étape 2 (le client nomme
   // ensuite son dossier juste en dessous des catégories).
   function selectCategory(id: Category) {
-    setDraft((d) => ({
-      ...d,
-      typology: id,
-      updatedAt: new Date().toISOString(),
-    }));
+    update({ typology: id });
   }
 
   // Nom du dossier OBLIGATOIRE, saisi sous les catégories (cf. cahier directeur).
   function confirmCategory() {
     if (!draft.typology) return;
     if (!draft.title?.trim()) {
-      setNameError(
-        "Donnez un nom à votre dossier pour le retrouver facilement.",
-      );
+      setNameError("Donnez un nom à votre dossier pour le retrouver facilement.");
       return;
     }
     setNameError(null);
-    setDraft((d) => ({ ...d, step: 3, updatedAt: new Date().toISOString() }));
+    update({ step: 3 });
   }
 
   function handleInfoSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const data = new FormData(e.currentTarget);
-    const answers: DraftAnswers = {
-      ...(draft.profil ? { profil: draft.profil } : {}),
-    };
+    const answers: DraftAnswers = {};
     data.forEach((value, key) => {
       answers[key] = String(value);
     });
-    setDraft((d) => ({
-      ...d,
-      answers,
-      step: 4,
-      updatedAt: new Date().toISOString(),
-    }));
+    // Un champ laissé vide n'est jamais enregistré comme valeur.
+    update({ answers: cleanAnswers(answers), step: 4 });
   }
 
-  function resetDraft() {
-    setDraft({ answers: {}, step: 1, updatedAt: new Date().toISOString() });
-    setFiles([]);
-    setLegalReview(false);
-    setDone(false);
-    setSaveWarning(null);
-    setNameError(null);
-    setRestored(false);
-    try {
-      localStorage.removeItem(STORAGE_KEY);
-    } catch {
-      /* noop */
-    }
+  function startNewDossier() {
+    navigate("/dossier/nouveau");
   }
 
   const profilMeta = PROFILS.find((p) => p.id === draft.profil);
   const categoryMeta = CATEGORIES.find((c) => c.id === draft.typology);
-  const fields = draft.typology ? fieldsFor(draft.typology) : [];
+  const fields = draft.typology ? fieldsFor(draft.typology as Category) : [];
   const isPreContentieux = draft.typology === "impaye-precontentieux";
 
-  function buildSynthesis(): string {
-    const lines = fields
-      .map(
-        (f) =>
-          `• ${f.label} : ${draft.answers[f.id]?.trim() || "Non renseigné"}`,
-      )
-      .join("\n");
-    const docLine = files.length
-      ? `\nPièces jointes : ${files.length} document(s) déposé(s) dans le compte.`
-      : "";
-    const reviewLine =
-      isPreContentieux && legalReview
-        ? `\nOption demandée : question IA préparatoire. ${AI_OPTION_TEXT}`
-        : "";
-    return (
-      `Bonjour ClairDossier,\n\n` +
-      `Profil : ${profilMeta?.label ?? draft.profil ?? "non précisé"}.\n` +
-      `Dossier : « ${draft.title?.trim() || categoryMeta?.label || draft.typology} » (${categoryMeta?.label ?? draft.typology}).\n\n` +
-      `Synthèse :\n${lines}${docLine}${reviewLine}\n\n` +
-      `Compte : ${user?.email ?? "non précisé"}\n` +
-      `Pouvez-vous me confirmer la prise en charge ? Merci.`
-    );
+  async function uploadFiles(dossierId: string): Promise<number> {
+    if (!user) return 0;
+    let failures = 0;
+    for (const file of files) {
+      const path = `${user.id}/${dossierId}/${Date.now()}-${sanitizeFileName(file.name)}`;
+      const up = await supabase.storage.from("documents").upload(path, file, { upsert: false });
+      if (up.error) {
+        failures++;
+        continue;
+      }
+      const ins = await supabase.from("dossier_documents").insert({
+        dossier_id: dossierId,
+        user_id: user.id,
+        file_path: path,
+        file_name: file.name,
+        size_bytes: file.size,
+      });
+      if (ins.error) failures++;
+    }
+    return failures;
   }
 
-  async function persistDossier(): Promise<void> {
-    if (!user || !draft.typology) return;
-    setSaveWarning(null);
+  // Étape 5 : validation DIRECTE dans ClairDossier. Aucun envoi e-mail/WhatsApp.
+  async function submit() {
+    if (!user || !draft.typology || submittingRef.current) return;
+    const title = draft.title?.trim();
+    if (!title) {
+      setSubmitError("Donnez un nom à votre dossier avant de le valider.");
+      update({ step: 2 });
+      return;
+    }
+    submittingRef.current = true;
+    setSubmitting(true);
+    setSubmitError(null);
     try {
-      const answersWithProfil: DraftAnswers = {
-        ...draft.answers,
+      const withKey = (await hasQuotaEngine()) && isUuid(draft.id);
+      const answers: DraftAnswers = {
+        ...cleanAnswers(draft.answers),
         ...(draft.profil ? { profil: draft.profil } : {}),
       };
       const { data, error } = await supabase
@@ -187,67 +191,75 @@ export function DossierFlow() {
         .insert({
           user_id: user.id,
           typology: draft.typology,
-          title: draft.title?.trim() || categoryMeta?.label || draft.typology,
-          answers: answersWithProfil,
+          title,
+          answers,
           legal_review_requested: isPreContentieux && legalReview,
           status: "transmis",
+          ...(withKey ? { client_request_id: draft.id } : {}),
         })
         .select("id")
         .single();
-      if (error || !data) {
-        setSaveWarning(
-          "Le dossier n'a pas pu être enregistré dans votre compte, mais l'envoi a bien été préparé.",
-        );
-        return;
-      }
-      const dossierId = data.id as string;
-      for (const file of files) {
-        const path = `${user.id}/${dossierId}/${Date.now()}-${sanitizeFileName(file.name)}`;
-        const up = await supabase.storage
-          .from("documents")
-          .upload(path, file, { upsert: false });
-        if (!up.error) {
-          await supabase.from("dossier_documents").insert({
-            dossier_id: dossierId,
-            user_id: user.id,
-            file_path: path,
-            file_name: file.name,
-            size_bytes: file.size,
-          });
+
+      let dossierId = (data as { id: string } | null)?.id ?? null;
+      let alreadySaved = false;
+
+      if (error) {
+        const failure = parseSubmissionError(error);
+        if (failure?.kind === "duplicate" && withKey) {
+          // Double clic / double onglet : le dossier existe déjà, on le retrouve.
+          const { data: existing } = await supabase
+            .from("dossiers")
+            .select("id")
+            .eq("user_id", user.id)
+            .eq("client_request_id", draft.id)
+            .maybeSingle();
+          dossierId = (existing as { id: string } | null)?.id ?? null;
+          alreadySaved = true;
+        } else {
+          setSubmitError(
+            failure?.message ??
+              "Votre dossier n'a pas pu être enregistré. Vérifiez votre connexion puis réessayez.",
+          );
+          if (failure?.kind === "quota") {
+            setEntitlement((e) => (e ? { ...e, used: Math.max(e.used, e.dossierLimit ?? e.used) } : e));
+          }
+          return;
         }
       }
+
+      if (!dossierId) {
+        setSubmitError("Votre dossier n'a pas pu être enregistré. Vérifiez votre connexion puis réessayez.");
+        return;
+      }
+
+      const failures = alreadySaved ? 0 : await uploadFiles(dossierId);
+      removeDraft(draft.id);
+      setSaved({
+        dossierId,
+        alreadySaved,
+        warning: failures
+          ? `${failures} pièce(s) n'ont pas pu être déposées. Vous pourrez les ajouter depuis la page du dossier.`
+          : null,
+        // La notification interne n'existe que lorsque le moteur serveur
+        // (migration 20260917120000) est actif : la confirmation reste exacte.
+        notified: withKey,
+      });
     } catch {
-      setSaveWarning(
-        "Le dossier n'a pas pu être enregistré dans votre compte, mais l'envoi a bien été préparé.",
-      );
+      setSubmitError("Votre dossier n'a pas pu être enregistré. Vérifiez votre connexion puis réessayez.");
+    } finally {
+      submittingRef.current = false;
+      setSubmitting(false);
     }
   }
 
-  async function finalize(method: "whatsapp" | "email") {
-    setSubmitting(true);
-    await persistDossier();
-    const synthesis = buildSynthesis();
-    if (method === "whatsapp") {
-      openWhatsApp(synthesis);
-    } else {
-      const subject = `Nouveau dossier ${categoryMeta?.label ?? ""}`.trim();
-      const mailto = `mailto:${TEAM_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(synthesis)}`;
-      window.location.href = mailto;
-    }
-    setSubmitting(false);
-    setDone(true);
-    try {
-      localStorage.removeItem(STORAGE_KEY);
-    } catch {
-      /* noop */
-    }
-  }
+  const done = Boolean(saved);
+  const blockedByQuota = quotaReached(entitlement);
 
   return (
     <>
       <Seo
         title="Créer un dossier"
-        description="Créez un dossier structuré : profil, nature du dossier, informations, documents, transmission. Sauvegardé dans votre compte."
+        description="Créez un dossier structuré : profil, nature du dossier, informations, documents, validation. Enregistré dans votre compte."
         path="/dossier/nouveau"
         jsonLd={breadcrumbSchema([
           { name: "Accueil", path: "/" },
@@ -261,22 +273,18 @@ export function DossierFlow() {
             Création dossier · {done ? "terminé" : `${draft.step} / 5`}
           </p>
           <h1 className="mt-4 font-display text-4xl font-semibold leading-[1.05] text-navy-900 sm:text-5xl">
-            {done && "Dossier transmis."}
+            {done && "Dossier enregistré."}
             {!done && draft.step === 1 && "Quel est votre profil ?"}
-            {!done &&
-              draft.step === 2 &&
-              "Quelle est la nature de votre dossier ?"}
-            {!done &&
-              draft.step === 3 &&
-              "Quelques informations pour structurer."}
+            {!done && draft.step === 2 && "Quelle est la nature de votre dossier ?"}
+            {!done && draft.step === 3 && "Quelques informations pour structurer."}
             {!done && draft.step === 4 && "Ajoutez vos documents."}
-            {!done && draft.step === 5 && "Récapitulatif avant transmission."}
+            {!done && draft.step === 5 && "Récapitulatif avant validation."}
           </h1>
 
-          {restored && draft.step === 1 && draft.profil && !done && (
+          {restored && !done && (
             <div className="mt-5 inline-flex items-center gap-2 rounded-full border hairline-gold bg-cream-50 px-3 py-1.5 text-xs font-medium text-navy-900">
               <span className="h-1 w-1 rounded-full bg-gold-500" />
-              Brouillon restauré depuis votre dernière visite
+              Brouillon repris là où vous l'aviez laissé
             </div>
           )}
 
@@ -291,11 +299,7 @@ export function DossierFlow() {
                         : "border hairline-strong bg-white text-slate-500"
                     }`}
                   >
-                    {draft.step > n ? (
-                      <CheckIcon width={12} height={12} strokeWidth={2.5} />
-                    ) : (
-                      n
-                    )}
+                    {draft.step > n ? <CheckIcon width={12} height={12} strokeWidth={2.5} /> : n}
                   </span>
                   {n < 5 && (
                     <span
@@ -311,40 +315,41 @@ export function DossierFlow() {
 
       <section className="bg-cream-50 pb-14 sm:pb-20 lg:pb-24">
         <div className="mx-auto max-w-4xl px-5 sm:px-8 lg:px-12">
-          {done ? (
-            <SuccessCard onReset={resetDraft} warning={saveWarning} />
+          {saved ? (
+            <SuccessCard saved={saved} onNew={startNewDossier} />
           ) : (
             <AnimatePresence mode="wait">
               <motion.div
-                key={draft.step}
+                key={`${draft.id}-${draft.step}`}
                 initial={{ opacity: 0, x: 24 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -24 }}
                 transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
               >
                 {draft.step === 1 && (
-                  <StepProfil selected={draft.profil} onSelect={selectProfil} />
+                  <StepProfil selected={draft.profil as Profil | undefined} onSelect={selectProfil} />
                 )}
                 {draft.step === 2 && (
                   <StepCategory
-                    selected={draft.typology}
+                    selected={draft.typology as Category | undefined}
                     title={draft.title ?? ""}
                     nameError={nameError}
                     onSelect={selectCategory}
                     onTitleChange={(v) => {
                       setNameError(null);
-                      setDraft((d) => ({ ...d, title: v }));
+                      update({ title: v });
                     }}
                     onContinue={confirmCategory}
-                    onBack={() => setDraft((d) => ({ ...d, step: 1 }))}
+                    onBack={() => update({ step: 1 })}
                   />
                 )}
                 {draft.step === 3 && draft.typology && (
                   <StepInfos
-                    category={draft.typology}
+                    key={`${draft.id}-${draft.typology}`}
+                    category={draft.typology as Category}
                     defaults={draft.answers}
                     onSubmit={handleInfoSubmit}
-                    onBack={() => setDraft((d) => ({ ...d, step: 2 }))}
+                    onBack={() => update({ step: 2 })}
                   />
                 )}
                 {draft.step === 4 && draft.typology && (
@@ -356,18 +361,10 @@ export function DossierFlow() {
                       const ok = fl.filter((f) => !validateUpload(f));
                       if (ok.length) setFiles((cur) => [...cur, ...ok]);
                     }}
-                    onRemove={(i) =>
-                      setFiles((cur) => cur.filter((_, idx) => idx !== i))
-                    }
+                    onRemove={(i) => setFiles((cur) => cur.filter((_, idx) => idx !== i))}
                     uploadError={uploadError}
-                    onBack={() => setDraft((d) => ({ ...d, step: 3 }))}
-                    onNext={() =>
-                      setDraft((d) => ({
-                        ...d,
-                        step: 5,
-                        updatedAt: new Date().toISOString(),
-                      }))
-                    }
+                    onBack={() => update({ step: 3 })}
+                    onNext={() => update({ step: 5 })}
                   />
                 )}
                 {draft.step === 5 && draft.typology && (
@@ -382,8 +379,10 @@ export function DossierFlow() {
                     legalReview={legalReview}
                     onToggleReview={setLegalReview}
                     submitting={submitting}
-                    onSend={finalize}
-                    onEdit={() => setDraft((d) => ({ ...d, step: 3 }))}
+                    error={submitError}
+                    quotaMessage={blockedByQuota && entitlement ? (entitlement.blockedReason ? null : quotaLimitMessage(entitlement.periodEnd)) : null}
+                    onSubmit={submit}
+                    onEdit={() => update({ step: 3 })}
                   />
                 )}
               </motion.div>
@@ -733,7 +732,9 @@ function StepRecap({
   legalReview,
   onToggleReview,
   submitting,
-  onSend,
+  error,
+  quotaMessage,
+  onSubmit,
   onEdit,
 }: {
   title: string;
@@ -746,7 +747,9 @@ function StepRecap({
   legalReview: boolean;
   onToggleReview: (v: boolean) => void;
   submitting: boolean;
-  onSend: (method: "whatsapp" | "email") => void;
+  error: string | null;
+  quotaMessage: string | null;
+  onSubmit: () => void;
   onEdit: () => void;
 }) {
   return (
@@ -769,16 +772,12 @@ function StepRecap({
         <div className="flex flex-col gap-1 py-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
           <dt className="text-sm font-medium text-slate-500">Nom du dossier</dt>
           <dd className="max-w-md text-sm text-navy-900 sm:text-right">
-            {title || (
-              <span className="italic text-slate-500">Non renseigné</span>
-            )}
+            {title || <span className="italic text-slate-500">Non renseigné</span>}
           </dd>
         </div>
         <div className="flex flex-col gap-1 py-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
           <dt className="text-sm font-medium text-slate-500">Profil</dt>
-          <dd className="max-w-md text-sm text-navy-900 sm:text-right">
-            {profilLabel}
-          </dd>
+          <dd className="max-w-md text-sm text-navy-900 sm:text-right">{profilLabel}</dd>
         </div>
         {fields.map((f) => (
           <div
@@ -787,9 +786,7 @@ function StepRecap({
           >
             <dt className="text-sm font-medium text-slate-500">{f.label}</dt>
             <dd className="max-w-md text-sm text-navy-900 sm:text-right">
-              {answers[f.id]?.trim() || (
-                <span className="italic text-slate-500">Non renseigné</span>
-              )}
+              {answers[f.id]?.trim() || <span className="italic text-slate-500">Non renseigné</span>}
             </dd>
           </div>
         ))}
@@ -809,25 +806,33 @@ function StepRecap({
             className="mt-1 h-4 w-4 accent-gold-500"
           />
           <span className="text-sm leading-relaxed text-navy-900">
-            <span className="font-semibold">
-              Option — question IA préparatoire
-            </span>{" "}
-            : {AI_OPTION_TEXT} Le professionnel du droit reste un validateur
-            optionnel.
+            <span className="font-semibold">Option — question IA préparatoire</span> : {AI_OPTION_TEXT} Le
+            professionnel du droit reste un validateur optionnel.
           </span>
         </label>
       )}
 
       <div className="mt-7 rounded-xl bg-cream-100 p-5">
-        <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">
-          Transmission
-        </p>
+        <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">Enregistrement</p>
         <p className="mt-2 text-sm leading-relaxed text-navy-900">
-          Votre dossier est enregistré dans votre compte, puis transmis par le
-          canal de votre choix. Vous gardez le dernier clic — rien ne part sans
-          votre validation.
+          En validant, votre dossier est enregistré dans votre compte ClairDossier. Rien n'est envoyé
+          par e-mail ou WhatsApp.
         </p>
       </div>
+
+      {quotaMessage && !error && (
+        <p className="mt-5 rounded-xl border hairline-gold bg-gold-500/10 px-4 py-3 text-sm text-navy-900" role="status">
+          {quotaMessage}{" "}
+          <Link to="/tarifs" className="font-medium underline underline-offset-4">
+            Voir les offres
+          </Link>
+        </p>
+      )}
+      {error && (
+        <p className="mt-5 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+          {error}
+        </p>
+      )}
 
       <div className="mt-8 flex flex-col gap-3 border-t hairline pt-6 sm:flex-row sm:items-center sm:justify-between">
         <button
@@ -837,89 +842,59 @@ function StepRecap({
         >
           ← Modifier
         </button>
-        <div className="flex flex-wrap gap-3">
-          <button
-            type="button"
-            disabled={submitting}
-            onClick={() => onSend("email")}
-            className="inline-flex items-center gap-2 rounded-full border hairline bg-white px-5 py-3.5 text-sm font-medium text-navy-900 transition-colors hover:border-navy-900 disabled:opacity-60"
-          >
-            <MailIcon /> E-mail
-          </button>
-          <button
-            type="button"
-            disabled={submitting}
-            onClick={() => onSend("whatsapp")}
-            className="sheen inline-flex items-center gap-2 rounded-full bg-gold-500 px-6 py-3.5 text-sm font-semibold text-navy-900 shadow-gold transition-all duration-200 hover:-translate-y-0.5 disabled:opacity-60"
-          >
-            <WhatsAppIcon width={16} height={16} />
-            {submitting ? "Envoi…" : "WhatsApp"}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function SuccessCard({
-  onReset,
-  warning,
-}: {
-  onReset: () => void;
-  warning: string | null;
-}) {
-  return (
-    <div className="rounded-2xl border hairline bg-white p-8 text-center shadow-card sm:p-12">
-      <span className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-emerald-100 text-emerald-600">
-        <CheckIcon width={26} height={26} strokeWidth={2.5} />
-      </span>
-      <h2 className="mt-6 font-display text-2xl font-semibold text-navy-900 sm:text-3xl">
-        Dossier enregistré et transmis
-      </h2>
-      <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-slate-500">
-        Votre dossier est sauvegardé dans votre compte. Finalisez l'envoi dans
-        l'application qui vient de s'ouvrir (WhatsApp ou e-mail) pour valider la
-        transmission à notre équipe.
-      </p>
-      {warning && (
-        <p className="mx-auto mt-4 max-w-md rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-700">
-          {warning}
-        </p>
-      )}
-      <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-        <Link
-          to="/compte"
-          className="sheen inline-flex items-center gap-2 rounded-full bg-gold-500 px-6 py-3.5 text-sm font-semibold text-navy-900 shadow-gold hover:-translate-y-0.5"
-        >
-          Voir mes dossiers
-          <ArrowRightIcon width={14} height={14} strokeWidth={2} />
-        </Link>
         <button
           type="button"
-          onClick={onReset}
-          className="rounded-full bg-cream-100 px-6 py-3.5 text-sm font-medium text-navy-900 hover:bg-cream-200"
+          disabled={submitting}
+          onClick={onSubmit}
+          className="sheen inline-flex items-center justify-center gap-2 rounded-full bg-gold-500 px-6 py-3.5 text-sm font-semibold text-navy-900 shadow-gold transition-all duration-200 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          Créer un autre dossier
+          {submitting ? "Enregistrement…" : "Valider et enregistrer mon dossier"}
+          {!submitting && <ArrowRightIcon width={14} height={14} strokeWidth={2} />}
         </button>
       </div>
     </div>
   );
 }
 
-function MailIcon() {
+function SuccessCard({ saved, onNew }: { saved: Saved; onNew: () => void }) {
   return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.6"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <rect x="3" y="5" width="18" height="14" rx="2" />
-      <path d="M3 7l9 7 9-7" />
-    </svg>
+    <div className="rounded-2xl border hairline bg-white p-8 text-center shadow-card sm:p-12">
+      <span className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-emerald-100 text-emerald-600">
+        <CheckIcon width={26} height={26} strokeWidth={2.5} />
+      </span>
+      <h2 className="mt-6 font-display text-2xl font-semibold text-navy-900 sm:text-3xl">
+        {saved.alreadySaved ? "Votre dossier a déjà été enregistré." : "Dossier enregistré"}
+      </h2>
+      <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-slate-500">
+        Votre dossier a bien été enregistré dans votre compte ClairDossier.
+        {saved.notified ? " Notre équipe a été informée de sa création." : ""} Vous pouvez le retrouver
+        et suivre son évolution depuis votre espace.
+      </p>
+      {saved.warning && (
+        <p className="mx-auto mt-4 max-w-md rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-700">{saved.warning}</p>
+      )}
+      <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+        <Link
+          to={`/compte/dossier/${saved.dossierId}`}
+          className="sheen inline-flex items-center gap-2 rounded-full bg-gold-500 px-6 py-3.5 text-sm font-semibold text-navy-900 shadow-gold hover:-translate-y-0.5"
+        >
+          Voir mon dossier
+          <ArrowRightIcon width={14} height={14} strokeWidth={2} />
+        </Link>
+        <Link
+          to="/compte"
+          className="rounded-full bg-cream-100 px-6 py-3.5 text-sm font-medium text-navy-900 hover:bg-cream-200"
+        >
+          Retour à mes dossiers
+        </Link>
+      </div>
+      <button
+        type="button"
+        onClick={onNew}
+        className="mt-5 text-sm font-medium text-slate-500 underline underline-offset-4 hover:text-navy-900"
+      >
+        Créer un autre dossier
+      </button>
+    </div>
   );
 }

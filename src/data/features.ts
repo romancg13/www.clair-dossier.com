@@ -81,19 +81,19 @@ export const features: Feature[] = [
     shortTitle: "Transmission",
     icon: "validate",
     blurb:
-      "Vous transmettez votre dossier par e-mail ou WhatsApp, quand vous le décidez. Rien ne part sans votre validation explicite.",
-    hero: "Le dossier ne part jamais tout seul. C'est vous qui déclenchez la transmission, par e-mail ou par WhatsApp.",
+      "Votre dossier validé est enregistré dans votre compte, jamais envoyé automatiquement. Vous le transmettez vous-même, au destinataire et au moment de votre choix.",
+    hero: "Le dossier ne part jamais tout seul. Il reste dans votre compte tant que vous ne décidez pas de le transmettre.",
     body: [
-      "ClairDossier prépare votre dossier ; c'est vous qui choisissez quand et à qui le transmettre. Aucun envoi automatique : tant que vous n'avez pas validé, rien ne quitte votre espace.",
-      "Quand votre dossier est prêt, vous le transmettez en un geste, par e-mail ou par WhatsApp. Vous décidez du destinataire et du moment. La transmission est toujours déclenchée par vous, explicitement.",
-      "Vous gardez ainsi la main du début à la fin : vous construisez le dossier dans le tunnel, vous relisez le récapitulatif, puis vous transmettez seulement lorsque tout vous convient.",
-      "Ce fonctionnement protège vos données : elles restent dans votre espace privé jusqu'à votre validation, et ne sont partagées qu'avec les personnes que vous avez choisies.",
+      "ClairDossier prépare votre dossier ; c'est vous qui choisissez quand et à qui le transmettre. Aucun envoi automatique : rien ne quitte votre espace sans votre action.",
+      "Quand votre dossier est prêt, vous retrouvez toutes ses pièces et informations dans votre compte : vous les téléchargez et transmettez le dossier au destinataire de votre choix, par le canal qui vous convient. La transmission est toujours effectuée par vous, explicitement.",
+      "Vous gardez ainsi la main du début à la fin : vous construisez le dossier dans le tunnel, vous relisez le récapitulatif, vous validez son enregistrement dans votre compte, puis vous transmettez seulement lorsque tout vous convient.",
+      "Ce fonctionnement protège vos données : elles restent dans votre espace privé, et ne sont partagées qu'avec les personnes que vous avez choisies, quand vous l'avez décidé.",
     ],
     bullets: [
-      "Transmission déclenchée par vous, jamais automatique",
-      "Envoi par e-mail ou par WhatsApp, à votre choix",
-      "Validation explicite avant tout partage",
-      "Données conservées dans votre espace privé jusqu'à l'envoi",
+      "Transmission décidée et effectuée par vous, jamais automatique",
+      "Dossier enregistré dans votre compte, pièces téléchargeables à tout moment",
+      "Aucun envoi sans votre action explicite",
+      "Données conservées dans votre espace privé jusqu'au partage que vous décidez",
     ],
   },
   {
@@ -129,7 +129,7 @@ export const features: Feature[] = [
       "Combien de pièces circulent encore par SMS, par e-mail personnel, par WhatsApp ? C'est un risque de confidentialité et une charge mentale dès qu'il faut retrouver le bon document. ClairDossier rassemble pièces et informations dans un espace privé, rattaché à votre dossier.",
       "L'accès à votre espace passe par une authentification : vous seul ouvrez vos dossiers. Les échanges en transit se font en HTTPS, et vos données sont chiffrées au repos côté hébergeur.",
       "Le stockage des pièces est privé : les fichiers ne sont accessibles que via des liens temporaires signés, jamais en accès libre. Vos documents restent rangés là où vous les avez déposés, dossier par dossier.",
-      "Quand vous le décidez, vous transmettez le dossier par e-mail ou par WhatsApp, à la personne de votre choix. Le partage n'a lieu que sur votre action explicite — rien ne sort de votre espace sans votre validation.",
+      "Quand vous le décidez, vous téléchargez vos pièces et transmettez le dossier à la personne de votre choix, par le canal qui vous convient. Le partage n'a lieu que sur votre action explicite — rien ne sort de votre espace sans votre validation.",
     ],
     bullets: [
       "Accès à l'espace par authentification",
@@ -170,7 +170,7 @@ export const features: Feature[] = [
     body: [
       "Les délais sont au cœur des dossiers : délai de contestation, date d'échéance, paiement, rendez-vous. Les garder en vue, c'est déjà éviter de les laisser passer. ClairDossier conserve ces dates avec le dossier auquel elles se rattachent.",
       "Vous renseignez les échéances connues lors de la création du dossier. Elles sont enregistrées et affichées sur la page d'avancement, à côté des pièces et des étapes. Vous les retrouvez à chaque fois que vous ouvrez le dossier.",
-      "Vous gardez ainsi vos dates importantes réunies au même endroit que le reste du dossier, plutôt que dispersées dans des notes ou des agendas séparés. Vous décidez ensuite quand transmettre le dossier, par e-mail ou par WhatsApp.",
+      "Vous gardez ainsi vos dates importantes réunies au même endroit que le reste du dossier, plutôt que dispersées dans des notes ou des agendas séparés. Vous décidez ensuite quand et comment transmettre le dossier.",
     ],
     bullets: [
       "Échéances renseignées à la création du dossier",
@@ -185,18 +185,18 @@ export const features: Feature[] = [
     shortTitle: "Récapitulatif",
     icon: "ai-brief",
     blurb:
-      "Avant d'envoyer, ClairDossier vous présente un récapitulatif complet du dossier. Vous relisez, vous corrigez si besoin, puis vous transmettez.",
-    hero: "On relit avant d'envoyer. ClairDossier réunit tout le dossier dans un récapitulatif clair.",
+      "Avant de valider, ClairDossier vous présente un récapitulatif complet du dossier. Vous relisez, vous corrigez si besoin, puis vous enregistrez le dossier dans votre compte.",
+    hero: "On relit avant de valider. ClairDossier réunit tout le dossier dans un récapitulatif clair.",
     body: [
-      "Avant de transmettre un dossier, il faut être sûr de ce qu'il contient : les informations, les pièces, les échéances. ClairDossier réunit l'ensemble dans une étape de récapitulatif, à la fin du tunnel de création.",
-      "Le récapitulatif affiche le profil, la nature du dossier, les informations saisies et les pièces déposées. Vous relisez le tout d'un seul écran, vous revenez en arrière pour corriger si besoin, puis vous confirmez. Rien n'est transmis tant que vous n'avez pas validé.",
-      "Une fois le dossier confirmé, vous le transmettez quand vous le décidez, par e-mail ou par WhatsApp, à la personne de votre choix. Vous gardez la main sur le contenu comme sur l'envoi.",
+      "Avant de valider un dossier, il faut être sûr de ce qu'il contient : les informations, les pièces, les échéances. ClairDossier réunit l'ensemble dans une étape de récapitulatif, à la fin du tunnel de création.",
+      "Le récapitulatif affiche le profil, la nature du dossier, les informations saisies et les pièces déposées. Vous relisez le tout d'un seul écran, vous revenez en arrière pour corriger si besoin, puis vous validez : le dossier est enregistré dans votre compte. Rien n'est transmis à qui que ce soit sans votre action.",
+      "Une fois le dossier enregistré, vous le retrouvez dans votre espace : vous le transmettez quand vous le décidez, à la personne de votre choix, par le canal qui vous convient. Vous gardez la main sur le contenu comme sur l'envoi.",
     ],
     bullets: [
       "Récapitulatif complet à la fin du tunnel de création",
       "Profil, nature, informations et pièces réunis sur un écran",
       "Retour en arrière possible pour corriger avant de valider",
-      "Transmission par e-mail ou WhatsApp, déclenchée par vous",
+      "Transmission décidée et effectuée par vous, jamais automatique",
     ],
   },
 ];

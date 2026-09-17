@@ -10,7 +10,17 @@ import {
   hasAuditLogs,
   hasDossierTrash,
   logAudit,
+  fetchAdminEntitlements,
+  hasAutomationEngine,
+  requireRecentMfa,
+  type AdminEntitlementRow,
 } from "../lib/admin";
+import {
+  ClientEntitlementPanel,
+  NewDossiersSection,
+  NotificationsSection,
+  SubscriptionsTable,
+} from "../components/admin/AdminAutomation";
 import { CATEGORY_LABELS, effectiveCategory, formatBytes, hasDocExtras, isGenericTitle } from "../lib/dossier-workspace";
 import { mfaErrorDetails, mfaErrorMessage, mfaQrSrc } from "../lib/mfa-errors";
 
@@ -79,10 +89,12 @@ const STATUS_LABELS: Record<string, string> = {
 
 const SECTIONS = [
   { id: "dashboard", label: "Tableau de bord" },
+  { id: "nouveaux", label: "Nouveaux dossiers" },
   { id: "clients", label: "Clients" },
   { id: "dossiers", label: "Dossiers" },
   { id: "corbeille", label: "Corbeille" },
   { id: "activite", label: "Activité" },
+  { id: "notifications", label: "Notifications" },
   { id: "abonnements", label: "Abonnements" },
   { id: "diagnostic", label: "Diagnostic" },
 ] as const;
@@ -321,6 +333,9 @@ export function AdminConsole() {
 
   // Capacités (migrations appliquées ou non).
   const [caps, setCaps] = useState({ trash: false, audit: false, notes: false, docExtras: false });
+  const [automation, setAutomation] = useState(false);
+  const [entitlements, setEntitlements] = useState<AdminEntitlementRow[] | null>(null);
+  const [newCount, setNewCount] = useState(0);
 
   // Données.
   const [profiles, setProfiles] = useState<ProfileRow[]>([]);
@@ -396,7 +411,23 @@ export function AdminConsole() {
             .limit(200)
         : Promise.resolve({ data: [] }),
     ]);
+    const ents = await fetchAdminEntitlements();
+    const automationOk = await hasAutomationEngine();
+    let unseen = 0;
+    if (automationOk) {
+      const { count } = await supabase
+        .from("dossiers")
+        .select("id", { count: "exact", head: true })
+        .not("submitted_at", "is", null)
+        .is("admin_seen_at", null)
+        .is("deleted_at", null)
+        .not("status", "in", "(en-cours,valide,archive)");
+      unseen = count ?? 0;
+    }
     guard(() => {
+      setNewCount(unseen);
+      setEntitlements(ents);
+      setAutomation(automationOk);
       setProfiles((p.data as ProfileRow[] | null) ?? []);
       const map: Record<string, string> = {};
       for (const e of (em.data as { id: string; email: string }[] | null) ?? []) map[e.id] = e.email;
@@ -483,6 +514,10 @@ export function AdminConsole() {
 
   async function hardDeleteDossier(d: DossierRow) {
     const docCount = docs.filter((x) => x.dossier_id === d.id).length;
+    if (!(await requireRecentMfa())) {
+      setError("Vérification MFA récente requise pour une suppression définitive.");
+      return;
+    }
     if (
       !confirmIrreversible(
         `Supprimer DÉFINITIVEMENT le dossier « ${d.title || d.typology} » (client ${emails[d.user_id] ?? d.user_id.slice(0, 8)}) et ses ${docCount} document(s) ?`,
@@ -544,6 +579,10 @@ export function AdminConsole() {
   }
 
   async function hardDeleteDoc(doc: DocRow) {
+    if (!(await requireRecentMfa())) {
+      setError("Vérification MFA récente requise pour une suppression définitive.");
+      return;
+    }
     if (!confirmIrreversible(`Supprimer DÉFINITIVEMENT « ${doc.file_name} » ?`)) return;
     await supabase.storage.from("documents").remove([doc.file_path]);
     const { error: e } = await supabase.from("dossier_documents").delete().eq("id", doc.id);
@@ -683,6 +722,7 @@ export function AdminConsole() {
                 }`}
               >
                 {s.label}
+                {s.id === "nouveaux" && newCount > 0 ? ` (${newCount})` : ""}
                 {s.id === "corbeille" && trashedDossiers.length + trashedDocs.length > 0
                   ? ` (${trashedDossiers.length + trashedDocs.length})`
                   : ""}
@@ -770,6 +810,47 @@ export function AdminConsole() {
                 </div>
               )}
 
+              {section === "nouveaux" &&
+                (automation ? (
+                  <NewDossiersSection
+                    userId={user?.id}
+                    emails={emails}
+                    names={Object.fromEntries(profiles.map((pr) => [pr.id, pr.full_name || pr.company_name || ""]))}
+                    onCount={setNewCount}
+                    onViewClient={(uid) => {
+                      setSection("clients");
+                      setClientOpen(uid);
+                      setQuery(emails[uid] ?? "");
+                    }}
+                    onError={setError}
+                    onNotice={setNotice}
+                  />
+                ) : (
+                  <Card className="mt-8">
+                    <p className="text-sm text-slate-500">
+                      La file des nouveaux dossiers s'active après application de la migration
+                      « automatisation » (voir TODO_ADMIN.md). En attendant, l'onglet Dossiers liste tout.
+                    </p>
+                  </Card>
+                ))}
+
+              {section === "notifications" &&
+                (automation ? (
+                  <NotificationsSection
+                    userId={user?.id}
+                    emails={emails}
+                    names={Object.fromEntries(profiles.map((pr) => [pr.id, pr.full_name || pr.company_name || ""]))}
+                    onError={setError}
+                    onNotice={setNotice}
+                  />
+                ) : (
+                  <Card className="mt-8">
+                    <p className="text-sm text-slate-500">
+                      Les notifications internes s'activent après application de la migration « automatisation ».
+                    </p>
+                  </Card>
+                ))}
+
               {section === "clients" && (
                 <div className="mt-8 space-y-3">
                   {profiles.filter(matchProfile).map((p) => {
@@ -812,7 +893,15 @@ export function AdminConsole() {
                         </div>
                         {open && (
                           <div className="mt-4 border-t hairline pt-4">
-                            <p className="font-mono text-[0.65rem] uppercase tracking-[0.14em] text-slate-500">
+                            <ClientEntitlementPanel
+                              row={entitlements?.find((r) => r.user_id === p.id)}
+                              email={email ?? null}
+                              superAdmin={superAdmin}
+                              onChanged={() => void refresh()}
+                              onError={setError}
+                              onNotice={setNotice}
+                            />
+                            <p className="mt-4 font-mono text-[0.65rem] uppercase tracking-[0.14em] text-slate-500">
                               Dossiers (vue client via l'espace normal)
                             </p>
                             <ul className="mt-2 space-y-1.5">
@@ -1032,12 +1121,24 @@ export function AdminConsole() {
                   <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">
                     Abonnements
                   </p>
-                  <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-500">
-                    Les paiements passent par des Stripe Payment Links : <strong className="text-navy-900">Stripe est la source de vérité financière</strong>. Aucune donnée d'abonnement n'est
-                    répliquée dans la base ClairDossier aujourd'hui — rien n'est donc affiché ici
-                    pour ne pas montrer d'information invérifiable. Gérez clients, factures,
-                    remboursements et résiliations directement dans le dashboard Stripe.
-                  </p>
+                  {entitlements ? (
+                    <>
+                      <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-500">
+                        <strong className="text-navy-900">Stripe est la source de vérité financière</strong> :
+                        ces lignes sont recopiées par le webhook signé (offre, statut, période). Changements
+                        d'offre, remboursements et résiliations se font dans le dashboard Stripe ; les
+                        exceptions de quota se règlent dans la fiche client.
+                      </p>
+                      <SubscriptionsTable rows={entitlements} />
+                    </>
+                  ) : (
+                    <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-500">
+                      Les paiements passent par des Stripe Payment Links : <strong className="text-navy-900">Stripe est la source de vérité financière</strong>. La synchronisation des
+                      abonnements s'active après application de la migration « automatisation » et
+                      configuration du webhook Stripe. Gérez clients, factures, remboursements et
+                      résiliations directement dans le dashboard Stripe.
+                    </p>
+                  )}
                   <a
                     href="https://dashboard.stripe.com/"
                     target="_blank"

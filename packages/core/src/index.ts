@@ -9,3 +9,5 @@ export * from './events';
 export * from './links';
 export * from './entitlements';
 export * from './errors';
+export * from './identity';
+export * from './quota';

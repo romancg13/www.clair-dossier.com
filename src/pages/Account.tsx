@@ -7,6 +7,9 @@ import { Seo } from '../lib/seo';
 import { useAuth } from '../lib/auth';
 import { supabase } from '../lib/supabase';
 import { ArrowRightIcon } from '../components/icons';
+import { useMyProfile } from '../lib/profile';
+import { DraftsPanel, ProfilePanel, SubscriptionPanel } from '../components/account/AccountPanels';
+import { greeting } from '../../packages/core/src/index';
 
 type DossierRow = {
   id: string;
@@ -40,6 +43,7 @@ export function Account() {
   const [owners, setOwners] = useState<Record<string, string>>({});
   const [emails, setEmails] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
+  const { profile, extended, reload: reloadProfile } = useMyProfile(user?.id);
 
   useEffect(() => {
     let active = true;
@@ -117,16 +121,6 @@ export function Account() {
       <Seo title="Mon compte" description="Votre espace ClairDossier." path="/compte" noindex />
       <section className="bg-cream-50">
         <div className="mx-auto max-w-4xl px-5 py-16 sm:px-8 lg:px-12">
-          {paidPlan && (
-            <div className="mb-8 rounded-2xl border hairline-gold bg-gold-500/10 p-5">
-              <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">
-                Abonnement confirmé
-              </p>
-              <p className="mt-2 text-sm text-navy-900">
-                Merci — votre paiement a bien été pris en compte. Votre abonnement est actif.
-              </p>
-            </div>
-          )}
 
           {isAdmin && (
             <div className="mb-8 rounded-2xl border border-navy-900 bg-navy-900 p-5 text-cream-50">
@@ -176,7 +170,7 @@ export function Account() {
                 {isAdmin ? 'Administration' : 'Mon compte'}
               </p>
               <h1 className="mt-3 font-display text-4xl font-semibold leading-[1.05] text-navy-900">
-                Bonjour{user?.email ? `, ${user.email}` : ''}
+                {greeting(profile)}
               </h1>
             </div>
             <button
@@ -187,6 +181,14 @@ export function Account() {
               Se déconnecter
             </button>
           </div>
+
+          {profile && extended && (
+            <ProfilePanel profile={profile} accountEmail={user?.email ?? null} onSaved={() => void reloadProfile()} />
+          )}
+
+          <SubscriptionPanel paidReturn={Boolean(paidPlan)} />
+
+          <DraftsPanel />
 
           <div className="mt-10 flex items-center justify-between gap-4">
             <h2 className="font-display text-2xl font-semibold text-navy-900">

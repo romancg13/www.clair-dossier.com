@@ -7,6 +7,8 @@
  * web (`src/lib/auth.tsx`) pour que les deux plateformes parlent pareil.
  */
 
+import { parseSubmissionError } from './quota';
+
 export function translateAuthError(message: string): string {
   const m = message.toLowerCase();
   if (m.includes('already registered') || m.includes('already exists') || m.includes('user already'))
@@ -62,6 +64,10 @@ const MESSAGES: Record<FailureKind, string> = {
 
 /** Message affichable. `context` précise l'action (« Impossible d'importer le document. »). */
 export function userMessage(error: unknown, context?: string): string {
+  // Refus métier explicite de la base (quota, e-mail non vérifié, compte
+  // suspendu…) : message dédié, jamais le message générique.
+  const business = parseSubmissionError(error);
+  if (business) return business.message;
   const base = MESSAGES[classifyFailure(error)];
   return context ? `${context} ${base}` : base;
 }

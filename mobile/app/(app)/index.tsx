@@ -6,7 +6,7 @@ import { useCallback, useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
-import { countDeadlines, userMessage } from '@clairdossier/core';
+import { countDeadlines, greeting as greetingFor, userMessage } from '@clairdossier/core';
 import { ScreenHeader } from '../../src/features/ScreenHeader';
 import { DossierCard } from '../../src/features/DossierCard';
 import { DeadlineItem } from '../../src/features/DeadlineItem';
@@ -50,7 +50,8 @@ export default function Accueil() {
   const counts = useMemo(() => countDeadlines(open), [open]);
   const urgent = open.slice(0, 3);
   const recent = (dossiers.data ?? []).slice(0, 3);
-  const greeting = profile.data?.company_name || profile.data?.full_name || 'Bonjour';
+  // « Bonjour, Prénom Nom » — jamais l'adresse e-mail (règle commune web + mobile).
+  const greeting = greetingFor(profile.data);
 
   return (
     <Screen refreshing={refreshing} onRefresh={refresh}>

@@ -193,6 +193,9 @@ export type Field = {
   type?: 'text' | 'date' | 'textarea';
 };
 
+export const AMOUNT_HELP =
+  'Si vous connaissez le montant concerné, indiquez-le ici. Sinon laissez ce champ vide : il pourra être précisé ultérieurement après analyse de votre dossier.';
+
 export const COMMON_FIELDS: Field[] = [
   {
     id: 'counterparty',
@@ -208,7 +211,7 @@ export const COMMON_FIELDS: Field[] = [
   {
     id: 'amount',
     label: 'Montant en jeu (€)',
-    help: 'Laissez vide si non applicable.',
+    help: AMOUNT_HELP,
   },
   {
     id: 'deadline',
@@ -229,7 +232,7 @@ export const FIELD_OVERRIDES: Partial<Record<Category, Field[]>> = {
   'impaye-precontentieux': [
     { id: 'counterparty', label: 'Débiteur (client ou société)' },
     { id: 'startDate', label: 'Date de la facture', type: 'date' },
-    { id: 'amount', label: 'Montant dû (€)' },
+    { id: 'amount', label: 'Montant dû (€)', help: AMOUNT_HELP },
     {
       id: 'deadline',
       label: 'Échéance de paiement',
