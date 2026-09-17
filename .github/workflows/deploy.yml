@@ -52,6 +52,11 @@ jobs:
           # Lien PUBLIC du portail client Stripe (factures, abonnement) — variable de dépôt, facultative.
           VITE_STRIPE_PORTAL_URL: ${{ vars.VITE_STRIPE_PORTAL_URL }}
 
+      # Repère de version public (aucun secret) : prouve quel commit est servi
+      # par le domaine — https://www.clair-dossier.com/version.json
+      - name: Version marker
+        run: printf '{"commit":"%s","builtAt":"%s"}\n' "$GITHUB_SHA" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > dist/version.json
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
