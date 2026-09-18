@@ -1,7 +1,19 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { isGenericTitle } from '../lib/dossier-workspace';
-import { hasDossierTrash } from '../lib/admin';
+import {
+  checkSuperAdmin,
+  checkSuperAdminAal2,
+  createSingleFlight,
+  hasDossierTrash,
+  ownerIdentity,
+  trashMenuState,
+  trashThenRemove,
+  trashWithServerCheck,
+  type TrashMenuState,
+} from '../lib/admin';
+import { DossierCardMenu } from '../components/account/DossierCardMenu';
+import { ConfirmDeleteDialog } from '../components/account/ConfirmDeleteDialog';
 import { hasDeadlines, deadlineStatus } from '../lib/dossier-workspace';
 import { Seo } from '../lib/seo';
 import { useAuth } from '../lib/auth';
@@ -44,6 +56,13 @@ export function Account() {
   // de tiers à l'admin — l'interface l'explique au lieu de faire semblant.
   const [adminVerified, setAdminVerified] = useState(false);
   const [owners, setOwners] = useState<Record<string, string>>({});
+  const [ownerProfiles, setOwnerProfiles] = useState<Record<string, ProfileRow>>({});
+  const [menu, setMenu] = useState<TrashMenuState>({ kind: 'hidden' });
+  const [toTrash, setToTrash] = useState<DossierRow | null>(null);
+  const [trashPending, setTrashPending] = useState(false);
+  const [trashError, setTrashError] = useState<string | null>(null);
+  const trashTrigger = useRef<HTMLButtonElement | null>(null);
+  const singleFlight = useRef(createSingleFlight());
   const [emails, setEmails] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const { profile, extended, reload: reloadProfile } = useMyProfile(user?.id);
@@ -67,9 +86,15 @@ export function Account() {
         .from('dossiers')
         .select(`id,user_id,typology,title,status,created_at${trashAware ? ',deleted_at' : ''}`)
         .order('created_at', { ascending: false });
+      // Dossiers de tiers : jamais affichés avant la vérification en deux
+      // étapes (la base l'impose aussi une fois la migration AAL2 appliquée).
       const data = ((rawRows as (DossierRow & { deleted_at?: string | null })[] | null) ?? []).filter(
-        (r) => !r.deleted_at,
+        (r) => !r.deleted_at && (!admin || verified || r.user_id === user?.id),
       );
+      if (admin) {
+        const [superAdmin, server] = await Promise.all([checkSuperAdmin(), checkSuperAdminAal2()]);
+        if (active) setMenu(trashMenuState({ isAdmin: true, superAdmin, aal2: verified, trashColumn: trashAware, server }));
+      }
 
       // « À faire » : échéances ouvertes de l'utilisateur (si la table existe).
       if (await hasDeadlines()) {
@@ -96,10 +121,13 @@ export function Account() {
       const emailMap: Record<string, string> = {};
       if (admin && verified) {
         const { data: profs } = await supabase.from('profiles').select('id,company_name,full_name');
+        const profMap: Record<string, ProfileRow> = {};
         (profs as ProfileRow[] | null)?.forEach((p) => {
+          profMap[p.id] = p;
           const name = p.company_name || p.full_name;
           if (name) ownerMap[p.id] = name;
         });
+        if (active) setOwnerProfiles(profMap);
         // Identité (e-mail) du propriétaire — réservé à l'admin (fonction gardée par is_admin()).
         const { data: em } = await supabase.rpc('admin_user_emails');
         (em as { id: string; email: string }[] | null)?.forEach((e) => {
@@ -119,6 +147,41 @@ export function Account() {
       active = false;
     };
   }, []);
+
+  async function confirmTrash(reason: string) {
+    const d = toTrash;
+    if (!d || !user) return;
+    setTrashError(null);
+    setTrashPending(true);
+    const outcome = await singleFlight.current(() =>
+      trashThenRemove(
+        () =>
+          trashWithServerCheck({
+            update: async () => {
+              const { data, error } = await supabase
+                .from('dossiers')
+                .update({ deleted_at: new Date().toISOString(), deleted_by: user.id, delete_reason: reason || null })
+                .eq('id', d.id)
+                .select('deleted_at');
+              return { rows: data as { deleted_at: string | null }[] | null, error };
+            },
+            reread: async () => {
+              const { data, error } = await supabase.from('dossiers').select('deleted_at').eq('id', d.id).maybeSingle();
+              return { row: data as { deleted_at: string | null } | null, error };
+            },
+          }),
+        () => setDossiers((rows) => rows.filter((r) => r.id !== d.id)),
+      ),
+    );
+    setTrashPending(false);
+    if (!outcome) return;
+    if (outcome.ok) {
+      setToTrash(null);
+      trashTrigger.current?.focus();
+    } else {
+      setTrashError(outcome.error);
+    }
+  }
 
   async function handleSignOut() {
     await signOut();
@@ -269,10 +332,10 @@ export function Account() {
                   return [d.title, d.typology, STATUS_LABELS[d.status]].filter(Boolean).some((v) => String(v).toLowerCase().includes(q));
                 })
                 .map((d) => (
-                <li key={d.id}>
+                <li key={d.id} className="flex items-center gap-2">
                   <Link
                     to={`/compte/dossier/${d.id}`}
-                    className="group flex flex-wrap items-center justify-between gap-3 rounded-2xl border hairline bg-white p-5 shadow-card transition-all duration-200 hover:-translate-y-0.5 hover:border-gold-500 hover:shadow-card-hover"
+                    className="group flex min-w-0 flex-1 flex-wrap items-center justify-between gap-3 rounded-2xl border hairline bg-white p-5 shadow-card transition-all duration-200 hover:-translate-y-0.5 hover:border-gold-500 hover:shadow-card-hover"
                   >
                     <div>
                       <p className="font-display text-lg font-semibold text-navy-900">
@@ -301,9 +364,41 @@ export function Account() {
                       />
                     </div>
                   </Link>
+                  {menu.kind !== 'hidden' && (
+                    <DossierCardMenu
+                      dossierLabel={d.title || d.typology}
+                      state={menu}
+                      onDelete={(trigger) => {
+                        trashTrigger.current = trigger;
+                        setTrashError(null);
+                        setToTrash(d);
+                      }}
+                    />
+                  )}
                 </li>
               ))}
             </ul>
+          )}
+          {toTrash && (
+            <ConfirmDeleteDialog
+              open
+              dossierTitle={toTrash.title || toTrash.typology}
+              owner={ownerIdentity({
+                companyName: ownerProfiles[toTrash.user_id]?.company_name,
+                fullName: ownerProfiles[toTrash.user_id]?.full_name,
+                email: emails[toTrash.user_id],
+                userId: toTrash.user_id,
+              })}
+              meta={`Créé le ${new Date(toTrash.created_at).toLocaleDateString('fr-FR')} · ${STATUS_LABELS[toTrash.status] ?? toTrash.status}`}
+              pending={trashPending}
+              error={trashError}
+              onConfirm={(reason) => void confirmTrash(reason)}
+              onCancel={() => {
+                if (trashPending) return;
+                setToTrash(null);
+                trashTrigger.current?.focus();
+              }}
+            />
           )}
         </div>
       </section>
