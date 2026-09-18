@@ -48,6 +48,17 @@ Généré le 2026-09-14 (passe optimisation). Rien de ce qui suit n'a été inve
 ## Automatisation client/admin + quotas (2026-09-17) — MISE EN SERVICE, dans cet ordre
 Le site déployé fonctionne à l'identique tant que ces étapes ne sont pas faites (capacités détectées à l'exécution). Rien n'est supprimé.
 
+> **VOIE RAPIDE (2026-09-18)** : tout ce qui est pilotable par l'API (TOTP, migrations manquantes,
+> modèle OTP `{{ .Token }}`, redirect URLs, fonctions, secrets, preuves — dont l'override j.gomes)
+> est automatisé par `scripts/mise-en-service-supabase.mjs` (Management API officielle, simulation
+> par défaut). Une seule intervention : créer un jeton sur
+> https://supabase.com/dashboard/account/tokens puis `export SUPABASE_ACCESS_TOKEN=sbp_…` et
+> `node scripts/mise-en-service-supabase.mjs` (état), `--apply` (config+migrations),
+> `--apply --deploy-functions` (fonctions), `--apply --secrets` (saisie masquée).
+> Les étapes manuelles restantes (webhook au dashboard Stripe, enrôlement TOTP personnel,
+> sync abonnés, variable GitHub) sont rappelées en fin d'exécution. Les étapes 1–8 ci-dessous
+> restent la référence détaillée si l'on préfère tout faire à la main.
+
 1. **Fonctions serveur** (Supabase CLI, depuis la racine du dépôt) :
    - `supabase functions deploy notify-lead` (notification admin e-mail + SMS, idempotente, relançable ; e-mail historique conservé)
    - `supabase functions deploy admin-users` (suspension / réactivation : super admin + MFA)
