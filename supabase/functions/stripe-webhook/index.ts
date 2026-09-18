@@ -23,6 +23,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 import {
   HANDLED_EVENTS,
   isUuid,
+  paymentEmailMatchesAccount,
   planIdFromSubscription,
   subscriptionIdFromInvoice,
   subscriptionRow,
@@ -91,6 +92,15 @@ async function handle(event: Stripe.Event): Promise<string> {
       if (!isUuid(userId)) return 'non rattaché (paiement hors compte) — rapprochement manuel';
       const { data: user } = await admin.auth.admin.getUserById(userId);
       if (!user?.user) return 'non rattaché (compte introuvable) — rapprochement manuel';
+      // Le client_reference_id vient d'une URL modifiable : il n'est accepté
+      // que si l'e-mail saisi au paiement correspond au compte référencé
+      // (e-mail d'authentification ou e-mail de facturation déclaré).
+      const paymentEmail = session.customer_details?.email ?? session.customer_email ?? null;
+      const { data: prof } = await admin.from('profiles').select('billing_email').eq('id', userId).maybeSingle();
+      const billingEmail = (prof as { billing_email: string | null } | null)?.billing_email ?? null;
+      if (!paymentEmailMatchesAccount(paymentEmail, [user.user.email, billingEmail])) {
+        return 'non rattaché (e-mail du paiement différent du compte) — rapprochement manuel';
+      }
       const subId = typeof session.subscription === 'string' ? session.subscription : session.subscription.id;
       await upsert(userId, await retrieveSubscription(subId));
       return 'abonnement rattaché';

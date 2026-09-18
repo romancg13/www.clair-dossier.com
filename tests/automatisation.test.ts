@@ -41,6 +41,7 @@ import {
 import {
   adminNotificationText,
   extractPeriod,
+  paymentEmailMatchesAccount,
   planIdFromSubscription,
   subscriptionIdFromInvoice,
   subscriptionRow,
@@ -261,4 +262,17 @@ test('facture → abonnement, quelle que soit la version d’API du webhook', ()
   assert.equal(subscriptionIdFromInvoice({ parent: { subscription_details: { subscription: 'sub_new' } } }), 'sub_new');
   assert.equal(subscriptionIdFromInvoice({ subscription: { id: 'sub_obj' } }), 'sub_obj');
   assert.equal(subscriptionIdFromInvoice({}), null);
+});
+
+test('rattachement webhook : client_reference_id seul ne suffit pas, l’e-mail du paiement doit correspondre', () => {
+  // Correspondance : e-mail d’authentification ou e-mail de facturation, insensible à la casse.
+  assert.equal(paymentEmailMatchesAccount('Client@Exemple.fr', ['client@exemple.fr', null]), true);
+  assert.equal(paymentEmailMatchesAccount('factures@cabinet.fr', ['client@exemple.fr', 'Factures@Cabinet.fr ']), true);
+  // Divergence (référence falsifiée vers un autre compte) : aucun rattachement automatique.
+  assert.equal(paymentEmailMatchesAccount('payeur@ailleurs.fr', ['client@exemple.fr', null]), false);
+  // E-mail de paiement absent : jamais de rattachement implicite.
+  assert.equal(paymentEmailMatchesAccount(null, ['client@exemple.fr']), false);
+  assert.equal(paymentEmailMatchesAccount('  ', ['client@exemple.fr']), false);
+  // Compte sans aucune adresse connue : refus.
+  assert.equal(paymentEmailMatchesAccount('client@exemple.fr', [null, undefined]), false);
 });
