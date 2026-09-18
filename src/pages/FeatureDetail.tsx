@@ -1,7 +1,7 @@
 import { Link, Navigate, useParams } from 'react-router-dom';
 import { Seo, breadcrumbSchema } from '../lib/seo';
 import { Reveal } from '../components/primitives/Reveal';
-import { LEGACY_FEATURE_SLUGS, features, getFeatureBySlug } from '../data/features';
+import { LEGACY_FEATURE_SLUGS, features, getFeatureBySlug, getFeatureGroup } from '../data/features';
 import { FEATURE_ICONS, ArrowRightIcon, CheckIcon } from '../components/icons';
 import { NotFound } from './NotFound';
 
@@ -17,7 +17,13 @@ export function FeatureDetail() {
   if (!feature) return <NotFound />;
 
   const Icon = FEATURE_ICONS[feature.icon];
-  const related = features.filter((f) => f.slug !== feature.slug).slice(0, 3);
+  const group = getFeatureGroup(feature.group);
+  // Fiches du même groupe d'abord, puis les suivantes dans l'ordre du catalogue.
+  const others = features.filter((f) => f.slug !== feature.slug);
+  const related = [
+    ...others.filter((f) => f.group === feature.group),
+    ...others.filter((f) => f.group !== feature.group),
+  ].slice(0, 3);
 
   return (
     <>
@@ -61,7 +67,7 @@ export function FeatureDetail() {
               <Icon width={26} height={26} />
             </span>
             <p className="mt-6 font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-700">
-              Fonctionnalité · {feature.shortTitle}
+              Fonctionnalité · {group.title}
             </p>
             <h1 className="mt-4 font-display text-5xl font-semibold leading-[1.05] text-navy-900 sm:text-6xl">
               {feature.title}
@@ -80,6 +86,18 @@ export function FeatureDetail() {
             {feature.body.map((p, i) => (
               <p key={i}>{p}</p>
             ))}
+            <div className="rounded-2xl border hairline-gold bg-white p-6">
+              <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">
+                Exemple concret
+              </p>
+              <p className="mt-2 text-[0.95rem] leading-relaxed text-navy-900">{feature.example}</p>
+            </div>
+            {feature.limit && (
+              <p className="text-sm">
+                <span className="font-semibold text-navy-900">À savoir : </span>
+                {feature.limit}
+              </p>
+            )}
           </article>
           <aside className="rounded-2xl border hairline bg-white p-6">
             <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">
@@ -109,7 +127,7 @@ export function FeatureDetail() {
         <div className="mx-auto max-w-7xl px-5 py-20 sm:px-8 lg:px-12">
           <div className="flex items-end justify-between">
             <h2 className="font-display text-3xl font-semibold text-navy-900 sm:text-4xl">
-              Autres briques utiles.
+              Autres fonctionnalités utiles.
             </h2>
             <Link to="/fonctionnalites" className="text-sm font-medium text-navy-900 border-b hairline-gold hover:text-gold-700">
               Toutes les fonctionnalités
