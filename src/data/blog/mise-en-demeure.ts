@@ -1,6 +1,6 @@
-import type { BlogPost } from './types';
+import type { BlogPostInput } from './types';
 
-export const miseEnDemeure: BlogPost = {
+export const miseEnDemeure: BlogPostInput = {
   slug: 'mise-en-demeure',
   title: "Mise en demeure : le courrier qui débloque (souvent) la situation",
   metaTitle: "Mise en demeure — guide pratique et erreurs à éviter",
@@ -10,7 +10,8 @@ export const miseEnDemeure: BlogPost = {
     "Dans de nombreuses situations, une tentative de résolution amiable est obligatoire ou recommandée avant de saisir un juge, selon la nature et le montant du litige. La mise en demeure est souvent le premier outil de cette tentative. Bien rédigée, elle débloque souvent la situation sans aller plus loin. Mal rédigée, elle peut être inopposable et faire perdre un temps précieux.",
   author: 'redaction',
   date: '2026-04-15',
-  readMinutes: 8,
+  // Non révisé lors de la passe du 2026-09-18 : relecture demandée (alerte admin).
+  reviewBy: '2026-10-19',
   category: 'Procédure amiable',
   tags: ['mise en demeure', 'recouvrement', 'procédure amiable', 'modèle'],
   heroImageQuery: 'registered letter signature',

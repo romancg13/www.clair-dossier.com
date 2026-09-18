@@ -5,6 +5,7 @@ import { getPostBySlug, getRelatedPosts, type BlogContentBlock } from '../data/b
 import { authors } from '../data/authors';
 import { ArrowRightIcon } from '../components/icons';
 import { NotFound } from './NotFound';
+import { JournalIllustration } from '../components/journal/JournalIllustration';
 
 function formatDate(iso: string): string {
   return new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' }).format(new Date(iso));
@@ -36,7 +37,7 @@ export function BlogPost() {
     headline: post.title,
     description: post.metaDescription,
     datePublished: post.date,
-    dateModified: post.date,
+    dateModified: post.updated ?? post.date,
     inLanguage: 'fr-FR',
     articleSection: post.category,
     wordCount,
@@ -125,31 +126,30 @@ export function BlogPost() {
                 <p className="font-medium text-navy-900">{author.name}</p>
                 <p className="text-xs text-slate-500">{author.role}</p>
               </div>
-              <span className="ml-auto font-mono text-xs text-slate-500">
-                {formatDate(post.date)}
+              <span className="ml-auto text-right font-mono text-xs text-slate-500">
+                Publié le {formatDate(post.date)}
+                {post.updated && (
+                  <>
+                    <br />
+                    Mis à jour le {formatDate(post.updated)}
+                  </>
+                )}
               </span>
             </div>
           )}
         </div>
 
-        {/* Hero image placeholder */}
-        <div className="mx-auto max-w-5xl px-5 sm:px-8 lg:px-12">
-          <div
-            aria-hidden="true"
-            className="relative aspect-[21/9] overflow-hidden rounded-2xl"
-            style={{
-              backgroundImage:
-                'linear-gradient(135deg, #0d1b3d 0%, #152348 50%, #1e2c52 100%)',
-            }}
-          >
-            <div
-              className="absolute inset-0 opacity-60"
-              style={{
-                backgroundImage:
-                  'radial-gradient(circle at 25% 35%, rgba(196,164,86,0.35), transparent 55%), radial-gradient(circle at 80% 70%, rgba(196,164,86,0.18), transparent 50%)',
-              }}
-            />
+        {post.revisionNote && (
+          <div className="mx-auto max-w-3xl px-5 sm:px-8 lg:px-12">
+            <p className="rounded-xl border hairline bg-white px-5 py-3 text-sm leading-relaxed text-slate-500">
+              <span className="font-medium text-navy-900">Révision{post.updated ? ` du ${formatDate(post.updated)}` : ''} :</span>{' '}
+              {post.revisionNote}
+            </p>
           </div>
+        )}
+
+        <div className="mx-auto mt-8 max-w-5xl px-5 sm:px-8 lg:px-12">
+          <JournalIllustration kind={post.illustration} className="aspect-[21/5] rounded-2xl" />
         </div>
       </section>
 
@@ -176,6 +176,26 @@ export function BlogPost() {
               ))}
             </ul>
           </aside>
+
+          {post.sources && post.sources.length > 0 && (
+            <section className="mt-12" aria-labelledby="sources-titre">
+              <h2 id="sources-titre" className="font-display text-2xl font-semibold text-navy-900">
+                Sources officielles
+              </h2>
+              <ul className="mt-4 space-y-2 text-sm leading-relaxed">
+                {post.sources.map((s) => (
+                  <li key={s.url}>
+                    <a href={s.url} target="_blank" rel="noopener noreferrer" className="border-b hairline-gold text-navy-900 hover:text-gold-700">
+                      {s.label}
+                    </a>{' '}
+                    <span className="text-slate-500">
+                      — {s.publisher}, consulté le {formatDate(s.checkedAt)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
 
           {/* FAQ inline */}
           {post.faq && (

@@ -1,6 +1,6 @@
-import type { BlogPost } from './types';
+import type { BlogPostInput } from './types';
 
-export const iaDroit: BlogPost = {
+export const iaDroit: BlogPostInput = {
   slug: 'ia-droit',
   title: "L'IA dans le droit : assistante de préparation, pas substitut",
   metaTitle: "IA et droit — assistante de préparation, pas substitut",
@@ -10,7 +10,8 @@ export const iaDroit: BlogPost = {
     "L'IA générative bouleverse les métiers du droit, mais une frontière reste non négociable : l'IA prépare le travail du professionnel — elle ne le remplace pas. Voici où l'IA est utile, où elle est dangereuse, et pourquoi cette frontière protège autant les avocats que leurs clients.",
   author: 'redaction',
   date: '2026-05-02',
-  readMinutes: 7,
+  // Non révisé lors de la passe du 2026-09-18 : relecture demandée (alerte admin).
+  reviewBy: '2026-10-19',
   category: 'IA et droit',
   tags: ['IA', 'déontologie', 'pratique professionnelle', 'RIN'],
   heroImageQuery: 'judge desk justice',

@@ -1,152 +1,111 @@
-import type { BlogPost } from './types';
+import { SRC } from './sources';
+import type { BlogPostInput } from './types';
 
-export const conservationDocuments: BlogPost = {
+export const conservationDocuments: BlogPostInput = {
   slug: 'conservation-documents',
-  title: "Conservation des documents juridiques : durées légales et bonnes pratiques",
-  metaTitle: "Conservation documents juridiques — durées légales France",
+  title: 'Conservation des documents : combien de temps garder chaque pièce selon sa nature',
+  metaTitle: 'Conservation des documents — durées selon leur nature',
   metaDescription:
-    "Un contrat de travail se garde 5 ans. Une facture, 10 ans. Une attestation employeur, à vie. Le guide complet par typologie.",
+    'Bulletins de paie, relevés, factures, pièces comptables : les durées de conservation selon la nature du document, avec les textes officiels et leurs nuances.',
   summary:
-    "Combien de temps faut-il garder ses contrats, factures, bulletins de paie, actes notariés ? La règle change selon le document et la situation, et l'erreur a deux directions : trop court (vous perdez une preuve), trop long (vous violez le RGPD). Voici le guide.",
+    "Garder trop peu, c'est risquer de ne plus pouvoir prouver un paiement ou un droit. Il n'existe pas de durée unique : elle dépend de la nature du document et de votre situation. Voici les repères officiels, avec leurs nuances.",
   author: 'redaction',
   date: '2026-03-28',
-  readMinutes: 9,
+  updated: '2026-09-18',
+  revisionNote:
+    "Article réécrit à partir des textes officiels vérifiés (Légifrance, service-public, CNIL) : durées corrigées, chiffres non sourcés retirés, portée du RGPD précisée.",
+  reviewBy: '2027-03-18',
   category: 'Conformité',
-  tags: ['conservation', 'documents', 'RGPD', 'archives'],
-  heroImageQuery: 'paper archives folders',
+  tags: ['conservation', 'documents', 'archives', 'RGPD'],
+  illustration: 'archive',
   content: [
     {
       type: 'p',
       text:
-        "Combien de fois avez-vous jeté un document trop tôt, pour le regretter quelques mois plus tard ? Ou conservé pendant vingt ans une facture EDF par excès de prudence ? La conservation des documents juridiques répond à des règles précises, codifiées dans plusieurs textes : Code civil, Code du travail, Code de commerce, et — depuis 2018 — Règlement général sur la protection des données. Les durées varient selon la nature du document et le statut de la personne (particulier, salarié, entrepreneur, association).",
+        "Combien de temps garder un bulletin de paie, un relevé bancaire, une facture ? La réponse dépend de la nature du document, de votre situation (particulier ou entreprise) et parfois de circonstances particulières. Les durées ci-dessous sont des repères issus des textes et des pages officielles : ce sont souvent des minimums.",
+    },
+    { type: 'h2', text: 'Le repère général : cinq ans' },
+    {
+      type: 'p',
+      text:
+        "Beaucoup d'actions en justice se prescrivent par cinq ans, à compter du jour où l'on a connu, ou aurait dû connaître, les faits permettant d'agir (article 2224 du code civil). D'où l'intérêt de garder au moins cinq ans les contrats, courriers et justificatifs liés à un engagement. Attention : le point de départ varie selon les situations, et de nombreux délais spéciaux existent.",
+    },
+    { type: 'h2', text: 'Particuliers : des durées minimales' },
+    {
+      type: 'p',
+      text: 'Service-public.fr publie des durées minimales, présentées comme des durées de prudence. Quelques exemples :',
+    },
+    {
+      type: 'list',
+      items: [
+        'Bulletins de salaire et contrat de travail : jusqu’à la liquidation de la retraite.',
+        'Relevés bancaires : 5 ans à partir de la date de l’opération.',
+        'Déclaration et avis d’impôt sur le revenu : jusqu’à la fin de la 3e année qui suit l’année d’imposition.',
+        'Quittances de loyer : durée de la location, plus 3 ans.',
+        'Factures d’électricité, de gaz et d’eau : 5 ans.',
+        'Titre de propriété, livret de famille : sans limite de durée.',
+      ],
+    },
+    { type: 'h2', text: 'Entreprises : comptabilité, fiscalité, paie' },
+    {
+      type: 'list',
+      items: [
+        'Documents comptables et pièces justificatives (factures, bons de commande) : 10 ans (article L. 123-22 du code de commerce), à compter de la clôture de l’exercice.',
+        'Documents que l’administration fiscale peut contrôler : 6 ans (article L. 102 B du livre des procédures fiscales), délai porté à 10 ans en cas d’activité occulte.',
+        'Double des bulletins de paie : 5 ans pour l’employeur (article L. 3243-4 du code du travail).',
+        'Contrats et correspondance commerciale : 5 ans.',
+      ],
     },
     {
       type: 'p',
       text:
-        "Cet article passe en revue les principales catégories. Il n'est pas exhaustif — pour des documents très spécialisés (droit médical, propriété intellectuelle complexe, dossiers familiaux atypiques), un conseil ciblé reste utile.",
+        "Quand plusieurs règles visent le même document, retenez la plus longue : une facture est à la fois une pièce comptable et un justificatif fiscal.",
     },
-    { type: 'h2', text: 'Documents salariés' },
-    {
-      type: 'list',
-      items: [
-        "Bulletins de paie : à conserver à vie (utiles pour le calcul de la retraite, même 40 ans après).",
-        "Contrat de travail : 5 ans après la rupture (prescription civile générale, article 2224 Code civil).",
-        "Attestation Pôle emploi (ex-ASSEDIC) : 5 ans après la fin de l'indemnisation.",
-        "Solde de tout compte : 3 ans (prescription des actions en paiement de salaire).",
-        "Reçu pour solde de tout compte signé : 6 mois après remise (article L. 1234-20 Code du travail).",
-      ],
-    },
-    {
-      type: 'callout',
-      text:
-        "Les bulletins de paie sont l'exception : conservez-les à vie, en version papier ET numérique. La retraite se calcule sur toute la carrière, et un trimestre manquant peut coûter cher au moment de la liquidation.",
-      tone: 'gold',
-    },
-    { type: 'h2', text: 'Documents fiscaux et bancaires' },
-    {
-      type: 'list',
-      items: [
-        "Déclaration de revenus et avis d'imposition : 3 ans, mais 6 ans en cas d'activité indépendante ou de revenus fonciers.",
-        "Justificatifs de réductions et crédits d'impôt : 3 ans (durée du droit de reprise du fisc).",
-        "Taxe foncière, taxe d'habitation : 1 an après paiement.",
-        "Relevés bancaires : 5 ans (utiles en cas de litige avec un commerçant ou la banque).",
-        "Chèques annulés ou souches : 5 ans.",
-      ],
-    },
-    { type: 'h2', text: 'Documents immobiliers' },
-    {
-      type: 'list',
-      items: [
-        "Acte d'achat ou de vente d'un bien immobilier : à vie, tant que vous possédez le bien (et même au-delà pour preuve de plus-value).",
-        "Bail d'habitation : 3 ans après la fin du bail.",
-        "Quittances de loyer : 3 ans (preuve du paiement en cas de litige).",
-        "État des lieux (entrée et sortie) : 3 ans après la fin du bail.",
-        "Charges de copropriété (procès-verbaux d'AG, comptes annuels) : 10 ans.",
-        "Diagnostics immobiliers (DPE, amiante, plomb) : à conserver tant que vous occupez ou louez le bien.",
-      ],
-    },
-    { type: 'h2', text: 'Documents de consommation' },
-    {
-      type: 'list',
-      items: [
-        "Factures d'eau, gaz, électricité : 5 ans (prescription de l'action en paiement).",
-        "Factures de téléphone, abonnements internet : 1 an minimum (souvent 5 ans recommandés).",
-        "Achats de biens durables (électroménager, mobilier) : durée de la garantie + 2 ans.",
-        "Carte grise (certificat d'immatriculation) : tant que vous possédez le véhicule.",
-        "Contrat d'assurance et avis d'échéance : 2 ans après résiliation.",
-      ],
-    },
-    { type: 'h2', text: 'Documents familiaux' },
-    {
-      type: 'list',
-      items: [
-        "Livret de famille : à vie.",
-        "Actes notariés (donation, succession, testament) : à vie.",
-        "Jugements (divorce, garde, séparation de biens) : à vie.",
-        "Pensions alimentaires reçues ou versées : 5 ans.",
-        "Allocations familiales et CAF : 3 ans (preuve en cas de contestation).",
-      ],
-    },
-    { type: 'h2', text: 'Documents pour entrepreneur ou société' },
+    { type: 'h2', text: 'Un exemple concret' },
     {
       type: 'p',
       text:
-        "Si vous êtes en libéral, micro-entrepreneur, gérant de SARL ou président de SAS, les durées sont plus longues car la responsabilité commerciale et fiscale est étendue.",
+        "Exemple fictif. Une entreprise reçoit une facture fournisseur en mars 2025 ; son exercice est clos le 31 décembre 2025. Pièce justificative comptable, la facture se conserve 10 ans à partir de la clôture, soit au moins jusqu'au 31 décembre 2035. Le délai fiscal de 6 ans s'applique aussi, mais il est plus court : c'est le délai comptable qui fixe la date.",
     },
-    {
-      type: 'list',
-      items: [
-        "Statuts de la société, procès-verbaux d'assemblée : 5 ans après la radiation.",
-        "Comptes annuels, livre journal : 10 ans (article L. 123-22 Code de commerce).",
-        "Factures émises et reçues : 10 ans.",
-        "Documents bancaires professionnels : 10 ans.",
-        "Contrats commerciaux : 5 ans après la fin du contrat (10 ans si garantie décennale).",
-        "Bail commercial : 5 ans après la fin du bail.",
-        "Registres du personnel : 5 ans après le départ du dernier salarié inscrit.",
-      ],
-    },
-    { type: 'h2', text: 'Le risque de la sur-conservation : le RGPD' },
+    { type: 'h2', text: 'Données personnelles : ne pas garder sans raison' },
     {
       type: 'p',
       text:
-        "Le RGPD impose qu'une donnée personnelle ne soit conservée que le temps nécessaire à la finalité poursuivie. Conserver indéfiniment des documents personnels d'autrui (par exemple un ancien salarié, un client résilié) au-delà des durées légales constitue une infraction. Les amendes prononcées par la CNIL en 2024 et 2025 pour conservation excessive ont concerné des sommes à six chiffres pour des structures de taille moyenne.",
+        "Une entreprise peut archiver plus longtemps, sauf les documents qui contiennent des données personnelles. Le RGPD demande en effet de ne pas conserver ces données plus longtemps que nécessaire au regard de la finalité (article 5). Ce principe s'adresse aux organisations : les papiers qu'un particulier garde pour lui, dans un cadre strictement personnel, n'entrent pas dans le champ du RGPD (article 2).",
     },
+    { type: 'h2', text: 'Les cas particuliers' },
     {
       type: 'p',
       text:
-        "Notre conseil : à chaque fin d'année, programmer une « purge » des documents dont la durée légale est échue. Plutôt que de jeter, anonymiser : un bulletin de paie peut être archivé en gardant les montants mais en supprimant le nom et le numéro de sécurité sociale, par exemple.",
-    },
-    { type: 'h2', text: 'Bonnes pratiques de classement' },
-    {
-      type: 'list',
-      items: [
-        "Nommer les fichiers avec une convention claire : YYYY-MM-DD_nature_partie (par exemple 2024-03-15_facture_EDF.pdf).",
-        "Séparer en dossiers thématiques : Famille, Logement, Travail, Fiscal, Pro.",
-        "Doublonner sur deux supports : un local (disque dur, NAS) et un distant (cloud chiffré).",
-        "Sauvegarder une fois par mois en cas de changement important.",
-        "Tenir un index annuel : un fichier qui liste les documents archivés cette année-là.",
-      ],
+        "Ces durées sont des repères, pas un conseil juridique. Elles peuvent s'allonger en cas de litige en cours, de contrôle, d'activité réglementée ou de règles propres à votre secteur. En cas de doute, conservez le document et demandez l'avis d'un professionnel, comme votre expert-comptable ou un avocat.",
     },
   ],
   takeaways: [
-    "Les bulletins de paie se conservent à vie ; les contrats de travail, 5 ans après rupture.",
-    "Les factures et documents commerciaux, 10 ans (Code de commerce).",
-    "RGPD : conserver au-delà de la durée légale est sanctionnable. Programmer une purge annuelle.",
-    "Convention de nommage YYYY-MM-DD_nature_partie : indispensable pour retrouver un document dix ans plus tard.",
+    'Repère général : 5 ans pour de nombreuses actions civiles (code civil, article 2224).',
+    'Entreprises : 10 ans pour la comptabilité et ses pièces, 6 ans pour les documents fiscaux ; retenez la durée la plus longue.',
+    'Salariés : bulletins de paie et contrat de travail jusqu’à la liquidation de la retraite.',
+    'Données personnelles : une organisation ne les garde pas au-delà du nécessaire.',
   ],
   faq: [
     {
-      q: "Les documents numériques ont-ils la même valeur que le papier ?",
-      a: "Oui, depuis la loi de 2000 sur la signature électronique. Un PDF signé électroniquement, un email tracé, une LRE certifiée ont la même valeur probante. Veillez seulement à ce que l'horodatage et la signature soient vérifiables.",
+      q: 'Les documents numériques ont-ils la même valeur que le papier ?',
+      a: "En principe oui : l'écrit électronique a la même force probante que l'écrit papier, si la personne dont il émane peut être identifiée et s'il est établi et conservé dans des conditions qui garantissent son intégrité (article 1366 du code civil).",
     },
     {
-      q: "Que faire des documents d'un proche décédé ?",
-      a: "Les documents fiscaux et bancaires doivent être conservés pendant les durées légales (la succession peut être contestée jusqu'à 30 ans pour la prescription extinctive). Les actes notariés (testament, donation) doivent être conservés à vie par les héritiers.",
-    },
-    {
-      q: "Faut-il garder l'original papier si on a numérisé ?",
-      a: "Pour la plupart des documents, la version numérique suffit si elle est lisible, datée et conservée de manière intègre. Trois exceptions : actes notariés originaux (à conserver), titres de propriété (à conserver), documents requis en justice avec mention « original » (selon décision du juge).",
+      q: "Faut-il garder l'original papier après l'avoir numérisé ?",
+      a: "Pour les documents à conserver sans limite (titre de propriété, livret de famille) et en cas de doute, gardez l'original. Pour les autres, une copie numérique fidèle et bien conservée est souvent suffisante, sous les conditions de l'article 1366 du code civil.",
     },
   ],
-  relatedSlugs: ['rgpd-legaltech', 'preparer-rendez-vous-avocat', 'mise-en-demeure'],
+  sources: [
+    SRC.codeCivil2224,
+    SRC.codeCommerceL123_22,
+    SRC.lpfL102B,
+    SRC.codeTravailL3243_4,
+    SRC.codeCivil1366,
+    SRC.spConservationParticuliers,
+    SRC.spConservationEntreprises,
+    SRC.cnilRgpdChap2,
+    SRC.cnilRgpdChap1,
+  ],
+  relatedSlugs: ['organiser-un-dossier', 'rgpd-legaltech', 'mise-en-demeure'],
 };
