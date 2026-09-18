@@ -114,12 +114,16 @@ export function Pricing() {
     const intent = params.get(LB13_INTENT_PARAM) === LB13_INTENT_VALUE;
     setLb13Intent(intent);
     if (intent) setBilling("monthly");
+    // Retour de connexion (formule choisie) ou lien de la bannière (#offre-lb13) :
+    // défilement après la remise en haut de page faite par le Layout.
     const formule = params.get("formule");
-    if (formule) {
-      requestAnimationFrame(() =>
-        document.getElementById(`formule-${formule}`)?.scrollIntoView({ block: "center" }),
-      );
-    }
+    const target = formule ? `formule-${formule}` : window.location.hash.slice(1);
+    if (!target) return;
+    const timer = window.setTimeout(
+      () => document.getElementById(target)?.scrollIntoView({ block: formule ? "center" : "start" }),
+      250,
+    );
+    return () => window.clearTimeout(timer);
   }, [params]);
 
   return (
