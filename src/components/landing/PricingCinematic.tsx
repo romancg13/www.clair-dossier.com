@@ -100,7 +100,7 @@ function PlanCard({ plan, billing }: { plan: Plan; billing: Billing }) {
 
   const skin = recommended
     ? 'premium-recommended-plan border-navy-900 bg-navy-900 text-cream-50'
-    : 'hairline bg-white text-navy-900 shadow-card';
+    : 'premium-card hairline bg-white text-navy-900 shadow-card';
   const muted = recommended ? 'text-cream-50/70' : 'text-slate-500';
   const hairline = recommended ? 'border-cream-50/15' : 'border-[rgba(13,27,61,0.08)]';
   const cta = recommended

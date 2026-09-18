@@ -335,6 +335,20 @@ form select:focus {
   .sheen:hover {
     filter: saturate(1.05);
   }
+
+  /* Micro-interactions CTA : la flèche glisse au survol, retour tactile à
+     l'appui. Transform/opacity uniquement (GPU) ; neutralisé par le bloc
+     prefers-reduced-motion global. */
+  .sheen svg {
+    transition: transform 240ms var(--ease-out-expo);
+  }
+  .sheen:hover svg {
+    transform: translate3d(2px, 0, 0);
+  }
+  .sheen:active {
+    transform: translateY(0) scale(0.98);
+    transition-duration: 90ms;
+  }
 }
 
 @keyframes premium-ambient-sweep {
@@ -384,6 +398,10 @@ form select:focus {
   .premium-card,
   .premium-card:hover,
   .premium-card:hover svg {
+    transform: none;
+  }
+  .sheen:hover svg,
+  .sheen:active {
     transform: none;
   }
 }
