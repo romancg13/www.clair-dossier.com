@@ -429,7 +429,7 @@ await test('audit de création présent', async () => {
 });
 
 console.log('Super admin');
-await test('admin voit l\'exception dans la vue des droits (AAL indifférente en lecture)', async () => {
+await test('admin voit l\'exception dans la vue des droits (AAL2)', async () => {
   await asUser(ADMIN, 'aal2');
   const rows = await q('select * from public.admin_list_entitlements()');
   const jg = rows.find((r) => r.email === 'j.gomes@avocats-gojuris.fr');
@@ -490,6 +490,96 @@ await test('notifications : lisibles et marquables par l\'admin seulement', asyn
   await q('update public.admin_notifications set read_at = now() where id = $1', [rows[0].id]);
   await asUser(B);
   assert.equal((await q('select id from public.admin_notifications')).length, 0);
+});
+
+console.log('Durcissement AAL2 + suppression exclusive (20260918100000)');
+await test('admin en AAL1 : aucune donnée de tiers (dossiers, profils, e-mails, vue des droits)', async () => {
+  await asUser(ADMIN, 'aal1');
+  assert.equal((await q('select id from public.dossiers where user_id = $1', [A])).length, 0);
+  assert.equal((await q('select id from public.profiles where id = $1', [A])).length, 0);
+  assert.equal((await q('select * from public.admin_user_emails()')).length, 0);
+  await rejects(q('select * from public.admin_list_entitlements()'), /MFA_REQUIRED/);
+  await asUser(ADMIN, 'aal2');
+  assert.ok((await q('select id from public.dossiers where user_id = $1', [A])).length > 0);
+  assert.ok((await q('select * from public.admin_user_emails()')).length > 0);
+});
+await test('admin en AAL1 : modification d\'un dossier de tiers sans effet', async () => {
+  await asSuperuser();
+  const [before] = await q('select status from public.dossiers where id = $1', [dossierA]);
+  await asUser(ADMIN, 'aal1');
+  await q(`update public.dossiers set status = 'archive' where id = $1`, [dossierA]);
+  await asSuperuser();
+  const [after] = await q('select status from public.dossiers where id = $1', [dossierA]);
+  assert.equal(after.status, before.status);
+});
+await test('corbeille dossier : super admin AAL2 uniquement, même par UPDATE direct', async () => {
+  const cible = await insertDossier(B, { title: 'corbeille-exclusive' });
+  // Le client propriétaire ne peut pas se mettre lui-même à la corbeille.
+  await asUser(B);
+  await q(`update public.dossiers set deleted_at = now() where id = $1`, [cible]);
+  await asSuperuser();
+  assert.equal((await q('select deleted_at from public.dossiers where id = $1', [cible]))[0].deleted_at, null);
+  // Super admin AAL2 : mise à la corbeille puis restauration.
+  await asUser(ADMIN, 'aal2');
+  await q(`update public.dossiers set deleted_at = now(), deleted_by = $2, delete_reason = 'test' where id = $1`, [cible, ADMIN]);
+  await asSuperuser();
+  assert.notEqual((await q('select deleted_at from public.dossiers where id = $1', [cible]))[0].deleted_at, null);
+  await asUser(ADMIN, 'aal2');
+  await q(`update public.dossiers set deleted_at = null, deleted_by = null, delete_reason = null where id = $1`, [cible]);
+  await asSuperuser();
+  assert.equal((await q('select deleted_at from public.dossiers where id = $1', [cible]))[0].deleted_at, null);
+});
+await test('restauration : aucune nouvelle notification, aucune consommation supplémentaire', async () => {
+  const cible = await insertDossier(B, { title: 'restauration-neutre' });
+  await asSuperuser();
+  const notifsAvant = (await q('select id from public.admin_notifications where dossier_id = $1', [cible])).length;
+  const consoAvant = (await q('select id from public.dossier_submissions where dossier_id = $1', [cible])).length;
+  await asUser(ADMIN, 'aal2');
+  await q(`update public.dossiers set deleted_at = now(), deleted_by = $2, delete_reason = 'test' where id = $1`, [cible, ADMIN]);
+  await q(`update public.dossiers set deleted_at = null, deleted_by = null, delete_reason = null where id = $1`, [cible]);
+  await asSuperuser();
+  assert.equal((await q('select id from public.admin_notifications where dossier_id = $1', [cible])).length, notifsAvant);
+  assert.equal((await q('select id from public.dossier_submissions where dossier_id = $1', [cible])).length, consoAvant);
+});
+await test('client : suppression API limitée aux brouillons jamais validés', async () => {
+  const brouillon = await insertDossier(B, { title: 'brouillon à nettoyer', status: 'brouillon' });
+  const valide = await insertDossier(B, { title: 'validé intouchable' });
+  await asUser(B);
+  await q('delete from public.dossiers where id = $1', [brouillon]);
+  await q('delete from public.dossiers where id = $1', [valide]);
+  await asSuperuser();
+  assert.equal((await q('select id from public.dossiers where id = $1', [brouillon])).length, 0, 'le brouillon se supprime');
+  assert.equal((await q('select id from public.dossiers where id = $1', [valide])).length, 1, 'le dossier validé reste');
+});
+await test('offre annuelle : la limite du plan vaut par fenêtre mensuelle, pas une fois l\'an', async () => {
+  const Y = await newUser('annuel@test.fr');
+  const start = new Date(Date.now() - 40 * 86400000).toISOString();
+  const end = new Date(Date.now() + 325 * 86400000).toISOString();
+  await subscribe(Y, 'business-pme-20', { start, end });
+  await asSuperuser();
+  // 20 validations dans la PREMIÈRE fenêtre mensuelle (il y a 39 jours).
+  for (let i = 0; i < 20; i++) {
+    await q(`insert into public.dossier_submissions (user_id, submitted_at) values ($1, $2)`, [
+      Y, new Date(Date.now() - 39 * 86400000).toISOString(),
+    ]);
+  }
+  const [win] = await q('select period_start, period_end, dossier_limit, used from public.dossier_entitlement($1)', [Y]);
+  assert.equal(win.used, 0, 'la fenêtre courante ne compte pas le mois précédent');
+  assert.ok(new Date(win.period_end) - new Date(win.period_start) <= 32 * 86400000, 'fenêtre au plus mensuelle');
+  // La fenêtre courante applique bien la limite : 20 acceptés, 21e refusé
+  // (semés il y a 2 h pour ne pas déclencher la limitation de débit 10/10 min).
+  await asSuperuser();
+  for (let i = 0; i < 20; i++) {
+    await q(`insert into public.dossier_submissions (user_id, submitted_at) values ($1, now() - interval '2 hours')`, [Y]);
+  }
+  await rejects(insertDossier(Y, { title: '21e du mois' }), /DOSSIER_QUOTA_EXCEEDED/);
+});
+await test('verrou structurel : une seule ligne super_admin possible', async () => {
+  await asSuperuser();
+  await rejects(
+    q(`insert into public.app_admins (user_id, role) values ($1, 'super_admin')`, [B]),
+    /duplicate key|unique/i,
+  );
 });
 
 console.log(`\n${passed} réussis, ${failed} échoués`);

@@ -93,6 +93,23 @@ export function subscriptionIdFromInvoice(invoice: {
   return typeof ref === 'string' ? ref : ref.id;
 }
 
+/**
+ * Vérification serveur du rattachement : le `client_reference_id` (posé dans
+ * l'URL du Payment Link, donc modifiable par le payeur) ne suffit pas seul.
+ * L'e-mail saisi au paiement doit correspondre à une adresse CONNUE du compte
+ * référencé — e-mail d'authentification ou e-mail de facturation déclaré.
+ * En cas de divergence, aucun rattachement automatique : l'abonnement part en
+ * rapprochement manuel (scripts/sync-stripe-subscriptions.ts), rien n'est perdu.
+ */
+export function paymentEmailMatchesAccount(
+  paymentEmail: string | null | undefined,
+  accountEmails: Array<string | null | undefined>,
+): boolean {
+  const paid = paymentEmail?.trim().toLowerCase();
+  if (!paid) return false;
+  return accountEmails.some((e) => (e ?? '').trim().toLowerCase() === paid);
+}
+
 /** Événements traités ; les autres sont acquittés sans effet. */
 export const HANDLED_EVENTS = new Set([
   'checkout.session.completed',

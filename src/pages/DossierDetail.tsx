@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { zipSync } from "fflate";
 import { Seo } from "../lib/seo";
 import { useAuth } from "../lib/auth";
 import { supabase } from "../lib/supabase";
 import { ArrowRightIcon, CheckIcon } from "../components/icons";
-import { hasDossierTrash } from "../lib/admin";
+import { hasDossierTrash, logAudit } from "../lib/admin";
 import { hasQuotaEngine } from "../lib/dossier-workspace";
 // Statuts, typologies, étapes et libellés de réponses : source unique partagée
 // avec l'application mobile (packages/core) — mêmes libellés des deux côtés.
@@ -49,6 +49,8 @@ type DossierRow = {
   /** Étape forcée par l'administration (migration 20260917120000), sinon déduite du statut. */
   current_step?: number | null;
   admin_seen_at?: string | null;
+  /** Corbeille console (migration 20260915150000) — visible ici pour l'admin seulement. */
+  deleted_at?: string | null;
 };
 
 type DocumentRow = {
@@ -248,10 +250,12 @@ function DocRow({
 export function DossierDetail() {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [dossier, setDossier] = useState<DossierRow | null>(null);
   const [documents, setDocuments] = useState<DocumentRow[]>([]);
   const [links, setLinks] = useState<Record<string, string>>({});
   const [isAdmin, setIsAdmin] = useState(false);
+  const [trashCap, setTrashCap] = useState(false);
   const [ownerEmail, setOwnerEmail] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [openStep, setOpenStep] = useState(0);
@@ -310,6 +314,7 @@ export function DossierDetail() {
 
       // La RLS limite déjà la lecture au propriétaire — le filtre id suffit.
       const [trashAware, quotaAware] = await Promise.all([hasDossierTrash(), hasQuotaEngine()]);
+      setTrashCap(trashAware);
       const { data } = await supabase
         .from("dossiers")
         .select(
@@ -973,6 +978,44 @@ export function DossierDetail() {
                         <span className="text-xs text-slate-500">
                           Donnez-lui un nom parlant, ex. « Recouvrement — Société X ».
                         </span>
+                      )}
+                      {isAdmin && trashCap && !dossier.deleted_at && (
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            const reason = window.prompt(
+                              `Mettre le dossier « ${displayTitle} » à la corbeille de la console ?\nMotif (visible dans l'audit) :`,
+                              "",
+                            );
+                            if (reason === null) return;
+                            setActionError(null);
+                            // Champ re-lu : la corbeille est réservée au super admin en
+                            // session vérifiée (déclencheur + RLS) — jamais de faux succès.
+                            const { data: rows, error } = await supabase
+                              .from("dossiers")
+                              .update({
+                                deleted_at: new Date().toISOString(),
+                                deleted_by: user?.id,
+                                delete_reason: reason || null,
+                              })
+                              .eq("id", dossier.id)
+                              .select("id,deleted_at");
+                            if (error || !(rows as { deleted_at: string | null }[] | null)?.[0]?.deleted_at) {
+                              setActionError(
+                                "Mise à la corbeille refusée (réservée au super admin en session vérifiée).",
+                              );
+                              return;
+                            }
+                            void logAudit("dossier_corbeille", "dossier", dossier.id, dossier.user_id, {
+                              motif: reason || "",
+                              depuis: "detail",
+                            });
+                            navigate("/admin");
+                          }}
+                          className="text-xs font-medium text-red-600 hover:text-red-700"
+                        >
+                          Mettre à la corbeille (console)
+                        </button>
                       )}
                     </div>
                   )}
