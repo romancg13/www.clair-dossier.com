@@ -40,6 +40,9 @@ export function Account() {
   const [search, setSearch] = useState('');
   const [dossiers, setDossiers] = useState<DossierRow[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
+  // Session AAL2 (MFA vérifiée) : sans elle, la base ne renvoie AUCUNE donnée
+  // de tiers à l'admin — l'interface l'explique au lieu de faire semblant.
+  const [adminVerified, setAdminVerified] = useState(false);
   const [owners, setOwners] = useState<Record<string, string>>({});
   const [emails, setEmails] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
@@ -51,6 +54,11 @@ export function Account() {
       // Statut admin (renvoie un booléen pour l'appelant courant uniquement).
       const { data: adminFlag } = await supabase.rpc('is_admin');
       const admin = adminFlag === true;
+      let verified = false;
+      if (admin) {
+        const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+        verified = aal?.currentLevel === 'aal2';
+      }
 
       // Les politiques RLS renvoient automatiquement TOUS les dossiers à l'admin,
       // et uniquement les siens à un utilisateur normal.
@@ -86,7 +94,7 @@ export function Account() {
 
       const ownerMap: Record<string, string> = {};
       const emailMap: Record<string, string> = {};
-      if (admin) {
+      if (admin && verified) {
         const { data: profs } = await supabase.from('profiles').select('id,company_name,full_name');
         (profs as ProfileRow[] | null)?.forEach((p) => {
           const name = p.company_name || p.full_name;
@@ -101,6 +109,7 @@ export function Account() {
 
       if (!active) return;
       setIsAdmin(admin);
+      setAdminVerified(verified);
       setOwners(ownerMap);
       setEmails(emailMap);
       setDossiers((data as DossierRow[] | null) ?? []);
@@ -128,8 +137,9 @@ export function Account() {
                 Espace administrateur
               </p>
               <p className="mt-2 text-sm text-cream-50/85">
-                Vous voyez l'intégralité des dossiers de la plateforme. Cliquez un dossier pour le
-                détail (5 étapes) et le téléchargement des pièces.
+                {adminVerified
+                  ? "Vous voyez l'intégralité des dossiers de la plateforme. Cliquez un dossier pour le détail (5 étapes) et le téléchargement des pièces."
+                  : 'Les dossiers clients sont protégés par la vérification en deux étapes : ouvrez la console pour vous authentifier et y accéder. Cette page ne montre que vos propres dossiers.'}
               </p>
               <Link
                 to="/admin"
@@ -192,7 +202,7 @@ export function Account() {
 
           <div className="mt-10 flex items-center justify-between gap-4">
             <h2 className="font-display text-2xl font-semibold text-navy-900">
-              {isAdmin ? `Tous les dossiers (${dossiers.length})` : 'Vos dossiers'}
+              {isAdmin && adminVerified ? `Tous les dossiers (${dossiers.length})` : 'Vos dossiers'}
             </h2>
             <Link
               to="/dossier/nouveau"

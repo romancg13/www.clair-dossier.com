@@ -333,6 +333,7 @@ export function AdminConsole() {
 
   // Capacités (migrations appliquées ou non).
   const [caps, setCaps] = useState({ trash: false, audit: false, notes: false, docExtras: false });
+  const [capsReady, setCapsReady] = useState(false);
   const [automation, setAutomation] = useState(false);
   const [entitlements, setEntitlements] = useState<AdminEntitlementRow[] | null>(null);
   const [newCount, setNewCount] = useState(0);
@@ -372,7 +373,24 @@ export function AdminConsole() {
       if (!active) return;
       setSuperAdmin(sa);
       setCaps({ trash, audit: auditOk, notes: notesOk, docExtras: extras });
-      await reloadAll(trash, auditOk, notesOk, extras, (fn) => active && fn());
+      setCapsReady(true);
+    })();
+    return () => {
+      active = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading, user?.id]);
+
+  // Les données (dossiers, profils, e-mails…) ne sont demandées qu'APRÈS la
+  // porte MFA : en AAL1, aucune requête de données de tiers ne part du
+  // navigateur — et la base les refuserait de toute façon (migration
+  // 20260918100000). Charger avant la porte laisserait ensuite une console
+  // vide, les listes ayant été lues avec une session non vérifiée.
+  useEffect(() => {
+    if (!allowed || !mfaOk || !capsReady) return;
+    let active = true;
+    (async () => {
+      await reloadAll(caps.trash, caps.audit, caps.notes, caps.docExtras, (fn) => active && fn());
       if (active) setLoading(false);
       void logAudit("admin_console_ouverte", "console");
     })();
@@ -380,7 +398,7 @@ export function AdminConsole() {
       active = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authLoading, user?.id]);
+  }, [allowed, mfaOk, capsReady]);
 
   async function reloadAll(
     trash: boolean,
@@ -485,12 +503,16 @@ export function AdminConsole() {
       "Créé par erreur",
     );
     if (reason === null) return;
-    const { error: e } = await supabase
+    // .select() : sans lui, un refus RLS (session AAL2 expirée, droits retirés)
+    // renverrait 0 ligne SANS erreur et on annoncerait un faux succès. Le champ
+    // deleted_at est re-lu car le déclencheur le réserve au super admin vérifié.
+    const { data: rows, error: e } = await supabase
       .from("dossiers")
       .update({ deleted_at: new Date().toISOString(), deleted_by: user?.id, delete_reason: reason || null })
-      .eq("id", d.id);
-    if (e) {
-      setError("Mise à la corbeille refusée (migration super admin appliquée ?).");
+      .eq("id", d.id)
+      .select("id,deleted_at");
+    if (e || !(rows as { deleted_at: string | null }[] | null)?.[0]?.deleted_at) {
+      setError("Mise à la corbeille refusée (réservée au super admin en session vérifiée ; migrations appliquées ?).");
       return;
     }
     setNotice(`Dossier « ${d.title || d.typology} » placé dans la corbeille.`);
@@ -499,12 +521,14 @@ export function AdminConsole() {
   }
 
   async function restoreDossier(d: DossierRow) {
-    const { error: e } = await supabase
+    const { data: rows, error: e } = await supabase
       .from("dossiers")
       .update({ deleted_at: null, deleted_by: null, delete_reason: null })
-      .eq("id", d.id);
-    if (e) {
-      setError("Restauration refusée.");
+      .eq("id", d.id)
+      .select("id,deleted_at");
+    const restored = (rows as { deleted_at: string | null }[] | null)?.[0];
+    if (e || !restored || restored.deleted_at !== null) {
+      setError("Restauration refusée (réservée au super admin en session vérifiée).");
       return;
     }
     setNotice(`Dossier « ${d.title || d.typology} » restauré.`);
@@ -524,25 +548,35 @@ export function AdminConsole() {
       )
     )
       return;
-    // 1. Fichiers storage, 2. lignes documents (cascade couvre aussi), 3. dossier.
+    // Ordre sûr : la ligne dossier d'abord (le refus éventuel n'a alors rien
+    // détruit), les fichiers ensuite. Chemins capturés AVANT la cascade.
     const paths = docs.filter((x) => x.dossier_id === d.id).map((x) => x.file_path);
-    if (paths.length) await supabase.storage.from("documents").remove(paths);
-    const { error: e } = await supabase.from("dossiers").delete().eq("id", d.id);
-    if (e) {
-      setError("Suppression définitive refusée (réservée au super admin).");
+    const { data: rows, error: e } = await supabase.from("dossiers").delete().eq("id", d.id).select("id");
+    if (e || !rows?.length) {
+      setError("Suppression définitive refusée (réservée au super admin, session vérifiée).");
       return;
     }
-    setNotice("Dossier supprimé définitivement (fichiers inclus).");
+    let storageWarning: string | null = null;
+    if (paths.length) {
+      const { error: sErr } = await supabase.storage.from("documents").remove(paths);
+      if (sErr) storageWarning = `${paths.length} fichier(s) restent à purger du stockage (chemins dans l'audit).`;
+    }
+    setNotice(
+      storageWarning
+        ? `Dossier supprimé définitivement. ${storageWarning}`
+        : "Dossier supprimé définitivement (fichiers inclus).",
+    );
     void logAudit("dossier_suppression_definitive", "dossier", d.id, d.user_id, {
       documents: String(docCount),
+      ...(storageWarning ? { fichiers_a_purger: paths.join(" ") } : {}),
     });
     await refresh();
   }
 
   async function changeStatus(d: DossierRow, status: string) {
-    const { error: e } = await supabase.from("dossiers").update({ status }).eq("id", d.id);
-    if (e) {
-      setError("Changement de statut refusé (migration super admin appliquée ?).");
+    const { data: rows, error: e } = await supabase.from("dossiers").update({ status }).eq("id", d.id).select("id");
+    if (e || !rows?.length) {
+      setError("Changement de statut refusé (session vérifiée requise ; migrations appliquées ?).");
       return;
     }
     void logAudit("dossier_statut", "dossier", d.id, d.user_id, { statut: status });
@@ -553,12 +587,13 @@ export function AdminConsole() {
 
   async function trashDoc(doc: DocRow) {
     if (!window.confirm(`Mettre « ${doc.file_name} » à la corbeille ?`)) return;
-    const { error: e } = await supabase
+    const { data: rows, error: e } = await supabase
       .from("dossier_documents")
       .update({ deleted_at: new Date().toISOString(), deleted_by: user?.id })
-      .eq("id", doc.id);
-    if (e) {
-      setError("Action refusée (migrations appliquées ?).");
+      .eq("id", doc.id)
+      .select("id");
+    if (e || !rows?.length) {
+      setError("Action refusée (session vérifiée requise ; migrations appliquées ?).");
       return;
     }
     void logAudit("document_corbeille", "document", doc.id, doc.user_id);
@@ -566,12 +601,13 @@ export function AdminConsole() {
   }
 
   async function restoreDoc(doc: DocRow) {
-    const { error: e } = await supabase
+    const { data: rows, error: e } = await supabase
       .from("dossier_documents")
       .update({ deleted_at: null, deleted_by: null })
-      .eq("id", doc.id);
-    if (e) {
-      setError("Restauration refusée.");
+      .eq("id", doc.id)
+      .select("id");
+    if (e || !rows?.length) {
+      setError("Restauration refusée (session vérifiée requise).");
       return;
     }
     void logAudit("document_restaure", "document", doc.id, doc.user_id);
@@ -584,13 +620,17 @@ export function AdminConsole() {
       return;
     }
     if (!confirmIrreversible(`Supprimer DÉFINITIVEMENT « ${doc.file_name} » ?`)) return;
-    await supabase.storage.from("documents").remove([doc.file_path]);
-    const { error: e } = await supabase.from("dossier_documents").delete().eq("id", doc.id);
-    if (e) {
-      setError("Suppression refusée.");
+    // Ligne d'abord (un refus n'a rien détruit), fichier ensuite.
+    const { data: rows, error: e } = await supabase.from("dossier_documents").delete().eq("id", doc.id).select("id");
+    if (e || !rows?.length) {
+      setError("Suppression refusée (réservée au super admin, session vérifiée).");
       return;
     }
-    void logAudit("document_suppression_definitive", "document", doc.id, doc.user_id);
+    const { error: sErr } = await supabase.storage.from("documents").remove([doc.file_path]);
+    void logAudit("document_suppression_definitive", "document", doc.id, doc.user_id, {
+      ...(sErr ? { fichier_a_purger: doc.file_path } : {}),
+    });
+    if (sErr) setNotice("Document supprimé ; le fichier reste à purger du stockage (chemin dans l'audit).");
     await refresh();
   }
 
