@@ -1,19 +1,19 @@
 ---
 title: "Conditions générales de vente"
 description: "Conditions générales de vente du service ClairDossier — souscription, tarifs, durée, résiliation, responsabilité, propriété intellectuelle."
-lastUpdate: 2026-09-15
+lastUpdate: 2026-09-18
 url: https://www.clair-dossier.com/cgv
 ---
 
 # Conditions générales de vente
 
-*Dernière mise à jour : 15 septembre 2026*
+*Dernière mise à jour : 18 septembre 2026*
 
 Les présentes conditions générales de vente (« CGV ») régissent l'accès au service ClairDossier et son utilisation par tout client souscrivant à une offre. La création de compte est gratuite ; seul l'abonnement est payant. Toute souscription emporte acceptation pleine et entière des présentes CGV.
 
 ## Article 1 — Objet
 
-Les présentes CGV ont pour objet de définir les conditions dans lesquelles Roman Gomes, entrepreneur individuel (SIREN 105 490 734), ci-après « ClairDossier » ou « l'Éditeur », fournit au client (ci-après le « Client ») un accès au service ClairDossier (ci-après le « Service »), permettant la création de dossiers, le dépôt de pièces dans un espace privé, le suivi de leur avancement et leur transmission par e-mail ou WhatsApp à l'initiative du Client.
+Les présentes CGV ont pour objet de définir les conditions dans lesquelles Roman Gomes, entrepreneur individuel (SIREN 105 490 734), ci-après « ClairDossier » ou « l'Éditeur », fournit au client (ci-après le « Client ») un accès au service ClairDossier (ci-après le « Service »), permettant la création de dossiers, le dépôt de pièces dans un espace privé, le suivi de leur avancement et la mise à disposition des pièces, que le Client transmet lui-même, s'il le souhaite, au destinataire de son choix.
 
 Le Service est un outil de préparation et de gestion documentaire. Il ne constitue ni un cabinet d'avocats, ni un conseil juridique. Aucune transmission de dossier n'a lieu sans la validation explicite du Client.
 
@@ -43,7 +43,7 @@ ClairDossier met en œuvre les moyens raisonnables pour assurer la disponibilit�
 
 Le Service organise les dossiers à partir des informations et des pièces renseignées par le Client. Il ne procède à aucune lecture, extraction ou analyse automatique des documents : le contenu des dossiers est saisi et structuré par le Client lui-même.
 
-La transmission d'un dossier, par e-mail ou WhatsApp, n'intervient qu'à l'initiative et après validation explicite du Client. ClairDossier ne saurait être tenue responsable de l'usage fait des dossiers une fois transmis par le Client à un tiers.
+La validation d'un dossier l'enregistre dans le compte du Client : le Service n'envoie pas le dossier à des tiers, ni par e-mail ni par WhatsApp. Toute transmission à un tiers est effectuée par le Client lui-même, à son initiative. ClairDossier ne saurait être tenue responsable de l'usage fait des dossiers une fois transmis par le Client à un tiers.
 
 ## Article 7 — Données personnelles
 
@@ -58,6 +58,12 @@ ClairDossier ne saurait être tenue responsable des décisions prises par le Cli
 ## Article 9 — Droit applicable et juridiction
 
 Les présentes CGV sont régies par le droit français. En cas de litige relatif à leur interprétation ou à leur exécution, et à défaut de résolution amiable, la juridiction compétente est déterminée selon les règles de droit commun. Entre commerçants, compétence est attribuée aux juridictions du ressort du siège de l'Éditeur, à Marseille.
+
+## Article 10 — Offres promotionnelles (article descriptif)
+
+Article descriptif ajouté le 18 septembre 2026 : il présente les conditions des offres promotionnelles et ne modifie aucune autre stipulation des présentes CGV.
+
+Code LB13 : −20 % sur les 4 premières mensualités d'une formule mensuelle souscrite avec le code saisi avant le 21 septembre 2026 à 00 h (heure de Paris) ; tarif en vigueur ensuite ; hors formules annuelles et sur-mesure ; non cumulable avec une autre réduction ; sans effet sur les quotas et fonctionnalités de la formule.
 
 
 ---

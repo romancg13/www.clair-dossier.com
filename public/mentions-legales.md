@@ -1,13 +1,13 @@
 ---
 title: "Mentions légales"
 description: "Mentions légales du site clair-dossier.com — éditeur, hébergeur, directeur de publication, propriété intellectuelle."
-lastUpdate: 2026-09-15
+lastUpdate: 2026-09-18
 url: https://www.clair-dossier.com/mentions-legales
 ---
 
 # Mentions légales
 
-*Dernière mise à jour : 15 septembre 2026*
+*Dernière mise à jour : 18 septembre 2026*
 
 Conformément à la loi pour la confiance dans l'économie numérique (LCEN, n° 2004-575 du 21 juin 2004), il est précisé aux utilisateurs du site clair-dossier.com l'identité des différents intervenants dans le cadre de sa réalisation et de son suivi.
 
@@ -19,7 +19,7 @@ Code APE : 4791A — Vente à distance sur catalogue général.
 
 TVA non applicable, article 293 B du Code général des impôts (régime de la franchise en base).
 
-Contact : contact.clairdossier@icloud.com — Téléphone : 04 91 95 90 32 — WhatsApp : +33 7 82 98 36 44.
+Contact : contact.clairdossier@icloud.com — Téléphone et WhatsApp : 07 82 98 36 44.
 
 Réalisation et développement du site : Nouh BENZIDANE — https://nouhbenzidane.fr.
 
@@ -31,7 +31,7 @@ Le directeur de la publication du site clair-dossier.com est Roman Gomes, en sa 
 
 Le site clair-dossier.com est hébergé sur l'infrastructure GitHub Pages, opérée par GitHub Inc. (88 Colin P Kelly Jr St, San Francisco, CA 94107, États-Unis).
 
-Les données client du service ClairDossier — dossiers, pièces, échanges — sont hébergées chez un sous-traitant technique conforme au RGPD, qui assure le chiffrement en transit (HTTPS) et au repos. Les pièces déposées sont stockées dans un espace privé, accessible uniquement par authentification.
+Les données client du service ClairDossier — dossiers, pièces, échanges — sont hébergées chez Supabase (base de données, authentification et stockage des pièces), sous-traitant technique, qui assure le chiffrement en transit (HTTPS) et au repos. Les pièces déposées sont stockées dans un espace privé, accessible uniquement par authentification.
 
 ## Propriété intellectuelle
 

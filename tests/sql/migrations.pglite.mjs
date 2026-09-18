@@ -582,5 +582,232 @@ await test('verrou structurel : une seule ligne super_admin possible', async () 
   );
 });
 
+// ── Chantier 13 : suppression directe depuis « Vos dossiers » ───────────────
+// Le frontend (src/pages/Account.tsx) réutilise l'appel de la console :
+//   update dossiers set deleted_at, deleted_by, delete_reason … returning id, deleted_at
+// Ces tests prouvent que la base seule décide : refus pour le client A sur le
+// dossier de B, pour un admin « support », pour le super admin en AAL1 ;
+// acceptation pour le seul super admin AAL2, avec audit écrit par la base
+// (migration 20260918120000) ; rien d'autre n'est touché.
+console.log('Suppression directe « Vos dossiers » — chantier 13 (20260918120000)');
+const SUPPORT = await newUser('support@test.fr');
+await asSuperuser();
+await q(`insert into public.app_admins (user_id, role) values ($1, 'support')`, [SUPPORT]);
+// Bouchon Storage : en production, le rôle authenticated a ces privilèges sur
+// storage.objects (la RLS décide). Sans eux, tout refus serait trivial.
+await db.exec('grant select, insert, update, delete on storage.objects to authenticated;');
+
+const cible13 = await insertDossier(B, { title: 'Chantier 13 — dossier de B' });
+await asUser(B);
+await q(
+  `insert into public.dossier_documents (dossier_id, user_id, file_path, file_name) values ($1, $2, $3, 'piece.pdf')`,
+  [cible13, B, `${B}/${cible13}/piece.pdf`],
+);
+await q(
+  `insert into public.dossier_deadlines (dossier_id, user_id, title, due_date) values ($1, $2, 'Relance', current_date + 7)`,
+  [cible13, B],
+);
+await asSuperuser();
+await q(`insert into storage.objects (bucket_id, name, owner) values ('documents', $1, $2)`, [`${B}/${cible13}/piece.pdf`, B]);
+await q(`insert into storage.objects (bucket_id, name, owner) values ('documents', $1, $2)`, [`${B}/purge/ancien.pdf`, B]);
+
+async function etat13(id = cible13) {
+  await asSuperuser();
+  const [d] = await q('select user_id, status, deleted_at, deleted_by, delete_reason from public.dossiers where id = $1', [id]);
+  return d;
+}
+async function compteurs13(id = cible13) {
+  await asSuperuser();
+  const n = async (sql) => (await q(sql, [id])).length;
+  return {
+    pieces: await n('select id from public.dossier_documents where dossier_id = $1'),
+    echeances: await n('select id from public.dossier_deadlines where dossier_id = $1'),
+    consommations: await n('select id from public.dossier_submissions where dossier_id = $1'),
+    notifications: await n('select id from public.admin_notifications where dossier_id = $1'),
+    fichiers: (await q(`select id from storage.objects where name like $1`, [`${B}/${id}/%`])).length,
+  };
+}
+// Toutes les tentatives d'écriture « destructrices » sur le dossier cible.
+async function tentatives13(actor, aal) {
+  await asUser(actor, aal);
+  await q('delete from public.dossiers where id = $1', [cible13]);
+  await q(`update public.dossiers set status = 'archive' where id = $1`, [cible13]);
+  await q(`update public.dossiers set deleted_at = now(), deleted_by = $2, delete_reason = 'x' where id = $1`, [cible13, actor]);
+  await q('update public.dossiers set user_id = $2 where id = $1', [cible13, actor]);
+  await q(`delete from storage.objects where bucket_id = 'documents' and name like $1`, [`${B}/%`]);
+  await q(`update storage.objects set name = $2 where name = $1`, [`${B}/${cible13}/piece.pdf`, `${actor}/vol.pdf`]);
+}
+function intact13(d) {
+  assert.equal(d.user_id, B, 'propriétaire inchangé');
+  assert.equal(d.status, 'transmis', 'statut inchangé');
+  assert.equal(d.deleted_at, null, 'pas de corbeille');
+  assert.equal(d.deleted_by, null);
+}
+
+await test('client A sur le dossier de B : DELETE, statut, corbeille, propriétaire, Storage — sans effet (AAL1 et AAL2)', async () => {
+  const avant = await compteurs13();
+  for (const aal of ['aal1', 'aal2']) {
+    await tentatives13(A, aal);
+    intact13(await etat13());
+  }
+  assert.deepEqual(await compteurs13(), avant);
+  await asSuperuser();
+  assert.equal((await q(`select id from storage.objects where name like $1`, [`${B}/%`])).length, 2, 'fichiers de B intacts');
+});
+await test('client A : ni lecture du dossier, ni des fichiers, ni du journal de B', async () => {
+  await asUser(A, 'aal2');
+  assert.equal((await q('select id from public.dossiers where id = $1', [cible13])).length, 0);
+  assert.equal((await q(`select id from storage.objects where name like $1`, [`${B}/%`])).length, 0);
+  assert.equal((await q('select id from public.audit_logs')).length, 0);
+  assert.equal((await q('select public.super_admin_aal2() as ok'))[0].ok, false);
+});
+await test('admin « support » (non super) : corbeille, suppression, propriétaire, Storage refusés même en AAL2', async () => {
+  const avant = await compteurs13();
+  await tentatives13(SUPPORT, 'aal1');
+  intact13(await etat13());
+  // En AAL2, le support traite les dossiers (statut : droit existant de la
+  // console, hors suppression) mais ne peut NI les mettre à la corbeille,
+  // NI les supprimer, NI en changer le propriétaire, NI effacer un fichier.
+  await asUser(SUPPORT, 'aal2');
+  await q(`update public.dossiers set deleted_at = now(), deleted_by = $2, delete_reason = 'x' where id = $1`, [cible13, SUPPORT]);
+  await q('update public.dossiers set user_id = $2 where id = $1', [cible13, SUPPORT]);
+  await q('delete from public.dossiers where id = $1', [cible13]);
+  await q(`delete from storage.objects where bucket_id = 'documents' and name like $1`, [`${B}/%`]);
+  intact13(await etat13());
+  assert.deepEqual(await compteurs13(), avant);
+  await asUser(SUPPORT, 'aal2');
+  assert.equal((await q('select public.super_admin_aal2() as ok'))[0].ok, false);
+  await rejects(q(`select public.admin_set_dossier_override($1, 'unlimited', null, 'x', null)`, [B]), /FORBIDDEN/);
+});
+await test('admin « support » en AAL1 : aucun dossier de tiers exposé', async () => {
+  await asUser(SUPPORT, 'aal1');
+  assert.equal((await q('select id from public.dossiers where user_id = $1', [B])).length, 0);
+  assert.equal((await q('select * from public.admin_user_emails()')).length, 0);
+});
+await test('super admin en AAL1 : DELETE, statut, corbeille, propriétaire, Storage — sans effet', async () => {
+  const avant = await compteurs13();
+  await tentatives13(ADMIN, 'aal1');
+  intact13(await etat13());
+  assert.deepEqual(await compteurs13(), avant);
+  await asUser(ADMIN, 'aal1');
+  assert.equal((await q('select public.super_admin_aal2() as ok'))[0].ok, false);
+  assert.equal((await q('select id from public.dossiers where id = $1', [cible13])).length, 0, 'aucune donnée de tiers avant AAL2');
+});
+await test('RPC : aucune fonction appelable ne supprime, ne met à la corbeille ni ne réattribue un dossier', async () => {
+  await asSuperuser();
+  const fns = await q(`
+    select p.proname, p.prosrc
+    from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public'
+      and p.prorettype <> 'trigger'::regtype
+      and (has_function_privilege('authenticated', p.oid, 'EXECUTE')
+           or has_function_privilege('anon', p.oid, 'EXECUTE'))`);
+  assert.ok(fns.length > 0);
+  const ecrit = fns.filter((f) =>
+    /\b(update|delete\s+from|insert\s+into)\s+(public\.)?dossiers\b/i.test(f.prosrc) ||
+    /\b(update|delete\s+from)\s+storage\.objects\b/i.test(f.prosrc),
+  );
+  assert.deepEqual(ecrit.map((f) => f.proname), []);
+  // Sonde de capacité utilisée par l'interface : vraie pour le seul super admin AAL2.
+  await asUser(ADMIN, 'aal2');
+  assert.equal((await q('select public.super_admin_aal2() as ok'))[0].ok, true);
+  await asAnon();
+  await rejects(q('select public.super_admin_aal2()'), /permission denied/);
+});
+await test('journal indisponible : la mise à la corbeille est annulée (pas d\'action sans trace)', async () => {
+  const autre = await insertDossier(B, { title: 'Chantier 13 — atomicité' });
+  await asSuperuser();
+  await db.exec(`alter table public.audit_logs add constraint t13_journal_bloque check (action <> 'dossier_corbeille') not valid;`);
+  try {
+    await asUser(ADMIN, 'aal2');
+    await rejects(
+      q(`update public.dossiers set deleted_at = now(), deleted_by = $2, delete_reason = 'x' where id = $1 returning id, deleted_at`, [autre, ADMIN]),
+      /t13_journal_bloque|check constraint/,
+    );
+  } finally {
+    await asSuperuser();
+    await db.exec('alter table public.audit_logs drop constraint t13_journal_bloque;');
+  }
+  assert.equal((await etat13(autre)).deleted_at, null);
+});
+await test('super admin AAL2 : mise à la corbeille acceptée, relue, auditée par la base', async () => {
+  const avant = await compteurs13();
+  await asUser(ADMIN, 'aal2');
+  // Même appel que la console et que la vue « Vos dossiers ».
+  const rows = await q(
+    `update public.dossiers set deleted_at = now(), deleted_by = $2, delete_reason = 'Créé par erreur'
+     where id = $1 returning id, deleted_at`,
+    [cible13, ADMIN],
+  );
+  assert.equal(rows.length, 1);
+  assert.notEqual(rows[0].deleted_at, null, 'deleted_at relu dans la réponse');
+  // Relecture serveur distincte (comme l'interface avant de retirer la carte).
+  const [relu] = await q('select deleted_at from public.dossiers where id = $1', [cible13]);
+  assert.notEqual(relu.deleted_at, null);
+  await asSuperuser();
+  const d = await etat13();
+  assert.equal(d.user_id, B);
+  assert.equal(d.deleted_by, ADMIN);
+  assert.equal(d.delete_reason, 'Créé par erreur');
+  const logs = await q(`select actor_id, actor_role, target_user_id, metadata from public.audit_logs where action = 'dossier_corbeille' and resource_id = $1`, [cible13]);
+  assert.equal(logs.length, 1, 'une entrée d\'audit écrite par la base');
+  assert.equal(logs[0].actor_id, ADMIN);
+  assert.equal(logs[0].actor_role, 'super_admin');
+  assert.equal(logs[0].target_user_id, B);
+  assert.equal(logs[0].metadata.source, 'base');
+  assert.equal(logs[0].metadata.motif, 'Créé par erreur');
+  // Soft delete : pièces, échéances, fichiers, quota (aucun recrédit) et
+  // notifications strictement inchangés.
+  assert.deepEqual(await compteurs13(), avant);
+});
+await test('dossier en corbeille : le propriétaire ne peut ni le restaurer ni le réattribuer', async () => {
+  await asUser(B);
+  await q('update public.dossiers set deleted_at = null, deleted_by = null, delete_reason = null where id = $1', [cible13]);
+  await q('update public.dossiers set user_id = $2 where id = $1', [cible13, A]);
+  const d = await etat13();
+  assert.notEqual(d.deleted_at, null);
+  assert.equal(d.user_id, B);
+});
+await test('super admin AAL2 : changement de propriétaire toujours ignoré', async () => {
+  await asUser(ADMIN, 'aal2');
+  await q('update public.dossiers set user_id = $2 where id = $1', [cible13, ADMIN]);
+  assert.equal((await etat13()).user_id, B);
+});
+await test('restauration (console) : auditée par la base, sans notification ni consommation', async () => {
+  const avant = await compteurs13();
+  await asUser(ADMIN, 'aal2');
+  const rows = await q(
+    'update public.dossiers set deleted_at = null, deleted_by = null, delete_reason = null where id = $1 returning deleted_at',
+    [cible13],
+  );
+  assert.equal(rows[0].deleted_at, null);
+  await asSuperuser();
+  const logs = await q(`select actor_id, metadata from public.audit_logs where action = 'dossier_restaure' and resource_id = $1`, [cible13]);
+  assert.equal(logs.length, 1);
+  assert.equal(logs[0].actor_id, ADMIN);
+  assert.equal(logs[0].metadata.source, 'base');
+  assert.deepEqual(await compteurs13(), avant);
+});
+await test('journal d\'audit : ni falsifiable par un client, ni modifiable ou effaçable par le super admin', async () => {
+  await asUser(A, 'aal2');
+  await rejects(
+    q(`insert into public.audit_logs (actor_id, action, resource_type, resource_id) values ($1, 'dossier_restaure', 'dossier', $2)`, [A, cible13]),
+    /row-level security/,
+  );
+  await asUser(ADMIN, 'aal2');
+  await q(`update public.audit_logs set action = 'effacé' where resource_id = $1`, [cible13]);
+  await q('delete from public.audit_logs where resource_id = $1', [cible13]);
+  await asSuperuser();
+  const actions = (await q('select action from public.audit_logs where resource_id = $1 order by created_at', [cible13])).map((r) => r.action);
+  assert.deepEqual(actions, ['dossier_corbeille', 'dossier_restaure']);
+});
+await test('Storage : effacement d\'un fichier réservé au super admin AAL2 (chemin de suppression définitive, inchangé)', async () => {
+  await asUser(ADMIN, 'aal2');
+  await q(`delete from storage.objects where bucket_id = 'documents' and name = $1`, [`${B}/purge/ancien.pdf`]);
+  await asSuperuser();
+  assert.equal((await q('select id from storage.objects where name = $1', [`${B}/purge/ancien.pdf`])).length, 0);
+  assert.equal((await q('select id from storage.objects where name = $1', [`${B}/${cible13}/piece.pdf`])).length, 1, 'la corbeille n\'a jamais touché aux fichiers');
+});
+
 console.log(`\n${passed} réussis, ${failed} échoués`);
 process.exit(failed ? 1 : 0);

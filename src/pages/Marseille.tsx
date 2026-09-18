@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
-import { Seo, breadcrumbSchema } from '../lib/seo';
+import { Seo, breadcrumbSchema, orgSchema } from '../lib/seo';
 import { ArrowRightIcon, CheckIcon } from '../components/icons';
 import {
   CONTACT_EMAIL,
@@ -43,13 +43,18 @@ export function Marseille() {
   return (
     <>
       <Seo
-        title="ClairDossier à Marseille — dossiers administratifs et juridiques clairs"
-        description="ClairDossier est édité à Marseille (13013). TPE, PME, indépendants et professions libérales y structurent leurs dossiers administratifs et juridiques : pièces réunies, échéances suivies, transmission sur validation. Service utilisable partout en France."
+        title="ClairDossier à Marseille — dossiers administratifs et juridiques"
+        description="Édité à Château-Gombert (13013 Marseille), ClairDossier aide PME et indépendants à structurer leurs dossiers administratifs et juridiques, partout en France."
         path="/marseille"
-        jsonLd={breadcrumbSchema([
-          { name: 'Accueil', path: '/' },
-          { name: 'ClairDossier à Marseille', path: '/marseille' },
-        ])}
+        // Organization : coordonnées (NAP) affichées sur cette page — même
+        // source que les mentions légales et le pied de page (src/data/contact.ts).
+        jsonLd={[
+          breadcrumbSchema([
+            { name: 'Accueil', path: '/' },
+            { name: 'ClairDossier à Marseille', path: '/marseille' },
+          ]),
+          orgSchema,
+        ]}
       />
 
       <div className="mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-20 lg:px-12">
@@ -62,7 +67,7 @@ export function Marseille() {
             ClairDossier à Marseille — des dossiers professionnels clairs, structurés et suivis
           </h1>
           <p className="rise-in mt-6 text-lg leading-relaxed text-slate-500" style={{ '--rise-delay': '0.1s' } as CSSProperties}>
-            ClairDossier est conçu et édité à Marseille, dans le 13ᵉ arrondissement. L'outil aide
+            ClairDossier est conçu et édité à Marseille, à Château-Gombert (13ᵉ arrondissement). L'outil aide
             les entreprises et les indépendants — de Marseille et de la métropole
             Aix-Marseille-Provence comme de toute la France — à réunir leurs pièces, structurer
             leurs dossiers administratifs ou juridiques et suivre leurs échéances, sans jamais rien
@@ -153,7 +158,11 @@ export function Marseille() {
             </address>
             <p className="mt-5 text-sm leading-relaxed text-silver-200/80">
               Service en ligne : l'accompagnement se fait à distance, pour Marseille comme pour
-              toute la France.
+              toute la France. Siège publié dans les{' '}
+              <Link to="/mentions-legales" className="underline decoration-gold-400/50 underline-offset-2 transition-colors hover:text-cream-50">
+                mentions légales
+              </Link>
+              .
             </p>
             <Link
               to="/contact"

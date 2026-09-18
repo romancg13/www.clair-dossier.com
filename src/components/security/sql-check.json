@@ -1,0 +1,7 @@
+{
+  "checkedAt": "2026-09-18T23:44:02.805Z",
+  "passed": 59,
+  "failed": 0,
+  "suite": "tests/sql/migrations.pglite.mjs",
+  "scope": "Migrations du dépôt rejouées sur une base de test locale (PGlite) — ne porte pas sur la base de production."
+}

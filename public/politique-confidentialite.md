@@ -1,13 +1,13 @@
 ---
 title: "Politique de confidentialité"
 description: "Politique de confidentialité ClairDossier — données collectées, finalités, base légale, durées de conservation, vos droits RGPD."
-lastUpdate: 2026-09-15
+lastUpdate: 2026-09-18
 url: https://www.clair-dossier.com/politique-confidentialite
 ---
 
 # Politique de confidentialité
 
-*Dernière mise à jour : 15 septembre 2026*
+*Dernière mise à jour : 18 septembre 2026*
 
 ClairDossier traite des données personnelles dans le strict respect du Règlement général sur la protection des données (RGPD) et de la loi française Informatique et Libertés. Cette politique décrit les données collectées, leurs finalités, et les droits dont vous disposez.
 
@@ -19,7 +19,7 @@ Le responsable du traitement des données personnelles collectées sur clair-dos
 
 Nous collectons les catégories de données suivantes :
 
-- Données de compte : nom, prénom, adresse électronique, mot de passe (chiffré), structure professionnelle éventuelle.
+- Données de compte : nom, prénom, adresse électronique, numéro de téléphone (facultatif), type d'activité, structure professionnelle éventuelle, mot de passe (conservé sous forme hachée par le prestataire d'authentification, jamais en clair).
 - Données de dossier : informations renseignées par vous dans le cadre de la constitution d'un dossier juridique (typologie, contexte, dates, pièces jointes).
 - Données de paiement : traitées par notre prestataire Stripe (les coordonnées bancaires ne transitent jamais par nos serveurs).
 - Données techniques : adresse IP, type de navigateur, journaux de connexion, conservés à des fins de sécurité.
@@ -28,7 +28,8 @@ Nous collectons les catégories de données suivantes :
 
 - Fournir le Service ClairDossier (gestion du compte, création et suivi des dossiers, dépôt des pièces).
 - Assurer la facturation et la gestion du contrat.
-- Permettre la transmission d'un dossier, par e-mail ou WhatsApp, à votre initiative.
+- Mettre vos pièces à votre disposition (consultation, téléchargement), afin que vous puissiez transmettre vous-même votre dossier au destinataire de votre choix.
+- Informer l'équipe ClairDossier d'une nouvelle inscription ou d'un nouveau dossier, par une notification interne qui ne contient ni pièce ni contenu de dossier.
 - Répondre aux demandes de contact et d'assistance.
 - Garantir la sécurité du service et prévenir les fraudes.
 
@@ -40,10 +41,14 @@ Le traitement repose principalement sur l'exécution du contrat conclu avec vous
 
 Vos données sont accessibles aux équipes ClairDossier strictement habilitées dans le cadre de leurs missions. Sont également destinataires, pour les seules opérations nécessaires :
 
-- Notre hébergeur, sous-traitant technique conforme au RGPD, qui assure l'hébergement et le stockage des données.
+- Supabase, sous-traitant technique : base de données, authentification, stockage des pièces et fonctions serveur (région d'hébergement en cours de confirmation).
 - Stripe Payments Europe Ltd. (gestion des paiements) — Irlande.
-- Les destinataires auxquels vous choisissez de transmettre un dossier, par e-mail ou WhatsApp, à votre initiative.
-- Les éventuels sous-traitants techniques (mail transactionnel) listés dans le registre des sous-traitants, fourni sur demande.
+- Resend, pour l'envoi des e-mails (confirmation de compte, notifications internes à l'équipe).
+- GitHub (GitHub Pages), pour la diffusion du site public : journaux techniques de connexion, dont l'adresse IP.
+- WhatsApp (Meta), uniquement si vous choisissez de contacter l'équipe par ce canal.
+- Les destinataires auxquels vous choisissez de transmettre vous-même vos pièces, en dehors du Service.
+
+Resend et GitHub sont des sociétés établies aux États-Unis : l'encadrement de ces transferts hors de l'Union européenne est en cours de confirmation et sera précisé ici. La liste détaillée des sous-traitants (finalité, données, localisation, conservation) est publiée sur la page Sécurité du site.
 
 Aucune donnée n'est cédée à des tiers à des fins commerciales.
 

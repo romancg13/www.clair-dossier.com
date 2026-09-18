@@ -14,7 +14,7 @@
  */
 import type { CleanProspect } from './validate.ts';
 
-export type Routage = 'libre-service' | 'demonstration' | 'devis';
+export type Routage = 'libre-service' | 'demonstration' | 'devis' | 'partenariat';
 
 export type Qualification = {
   score_potentiel: number;
@@ -45,6 +45,8 @@ const TOPIC_SCORES: Record<CleanProspect['topic'], number> = {
   demo: 10,
   support: 0,
   presse: 0,
+  // Partenariat : examen humain dédié, sans points (ce n'est pas un achat).
+  partenariat: 0,
 };
 
 // Signaux à fort enjeu dans le message (insensibles à la casse).
@@ -107,7 +109,8 @@ export function qualifyProspect(p: CleanProspect): Qualification {
   // Routage : la nature déclarée de la demande prime (une démo demandée reste
   // une démo, même à fort score — l'escalade humaine est gérée à part).
   let routage: Routage;
-  if (p.topic === 'devis' || (p.topic === 'commercial' && score >= SEUIL_ESCALADE)) routage = 'devis';
+  if (p.topic === 'partenariat') routage = 'partenariat';
+  else if (p.topic === 'devis' || (p.topic === 'commercial' && score >= SEUIL_ESCALADE)) routage = 'devis';
   else if (p.topic === 'demo' || p.topic === 'rendez-vous' || score >= 25) routage = 'demonstration';
   else routage = 'libre-service';
 

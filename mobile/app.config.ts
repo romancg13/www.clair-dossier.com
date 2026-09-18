@@ -38,7 +38,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   extra: {
     siteUrl: SITE_URL,
     appEnv: APP_ENV,
-    supportPhone: '0491959032',
+    supportPhone: '+33782983644',
     supportEmail: 'contact.clairdossier@icloud.com',
     // eas: { projectId: '…' } — renseigné par `eas init` (action humaine, compte Expo requis).
   },

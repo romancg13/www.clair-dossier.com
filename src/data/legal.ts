@@ -23,7 +23,7 @@ const mentionsLegales: LegalPage = {
   title: "Mentions légales",
   metaDescription:
     "Mentions légales du site clair-dossier.com — éditeur, hébergeur, directeur de publication, propriété intellectuelle.",
-  lastUpdate: "2026-09-15",
+  lastUpdate: "2026-09-18",
   intro:
     "Conformément à la loi pour la confiance dans l'économie numérique (LCEN, n° 2004-575 du 21 juin 2004), il est précisé aux utilisateurs du site clair-dossier.com l'identité des différents intervenants dans le cadre de sa réalisation et de son suivi.",
   sections: [
@@ -45,7 +45,7 @@ const mentionsLegales: LegalPage = {
         },
         {
           type: "p",
-          text: "Contact : contact.clairdossier@icloud.com — Téléphone : 04 91 95 90 32 — WhatsApp : +33 7 82 98 36 44.",
+          text: "Contact : contact.clairdossier@icloud.com — Téléphone et WhatsApp : 07 82 98 36 44.",
         },
         {
           type: "p",
@@ -73,7 +73,7 @@ const mentionsLegales: LegalPage = {
         },
         {
           type: "p",
-          text: "Les données client du service ClairDossier — dossiers, pièces, échanges — sont hébergées chez un sous-traitant technique conforme au RGPD, qui assure le chiffrement en transit (HTTPS) et au repos. Les pièces déposées sont stockées dans un espace privé, accessible uniquement par authentification.",
+          text: "Les données client du service ClairDossier — dossiers, pièces, échanges — sont hébergées chez Supabase (base de données, authentification et stockage des pièces), sous-traitant technique, qui assure le chiffrement en transit (HTTPS) et au repos. Les pièces déposées sont stockées dans un espace privé, accessible uniquement par authentification.",
         },
       ],
     },
@@ -123,7 +123,7 @@ const cgv: LegalPage = {
   title: "Conditions générales de vente",
   metaDescription:
     "Conditions générales de vente du service ClairDossier — souscription, tarifs, durée, résiliation, responsabilité, propriété intellectuelle.",
-  lastUpdate: "2026-09-15",
+  lastUpdate: "2026-09-18",
   intro:
     "Les présentes conditions générales de vente (« CGV ») régissent l'accès au service ClairDossier et son utilisation par tout client souscrivant à une offre. La création de compte est gratuite ; seul l'abonnement est payant. Toute souscription emporte acceptation pleine et entière des présentes CGV.",
   sections: [
@@ -133,7 +133,7 @@ const cgv: LegalPage = {
       blocks: [
         {
           type: "p",
-          text: "Les présentes CGV ont pour objet de définir les conditions dans lesquelles Roman Gomes, entrepreneur individuel (SIREN 105 490 734), ci-après « ClairDossier » ou « l'Éditeur », fournit au client (ci-après le « Client ») un accès au service ClairDossier (ci-après le « Service »), permettant la création de dossiers, le dépôt de pièces dans un espace privé, le suivi de leur avancement et leur transmission par e-mail ou WhatsApp à l'initiative du Client.",
+          text: "Les présentes CGV ont pour objet de définir les conditions dans lesquelles Roman Gomes, entrepreneur individuel (SIREN 105 490 734), ci-après « ClairDossier » ou « l'Éditeur », fournit au client (ci-après le « Client ») un accès au service ClairDossier (ci-après le « Service »), permettant la création de dossiers, le dépôt de pièces dans un espace privé, le suivi de leur avancement et la mise à disposition des pièces, que le Client transmet lui-même, s'il le souhaite, au destinataire de son choix.",
         },
         {
           type: "p",
@@ -203,7 +203,7 @@ const cgv: LegalPage = {
         },
         {
           type: "p",
-          text: "La transmission d'un dossier, par e-mail ou WhatsApp, n'intervient qu'à l'initiative et après validation explicite du Client. ClairDossier ne saurait être tenue responsable de l'usage fait des dossiers une fois transmis par le Client à un tiers.",
+          text: "La validation d'un dossier l'enregistre dans le compte du Client : le Service n'envoie pas le dossier à des tiers, ni par e-mail ni par WhatsApp. Toute transmission à un tiers est effectuée par le Client lui-même, à son initiative. ClairDossier ne saurait être tenue responsable de l'usage fait des dossiers une fois transmis par le Client à un tiers.",
         },
       ],
     },
@@ -241,6 +241,20 @@ const cgv: LegalPage = {
         },
       ],
     },
+    {
+      id: "offres-promotionnelles",
+      title: "Article 10 — Offres promotionnelles (article descriptif)",
+      blocks: [
+        {
+          type: "p",
+          text: "Article descriptif ajouté le 18 septembre 2026 : il présente les conditions des offres promotionnelles et ne modifie aucune autre stipulation des présentes CGV.",
+        },
+        {
+          type: "p",
+          text: "Code LB13 : −20 % sur les 4 premières mensualités d'une formule mensuelle souscrite avec le code saisi avant le 21 septembre 2026 à 00 h (heure de Paris) ; tarif en vigueur ensuite ; hors formules annuelles et sur-mesure ; non cumulable avec une autre réduction ; sans effet sur les quotas et fonctionnalités de la formule.",
+        },
+      ],
+    },
   ],
 };
 
@@ -249,7 +263,7 @@ const politiqueConfidentialite: LegalPage = {
   title: "Politique de confidentialité",
   metaDescription:
     "Politique de confidentialité ClairDossier — données collectées, finalités, base légale, durées de conservation, vos droits RGPD.",
-  lastUpdate: "2026-09-15",
+  lastUpdate: "2026-09-18",
   intro:
     "ClairDossier traite des données personnelles dans le strict respect du Règlement général sur la protection des données (RGPD) et de la loi française Informatique et Libertés. Cette politique décrit les données collectées, leurs finalités, et les droits dont vous disposez.",
   sections: [
@@ -274,7 +288,7 @@ const politiqueConfidentialite: LegalPage = {
         {
           type: "list",
           items: [
-            "Données de compte : nom, prénom, adresse électronique, mot de passe (chiffré), structure professionnelle éventuelle.",
+            "Données de compte : nom, prénom, adresse électronique, numéro de téléphone (facultatif), type d'activité, structure professionnelle éventuelle, mot de passe (conservé sous forme hachée par le prestataire d'authentification, jamais en clair).",
             "Données de dossier : informations renseignées par vous dans le cadre de la constitution d'un dossier juridique (typologie, contexte, dates, pièces jointes).",
             "Données de paiement : traitées par notre prestataire Stripe (les coordonnées bancaires ne transitent jamais par nos serveurs).",
             "Données techniques : adresse IP, type de navigateur, journaux de connexion, conservés à des fins de sécurité.",
@@ -291,7 +305,8 @@ const politiqueConfidentialite: LegalPage = {
           items: [
             "Fournir le Service ClairDossier (gestion du compte, création et suivi des dossiers, dépôt des pièces).",
             "Assurer la facturation et la gestion du contrat.",
-            "Permettre la transmission d'un dossier, par e-mail ou WhatsApp, à votre initiative.",
+            "Mettre vos pièces à votre disposition (consultation, téléchargement), afin que vous puissiez transmettre vous-même votre dossier au destinataire de votre choix.",
+            "Informer l'équipe ClairDossier d'une nouvelle inscription ou d'un nouveau dossier, par une notification interne qui ne contient ni pièce ni contenu de dossier.",
             "Répondre aux demandes de contact et d'assistance.",
             "Garantir la sécurité du service et prévenir les fraudes.",
           ],
@@ -319,11 +334,17 @@ const politiqueConfidentialite: LegalPage = {
         {
           type: "list",
           items: [
-            "Notre hébergeur, sous-traitant technique conforme au RGPD, qui assure l'hébergement et le stockage des données.",
+            "Supabase, sous-traitant technique : base de données, authentification, stockage des pièces et fonctions serveur (région d'hébergement en cours de confirmation).",
             "Stripe Payments Europe Ltd. (gestion des paiements) — Irlande.",
-            "Les destinataires auxquels vous choisissez de transmettre un dossier, par e-mail ou WhatsApp, à votre initiative.",
-            "Les éventuels sous-traitants techniques (mail transactionnel) listés dans le registre des sous-traitants, fourni sur demande.",
+            "Resend, pour l'envoi des e-mails (confirmation de compte, notifications internes à l'équipe).",
+            "GitHub (GitHub Pages), pour la diffusion du site public : journaux techniques de connexion, dont l'adresse IP.",
+            "WhatsApp (Meta), uniquement si vous choisissez de contacter l'équipe par ce canal.",
+            "Les destinataires auxquels vous choisissez de transmettre vous-même vos pièces, en dehors du Service.",
           ],
+        },
+        {
+          type: "p",
+          text: "Resend et GitHub sont des sociétés établies aux États-Unis : l'encadrement de ces transferts hors de l'Union européenne est en cours de confirmation et sera précisé ici. La liste détaillée des sous-traitants (finalité, données, localisation, conservation) est publiée sur la page Sécurité du site.",
         },
         {
           type: "p",

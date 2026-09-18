@@ -5,6 +5,17 @@ export type StripeLikePrice = {
   id?: string;
   metadata?: Record<string, string> | null;
   product?: string | { id?: string; metadata?: Record<string, string> | null } | null;
+  recurring?: { interval?: string | null } | null;
+};
+
+type StripeLikeCoupon = string | { id?: string; metadata?: Record<string, string> | null } | null;
+
+/** Remise d'abonnement : `coupon` (≤ 2025-08) ou `source.coupon` (≥ 2025-09). */
+export type StripeLikeDiscount = {
+  id?: string;
+  coupon?: StripeLikeCoupon;
+  source?: { coupon?: StripeLikeCoupon } | null;
+  promotion_code?: string | { code?: string | null } | null;
 };
 
 export type StripeLikeSubscription = {
@@ -13,6 +24,7 @@ export type StripeLikeSubscription = {
   customer: string | { id: string };
   cancel_at_period_end?: boolean | null;
   canceled_at?: number | null;
+  discounts?: Array<string | StripeLikeDiscount> | null;
   current_period_start?: number | null;
   current_period_end?: number | null;
   items?: {
@@ -32,6 +44,26 @@ export function isUuid(value: unknown): value is string {
 
 function iso(seconds: number | null | undefined): string | null {
   return typeof seconds === 'number' && Number.isFinite(seconds) ? new Date(seconds * 1000).toISOString() : null;
+}
+
+function isLb13Discount(d: string | StripeLikeDiscount): boolean {
+  if (typeof d === 'string') return false;
+  const coupon = d.coupon ?? d.source?.coupon ?? null;
+  const couponId = typeof coupon === 'string' ? coupon : coupon?.id ?? '';
+  const campagne = typeof coupon === 'object' && coupon ? coupon.metadata?.campagne : undefined;
+  const code = typeof d.promotion_code === 'object' && d.promotion_code ? d.promotion_code.code : undefined;
+  return campagne === 'LB13' || couponId.toUpperCase().startsWith('LB13') || String(code ?? '').toUpperCase() === 'LB13';
+}
+
+/**
+ * Remise LB13 (réservée aux formules mensuelles) présente sur un abonnement
+ * dont la cadence n'est pas mensuelle — ex. passage vers l'annuel. Signalée à
+ * l'administration ; l'abonnement n'est jamais modifié automatiquement.
+ */
+export function lb13DiscountOutsideMonthly(sub: StripeLikeSubscription): boolean {
+  const interval = sub.items?.data?.[0]?.price?.recurring?.interval;
+  if (!interval || interval === 'month') return false;
+  return (sub.discounts ?? []).some(isLb13Discount);
 }
 
 /**

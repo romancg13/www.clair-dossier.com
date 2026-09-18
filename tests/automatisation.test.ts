@@ -43,6 +43,7 @@ import {
   extractPeriod,
   paymentEmailMatchesAccount,
   planIdFromSubscription,
+  lb13DiscountOutsideMonthly,
   subscriptionIdFromInvoice,
   subscriptionRow,
 } from '../supabase/functions/_shared/stripe-sync.ts';
@@ -275,4 +276,19 @@ test('rattachement webhook : client_reference_id seul ne suffit pas, l’e-mail 
   assert.equal(paymentEmailMatchesAccount('  ', ['client@exemple.fr']), false);
   // Compte sans aucune adresse connue : refus.
   assert.equal(paymentEmailMatchesAccount('client@exemple.fr', [null, undefined]), false);
+});
+
+test('LB13 : remise signalée seulement hors mensuel, sans effet sur l’offre', () => {
+  const base = { id: 'sub_1', status: 'active', customer: 'cus_1' };
+  const monthly = { price: { id: 'price_m', metadata: { planId: 'essentiel' }, recurring: { interval: 'month' } } };
+  const yearly = { price: { id: 'price_y', metadata: { planId: 'essentiel' }, recurring: { interval: 'year' } } };
+  const acacia = { id: 'di_1', coupon: { id: 'LB13-20PCT-4M', metadata: { campagne: 'LB13' } } };
+  const dahlia = { id: 'di_2', source: { coupon: 'LB13-20PCT-4M' } };
+  const other = { id: 'di_3', coupon: { id: 'BIENVENUE', metadata: {} } };
+  assert.equal(lb13DiscountOutsideMonthly({ ...base, items: { data: [monthly] }, discounts: [acacia] }), false);
+  assert.equal(lb13DiscountOutsideMonthly({ ...base, items: { data: [yearly] }, discounts: [acacia] }), true);
+  assert.equal(lb13DiscountOutsideMonthly({ ...base, items: { data: [yearly] }, discounts: [dahlia] }), true);
+  assert.equal(lb13DiscountOutsideMonthly({ ...base, items: { data: [yearly] }, discounts: [other, 'di_4'] }), false);
+  // Les droits restent ceux de l'offre, jamais déduits du montant remisé.
+  assert.equal(planIdFromSubscription({ ...base, items: { data: [yearly] }, discounts: [acacia] }), 'essentiel');
 });

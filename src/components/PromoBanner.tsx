@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { LB13_INTENT_PARAM, LB13_INTENT_VALUE, LB13_LIVE_VERIFIED, LB13_OFFER, lb13Phase } from "../data/promo";
 
-// Promo LB13 : −20 % / 4 mois, code à activer avant le 21 septembre 2026.
-// La barre disparaît d'elle-même après la date limite (heure de Paris, UTC+2).
-const DEADLINE = new Date("2026-09-21T23:59:59+02:00").getTime();
+// Promo LB13 (conditions : src/data/promo.ts). La barre disparaît d'elle-même
+// à l'échéance (21/09/2026 00:00, heure de Paris). Tant que le code n'est pas
+// vérifié en LIVE, elle le signale au lieu d'annoncer une offre utilisable.
 const DISMISS_KEY = "clairdossier_promo_lb13_dismissed";
+const OFFER_HREF = `/tarifs?${LB13_INTENT_PARAM}=${LB13_INTENT_VALUE}#offre-lb13`;
 
 export function PromoBanner() {
   // Premier rendu client identique au HTML prérendu (pas d'écart d'hydratation) :
@@ -17,7 +19,7 @@ export function PromoBanner() {
     } catch {
       gone = false;
     }
-    if (gone || Date.now() > DEADLINE) setDismissed(true);
+    if (gone || lb13Phase(Date.now()) === "ended") setDismissed(true);
   }, []);
 
   if (dismissed) return null;
@@ -52,16 +54,18 @@ export function PromoBanner() {
           pendant 4 mois sur tout abonnement mensuel
         </p>
         <span className="inline-flex items-center gap-1.5 rounded-full border border-gold-500/40 bg-gold-500/10 px-2.5 py-0.5 font-mono text-xs font-semibold tracking-wide text-gold-500">
-          CODE LB13
+          CODE {LB13_OFFER.code}
         </span>
         <span className="text-xs text-cream-50/75">
-          à activer avant le 21 septembre
+          {LB13_LIVE_VERIFIED
+            ? "à saisir au paiement avant le 21 septembre"
+            : "mise en service du code en cours : il peut encore être refusé au paiement"}
         </span>
         <Link
-          to="/tarifs"
+          to={OFFER_HREF}
           className="rounded-full bg-gold-500 px-3.5 py-1 text-xs font-semibold text-navy-900 transition-transform hover:-translate-y-0.5"
         >
-          En profiter
+          {LB13_LIVE_VERIFIED ? "En profiter" : "Voir les conditions"}
         </Link>
       </div>
       <button

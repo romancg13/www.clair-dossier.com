@@ -16,8 +16,7 @@ import { openExternal } from './links';
 /**
  * Numéro WhatsApp du service — même valeur que le site
  * (`src/lib/whatsapp.ts`, format wa.me sans « + » ni espace).
- * Son remplacement éventuel par le 04 91 95 90 32 est une décision en attente
- * côté produit : on ne la tranche pas ici.
+ * Depuis le 2026-09-18, c'est aussi le numéro d'appel officiel (07 82 98 36 44).
  */
 export const WHATSAPP_NUMBER = '33782983644';
 

@@ -8,6 +8,8 @@ url: https://www.clair-dossier.com/tarifs
 
 De l'indépendant à l'entreprise — sept niveaux de service couvrent tous les usages. Compte gratuit, abonnement sans engagement. Facturation mensuelle ou annuelle (−10 % en annuel).
 
+Offre de lancement : code LB13 à saisir sur la page de paiement avant le 21 septembre 2026 (00 h, heure de Paris) — −20 % sur les 4 premières mensualités des formules mensuelles, puis tarif en vigueur ; hors formules annuelles et sur-mesure. Exemple : Essentiel 19 € → 15,20 € par mois pendant 4 mois, puis 19 €.
+
 ## Les sept formules
 
 ### Essentiel — 19 € HT/mois
@@ -150,7 +152,7 @@ Fonctionnalités incluses :
 
 ## Devis sur-mesure
 
-Pour structures avec exigences de marque blanche, intégration API, SSO, audit dédié, ou volumétrie au-dessus du Premium — proposition chiffrée sous 48 h. Contact : contact.clairdossier@icloud.com ou WhatsApp +33 7 82 98 36 44.
+Pour structures avec exigences de marque blanche, intégration API, SSO, audit dédié, ou volumétrie au-dessus du Premium — proposition chiffrée sous 48 h. Contact : contact.clairdossier@icloud.com ou téléphone / WhatsApp 07 82 98 36 44.
 
 ## Engagement
 

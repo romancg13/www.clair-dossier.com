@@ -1,123 +1,110 @@
-import type { BlogPost } from './types';
+import { SRC } from './sources';
+import type { BlogPostInput } from './types';
 
-export const rgpdLegaltech: BlogPost = {
+export const rgpdLegaltech: BlogPostInput = {
   slug: 'rgpd-legaltech',
-  title: "RGPD et legaltech : où vont vraiment vos données juridiques ?",
-  metaTitle: "RGPD legaltech — où vont vraiment vos données ?",
+  title: 'Protéger ses dossiers : ce que le RGPD exige des prestataires qui y accèdent',
+  metaTitle: 'RGPD et prestataires : protéger ses dossiers',
   metaDescription:
-    "Cycle de vie des données dans une plateforme legaltech : hébergement, sous-traitance, conservation, suppression. Articles 28, 32, 35 RGPD expliqués.",
+    "Hébergeur, éditeur, infogérant : le prestataire qui traite vos dossiers est en principe un sous-traitant. Ce qu'exige le RGPD (art. 28 et 32).",
   summary:
-    "Quand vous déposez le contrat de travail d'un salarié sur une plateforme legaltech, vous engagez la conformité RGPD du cabinet, pas seulement la vôtre. Voici comment vérifier qu'une legaltech tient ses engagements — et ce que les articles 28, 32 et 35 du RGPD exigent concrètement.",
+    "Dès qu'un prestataire accède à vos dossiers pour votre compte, il devient en principe votre sous-traitant au sens du RGPD, et vous restez responsable. Ce qu'impose l'article 28, comment penser la sécurité, et les réflexes à adopter.",
   author: 'redaction',
   date: '2026-04-28',
-  readMinutes: 8,
+  updated: '2026-09-18',
+  revisionNote:
+    "Article réécrit à partir des textes et fiches de la CNIL : affirmations techniques non vérifiées retirées, obligations de l'article 28 détaillées, section ClairDossier alignée sur la page Sécurité.",
+  reviewBy: '2027-03-18',
   category: 'Conformité',
-  tags: ['RGPD', 'protection données', 'legaltech', 'DPO'],
-  heroImageQuery: 'data center server room',
+  tags: ['RGPD', 'sous-traitant', 'sécurité', 'article 28'],
+  illustration: 'shield',
   content: [
     {
       type: 'p',
-      text: "Un cabinet d'avocats qui choisit une plateforme legaltech ne sous-traite pas seulement de la fonctionnalité — il sous-traite une responsabilité juridique. Le client final, lui, ne sait pas toujours ce qu'il signe en cochant « j'accepte les CGU ». Pour les deux populations, comprendre où vont les données est devenu une question de souveraineté juridique, pas un détail de notice légale.",
+      text:
+        "Un dossier client, un dossier salarié ou un litige contiennent presque toujours des données personnelles. Dès que vous les confiez à un prestataire (hébergeur, éditeur de logiciel, infogérant, service d'envoi d'e-mails), celui-ci devient en principe votre sous-traitant au sens du RGPD. Vous restez responsable de ce qu'il fait des données : autant bien le choisir et bien l'encadrer.",
     },
+    { type: 'h2', text: 'Qui est responsable, qui est sous-traitant ?' },
     {
       type: 'p',
-      text: "Cet article explique le cycle de vie d'une donnée juridique dans une legaltech, en détaillant les obligations issues du Règlement Général sur la Protection des Données (UE 2016/679). Il s'adresse aux avocats qui sélectionnent un outil, aux DRH qui choisissent une plateforme pour leur contentieux interne, et aux clients particuliers qui veulent savoir ce qui se passe entre le moment où ils déposent un contrat et le moment où ils décident de quitter le service.",
+      text:
+        "La CNIL résume la distinction ainsi : le responsable du traitement décide pourquoi et comment les données sont utilisées ; le sous-traitant les traite pour son compte, sur ses instructions. Un éditeur qui héberge vos dossiers dans son logiciel est typiquement un sous-traitant. S'il fait lui-même appel à un autre prestataire, celui-ci est un sous-traitant ultérieur.",
     },
-    { type: 'h2', text: "Étape 1 : l'hébergement initial" },
+    { type: 'h2', text: "Ce qu'impose l'article 28" },
     {
       type: 'p',
-      text: "La première question à poser à un fournisseur legaltech, c'est où physiquement sont stockées les données. Pas « dans le cloud » — un datacenter, une ville, un pays. Toute réponse vague est une réponse à creuser. Une réponse propre ressemble à : « OVH France, datacenters de Roubaix et Strasbourg, sauvegardes redondantes uniquement sur ces deux sites. »",
-    },
-    {
-      type: 'p',
-      text: "L'enjeu n'est pas xénophobe — c'est juridique. Depuis l'arrêt Schrems II de la CJUE (16 juillet 2020), tout transfert de données personnelles vers les États-Unis est soumis à des garanties supplémentaires presque impossibles à remplir pour des données sensibles comme les données juridiques. Une legaltech qui héberge chez AWS US ou Google Cloud US engage le cabinet utilisateur dans un risque de conformité qui se matérialise lors d'un contrôle CNIL.",
-    },
-    { type: 'h3', text: "Ce que dit l'article 28 du RGPD" },
-    {
-      type: 'p',
-      text: "L'article 28 régit le sous-traitant. Toute plateforme qui traite des données pour le compte d'un cabinet est juridiquement un sous-traitant — et le cabinet est le responsable de traitement. Cet article exige un contrat écrit (le DPA, Data Processing Agreement) qui précise la nature des traitements, leur durée, les mesures de sécurité et les obligations en cas de violation.",
-    },
-    {
-      type: 'callout',
-      text: "Un DPA opposable se demande avant la signature du contrat de service, pas après. C'est le premier document à exiger d'une legaltech — et le premier indicateur de son sérieux.",
-      tone: 'navy',
-    },
-    { type: 'h2', text: "Étape 2 : les sous-traitants tiers" },
-    {
-      type: 'p',
-      text: "Une legaltech utilise rarement uniquement son propre hébergement. Elle a besoin d'un fournisseur de mail transactionnel (pour les notifications), d'un outil de monitoring (pour la disponibilité du service), parfois d'un sous-traitant OCR (pour la lecture automatique des pièces). Chacun de ces sous-traitants est un sous-traitant ultérieur au sens du RGPD.",
-    },
-    {
-      type: 'p',
-      text: "Le RGPD impose une chaîne de responsabilité documentée. Le cabinet (responsable de traitement) → la legaltech (sous-traitant) → les outils tiers (sous-traitants ultérieurs). Chaque maillon doit être identifié, et le cabinet doit être informé en cas de changement. Les CGU d'une legaltech doivent contenir la liste à jour des sous-traitants tiers — pas dans un PDF obscur, mais dans une page publique consultable.",
-    },
-    { type: 'h2', text: "Étape 3 : la sécurité technique" },
-    {
-      type: 'p',
-      text: "L'article 32 du RGPD exige des mesures de sécurité « appropriées au risque ». Pour des données juridiques — souvent confidentielles, et qui peuvent contenir des données sensibles au sens de l'article 9 du RGPD — le standard minimal est :",
+      text:
+        "Vous ne pouvez recourir qu'à un sous-traitant offrant des garanties suffisantes. La relation doit être encadrée par un contrat, ou un autre acte juridique, qui prévoit notamment :",
     },
     {
       type: 'list',
       items: [
-        "Chiffrement au repos (AES-256) pour les pièces et les bases de données",
-        "Chiffrement en transit (TLS 1.3) pour tous les flux entre le navigateur et le serveur",
-        "Authentification forte pour les accès administrateur (2FA non négociable)",
-        "Journalisation des accès aux données sensibles, avec conservation des logs 12 mois",
-        "Tests de pénétration annuels par un tiers (le rapport doit être consultable)",
-        "Procédure documentée de réaction en cas de violation (notification CNIL sous 72h)",
+        'un traitement uniquement sur instruction documentée de votre part ;',
+        'la confidentialité des personnes autorisées à accéder aux données ;',
+        'les mesures de sécurité exigées par l’article 32 ;',
+        'votre autorisation écrite préalable avant tout recours à un autre sous-traitant, avec information en cas de changement si l’autorisation est générale ;',
+        'l’aide apportée pour répondre aux droits des personnes et pour la sécurité ;',
+        'la suppression ou le renvoi des données à la fin de la prestation ;',
+        'la mise à disposition des informations utiles et la possibilité d’audits.',
       ],
     },
     {
       type: 'p',
-      text: "Une legaltech qui ne peut pas répondre point par point sur ces six éléments n'a pas le sérieux requis pour traiter des données juridiques. Ce n'est pas un jugement de valeur — c'est l'application du RGPD.",
+      text:
+        "La CNIL présente des clauses contractuelles types qui reprennent ces mentions ; elles ne sont pas obligatoires si le contrat contient déjà tous les éléments requis.",
     },
-    { type: 'h2', text: "Étape 4 : l'analyse d'impact (article 35)" },
+    { type: 'h2', text: 'Une sécurité adaptée au risque' },
     {
       type: 'p',
-      text: "L'article 35 du RGPD impose une analyse d'impact (DPIA, Data Protection Impact Assessment) pour les traitements à risque élevé. Le traitement de dossiers juridiques entre dans cette catégorie : données sensibles, profilage potentiel, surveillance possible, conséquences juridiques importantes pour les personnes concernées.",
+      text:
+        "L'article 32 ne dresse pas une liste unique de techniques : il exige un niveau de sécurité adapté au risque, en citant par exemple le chiffrement, la confidentialité, l'intégrité, la disponibilité et des tests réguliers. Pour passer à la pratique, le guide de la sécurité des données personnelles de la CNIL (édition 2024) sert de référence : authentification, habilitations, traçabilité, sauvegardes, sous-traitance.",
     },
+    { type: 'h2', text: 'Les bons réflexes' },
+    {
+      type: 'list',
+      items: [
+        'Avant de signer, demander le contrat de sous-traitance et la liste des sous-traitants ultérieurs.',
+        'Savoir où les données sont hébergées et, si elles quittent l’Union européenne, comment le transfert est encadré.',
+        'Limiter les accès : un compte nominatif par personne, des droits réduits au nécessaire, retirés au départ.',
+        'Prévoir la fin du contrat : restitution des données, puis suppression.',
+      ],
+    },
+    { type: 'h2', text: 'Un exemple concret' },
     {
       type: 'p',
-      text: "Une legaltech qui n'a pas réalisé son DPIA n'est pas conforme — et le cabinet qui l'utilise hérite mécaniquement de cette non-conformité. Le DPIA doit être disponible sur demande pour le cabinet client, et son existence doit être mentionnée dans le DPA.",
+      text:
+        "Exemple fictif. Un cabinet d'expertise comptable confie à un prestataire informatique la maintenance du serveur où sont stockés les dossiers de ses clients. Le prestataire accède aux données pour le compte du cabinet : c'est un sous-traitant. Le cabinet lui fait signer un contrat reprenant les mentions de l'article 28, lui ouvre un compte nominatif limité à la maintenance, et prévoit qu'à la fin du contrat toute copie détenue par le prestataire sera supprimée.",
     },
-    { type: 'h2', text: "Étape 5 : la fin du parcours — suppression et portabilité" },
+    { type: 'h2', text: 'Et chez ClairDossier ?' },
     {
       type: 'p',
-      text: "Le RGPD reconnaît trois droits clés à la sortie : le droit d'accès (article 15), le droit à l'effacement (article 17, le « droit à l'oubli ») et le droit à la portabilité (article 20). Une legaltech doit permettre l'exercice de ces droits sans friction et sans condition.",
-    },
-    {
-      type: 'p',
-      text: "La portabilité signifie un export structuré, lisible par une machine, qui contient l'intégralité des données du compte. Un export PDF n'est pas suffisant ; il faut au minimum un ZIP contenant les fichiers originaux et un fichier JSON ou XML qui décrit la structure du dossier (chronologie, messages, statuts). C'est la portabilité réelle — pas l'apparence de portabilité.",
-    },
-    {
-      type: 'quote',
-      text: "Une donnée juridique conservée dans une legaltech reste votre donnée. Le jour où vous voulez partir, vous devez pouvoir partir avec tout — pas avec un PDF récapitulatif qui ne ressemble plus à votre dossier.",
-    },
-    { type: 'h2', text: "Ce que cela signifie pour ClairDossier" },
-    {
-      type: 'p',
-      text: "Nous avons construit ClairDossier en partant du RGPD, pas en l'ajoutant à la fin. Hébergement OVH France exclusif, chiffrement AES-256 au repos, TLS 1.3 en transit, DPA standard et version renforcée pour les plans Entreprise, DPIA disponible, audit annuel par un cabinet de sécurité tiers indépendant, export ZIP intégral à tout moment, suppression de compte avec anonymisation sous 30 jours.",
-    },
-    {
-      type: 'p',
-      text: "Ces engagements sont consultables et vérifiables sur notre page Sécurité. Vous pouvez les opposer à n'importe quel cabinet, n'importe quel DPO, n'importe quel auditeur. C'est notre définition de la conformité : pas un slogan, des documents.",
+      text:
+        "Ce que nous affirmons est détaillé et daté sur notre page Sécurité : pièces stockées dans un espace privé et accessibles par liens temporaires, isolation des comptes appliquée en base, échanges en HTTPS et chiffrement au repos côté hébergeur. Notre registre des sous-traitants y est publié, et les points encore à confirmer, comme la région d'hébergement de la base de données, y sont signalés comme tels. La plateforme ne lit pas vos documents.",
     },
   ],
   takeaways: [
-    "Toujours exiger un DPA opposable avant de signer un contrat de service legaltech.",
-    "Vérifier la localisation physique des données — France ou UE, jamais ailleurs pour des données juridiques.",
-    "Demander la liste à jour des sous-traitants tiers et leurs propres DPA.",
-    "Tester la portabilité réelle : un export ZIP structuré, pas un PDF récapitulatif.",
+    'Le prestataire qui traite vos dossiers pour votre compte est, en principe, un sous-traitant : vous restez responsable.',
+    'Un contrat conforme à l’article 28 du RGPD encadre la relation avant tout accès aux données.',
+    'La sécurité doit être adaptée au risque : le guide CNIL 2024 est la référence pratique.',
+    'Contrôlez toute la chaîne : sous-traitants ultérieurs, localisation, fin de contrat.',
   ],
   faq: [
     {
-      q: "Que faire si ma legaltech actuelle n'a pas de DPA ?",
-      a: "Demandez-le par écrit. Si elle ne peut pas en fournir un, vous êtes en non-conformité — et le risque vous revient. Trois mois est un délai raisonnable pour migrer vers une solution conforme.",
+      q: 'Le RGPD s’applique-t-il aux dossiers archivés ?',
+      a: "Oui. Un dossier archivé qui contient des données personnelles reste un traitement : la sécurité, la durée de conservation limitée et les droits des personnes continuent de s'appliquer jusqu'à la suppression effective.",
     },
     {
-      q: "Le RGPD s'applique-t-il aux dossiers archivés ?",
-      a: "Oui, sans exception. Un dossier archivé reste un traitement de données personnelles. Les obligations de sécurité, de conservation limitée et de suppression continuent de s'appliquer jusqu'à l'effacement effectif.",
+      q: 'Que faire si mon prestataire ne propose pas de contrat de sous-traitance ?',
+      a: "Demandez-le par écrit. Sans contrat comportant les mentions de l'article 28, la relation n'est pas encadrée comme l'exige le RGPD. Faites-vous accompagner (délégué à la protection des données, conseil) pour régulariser la situation ou changer de prestataire.",
     },
   ],
-  relatedSlugs: ['ia-droit', 'chronologie-prud-homale'],
+  sources: [
+    SRC.cnilRgpdChap4,
+    SRC.cnilRoles,
+    SRC.cnilSousTraitant,
+    SRC.cnilSecuriteSousTraitance,
+    SRC.cnilClausesTypes,
+    SRC.cnilGuideSecurite2024,
+  ],
+  relatedSlugs: ['conservation-documents', 'organiser-un-dossier', 'ia-droit'],
 };

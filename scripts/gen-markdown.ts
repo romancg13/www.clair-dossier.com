@@ -25,6 +25,7 @@ import {
   type Plan,
 } from '../src/data/pricing';
 import { statuses } from '../src/data/statuses';
+import { LB13 } from './lib/lb13.mjs';
 import {
   TRUST_UPDATED,
   openTodos,
@@ -133,7 +134,7 @@ function generateHome(): void {
 
   lines.push('## Contact');
   lines.push('');
-  lines.push('- WhatsApp : +33 7 82 98 36 44 (réponse en moyenne sous 1 h en journée)');
+  lines.push('- Téléphone et WhatsApp : 07 82 98 36 44 (réponse en moyenne sous 1 h en journée)');
   lines.push('- Email : contact.clairdossier@icloud.com (réponse sous 24 h ouvrées)');
   lines.push('- Sécurité (divulgation responsable) : contact.clairdossier@icloud.com');
   lines.push(`- Formulaire : ${SITE}/contact`);
@@ -328,6 +329,12 @@ function generatePricing(): void {
     '',
     "De l'indépendant à l'entreprise — sept niveaux de service couvrent tous les usages. Compte gratuit, abonnement sans engagement. Facturation mensuelle ou annuelle (−10 % en annuel).",
     '',
+    ...(Date.now() < LB13.deadlineTs * 1000
+      ? [
+          `Offre de lancement : code ${LB13.code} à saisir sur la page de paiement avant le 21 septembre 2026 (00 h, heure de Paris) — −${LB13.percentOff} % sur les ${LB13.durationInMonths} premières mensualités des formules mensuelles, puis tarif en vigueur ; hors formules annuelles et sur-mesure. Exemple : Essentiel 19 € → 15,20 € par mois pendant 4 mois, puis 19 €.`,
+          '',
+        ]
+      : []),
     '## Les sept formules',
     '',
   ];
@@ -369,7 +376,7 @@ function generatePricing(): void {
   lines.push('## Devis sur-mesure');
   lines.push('');
   lines.push(
-    'Pour structures avec exigences de marque blanche, intégration API, SSO, audit dédié, ou volumétrie au-dessus du Premium — proposition chiffrée sous 48 h. Contact : contact.clairdossier@icloud.com ou WhatsApp +33 7 82 98 36 44.'
+    'Pour structures avec exigences de marque blanche, intégration API, SSO, audit dédié, ou volumétrie au-dessus du Premium — proposition chiffrée sous 48 h. Contact : contact.clairdossier@icloud.com ou téléphone / WhatsApp 07 82 98 36 44.'
   );
   lines.push('');
 
@@ -489,7 +496,7 @@ function generateContact(): void {
     '',
     '## Canaux',
     '',
-    '- **WhatsApp** : +33 7 82 98 36 44 — réponse en moyenne sous 1 h en journée (9 h – 19 h, lundi-vendredi).',
+    '- **Téléphone et WhatsApp** : 07 82 98 36 44 — réponse en moyenne sous 1 h en journée (9 h – 19 h, lundi-vendredi).',
     '- **Email général** : contact.clairdossier@icloud.com — réponse sous 24 h ouvrées.',
     '- **Sécurité (divulgation responsable)** : contact.clairdossier@icloud.com — réponse sous 24 h.',
     `- **Formulaire guidé** : ${SITE}/contact`,

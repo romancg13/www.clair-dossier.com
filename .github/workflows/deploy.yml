@@ -24,6 +24,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Historique complet : le sitemap date chaque page par le dernier
+          # commit de ses sources (lastmod réel, jamais la date du build).
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -51,6 +55,9 @@ jobs:
           VITE_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ1emdva2ZteHBteWNlcHB2anBwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1NDk5NjksImV4cCI6MjA5NzEyNTk2OX0.MBRiuEYKl-b4_dNYpWKjWRm8qaFAXfwHjyAvf3Kzn2U
           # Lien PUBLIC du portail client Stripe (factures, abonnement) — variable de dépôt, facultative.
           VITE_STRIPE_PORTAL_URL: ${{ vars.VITE_STRIPE_PORTAL_URL }}
+          # « true » uniquement après vérification LIVE de LB13 (scripts/create-lb13-promo.mjs
+          # puis Checkout réel avant paiement) ; absent = le site signale la mise en service en cours.
+          VITE_LB13_LIVE: ${{ vars.VITE_LB13_LIVE }}
 
       # Repère de version public (aucun secret) : prouve quel commit est servi
       # par le domaine — https://www.clair-dossier.com/version.json

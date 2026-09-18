@@ -1,4 +1,19 @@
+# robots.txt — www.clair-dossier.com
+#
+# Ces directives indiquent aux robots les pages sans intérêt pour la
+# recherche. Ce n'est PAS une mesure de sécurité : l'accès aux espaces
+# privés est contrôlé par l'authentification et par les règles d'accès de
+# la base de données, pas par ce fichier (qui est public).
+#
+# Un seul groupe : un robot n'applique que le groupe le plus spécifique qui
+# le nomme ; les robots IA cités (sources citées) reçoivent donc exactement
+# les mêmes règles que les autres.
 User-agent: *
+User-agent: GPTBot
+User-agent: ChatGPT-User
+User-agent: PerplexityBot
+User-agent: Claude-Web
+User-agent: Google-Extended
 Allow: /
 # Espaces privés et écrans d'authentification (routes réelles du routeur src/App.tsx)
 Disallow: /dossier/
@@ -6,21 +21,5 @@ Disallow: /compte
 Disallow: /admin
 Disallow: /connexion
 Disallow: /inscription
-
-# Allow AI crawlers (sourced citations)
-User-agent: GPTBot
-Allow: /
-
-User-agent: ChatGPT-User
-Allow: /
-
-User-agent: PerplexityBot
-Allow: /
-
-User-agent: Claude-Web
-Allow: /
-
-User-agent: Google-Extended
-Allow: /
 
 Sitemap: https://www.clair-dossier.com/sitemap.xml

@@ -1,124 +1,102 @@
-// Crée la promo LB13 : −20 % pendant 4 mois sur tout abonnement mensuel,
-// code à activer (redeem) avant le 21 septembre 2026, puis active le code
-// promo sur les 6 Payment Links mensuels.
+// LB13 — diagnostic puis mise en service idempotente de l'offre
+// « −20 % pendant 4 mois sur les formules mensuelles, code à saisir avant le
+// 21 septembre 2026 » (borne exclusive : 21/09/2026 00:00 Europe/Paris).
 //
-// USAGE (ta clé n'est jamais vue par l'assistant) :
-//   export STRIPE_SECRET_KEY=sk_live_... | rk_live_...   (clé restreinte OK)
-//   node scripts/create-lb13-promo.mjs
+// USAGE (la clé n'est jamais affichée ni écrite) :
+//   export STRIPE_SECRET_KEY=rk_live_…   # clé restreinte recommandée (voir plus bas)
+//   node scripts/create-lb13-promo.mjs            # 1) DIAGNOSTIC seul, aucune écriture
+//   node scripts/create-lb13-promo.mjs --apply    # 2) applique le plan affiché, puis relit
+//   node scripts/create-lb13-promo.mjs --keep-annual-promos --apply
+//        (ne touche pas aux liens annuels ; LB13 resterait alors saisissable en annuel)
 //
-// Idempotent : si le code promo LB13 existe déjà, on ne le recrée pas.
+// Droits minimaux d'une clé restreinte : Coupons (écriture), Promotion codes
+// (écriture), Payment Links (écriture), Prices/Products (lecture),
+// Customer portal (lecture). Rien n'est jamais supprimé : un ancien code non
+// conforme est seulement désactivé (active=false) — les remises déjà
+// acquises continuent. Relancer le script ne crée aucun doublon.
+//
+// Version d'API : celle du SDK installé (stripe@22 → 2026-08-26.dahlia), où un
+// code promo se rattache au coupon par promotion: { type: 'coupon', coupon }.
 
-import Stripe from "stripe";
+import Stripe from 'stripe';
+import { LB13, applyLb13, collectLb13State, couponIdOf, planLb13 } from './lib/lb13.mjs';
 
+const args = new Set(process.argv.slice(2));
+const APPLY = args.has('--apply');
 const KEY = process.env.STRIPE_SECRET_KEY;
-if (!KEY) {
-  console.error(
-    "\n❌ STRIPE_SECRET_KEY non défini. export STRIPE_SECRET_KEY=... puis relance.\n",
-  );
+if (!KEY || !/^(sk|rk)_(test|live)_/.test(KEY)) {
+  console.error('\n❌ STRIPE_SECRET_KEY absente ou invalide (attendu sk_/rk_ test|live). export STRIPE_SECRET_KEY=… puis relance.\n');
   process.exit(1);
 }
-if (!/^(sk|rk)_(test|live)_/.test(KEY)) {
-  console.error(
-    "\n❌ Clé invalide (attendu sk_/rk_ test|live). Reçue :",
-    KEY.slice(0, 8) + "...\n",
-  );
-  process.exit(1);
+const mode = KEY.includes('_live_') ? 'live' : 'test';
+const stripe = new Stripe(KEY, { maxNetworkRetries: 2 });
+const now = Math.floor(Date.now() / 1000);
+
+function print(plan) {
+  const icon = { ok: '✅', warn: '⚠️ ', error: '❌' };
+  for (const d of plan.diag) console.log(`${icon[d.level]} ${d.m}`);
+  if (!plan.actions.length) {
+    console.log('\n→ Aucune action nécessaire.');
+    return;
+  }
+  console.log(`\n→ Plan (${plan.actions.length} action(s)) :`);
+  for (const a of plan.actions) {
+    const what = a.type === 'create_coupon'
+      ? `créer le coupon ${a.params.id} (−${a.params.percent_off} %, repeating ${a.params.duration_in_months} mois, redeem_by ${LB13.deadlineIso}, ${a.params.applies_to?.products?.length ?? 0} produit(s))`
+      : a.type === 'create_promotion_code'
+        ? `créer le code « ${a.params.code} » → coupon ${a.params.promotion.coupon}, expire le ${LB13.deadlineIso}`
+        : a.type === 'deactivate_promotion_code'
+          ? `désactiver le code non conforme ${a.id}`
+          : `${a.type === 'enable_link_promotions' ? 'autoriser' : 'retirer'} les codes promo sur ${a.url}`;
+    console.log(`   • ${what}`);
+  }
 }
-
-const stripe = new Stripe(KEY, { apiVersion: "2024-12-18.acacia" });
-
-const CODE = "LB13";
-const PERCENT_OFF = 20;
-const DURATION_MONTHS = 4;
-// Le code doit être utilisable AVANT le 21 septembre 2026 (heure de Paris, CEST = UTC+2).
-const EXPIRES_AT = Math.floor(
-  new Date("2026-09-21T23:59:59+02:00").getTime() / 1000,
-);
-
-// Les 6 Payment Links MENSUELS (la promo porte sur l'abonnement mensuel).
-const MONTHLY_LINKS = [
-  "https://buy.stripe.com/00w9AT9Qm7fJ4vbeSibV605", // Essentiel 19
-  "https://buy.stripe.com/8x214n1jQ2Zt9Pvh0qbV606", // Entrepreneur 39
-  "https://buy.stripe.com/5kQaEX7IeeIb4vb11sbV607", // Business PME 20 (49)
-  "https://buy.stripe.com/28E4gz8Mi9nRaTz25wbV608", // Business PME 50 (89)
-  "https://buy.stripe.com/5kQbJ1e6C7fJ6DjdOebV609", // Business PME Pro (169)
-  "https://buy.stripe.com/9B628raUq8jNgdT8tUbV60a", // Business PME Premium (299)
-];
 
 async function main() {
-  // 1) Le code promo existe déjà ?
-  const existing = await stripe.promotionCodes.list({ code: CODE, limit: 1 });
-  if (existing.data.length > 0) {
-    console.log(
-      `ℹ️  Le code promo ${CODE} existe déjà (${existing.data[0].id}) — pas recréé.`,
-    );
-  } else {
-    // 2) Coupon −20 % répété sur 4 mois.
-    const coupon = await stripe.coupons.create({
-      percent_off: PERCENT_OFF,
-      duration: "repeating",
-      duration_in_months: DURATION_MONTHS,
-      name: `LB13 −${PERCENT_OFF}% pendant ${DURATION_MONTHS} mois`,
-      metadata: { campagne: "LB13", partenaire: "P1000 Allauch by LB13" },
-    });
-    console.log(
-      `✅ Coupon créé : ${coupon.id} (−${PERCENT_OFF}% x ${DURATION_MONTHS} mois)`,
-    );
-
-    // 3) Code promo LB13, à redeem avant le 21 sept.
-    const promo = await stripe.promotionCodes.create({
-      coupon: coupon.id,
-      code: CODE,
-      expires_at: EXPIRES_AT,
-      active: true,
-      metadata: { campagne: "LB13" },
-    });
-    console.log(
-      `✅ Code promo créé : ${promo.code} (${promo.id}), expire le 21/09/2026.`,
-    );
+  let account = 'non lisible avec cette clé (droit « Account » absent)';
+  try {
+    const acct = await stripe.accounts.retrieve();
+    account = `${acct.id}${acct.settings?.dashboard?.display_name ? ` (${acct.settings.dashboard.display_name})` : ''}`;
+  } catch {
+    /* clé restreinte sans lecture du compte : le mode suffit au diagnostic */
   }
+  console.log(`\nCompte Stripe : ${account}`);
+  console.log(`Mode : ${mode === 'live' ? '🔴 LIVE' : '🟢 TEST'} · échéance ${LB13.deadlineIso} (timestamp ${LB13.deadlineTs}) · ${APPLY ? 'APPLICATION' : 'DIAGNOSTIC (lecture seule)'}\n`);
 
-  // 4) Active la saisie du code sur les Payment Links mensuels.
-  const all = [];
-  let params = { limit: 100 };
-  // Pagination simple.
-  // eslint-disable-next-line no-constant-condition
-  while (true) {
-    const page = await stripe.paymentLinks.list(params);
-    all.push(...page.data);
-    if (!page.has_more) break;
-    params = { ...params, starting_after: page.data[page.data.length - 1].id };
+  const state = await collectLb13State(stripe, { now, mode });
+  if (!state.portalsReadable) console.log('⚠️  Configuration du portail client non lisible avec cette clé : vérifier au Dashboard (changement d\'offre et codes promo).');
+  const mismatch = [...state.coupons, ...state.promotionCodes].find((o) => o.livemode !== (mode === 'live'));
+  if (mismatch) throw new Error(`objet ${mismatch.id} dans un mode différent de la clé`);
+
+  let plan = planLb13(state);
+  if (args.has('--keep-annual-promos')) plan.actions = plan.actions.filter((a) => a.type !== 'disable_link_promotions');
+  print(plan);
+
+  if (!APPLY) {
+    console.log('\nDiagnostic seul. Relancer avec --apply pour exécuter exactement ce plan.\n');
+    return;
   }
-  const byUrl = new Map(all.map((pl) => [pl.url, pl]));
+  if (!plan.actions.length) return;
+  await applyLb13(stripe, plan, (m) => console.log(`   ✓ ${m}`));
 
-  for (const url of MONTHLY_LINKS) {
-    const pl = byUrl.get(url);
-    if (!pl) {
-      console.warn(
-        `⚠️  Payment Link introuvable pour ${url} — active "Autoriser les codes promo" à la main dans le dashboard.`,
-      );
-      continue;
-    }
-    if (pl.allow_promotion_codes) {
-      console.log(`ℹ️  ${pl.id} accepte déjà les codes promo.`);
-      continue;
-    }
-    try {
-      await stripe.paymentLinks.update(pl.id, { allow_promotion_codes: true });
-      console.log(`✅ Codes promo activés sur ${pl.id} (${url}).`);
-    } catch (e) {
-      console.warn(
-        `⚠️  Impossible d'activer via l'API sur ${pl.id} (${e.message}). Fais-le dans le dashboard : Payment Link > "Autoriser les codes promo".`,
-      );
-    }
+  console.log('\nRelecture après application…');
+  const after = await collectLb13State(stripe, { now: Math.floor(Date.now() / 1000), mode });
+  plan = planLb13(after);
+  if (args.has('--keep-annual-promos')) plan.actions = plan.actions.filter((a) => a.type !== 'disable_link_promotions');
+  print(plan);
+  const live = after.promotionCodes.find((pc) => pc.active && String(pc.code).toUpperCase() === LB13.code);
+  if (live) {
+    console.log(`\nPreuve : code « ${live.code} » = ${live.id} · coupon ${couponIdOf(live)} · livemode=${live.livemode} · expires_at=${live.expires_at}`);
   }
-
-  console.log(
-    "\n🎉 Terminé. Le code LB13 donne −20 % pendant 4 mois sur les abonnements mensuels, jusqu'au 21/09/2026.\n",
-  );
+  if (plan.actions.length || plan.diag.some((d) => d.level === 'error')) {
+    console.error('\n❌ État final non conforme : voir ci-dessus.\n');
+    process.exit(2);
+  }
+  console.log('\n🎉 LB13 conforme. Vérifier ensuite sur www.clair-dossier.com/tarifs : Checkout mensuel → saisir LB13 → total remisé AVANT paiement (ne pas payer).');
+  console.log('   Puis GitHub → Settings → Variables → VITE_LB13_LIVE=true et relancer le déploiement (le site cesse d\'afficher « mise en service en cours »).\n');
 }
 
 main().catch((e) => {
-  console.error("\n❌ Échec :", e.message, "\n");
+  console.error('\n❌ Échec :', e?.message ?? e, '\n');
   process.exit(1);
 });

@@ -30,8 +30,8 @@ export const APP_ENV = (extra.appEnv ?? process.env.EXPO_PUBLIC_ENV ?? 'developm
 export const SITE_URL = extra.siteUrl ?? process.env.EXPO_PUBLIC_SITE_URL ?? 'https://www.clair-dossier.com';
 
 /** Service Assistance ClairDossier (identité publique unique — I.5). */
-export const SUPPORT_PHONE = extra.supportPhone ?? '0491959032';
-export const SUPPORT_PHONE_DISPLAY = '04 91 95 90 32';
+export const SUPPORT_PHONE = extra.supportPhone ?? '+33782983644';
+export const SUPPORT_PHONE_DISPLAY = '07 82 98 36 44';
 export const SUPPORT_EMAIL = extra.supportEmail ?? 'contact.clairdossier@icloud.com';
 
 /** Pages publiques réutilisées par l'application (une seule source d'URL). */

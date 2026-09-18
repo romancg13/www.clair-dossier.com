@@ -116,7 +116,7 @@ Vos données sont chiffrées au repos chez notre hébergeur, conforme au RGPD, e
 
 ## Contact
 
-- WhatsApp : +33 7 82 98 36 44 (réponse en moyenne sous 1 h en journée)
+- Téléphone et WhatsApp : 07 82 98 36 44 (réponse en moyenne sous 1 h en journée)
 - Email : contact.clairdossier@icloud.com (réponse sous 24 h ouvrées)
 - Sécurité (divulgation responsable) : contact.clairdossier@icloud.com
 - Formulaire : https://www.clair-dossier.com/contact
