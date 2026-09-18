@@ -24,7 +24,7 @@ Vous construisez votre dossier à votre rythme. Vous voyez en permanence où il 
 
 - Création guidée en 5 étapes (profil, nature, informations, pièces, récapitulatif)
 - Suivi de l'avancement sur les 5 étapes métier de votre dossier
-- Transmission par e-mail ou WhatsApp, déclenchée par vous
+- Transmission décidée et effectuée par vous, jamais automatique
 - Récupération de vos pièces et données sur demande
 
 ### Validation — Une relecture côté support, quand c'est utile.
@@ -43,13 +43,13 @@ Artisan, indépendant, profession libérale ou PME : retrouvez la liste de vos d
 - Liste de tous vos dossiers avec leur étape en cours
 - Page détail « Avancement du dossier » pour chaque dossier
 - Données isolées par compte : vous ne voyez que les vôtres
-- Transmission par e-mail ou WhatsApp, dossier par dossier
+- Pièces téléchargeables et transmission à votre main, dossier par dossier
 
 ## Workflow — 6 statuts
 
 1. **Brouillon** — Vous construisez votre dossier dans le tunnel en 5 étapes : profil, nature, informations, dépôt des pièces, récapitulatif. Le nom du dossier est obligatoire. Rien n'est transmis tant que vous ne l'avez pas décidé.
 2. **Complété** — Vous avez renseigné les informations et déposé vos pièces dans l'espace privé sécurisé. Le récapitulatif vous montre le dossier avant toute transmission.
-3. **Transmis** — Vous transmettez le dossier par e-mail ou WhatsApp, à votre initiative. Aucun envoi automatique : rien ne part sans votre validation explicite.
+3. **Transmis** — Vous avez validé le dossier : il est enregistré dans votre compte et visible dans votre espace. Sa transmission à un tiers reste à votre main — aucun envoi automatique.
 4. **En cours** — Le dossier suit son avancement sur les 5 étapes métier, cliquables depuis la page détail. Les pièces restent téléchargeables et les échéances affichées.
 5. **Validé** — Le dossier est complet et structuré, prêt à être partagé ou suivi dans la durée. Les pièces sont réunies dans un espace privé, accessibles via des liens signés temporaires.
 6. **Archivé** — L'affaire est close. Vos données restent isolées par compte et conservées selon les délais légaux. Vous pouvez en demander l'accès ou l'export via le contact.

@@ -18,7 +18,7 @@ export function FeaturesIndex() {
     <>
       <Seo
         title="Fonctionnalités"
-        description="Les neuf briques ClairDossier : création de dossier guidée en 5 étapes, dépôt de pièces sécurisé, suivi de l'avancement, échéances, transmission par e-mail ou WhatsApp validée par vous, espace privé conforme RGPD."
+        description="Les neuf briques ClairDossier : création de dossier guidée en 5 étapes, dépôt de pièces sécurisé, suivi de l'avancement, échéances, transmission décidée et effectuée par vous, espace privé conforme RGPD."
         path="/fonctionnalites"
         jsonLd={[
           breadcrumbSchema([

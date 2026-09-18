@@ -85,10 +85,10 @@ const PILLARS = [
   {
     Icon: AuditIcon,
     title: "Maîtrise & contact",
-    body: "Vous décidez de chaque envoi : la transmission d'un dossier par e-mail ou WhatsApp ne part qu'après votre validation explicite. Pour toute question de sécurité ou demande relative à vos données, une adresse de contact dédiée vous répond.",
+    body: "Vous décidez de chaque envoi : vous téléchargez vos pièces et transmettez le dossier vous-même, au destinataire de votre choix. Pour toute question de sécurité ou demande relative à vos données, une adresse de contact dédiée vous répond.",
     bullets: [
-      "Aucune transmission sans votre validation",
-      "Envoi par e-mail ou WhatsApp à votre main",
+      "Aucune transmission sans votre action",
+      "Transmission décidée et effectuée par vous",
       "Contact dédié pour vos demandes données",
     ],
   },

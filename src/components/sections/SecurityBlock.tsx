@@ -29,7 +29,7 @@ export const TRUST = [
   {
     Icon: ComplianceRinIcon,
     title: "Vous gardez la main",
-    body: "Rien ne quitte votre espace sans votre validation. La transmission d'un dossier par e-mail ou WhatsApp est déclenchée par vous.",
+    body: "Rien ne quitte votre espace sans votre action. Vous téléchargez vos pièces et transmettez le dossier vous-même, au destinataire de votre choix.",
   },
   {
     Icon: BackupIcon,

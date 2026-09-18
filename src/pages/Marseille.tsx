@@ -36,7 +36,7 @@ const APPORTS = [
   'Un espace privé par dossier, avec dépôt de pièces sécurisé',
   'Cinq étapes claires : création, dépôt, organisation, suivi, transmission',
   'Les échéances que vous renseignez, visibles et datées',
-  'Transmission par e-mail ou WhatsApp uniquement sur votre validation',
+  'Transmission uniquement par vous, sur votre validation explicite',
 ];
 
 export function Marseille() {

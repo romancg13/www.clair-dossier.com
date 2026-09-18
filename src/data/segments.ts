@@ -40,7 +40,7 @@ const PROOF_ISOLATION: SegmentProof = {
 const PROOF_VALIDATION: SegmentProof = {
   title: 'Validation humaine : rien ne part tout seul',
   body:
-    "La transmission d'un dossier est toujours déclenchée explicitement par son propriétaire, par e-mail ou WhatsApp. Aucun envoi automatique, aucune décision produite sans action humaine.",
+    "La transmission d'un dossier reste toujours à la main de son propriétaire : il télécharge ses pièces et transmet lui-même, au destinataire de son choix. Aucun envoi automatique, aucune décision produite sans action humaine.",
   verification: 'Vérifiable : fonctionnalité « Transmission validée par vous » (/fonctionnalites/transmission-validee).',
 };
 

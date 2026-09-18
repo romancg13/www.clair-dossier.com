@@ -27,7 +27,7 @@ export const workspaces: Workspace[] = [
     capabilities: [
       "Création guidée en 5 étapes (profil, nature, informations, pièces, récapitulatif)",
       "Suivi de l'avancement sur les 5 étapes métier de votre dossier",
-      "Transmission par e-mail ou WhatsApp, déclenchée par vous",
+      "Transmission décidée et effectuée par vous, jamais automatique",
       "Récupération de vos pièces et données sur demande",
     ],
     mockup: {
@@ -78,7 +78,7 @@ export const workspaces: Workspace[] = [
       "Liste de tous vos dossiers avec leur étape en cours",
       "Page détail « Avancement du dossier » pour chaque dossier",
       "Données isolées par compte : vous ne voyez que les vôtres",
-      "Transmission par e-mail ou WhatsApp, dossier par dossier",
+      "Pièces téléchargeables et transmission à votre main, dossier par dossier",
     ],
     mockup: {
       kicker: "Vos dossiers · vue d'ensemble",
