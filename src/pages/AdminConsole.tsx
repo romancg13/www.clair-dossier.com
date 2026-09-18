@@ -21,6 +21,7 @@ import {
   NotificationsSection,
   SubscriptionsTable,
 } from "../components/admin/AdminAutomation";
+import { AdminRequests } from "../components/admin/AdminRequests";
 import { CATEGORY_LABELS, effectiveCategory, formatBytes, hasDocExtras, isGenericTitle } from "../lib/dossier-workspace";
 import { mfaErrorDetails, mfaErrorMessage, mfaQrSrc } from "../lib/mfa-errors";
 
@@ -95,6 +96,7 @@ const SECTIONS = [
   { id: "corbeille", label: "Corbeille" },
   { id: "activite", label: "Activité" },
   { id: "notifications", label: "Notifications" },
+  { id: "demandes", label: "Demandes & Journal" },
   { id: "abonnements", label: "Abonnements" },
   { id: "diagnostic", label: "Diagnostic" },
 ] as const;
@@ -890,6 +892,8 @@ export function AdminConsole() {
                     </p>
                   </Card>
                 ))}
+
+              {section === "demandes" && <AdminRequests onError={setError} />}
 
               {section === "clients" && (
                 <div className="mt-8 space-y-3">
