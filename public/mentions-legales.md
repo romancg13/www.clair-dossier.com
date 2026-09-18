@@ -19,7 +19,7 @@ Code APE : 4791A — Vente à distance sur catalogue général.
 
 TVA non applicable, article 293 B du Code général des impôts (régime de la franchise en base).
 
-Contact : contact.clairdossier@icloud.com — Téléphone : 04 91 95 90 32 — WhatsApp : +33 7 82 98 36 44.
+Contact : contact.clairdossier@icloud.com — Téléphone et WhatsApp : 07 82 98 36 44.
 
 Réalisation et développement du site : Nouh BENZIDANE — https://nouhbenzidane.fr.
 

@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { PHONE_E164 } from '../data/contact';
 
 type SeoProps = {
   title: string;
@@ -125,7 +126,7 @@ export const orgSchema = {
   description:
     "ClairDossier est une plateforme legaltech française qui aide à constituer, structurer et suivre des dossiers administratifs et juridiques, transmis sur validation de l'utilisateur. Elle ne se substitue pas à un professionnel du droit.",
   foundingDate: '2025',
-  telephone: '+33491959032',
+  telephone: PHONE_E164,
   email: 'contact.clairdossier@icloud.com',
   // Siège publié dans les mentions légales (Château-Gombert, 13013 Marseille).
   address: {
@@ -139,7 +140,7 @@ export const orgSchema = {
   contactPoint: {
     '@type': 'ContactPoint',
     contactType: 'customer support',
-    telephone: '+33491959032',
+    telephone: PHONE_E164,
     email: 'contact.clairdossier@icloud.com',
     availableLanguage: ['French'],
     areaServed: 'FR',

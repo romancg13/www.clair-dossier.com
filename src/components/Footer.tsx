@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { Logo } from "./Logo";
+import { PHONE_DISPLAY, PHONE_HREF } from "../data/contact";
 
 const PRODUIT = [
   { to: "/fonctionnalites", label: "Fonctionnalités" },
@@ -46,8 +47,8 @@ export function Footer() {
             <address className="mt-5 space-y-1.5 text-sm not-italic leading-relaxed text-slate-500">
               <p>Château-Gombert, 13013 Marseille</p>
               <p>
-                <a href="tel:0491959032" className="transition-colors hover:text-navy-900">
-                  04 91 95 90 32
+                <a href={PHONE_HREF} className="transition-colors hover:text-navy-900">
+                  {PHONE_DISPLAY}
                 </a>
               </p>
               <p>

@@ -150,7 +150,7 @@ Fonctionnalités incluses :
 
 ## Devis sur-mesure
 
-Pour structures avec exigences de marque blanche, intégration API, SSO, audit dédié, ou volumétrie au-dessus du Premium — proposition chiffrée sous 48 h. Contact : contact.clairdossier@icloud.com ou WhatsApp +33 7 82 98 36 44.
+Pour structures avec exigences de marque blanche, intégration API, SSO, audit dédié, ou volumétrie au-dessus du Premium — proposition chiffrée sous 48 h. Contact : contact.clairdossier@icloud.com ou téléphone / WhatsApp 07 82 98 36 44.
 
 ## Engagement
 

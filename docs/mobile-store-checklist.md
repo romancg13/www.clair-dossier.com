@@ -128,4 +128,4 @@ identifiants + mot de passe dans les notes de revue.
 1. **Abonnements dans l'application** : aujourd'hui l'app ne vend rien et ne renvoie vers aucun paiement. Toute évolution (achat intégré, lien externe) dépend des règles en vigueur **à la date du dépôt**, du pays et de la nature du service — décision produit **et** juridique. **[à revérifier]**
 2. **Notifications à distance** : l'infrastructure est prête mais rien n'est émis ; décider si un envoi serveur est ouvert (et, si oui, mettre à jour `/etat-du-produit` et la politique de confidentialité).
 3. **Politique de confidentialité** : y ajouter l'application mobile (données locales conservées, jeton de notification, suppression de compte). **Validation humaine requise.**
-4. **Numéro WhatsApp de transmission** : l'application reprend celui du site (`+33 7 82 98 36 44`) ; son remplacement par le 04 91 95 90 32 reste une décision en attente côté produit.
+4. **Numéro WhatsApp de transmission** : l'application reprend celui du site (`+33 7 82 98 36 44`), devenu aussi le numéro d'appel officiel le 2026-09-18 (source unique web : `src/data/contact.ts` ; mobile : `mobile/src/lib/config.ts`).

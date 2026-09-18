@@ -4,6 +4,7 @@ import { Seo, breadcrumbSchema } from '../lib/seo';
 import { ArrowRightIcon, WhatsAppIcon } from '../components/icons';
 import { WHATSAPP_DISPLAY, openWhatsApp, buildWhatsAppUrl } from '../lib/whatsapp';
 import { submitProspect } from '../lib/prospects';
+import { PHONE_DISPLAY, PHONE_HREF } from '../data/contact';
 import { trackEvent } from '../lib/analytics';
 
 type Topic = 'demo' | 'commercial' | 'support' | 'presse';
@@ -122,8 +123,8 @@ export function Contact() {
               <div className="mt-10 space-y-5 border-t hairline pt-8">
                 <ContactInfo
                   label="Téléphone"
-                  value="04 91 95 90 32"
-                  href="tel:0491959032"
+                  value={PHONE_DISPLAY}
+                  href={PHONE_HREF}
                   detail="Service Assistance ClairDossier, 9 h – 19 h, lundi-vendredi"
                 />
                 <ContactInfo
