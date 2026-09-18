@@ -4,9 +4,9 @@ import type { BlogPostInput } from './types';
 export const rgpdLegaltech: BlogPostInput = {
   slug: 'rgpd-legaltech',
   title: 'Protéger ses dossiers : ce que le RGPD exige des prestataires qui y accèdent',
-  metaTitle: 'RGPD et prestataires — protéger ses dossiers (article 28)',
+  metaTitle: 'RGPD et prestataires : protéger ses dossiers',
   metaDescription:
-    "Hébergeur, éditeur, infogérant : le prestataire qui traite vos dossiers est en principe un sous-traitant. Ce qu'exigent les articles 28 et 32 du RGPD, et les bons réflexes.",
+    "Hébergeur, éditeur, infogérant : le prestataire qui traite vos dossiers est en principe un sous-traitant. Ce qu'exige le RGPD (art. 28 et 32).",
   summary:
     "Dès qu'un prestataire accède à vos dossiers pour votre compte, il devient en principe votre sous-traitant au sens du RGPD, et vous restez responsable. Ce qu'impose l'article 28, comment penser la sécurité, et les réflexes à adopter.",
   author: 'redaction',

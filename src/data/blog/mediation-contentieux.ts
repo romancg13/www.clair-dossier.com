@@ -3,7 +3,7 @@ import type { BlogPostInput } from './types';
 export const mediationContentieux: BlogPostInput = {
   slug: 'mediation-contentieux',
   title: "Médiation ou contentieux : trois critères pour choisir",
-  metaTitle: "Médiation ou contentieux — comment choisir la bonne voie",
+  metaTitle: "Médiation ou contentieux : choisir la bonne voie",
   metaDescription:
     "Aller au tribunal ou tenter la médiation ? Trois critères concrets pour décider sans regret : relation, asymétrie, besoin de jurisprudence.",
   summary:

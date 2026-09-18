@@ -24,6 +24,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Historique complet : le sitemap date chaque page par le dernier
+          # commit de ses sources (lastmod réel, jamais la date du build).
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:

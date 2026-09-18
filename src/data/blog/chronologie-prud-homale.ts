@@ -4,7 +4,7 @@ import type { BlogPostInput } from './types';
 export const chronologiePrudHomale: BlogPostInput = {
   slug: 'chronologie-prud-homale',
   title: "Préparer un dossier prud'homal : la chronologie qui fait la différence",
-  metaTitle: "Préparer un dossier prud'homal — la chronologie qui décide",
+  metaTitle: "Dossier prud'homal : la chronologie qui décide",
   metaDescription:
     "Pourquoi la chronologie compte autant que les arguments en prud'hommes. Méthode, pièges classiques et exemple illustré.",
   summary:

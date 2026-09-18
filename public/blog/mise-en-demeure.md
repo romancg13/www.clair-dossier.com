@@ -4,13 +4,13 @@ description: "La mise en demeure est l'étape qui précède le contentieux. Pour
 date: 2026-04-15
 author: Rédaction ClairDossier
 category: Procédure amiable
-readMinutes: 8
+readMinutes: 5
 url: https://www.clair-dossier.com/blog/mise-en-demeure
 ---
 
 # Mise en demeure : le courrier qui débloque (souvent) la situation
 
-*Publié le 15 avril 2026 — 8 min de lecture — catégorie : Procédure amiable*
+*Publié le 15 avril 2026 — 5 min de lecture — catégorie : Procédure amiable*
 
 **Résumé.** Dans de nombreuses situations, une tentative de résolution amiable est obligatoire ou recommandée avant de saisir un juge, selon la nature et le montant du litige. La mise en demeure est souvent le premier outil de cette tentative. Bien rédigée, elle débloque souvent la situation sans aller plus loin. Mal rédigée, elle peut être inopposable et faire perdre un temps précieux.
 
@@ -104,7 +104,7 @@ Temps estimé : 20 minutes.
 ## Articles liés
 
 - [Préparer son rendez-vous avocat : la checklist en 8 étapes](https://www.clair-dossier.com/blog/preparer-rendez-vous-avocat)
-- [Conservation des documents juridiques : durées légales et bonnes pratiques](https://www.clair-dossier.com/blog/conservation-documents)
+- [Conservation des documents : combien de temps garder chaque pièce selon sa nature](https://www.clair-dossier.com/blog/conservation-documents)
 - [Médiation ou contentieux : trois critères pour choisir](https://www.clair-dossier.com/blog/mediation-contentieux)
 
 

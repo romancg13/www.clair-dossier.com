@@ -10,7 +10,7 @@ url: https://www.clair-dossier.com/fonctionnalites/creation-guidee
 
 La plupart des outils font remplir un formulaire générique d'un seul tenant. Résultat : des informations éparses, mal rangées, qu'il faut ensuite reprendre. Notre approche est inverse — guider la création étape par étape pour ne collecter que ce qui est utile, dans le bon ordre.
 
-Le tunnel se déroule en cinq étapes : votre profil (artisan, indépendant, profession libérale ou PME), la nature du dossier, les informations, le dépôt des documents, puis un récapitulatif avant validation. À la première étape, vous donnez un nom au dossier — c'est obligatoire, pour le retrouver clairement dans votre liste.
+Le tunnel se déroule en cinq étapes : votre profil (artisan, indépendant, profession libérale ou PME), la nature du dossier, les informations, le dépôt des documents, puis un récapitulatif avant validation. À l'étape « Nature », vous donnez un nom au dossier — c'est obligatoire, pour le retrouver clairement dans votre liste.
 
 Chaque étape ne demande que ce dont elle a besoin. Vous avancez d'un écran à l'autre sans vous perdre, et vous voyez à tout moment où vous en êtes dans la création.
 
