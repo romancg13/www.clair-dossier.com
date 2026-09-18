@@ -22,7 +22,7 @@ export type Plan = {
 };
 
 export const COMPARISON_FEATURES: { id: string; label: string }[] = [
-  { id: "messagerie", label: "Transmission par e-mail ou WhatsApp" },
+  { id: "messagerie", label: "Transmission décidée et effectuée par vous" },
   { id: "calendrier", label: "Échéances affichées sur le dossier" },
   { id: "resume-ia", label: "Récapitulatif du dossier" },
   { id: "redaction-ia", label: "Suivi par étapes métier" },
@@ -233,7 +233,7 @@ export const TRUST_PILLARS: { id: string; title: string; body: string }[] = [
   {
     id: "ia-supervisee",
     title: "Vous gardez la main",
-    body: "Rien ne part sans votre validation : la transmission du dossier, par e-mail ou WhatsApp, est déclenchée par vous.",
+    body: "Rien ne part sans votre validation : vous téléchargez vos pièces et transmettez le dossier vous-même, quand vous le décidez.",
   },
   {
     id: "sans-engagement",

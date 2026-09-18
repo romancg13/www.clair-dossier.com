@@ -31,7 +31,7 @@ export const statuses: CaseStatus[] = [
     label: "Transmis",
     short: "Transmis",
     description:
-      "Vous transmettez le dossier par e-mail ou WhatsApp, à votre initiative. Aucun envoi automatique : rien ne part sans votre validation explicite.",
+      "Vous avez validé le dossier : il est enregistré dans votre compte et visible dans votre espace. Sa transmission à un tiers reste à votre main — aucun envoi automatique.",
     who: "client",
     next: "validation",
   },

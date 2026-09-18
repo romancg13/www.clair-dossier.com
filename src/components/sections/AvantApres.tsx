@@ -14,7 +14,7 @@ export const AVEC = [
   "Avancement suivi sur 5 étapes métier claires, avec les échéances réunies au même endroit.",
   "Vous consultez l'avancement de votre dossier à tout moment, depuis votre espace.",
   "Tous vos dossiers réunis dans un espace privé, isolés et accessibles par vous seul.",
-  "Rien ne part sans votre validation : transmission par e-mail ou WhatsApp, quand vous le décidez.",
+  "Rien ne part sans votre validation : vous transmettez le dossier vous-même, quand vous le décidez.",
 ];
 
 export function AvantApres() {

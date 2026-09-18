@@ -1,6 +1,6 @@
 import { useRef, type ReactNode } from 'react';
 import { motion, useTransform, type MotionValue } from 'motion/react';
-import { CheckIcon, LockIcon, WhatsAppIcon } from '../icons';
+import { CheckIcon, LockIcon } from '../icons';
 import { ChapterFrame } from './ChapterFrame';
 import { DEMO } from './demo-dossier';
 import { DemoBadge, Stage } from './Stage';
@@ -9,8 +9,9 @@ import { useSectionProgress } from './useCinematic';
 /**
  * Chapitre 05 — la transmission. Le différenciateur contractuel de
  * ClairDossier : rien ne part sans une action explicite de l'utilisateur.
- * Micro-récit en trois temps (récapitulatif relu → destinataire et canal →
- * validation), puis l'état « Transmis ».
+ * Micro-récit en trois temps fidèle au produit réel : récapitulatif relu →
+ * validation (dossier enregistré dans le compte, pièces téléchargeables) →
+ * transmission effectuée PAR le client, au destinataire de son choix.
  */
 export function ChapterTransmission() {
   const ref = useRef<HTMLDivElement>(null);
@@ -29,9 +30,10 @@ export function ChapterTransmission() {
         title="Rien ne part sans vous."
         body={
           <p>
-            Le dossier est prêt ? Vous relisez le récapitulatif, vous choisissez le destinataire et
-            le canal — e-mail ou WhatsApp — puis vous validez. Aucun envoi automatique : c’est un
-            engagement contractuel, pas un réglage.
+            Le dossier est prêt ? Vous relisez le récapitulatif, vous validez : il est enregistré
+            dans votre compte, pièces téléchargeables à tout moment. Vous le transmettez ensuite
+            vous-même, au destinataire et par le canal de votre choix. Aucun envoi automatique :
+            c’est un engagement contractuel, pas un réglage.
           </p>
         }
       >
@@ -50,32 +52,28 @@ export function ChapterTransmission() {
               </span>
             </FlowStep>
 
-            <FlowStep p={p} at={0.34} reduce={reduce} n={2} title="Destinataire et canal">
+            <FlowStep p={p} at={0.34} reduce={reduce} n={2} title="Valider et enregistrer">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded-full border cd-hairline-strong bg-cream-50/5 px-2.5 py-1 text-[0.74rem] text-cream-50">
-                  {DEMO.transmission.recipient}
-                </span>
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-gold-400/60 bg-gold-500/12 px-2.5 py-1 text-[0.74rem] text-gold-400">
                   <span className="h-1.5 w-1.5 rounded-full bg-gold-400" aria-hidden="true" />
-                  E-mail
+                  Dossier enregistré dans votre compte
                 </span>
-                <span className="inline-flex items-center gap-1.5 rounded-full border cd-hairline px-2.5 py-1 text-[0.74rem] text-silver-200/75">
-                  <WhatsAppIcon width={12} height={12} />
-                  WhatsApp
+                <span className="rounded-full border cd-hairline-strong bg-cream-50/5 px-2.5 py-1 text-[0.74rem] text-cream-50">
+                  {DEMO.pieces.length} pièces téléchargeables
                 </span>
               </div>
             </FlowStep>
 
-            <FlowStep p={p} at={0.54} reduce={reduce} n={3} title="Votre validation">
+            <FlowStep p={p} at={0.54} reduce={reduce} n={3} title="Transmission, par vous">
               <div className="relative h-11">
                 <motion.div
                   style={reduce ? { opacity: 0 } : { opacity: btn }}
                   className="absolute inset-0 flex items-center"
                   aria-hidden="true"
                 >
-                  <span className="inline-flex items-center gap-2 rounded-full bg-gold-500 px-4 py-2 text-[0.8rem] font-semibold text-navy-900 shadow-gold">
+                  <span className="inline-flex items-center gap-2 rounded-full border border-gold-400/60 bg-gold-500/12 px-4 py-2 text-[0.8rem] font-medium text-gold-400">
                     <LockIcon width={13} height={13} />
-                    Transmettre le dossier
+                    Destinataire et canal : à votre main
                   </span>
                 </motion.div>
                 <motion.div
@@ -86,7 +84,7 @@ export function ChapterTransmission() {
                     <span className="grid h-5 w-5 place-items-center rounded-full bg-gold-500 text-navy-900">
                       <CheckIcon width={11} height={11} strokeWidth={2.4} />
                     </span>
-                    Transmis le {DEMO.transmission.date} · par vous · {DEMO.transmission.channel.toLowerCase()}
+                    Transmis le {DEMO.transmission.date} · par vous
                   </span>
                 </motion.div>
               </div>

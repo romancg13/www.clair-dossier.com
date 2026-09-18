@@ -244,7 +244,7 @@ export function HeroCinematic() {
                       Transmission
                     </span>
                     <span className="block text-[0.78rem] font-medium text-navy-900">
-                      À votre validation · e-mail ou WhatsApp
+                      À votre validation · jamais automatique
                     </span>
                   </span>
                 </Satellite>
