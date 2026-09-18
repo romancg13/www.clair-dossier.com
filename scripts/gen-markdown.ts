@@ -25,6 +25,7 @@ import {
   type Plan,
 } from '../src/data/pricing';
 import { statuses } from '../src/data/statuses';
+import { LB13 } from './lib/lb13.mjs';
 import {
   TRUST_UPDATED,
   openTodos,
@@ -328,6 +329,12 @@ function generatePricing(): void {
     '',
     "De l'indépendant à l'entreprise — sept niveaux de service couvrent tous les usages. Compte gratuit, abonnement sans engagement. Facturation mensuelle ou annuelle (−10 % en annuel).",
     '',
+    ...(Date.now() < LB13.deadlineTs * 1000
+      ? [
+          `Offre de lancement : code ${LB13.code} à saisir sur la page de paiement avant le 21 septembre 2026 (00 h, heure de Paris) — −${LB13.percentOff} % sur les ${LB13.durationInMonths} premières mensualités des formules mensuelles, puis tarif en vigueur ; hors formules annuelles et sur-mesure. Exemple : Essentiel 19 € → 15,20 € par mois pendant 4 mois, puis 19 €.`,
+          '',
+        ]
+      : []),
     '## Les sept formules',
     '',
   ];

@@ -26,7 +26,8 @@ export type AnalyticsEvent =
   | 'telechargement_dpa'
   | 'consultation_trust_center'
   | 'demo_produit_ouverte'
-  | 'demo_produit_terminee';
+  | 'demo_produit_terminee'
+  | 'debut_checkout';
 
 const DOMAIN = import.meta.env.VITE_PLAUSIBLE_DOMAIN as string | undefined;
 const HOST = (import.meta.env.VITE_PLAUSIBLE_HOST as string | undefined) ?? 'https://plausible.io';
