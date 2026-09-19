@@ -12,8 +12,9 @@
 
 import Stripe from 'stripe';
 import { LB13, applyLb13, collectLb13State, expectedInvoiceAmounts, planLb13 } from './lib/lb13.mjs';
+import { stripeKey } from './lib/credentials.mjs';
 
-const KEY = process.env.STRIPE_SECRET_KEY;
+const KEY = stripeKey('test')?.key;
 if (!KEY || !/^(sk|rk)_test_/.test(KEY)) {
   console.error('\n❌ Clé de TEST requise (sk_test_… / rk_test_…). Une clé LIVE est refusée.\n');
   process.exit(1);
