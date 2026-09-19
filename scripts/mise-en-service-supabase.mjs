@@ -128,6 +128,7 @@ const MARKERS = {
     "select exists (select 1 from pg_trigger where tgname = 'dossiers_audit_corbeille')",
   '20260918130000_prospects_partenariat.sql':
     "select exists (select 1 from information_schema.columns where table_schema='public' and table_name='prospects' and column_name='partner_type')",
+  '20260919120000_corbeille_client.sql': "select to_regprocedure('public.client_trash_enabled()')",
 };
 // Socle qui DOIT déjà exister (sinon : mauvais projet → arrêt).
 const SOCLE = [

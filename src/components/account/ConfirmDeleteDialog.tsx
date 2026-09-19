@@ -17,7 +17,10 @@ export function ConfirmDeleteDialog({
   error,
   onConfirm,
   onCancel,
+  audience = 'admin',
 }: {
+  /** « client » : le propriétaire supprime son propre dossier (corbeille personnelle). */
+  audience?: 'admin' | 'client';
   open: boolean;
   dossierTitle: string;
   owner: OwnerIdentity | null;
@@ -68,9 +71,11 @@ export function ConfirmDeleteDialog({
         }}
         className="p-6 sm:p-7"
       >
-        <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">Corbeille · super administrateur</p>
+        <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">
+          {audience === 'client' ? 'Corbeille' : 'Corbeille · super administrateur'}
+        </p>
         <h2 id={titleId} className="mt-2 font-display text-2xl font-semibold leading-tight text-navy-900">
-          Mettre ce dossier à la corbeille ?
+          {audience === 'client' ? `Supprimer le dossier « ${dossierTitle} » ?` : 'Mettre ce dossier à la corbeille ?'}
         </h2>
 
         <dl className="mt-5 space-y-3 rounded-xl border hairline bg-cream-50 px-4 py-3.5 text-sm">
@@ -78,6 +83,7 @@ export function ConfirmDeleteDialog({
             <dt className="font-mono text-[0.65rem] uppercase tracking-[0.14em] text-slate-500">Dossier</dt>
             <dd className="mt-0.5 break-words font-medium text-navy-900">{dossierTitle}</dd>
           </div>
+          {audience === 'admin' && (
           <div>
             <dt className="font-mono text-[0.65rem] uppercase tracking-[0.14em] text-slate-500">Propriétaire</dt>
             <dd className="mt-0.5 break-words font-medium text-navy-900">
@@ -85,18 +91,28 @@ export function ConfirmDeleteDialog({
               {owner?.detail && <span className="block text-xs font-normal text-slate-500">{owner.detail}</span>}
             </dd>
           </div>
+          )}
           <div>
             <dt className="font-mono text-[0.65rem] uppercase tracking-[0.14em] text-slate-500">Création · statut</dt>
             <dd className="mt-0.5 text-navy-900">{meta}</dd>
           </div>
         </dl>
 
+        {audience === 'client' ? (
+          <p id={descId} className="mt-4 text-sm leading-relaxed text-slate-500">
+            Il sera déplacé dans votre corbeille et pourra être restauré. Ses pièces et échéances sont conservées ; un
+            dossier déjà validé reste compté dans le quota de la période.
+          </p>
+        ) : (
         <p id={descId} className="mt-4 text-sm leading-relaxed text-slate-500">
           Le dossier quitte les listes. Ses pièces et échéances sont conservées et il reste restaurable depuis la
           corbeille de la console d'administration. Le quota déjà consommé par le client n'est pas recrédité. Aucune
           suppression définitive.
         </p>
+        )}
 
+        {audience === 'admin' && (
+          <>
         <label htmlFor={reasonId} className="mt-5 block font-mono text-[0.7rem] uppercase tracking-[0.16em] text-slate-500">
           Motif — facultatif, conservé avec le dossier
         </label>
@@ -110,6 +126,8 @@ export function ConfirmDeleteDialog({
           placeholder="Ex. : créé par erreur"
           className="mt-2 w-full rounded-xl border hairline bg-cream-50 px-4 py-3 text-sm text-navy-900 placeholder:text-slate-500 focus:border-gold-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-gold-500/20 disabled:opacity-60"
         />
+          </>
+        )}
 
         {error && (
           <p role="alert" className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">

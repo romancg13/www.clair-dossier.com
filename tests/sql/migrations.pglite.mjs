@@ -475,13 +475,16 @@ await test('admin : prise en charge et vu, champs refusés au client', async () 
   await asUser(ADMIN, 'aal2');
   await q(`update public.dossiers set admin_seen_at = now(), taken_by = $2, taken_at = now(), status = 'en-cours', current_step = 3 where id = $1`, [dossierA, ADMIN]);
   await asUser(A);
-  await q(`update public.dossiers set taken_by = null, admin_seen_at = null, current_step = 5, deleted_at = now() where id = $1`, [dossierA]);
+  // deleted_by ne se forge pas hors du parcours corbeille (la corbeille du
+  // propriétaire est testée plus bas, migration 20260919120000).
+  await q(`update public.dossiers set taken_by = null, admin_seen_at = null, current_step = 5, deleted_by = $2 where id = $1`, [dossierA, A]);
   await asSuperuser();
-  const [d] = await q('select taken_by, admin_seen_at, current_step, deleted_at from public.dossiers where id = $1', [dossierA]);
+  const [d] = await q('select taken_by, admin_seen_at, current_step, deleted_at, deleted_by from public.dossiers where id = $1', [dossierA]);
   assert.equal(d.taken_by, ADMIN);
   assert.notEqual(d.admin_seen_at, null);
   assert.equal(d.current_step, 3);
   assert.equal(d.deleted_at, null);
+  assert.equal(d.deleted_by, null);
 });
 await test('notifications : lisibles et marquables par l\'admin seulement', async () => {
   await asUser(ADMIN, 'aal2');
@@ -512,10 +515,10 @@ await test('admin en AAL1 : modification d\'un dossier de tiers sans effet', asy
   const [after] = await q('select status from public.dossiers where id = $1', [dossierA]);
   assert.equal(after.status, before.status);
 });
-await test('corbeille dossier : super admin AAL2 uniquement, même par UPDATE direct', async () => {
+await test('corbeille dossier : un tiers non super admin ne peut rien, le super admin AAL2 peut tout', async () => {
   const cible = await insertDossier(B, { title: 'corbeille-exclusive' });
-  // Le client propriétaire ne peut pas se mettre lui-même à la corbeille.
-  await asUser(B);
+  // Un autre client ne peut pas mettre le dossier de B à la corbeille.
+  await asUser(A);
   await q(`update public.dossiers set deleted_at = now() where id = $1`, [cible]);
   await asSuperuser();
   assert.equal((await q('select deleted_at from public.dossiers where id = $1', [cible]))[0].deleted_at, null);
@@ -807,6 +810,73 @@ await test('Storage : effacement d\'un fichier réservé au super admin AAL2 (ch
   await asSuperuser();
   assert.equal((await q('select id from storage.objects where name = $1', [`${B}/purge/ancien.pdf`])).length, 0);
   assert.equal((await q('select id from storage.objects where name = $1', [`${B}/${cible13}/piece.pdf`])).length, 1, 'la corbeille n\'a jamais touché aux fichiers');
+});
+
+// ── Corbeille client (migration 20260919120000) ─────────────────────────────
+const C = await newUser('c@test.fr');
+const etatC = async (id) => {
+  await asSuperuser();
+  return (await q('select user_id, deleted_at, deleted_by, delete_reason from public.dossiers where id = $1', [id]))[0];
+};
+await test('client : met SON dossier à la corbeille — date et auteur imposés par la base', async () => {
+  const cible = await insertDossier(C, { title: 'corbeille-client' });
+  await asUser(C);
+  await q(`update public.dossiers set deleted_at = '2000-01-01', deleted_by = $2, delete_reason = $3, user_id = $2 where id = $1`, [cible, A, 'x'.repeat(400)]);
+  const d = await etatC(cible);
+  assert.notEqual(d.deleted_at, null);
+  assert.ok(new Date(d.deleted_at).getFullYear() >= 2026, 'date forcée à now()');
+  assert.equal(d.deleted_by, C, 'auteur forcé au propriétaire');
+  assert.equal(d.user_id, C, 'propriétaire inchangé');
+  assert.equal(d.delete_reason.length, 300);
+});
+await test('client : restaure ce qu\'il a supprimé, sans consommation ni notification, audit « client »', async () => {
+  const cible = await insertDossier(C, { title: 'corbeille-client-restauree' });
+  await asSuperuser();
+  const notifs = (await q('select id from public.admin_notifications where dossier_id = $1', [cible])).length;
+  const conso = (await q('select id from public.dossier_submissions where dossier_id = $1', [cible])).length;
+  await asUser(C);
+  await q('update public.dossiers set deleted_at = now() where id = $1', [cible]);
+  await q('update public.dossiers set deleted_at = null where id = $1', [cible]);
+  const d = await etatC(cible);
+  assert.equal(d.deleted_at, null);
+  assert.equal(d.deleted_by, null);
+  assert.equal((await q('select id from public.admin_notifications where dossier_id = $1', [cible])).length, notifs);
+  assert.equal((await q('select id from public.dossier_submissions where dossier_id = $1', [cible])).length, conso, 'aucun recrédit, aucune double consommation');
+  const logs = await q(`select action, actor_role from public.audit_logs where resource_id = $1 order by created_at`, [cible]);
+  assert.deepEqual(logs.map((l) => `${l.action}:${l.actor_role}`), ['dossier_corbeille:client', 'dossier_restaure:client']);
+});
+await test('client A : ni corbeille ni restauration sur le dossier de C (IDOR), même en AAL2', async () => {
+  const cible = await insertDossier(C, { title: 'idor-corbeille' });
+  for (const aal of ['aal1', 'aal2']) {
+    await asUser(A, aal);
+    await q('update public.dossiers set deleted_at = now(), deleted_by = $2 where id = $1', [cible, A]);
+    assert.equal((await etatC(cible)).deleted_at, null);
+  }
+  await asUser(C);
+  await q('update public.dossiers set deleted_at = now() where id = $1', [cible]);
+  await asUser(A, 'aal2');
+  await q('update public.dossiers set deleted_at = null where id = $1', [cible]);
+  assert.notEqual((await etatC(cible)).deleted_at, null, 'A ne restaure pas le dossier de C');
+  await asUser(A);
+  assert.equal((await q('select id from public.dossiers where id = $1', [cible])).length, 0, 'A ne voit pas la corbeille de C');
+});
+await test('client : un dossier mis à la corbeille par l\'administration reste sous son contrôle', async () => {
+  const cible = await insertDossier(C, { title: 'corbeille-admin' });
+  await asUser(ADMIN, 'aal2');
+  await q(`update public.dossiers set deleted_at = now(), deleted_by = $2, delete_reason = 'moderation' where id = $1`, [cible, ADMIN]);
+  await asUser(C);
+  await q('update public.dossiers set deleted_at = null where id = $1', [cible]);
+  const d = await etatC(cible);
+  assert.notEqual(d.deleted_at, null);
+  assert.equal(d.deleted_by, ADMIN);
+  await asUser(C);
+  assert.equal((await q('select id from public.dossiers where id = $1 and deleted_at is not null', [cible])).length, 1, 'visible dans SA corbeille');
+});
+await test('sonde client_trash_enabled : authentifié oui, anonyme refusé', async () => {
+  await asUser(A);
+  assert.equal((await q('select public.client_trash_enabled() as ok'))[0].ok, true);
+  await asAnon();
+  await rejects(q('select public.client_trash_enabled()'), /permission denied/);
 });
 
 console.log(`\n${passed} réussis, ${failed} échoués`);
