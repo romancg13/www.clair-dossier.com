@@ -20,12 +20,14 @@
 
 import Stripe from 'stripe';
 import { LB13, applyLb13, collectLb13State, couponIdOf, planLb13 } from './lib/lb13.mjs';
+import { stripeKey } from './lib/credentials.mjs';
 
 const args = new Set(process.argv.slice(2));
 const APPLY = args.has('--apply');
-const KEY = process.env.STRIPE_SECRET_KEY;
+const found = stripeKey(args.has('--test') ? 'test' : 'live');
+const KEY = found?.key;
 if (!KEY || !/^(sk|rk)_(test|live)_/.test(KEY)) {
-  console.error('\n❌ STRIPE_SECRET_KEY absente ou invalide (attendu sk_/rk_ test|live). export STRIPE_SECRET_KEY=… puis relance.\n');
+  console.error('\n❌ Aucune clé Stripe : `stripe login` (session réutilisée) ou export STRIPE_SECRET_KEY=… puis relance.\n');
   process.exit(1);
 }
 const mode = KEY.includes('_live_') ? 'live' : 'test';
@@ -60,7 +62,7 @@ async function main() {
   } catch {
     /* clé restreinte sans lecture du compte : le mode suffit au diagnostic */
   }
-  console.log(`\nCompte Stripe : ${account}`);
+  console.log(`\nCompte Stripe : ${account} · clé : ${found.source}`);
   console.log(`Mode : ${mode === 'live' ? '🔴 LIVE' : '🟢 TEST'} · échéance ${LB13.deadlineIso} (timestamp ${LB13.deadlineTs}) · ${APPLY ? 'APPLICATION' : 'DIAGNOSTIC (lecture seule)'}\n`);
 
   const state = await collectLb13State(stripe, { now, mode });

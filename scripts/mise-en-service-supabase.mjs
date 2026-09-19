@@ -29,6 +29,7 @@
  * GET /v1/projects/{ref}/functions · GET/POST /v1/projects/{ref}/secrets
  */
 
+import { supabaseToken } from './lib/credentials.mjs';
 import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -47,10 +48,11 @@ const APPLY = process.argv.includes('--apply');
 const DEPLOY_FUNCTIONS = process.argv.includes('--deploy-functions');
 const SECRETS = process.argv.includes('--secrets');
 
-const TOKEN = process.env.SUPABASE_ACCESS_TOKEN ?? '';
+const TOKEN = supabaseToken()?.token ?? '';
 if (!TOKEN) {
   console.error(
     'SUPABASE_ACCESS_TOKEN absent.\n' +
+      '  0. le plus simple : `supabase login` (session réutilisée automatiquement), sinon :\n' +
       '  1. https://supabase.com/dashboard/account/tokens → « Generate new token »\n' +
       '  2. export SUPABASE_ACCESS_TOKEN=sbp_…   (dans CE terminal, jamais dans un fichier du dépôt)\n' +
       '  3. relancer ce script.',
@@ -122,6 +124,10 @@ const MARKERS = {
   '20260916120000_mobile_push_tokens.sql': "select to_regclass('public.push_tokens')",
   '20260917120000_automatisation_quotas.sql': "select to_regclass('public.plan_entitlements')",
   '20260918100000_admin_aal2_suppression_exclusive.sql': "select to_regprocedure('public.admin_aal2()')",
+  '20260918120000_audit_corbeille_serveur.sql':
+    "select exists (select 1 from pg_trigger where tgname = 'dossiers_audit_corbeille')",
+  '20260918130000_prospects_partenariat.sql':
+    "select exists (select 1 from information_schema.columns where table_schema='public' and table_name='prospects' and column_name='partner_type')",
 };
 // Socle qui DOIT déjà exister (sinon : mauvais projet → arrêt).
 const SOCLE = [
@@ -280,10 +286,12 @@ async function stepFunctions() {
     return;
   }
   for (const slug of new Set(['notify-lead', ...toDeploy])) {
-    const args = ['-y', 'supabase@latest', 'functions', 'deploy', slug, '--project-ref', REF];
+    // --use-api : empaquetage côté Supabase, sans Docker local.
+    const cli = process.env.SUPABASE_BIN ? [process.env.SUPABASE_BIN, []] : ['npx', ['-y', 'supabase@latest']];
+    const args = [...cli[1], 'functions', 'deploy', slug, '--project-ref', REF, '--use-api'];
     if (slug === 'stripe-webhook') args.push('--no-verify-jwt'); // signature Stripe vérifiée DANS la fonction
-    console.log(`  → npx supabase functions deploy ${slug}${slug === 'stripe-webhook' ? ' --no-verify-jwt' : ''}`);
-    const r = spawnSync('npx', args, {
+    console.log(`  → supabase functions deploy ${slug} --use-api${slug === 'stripe-webhook' ? ' --no-verify-jwt' : ''}`);
+    const r = spawnSync(cli[0], args, {
       cwd: join(here, '..'),
       stdio: 'inherit',
       env: { ...process.env, SUPABASE_ACCESS_TOKEN: TOKEN },
