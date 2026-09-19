@@ -52,6 +52,7 @@ type DossierRow = {
   status: string;
   created_at: string;
   deleted_at?: string | null;
+  deleted_by?: string | null;
   delete_reason?: string | null;
 };
 
@@ -409,7 +410,7 @@ export function AdminConsole() {
     extras: boolean,
     guard: (fn: () => void) => void = (fn) => fn(),
   ) {
-    const dossierCols = `id,user_id,typology,title,status,created_at${trash ? ",deleted_at,delete_reason" : ""}`;
+    const dossierCols = `id,user_id,typology,title,status,created_at${trash ? ",deleted_at,deleted_by,delete_reason" : ""}`;
     const docCols = `id,dossier_id,user_id,file_name,file_path,kind,size_bytes,created_at${extras ? ",category,deleted_at" : ""}`;
     const [p, em, d, dc, au, no] = await Promise.all([
       supabase.from("profiles").select("id,full_name,company_name,company_type,phone,created_at"),
@@ -464,7 +465,12 @@ export function AdminConsole() {
   }
 
   const activeDossiers = dossiers.filter((d) => !d.deleted_at);
-  const trashedDossiers = dossiers.filter((d) => Boolean(d.deleted_at));
+  const [trashFilter, setTrashFilter] = useState("");
+  const trashedDossiers = dossiers.filter((d) => {
+    if (!d.deleted_at) return false;
+    const q = trashFilter.trim().toLowerCase();
+    return !q || [emails[d.user_id], d.title, d.typology].filter(Boolean).some((v) => String(v).toLowerCase().includes(q));
+  });
   const activeDocs = docs.filter((d) => !d.deleted_at);
   const trashedDocs = docs.filter((d) => Boolean(d.deleted_at));
   const storageBytes = activeDocs.reduce((s, d) => s + (d.size_bytes ?? 0), 0);
@@ -1070,9 +1076,19 @@ export function AdminConsole() {
                   )}
                   {caps.trash && (
                     <Card>
-                      <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">
-                        Dossiers ({trashedDossiers.length})
-                      </p>
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">
+                          Dossiers ({trashedDossiers.length})
+                        </p>
+                        <input
+                          type="search"
+                          value={trashFilter}
+                          onChange={(e) => setTrashFilter(e.target.value)}
+                          placeholder="Filtrer : client ou titre"
+                          aria-label="Filtrer la corbeille par client ou titre"
+                          className="min-h-[40px] rounded-lg border hairline bg-white px-3 text-sm text-navy-900 focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/20"
+                        />
+                      </div>
                       <ul className="mt-3 space-y-2">
                         {trashedDossiers.length === 0 && (
                           <li className="text-sm text-slate-500">Aucun dossier dans la corbeille.</li>
@@ -1083,6 +1099,7 @@ export function AdminConsole() {
                               <p className="truncate text-navy-900">{d.title || d.typology}</p>
                               <p className="mt-0.5 font-mono text-[0.62rem] text-slate-500">
                                 {emails[d.user_id] ?? "—"} · supprimé le {d.deleted_at ? fmt(d.deleted_at) : "—"}
+                                {d.deleted_by ? (d.deleted_by === d.user_id ? " par le client" : " par l'administration") : ""}
                                 {d.delete_reason ? ` · ${d.delete_reason}` : ""}
                               </p>
                             </div>

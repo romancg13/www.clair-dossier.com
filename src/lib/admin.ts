@@ -204,6 +204,19 @@ export function trashMenuState(r: TrashRights): TrashMenuState {
   return { kind: 'enabled' };
 }
 
+/**
+ * Corbeille du propriétaire (migration 20260919120000) : la base impose date et
+ * auteur ; sans la migration, la sonde est absente et le menu client reste masqué.
+ */
+export async function clientTrashEnabled(): Promise<boolean> {
+  try {
+    const { data, error } = await (await client()).rpc('client_trash_enabled');
+    return !error && data === true;
+  } catch {
+    return false;
+  }
+}
+
 /** Fonction RPC absente du schéma (migration non appliquée) ? */
 export function isMissingFunction(error: { code?: string; message?: string } | null | undefined): boolean {
   if (!error) return false;

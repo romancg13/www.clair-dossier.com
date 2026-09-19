@@ -131,3 +131,9 @@ Statuts : VÉRIFIÉ EN PRODUCTION / TESTÉ HORS PRODUCTION / NON TESTÉ / BLOQU�
 - **SEO** : sitemap (routes publiques, lastmod réels — checkout complet en CI), canonical, 404 noindex, redirections d'anciens slugs. Search Console : NON VÉRIFIÉ (aucun accès).
 - **Références visuelles** : aucune ligne de code externe intégrée (animations originales SVG/CSS sur le moteur existant) → aucune obligation de licence. Movento : non utilisé.
 - **HawkScan** : non exécutable (ni CLI `hawk` ni HAWK_API_KEY).
+
+## Vue admin + corbeille client/admin (2026-09-19)
+- **Données clients** : aucune perte possible — `dossiers.deleted_at` n'existe pas en production (sonde REST : 42703), donc aucun dossier n'a pu être mis en corbeille, et aucune migration n'a été appliquée. Comptage direct par client : À FAIRE dès l'accès Supabase (requête en lecture seule via le script de mise en service).
+- **Cause de la vue admin réduite** : `/compte` n'affiche les dossiers des clients qu'en session AAL2 (PR #33) ; or le TOTP n'est pas activé sur le projet Supabase (422 `mfa_totp_enroll_not_enabled`) → l'admin ne peut pas atteindre l'AAL2. Correctif : activer le TOTP (fait par le script) puis enrôler l'application d'authentification dans /admin (QR, action personnelle).
+- **Nouvelle migration** `20260919120000_corbeille_client.sql` (additive) : le propriétaire met SON dossier à la corbeille (date et auteur imposés par la base) et restaure ce qu'il a supprimé ; dossier retiré par l'administration = restauration admin seulement ; audit « client ». TESTÉ HORS PRODUCTION : 64/64 tests SQL (A/B, IDOR AAL1/AAL2, quota inchangé, aucune notification, audit).
+- **ACTION UNIQUE** : panneau Terminal → valider l'invite « OpenRouter API key » (Entrée) → `npx -y supabase login`. Ensuite (automatique) : `node scripts/mise-en-service-supabase.mjs --apply --deploy-functions` (TOTP, migrations 20260829 → 20260919120000 dans l'ordre, fonctions).
