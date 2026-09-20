@@ -123,7 +123,7 @@ const cgv: LegalPage = {
   title: "Conditions générales de vente",
   metaDescription:
     "Conditions générales de vente du service ClairDossier — souscription, tarifs, durée, résiliation, responsabilité, propriété intellectuelle.",
-  lastUpdate: "2026-09-18",
+  lastUpdate: "2026-09-20",
   intro:
     "Les présentes conditions générales de vente (« CGV ») régissent l'accès au service ClairDossier et son utilisation par tout client souscrivant à une offre. La création de compte est gratuite ; seul l'abonnement est payant. Toute souscription emporte acceptation pleine et entière des présentes CGV.",
   sections: [
@@ -238,20 +238,6 @@ const cgv: LegalPage = {
         {
           type: "p",
           text: "Les présentes CGV sont régies par le droit français. En cas de litige relatif à leur interprétation ou à leur exécution, et à défaut de résolution amiable, la juridiction compétente est déterminée selon les règles de droit commun. Entre commerçants, compétence est attribuée aux juridictions du ressort du siège de l'Éditeur, à Marseille.",
-        },
-      ],
-    },
-    {
-      id: "offres-promotionnelles",
-      title: "Article 10 — Offres promotionnelles (article descriptif)",
-      blocks: [
-        {
-          type: "p",
-          text: "Article descriptif ajouté le 18 septembre 2026 : il présente les conditions des offres promotionnelles et ne modifie aucune autre stipulation des présentes CGV.",
-        },
-        {
-          type: "p",
-          text: "Code LB13 : −20 % sur les 4 premières mensualités d'une formule mensuelle souscrite avec le code saisi avant le 21 septembre 2026 à 00 h (heure de Paris) ; tarif en vigueur ensuite ; hors formules annuelles et sur-mesure ; non cumulable avec une autre réduction ; sans effet sur les quotas et fonctionnalités de la formule.",
         },
       ],
     },
@@ -410,7 +396,7 @@ const cookies: LegalPage = {
   title: "Cookies",
   metaDescription:
     "Politique cookies ClairDossier — cookies techniques uniquement, aucun cookie de mesure d'audience ou marketing tiers.",
-  lastUpdate: "2026-09-15",
+  lastUpdate: "2026-09-20",
   intro:
     "Le site clair-dossier.com utilise un nombre minimal de cookies, strictement nécessaires au fonctionnement du service. Aucun cookie marketing, publicitaire ou de mesure d'audience tierce n'est déposé sans votre consentement explicite.",
   sections: [
@@ -436,7 +422,6 @@ const cookies: LegalPage = {
           type: "list",
           items: [
             "clairdossier-auth (stockage local du navigateur) — maintient votre session authentifiée. Conservé jusqu'à déconnexion ou expiration de la session.",
-            "Mémorisation de la fermeture du bandeau promotionnel (stockage local) — évite de réafficher un bandeau que vous avez fermé.",
             "Brouillon de formulaire de création de dossier (stockage local) — évite de perdre votre saisie en cas de rechargement ; supprimé après envoi.",
           ],
         },

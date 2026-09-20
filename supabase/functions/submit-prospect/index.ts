@@ -261,7 +261,7 @@ Deno.serve(async (req) => {
       <h2 style="font-size:18px;margin:0 0 12px">Nouvelle demande de partenariat</h2>
       <p style="margin:4px 0">Type : ${escapeHtml(PARTNER_TYPE_LABELS[prospect.partner_type ?? 'autre'])} · structure renseignée : ${prospect.organization ? 'oui' : 'non'} · site indiqué : ${prospect.site_url ? 'oui' : 'non'}</p>
       ${qual.human_flags.length ? `<p style="margin:4px 0">Signaux : ${qual.human_flags.map(escapeHtml).join(', ')}</p>` : ''}
-      <p style="margin:4px 0;color:#64748b">Référence : ${ref}… — détail dans la console d'administration (section Demandes, session MFA).</p>
+      <p style="margin:4px 0;color:#64748b">Référence : ${ref}… — détail dans la console d'administration (section Demandes).</p>
       <p style="margin:16px 0 4px"><a href="${SITE}/admin" style="color:#0d1b3d;font-weight:600">Ouvrir l’espace administrateur →</a></p>
       <p style="margin-top:16px;font-size:12px;color:#64748b">Notification automatique — aucune donnée nominative dans cet e-mail. Aucun message n'a été envoyé au demandeur.</p>
     </div>`;

@@ -2,7 +2,7 @@
 /**
  * Mise en service Supabase PRODUCTION — ClairDossier (projet buzgokfmxpmyceppvjpp).
  *
- * Réduit toute la procédure TODO_ADMIN (TOTP, migrations, modèle OTP, redirections,
+ * Réduit toute la procédure TODO_ADMIN (migrations, modèle OTP, redirections,
  * fonctions, secrets, vérifications) à UNE intervention humaine :
  *
  *   1. Créer un jeton d'accès personnel : https://supabase.com/dashboard/account/tokens
@@ -129,6 +129,7 @@ const MARKERS = {
   '20260918130000_prospects_partenariat.sql':
     "select exists (select 1 from information_schema.columns where table_schema='public' and table_name='prospects' and column_name='partner_type')",
   '20260919120000_corbeille_client.sql': "select to_regprocedure('public.client_trash_enabled()')",
+  '20260920120000_admin_sans_mfa.sql': "select to_regprocedure('public.admin_delete_enabled()')",
 };
 // Socle qui DOIT déjà exister (sinon : mauvais projet → arrêt).
 const SOCLE = [
@@ -147,14 +148,11 @@ const OTP_TEMPLATE = `<h2>Confirmez votre inscription ClairDossier</h2>
 const ALLOW_URLS = [`${SITE}/**`, 'https://clair-dossier.com/**'];
 
 async function stepAuthConfig() {
-  console.log('\n── 1. Configuration Auth (TOTP, modèle OTP, redirections) ──');
+  console.log('\n── 1. Configuration Auth (modèle OTP, redirections) ──');
   let cfg = await api('/config/auth');
-  const totpBefore = { enroll: cfg.mfa_totp_enroll_enabled, verify: cfg.mfa_totp_verify_enabled };
-  console.log(`  TOTP : enrollment=${totpBefore.enroll} · verify=${totpBefore.verify}`);
+  // TOTP : plus exigé par la console (migration 20260920120000) — jamais modifié ici.
 
   const patch = {};
-  if (!cfg.mfa_totp_enroll_enabled) patch.mfa_totp_enroll_enabled = true;
-  if (!cfg.mfa_totp_verify_enabled) patch.mfa_totp_verify_enabled = true;
 
   const template = cfg.mailer_templates_confirmation_content ?? '';
   if (template.includes('{{ .Token }}')) {
@@ -191,11 +189,6 @@ async function stepAuthConfig() {
   }
   await api('/config/auth', { method: 'PATCH', body: patch });
   cfg = await api('/config/auth'); // relecture = preuve
-  if (cfg.mfa_totp_enroll_enabled && cfg.mfa_totp_verify_enabled) {
-    ok('TOTP activé et RELU : enrollment=true · verify=true.');
-  } else {
-    ko(`TOTP incomplet après PATCH : enroll=${cfg.mfa_totp_enroll_enabled} verify=${cfg.mfa_totp_verify_enabled}`);
-  }
   if ((cfg.mailer_templates_confirmation_content ?? '').includes('{{ .Token }}')) ok('Modèle OTP relu : {{ .Token }} présent.');
   if (ALLOW_URLS.every((u) => (cfg.uri_allow_list ?? '').includes(u))) ok('Redirect URLs relues.');
 }
@@ -381,11 +374,10 @@ Reste à faire À LA MAIN (non pilotable par l'API) :
   1. Dashboard STRIPE → Webhooks → endpoint ${SUPABASE_URL}/functions/v1/stripe-webhook
      (événements : checkout.session.completed, customer.subscription.*, invoice.paid,
       invoice.payment_failed) → copier whsec_… → relancer ce script avec --apply --secrets ;
-  2. Enrôlement TOTP PERSONNEL : ${SITE}/admin → scanner le QR → code à 6 chiffres ;
-  3. Abonnés existants : node --import tsx scripts/sync-stripe-subscriptions.ts (simulation) puis --apply ;
-  4. GitHub → Settings → Variables → VITE_STRIPE_PORTAL_URL (portail client Stripe) ;
-  5. Stripe → Paramètres → E-mails clients : activer reçus/factures ;
-  6. Test réel : valider un dossier de test → notification visible dans /admin → e-mail reçu.`);
+  2. Abonnés existants : node --import tsx scripts/sync-stripe-subscriptions.ts (simulation) puis --apply ;
+  3. GitHub → Settings → Variables → VITE_STRIPE_PORTAL_URL (portail client Stripe) ;
+  4. Stripe → Paramètres → E-mails clients : activer reçus/factures ;
+  5. Test réel : valider un dossier de test → notification visible dans /admin → e-mail reçu.`);
 }
 
 console.log(`Mise en service Supabase — projet ${REF} ${APPLY ? '— MODE APPLICATION' : '— SIMULATION (aucune modification)'}`);

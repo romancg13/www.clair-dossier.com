@@ -128,38 +128,15 @@ export async function fetchAdminEntitlements(): Promise<AdminEntitlementRow[] | 
   }
 }
 
-/**
- * Authentification RÉCENTE avant une action irréversible : le facteur TOTP
- * doit avoir été vérifié dans les `maxAgeMinutes` dernières minutes, sinon un
- * nouveau code est demandé. La base exige en plus une session AAL2.
- */
-export async function requireRecentMfa(maxAgeMinutes = 10): Promise<boolean> {
-  const sb = await client();
-  const { data: aal } = await sb.auth.mfa.getAuthenticatorAssuranceLevel();
-  const methods = (aal?.currentAuthenticationMethods ?? []) as Array<string | { method: string; timestamp: number }>;
-  const totp = methods.find((m): m is { method: string; timestamp: number } => typeof m === 'object' && m.method === 'totp');
-  if (aal?.currentLevel === 'aal2' && totp && Date.now() / 1000 - totp.timestamp < maxAgeMinutes * 60) {
-    return true;
-  }
-  const { data: factors } = await sb.auth.mfa.listFactors();
-  const factor = factors?.totp.find((f) => f.status === 'verified');
-  if (!factor) return false;
-  const code = window.prompt('Action sensible : saisissez un nouveau code à 6 chiffres de votre application d’authentification.');
-  if (!code || !/^[0-9]{6}$/.test(code.trim())) return false;
-  const { data: challenge, error: cErr } = await sb.auth.mfa.challenge({ factorId: factor.id });
-  if (cErr || !challenge) return false;
-  const { error: vErr } = await sb.auth.mfa.verify({ factorId: factor.id, challengeId: challenge.id, code: code.trim() });
-  return !vErr;
-}
-
 /* ── Suppression directe depuis « Vos dossiers » (vue admin, chantier 13) ──
  * Même mécanisme que la console : mise à la CORBEILLE (soft delete) par
- * UPDATE de deleted_at, que la base réserve au super admin en AAL2
- * (dossiers_guard, migration 20260918100000). Rien n'est purgé : pièces,
- * échéances, registre de quota et restauration (console) sont conservés.
+ * UPDATE de deleted_at, que la base réserve au super admin (dossiers_guard ;
+ * rôle lu dans app_admins, aucune vérification en deux étapes depuis la
+ * migration 20260920120000). Rien n'est purgé : pièces, échéances, registre de
+ * quota et restauration (console) sont conservés.
  * Les fonctions pures ci-dessous sont testées (tests/admin-delete.test.ts). */
 
-/** Réponse de la sonde serveur super_admin_aal2() pour l'appelant courant. */
+/** Réponse de la sonde serveur admin_delete_enabled() pour l'appelant courant. */
 export type ServerTrashCheck = 'oui' | 'non' | 'absente' | 'inconnue';
 
 export type TrashRights = {
@@ -167,11 +144,9 @@ export type TrashRights = {
   isAdmin: boolean;
   /** is_super_admin() (repli is_admin() si la migration manque) ; null = inconnu. */
   superAdmin: boolean | null;
-  /** Session vérifiée côté navigateur (niveau AAL2 du jeton). */
-  aal2: boolean;
   /** Colonne deleted_at présente (sonde hasDossierTrash). */
   trashColumn: boolean;
-  /** Confirmation serveur : super admin ET AAL2 d'après le jeton reçu par la base. */
+  /** Confirmation serveur : l'appelant peut supprimer n'importe quel dossier. */
   server: ServerTrashCheck;
 };
 
@@ -182,24 +157,22 @@ export type TrashMenuState =
 
 export const TRASH_REASONS = {
   support: 'Réservé au super administrateur.',
-  migration: 'Corbeille indisponible : migration à appliquer.',
-  mfa: "Vérification en deux étapes requise : ouvrez la console d'administration.",
+  unavailable: 'Suppression pas encore activée sur le serveur (mise à jour de la base en attente).',
   network: 'Droits non vérifiables (réseau) : actualisez la page.',
-  unconfirmed: 'Droits non confirmés par le serveur : reconnectez-vous à la console.',
+  unconfirmed: 'Droits non confirmés par le serveur : actualisez la page.',
 } as const;
 
 /**
  * Menu « … » d'une carte dossier : masqué pour un client ; pour un admin,
- * actif UNIQUEMENT si super admin + session AAL2 + corbeille disponible +
- * confirmation serveur, sinon désactivé avec la raison lisible.
+ * actif UNIQUEMENT si super admin + corbeille disponible + confirmation
+ * serveur, sinon désactivé avec la raison lisible.
  */
 export function trashMenuState(r: TrashRights): TrashMenuState {
   if (!r.isAdmin) return { kind: 'hidden' };
   // Réseau d'abord : une sonde en échec ne doit pas afficher une fausse raison.
   if (r.server === 'inconnue') return { kind: 'disabled', reason: TRASH_REASONS.network };
   if (r.superAdmin === false) return { kind: 'disabled', reason: TRASH_REASONS.support };
-  if (!r.trashColumn || r.server === 'absente') return { kind: 'disabled', reason: TRASH_REASONS.migration };
-  if (!r.aal2) return { kind: 'disabled', reason: TRASH_REASONS.mfa };
+  if (!r.trashColumn || r.server === 'absente') return { kind: 'disabled', reason: TRASH_REASONS.unavailable };
   if (r.server !== 'oui' || r.superAdmin !== true) return { kind: 'disabled', reason: TRASH_REASONS.unconfirmed };
   return { kind: 'enabled' };
 }
@@ -225,12 +198,12 @@ export function isMissingFunction(error: { code?: string; message?: string } | n
 }
 
 /**
- * Sonde serveur NON mise en cache : la session peut passer d'AAL1 à AAL2
- * (console) sans rechargement. Ne renvoie qu'un booléen pour l'appelant.
+ * Sonde serveur NON mise en cache (migration 20260920120000) : ne renvoie qu'un
+ * booléen pour l'appelant. « absente » = la migration n'est pas encore appliquée.
  */
-export async function checkSuperAdminAal2(): Promise<ServerTrashCheck> {
+export async function checkAdminDeleteEnabled(): Promise<ServerTrashCheck> {
   try {
-    const { data, error } = await (await client()).rpc('super_admin_aal2');
+    const { data, error } = await (await client()).rpc('admin_delete_enabled');
     if (!error) return data === true ? 'oui' : 'non';
     return isMissingFunction(error) ? 'absente' : 'inconnue';
   } catch {
@@ -273,7 +246,7 @@ export type TrashOutcome = { ok: true; deletedAt: string } | { ok: false; error:
 
 export const TRASH_ERRORS = {
   refused:
-    "Mise à la corbeille refusée par le serveur : rien n'a été modifié. Votre session vérifiée a peut-être expiré — reconnectez-vous à la console puis réessayez.",
+    "Suppression refusée par le serveur : rien n'a été modifié. Votre session a peut-être expiré — reconnectez-vous puis réessayez.",
   network: "Le serveur n'a pas répondu : rien n'a été confirmé. Vérifiez votre connexion puis réessayez.",
   notPersisted: "La base n'a pas confirmé la mise à la corbeille : le dossier reste en place. Actualisez la page.",
 } as const;
@@ -286,8 +259,8 @@ function isNetworkError(error: unknown): boolean {
 /**
  * Écriture puis relecture serveur. Succès UNIQUEMENT si la réponse
  * d'écriture porte un deleted_at renseigné (un refus RLS renvoie 0 ligne
- * sans erreur ; le déclencheur remet deleted_at à null hors super admin
- * AAL2) et si une relecture distincte ne le contredit pas.
+ * sans erreur ; le déclencheur remet deleted_at à null hors propriétaire et
+ * super admin) et si une relecture distincte ne le contredit pas.
  */
 export async function trashWithServerCheck(api: {
   update: () => Promise<{ rows: { deleted_at: string | null }[] | null; error: unknown }>;

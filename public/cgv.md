@@ -1,13 +1,13 @@
 ---
 title: "Conditions générales de vente"
 description: "Conditions générales de vente du service ClairDossier — souscription, tarifs, durée, résiliation, responsabilité, propriété intellectuelle."
-lastUpdate: 2026-09-18
+lastUpdate: 2026-09-20
 url: https://www.clair-dossier.com/cgv
 ---
 
 # Conditions générales de vente
 
-*Dernière mise à jour : 18 septembre 2026*
+*Dernière mise à jour : 20 septembre 2026*
 
 Les présentes conditions générales de vente (« CGV ») régissent l'accès au service ClairDossier et son utilisation par tout client souscrivant à une offre. La création de compte est gratuite ; seul l'abonnement est payant. Toute souscription emporte acceptation pleine et entière des présentes CGV.
 
@@ -58,12 +58,6 @@ ClairDossier ne saurait être tenue responsable des décisions prises par le Cli
 ## Article 9 — Droit applicable et juridiction
 
 Les présentes CGV sont régies par le droit français. En cas de litige relatif à leur interprétation ou à leur exécution, et à défaut de résolution amiable, la juridiction compétente est déterminée selon les règles de droit commun. Entre commerçants, compétence est attribuée aux juridictions du ressort du siège de l'Éditeur, à Marseille.
-
-## Article 10 — Offres promotionnelles (article descriptif)
-
-Article descriptif ajouté le 18 septembre 2026 : il présente les conditions des offres promotionnelles et ne modifie aucune autre stipulation des présentes CGV.
-
-Code LB13 : −20 % sur les 4 premières mensualités d'une formule mensuelle souscrite avec le code saisi avant le 21 septembre 2026 à 00 h (heure de Paris) ; tarif en vigueur ensuite ; hors formules annuelles et sur-mesure ; non cumulable avec une autre réduction ; sans effet sur les quotas et fonctionnalités de la formule.
 
 
 ---

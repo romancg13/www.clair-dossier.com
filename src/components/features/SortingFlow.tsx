@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type AnimationEvent, type CSSProperties } 
 import { useReducedMotion } from 'motion/react';
 
 /**
- * SortingFlow — animation explicative de /fonctionnalites (LB13 · chantier 12).
+ * SortingFlow — animation explicative de /fonctionnalites (chantier 12).
  *
  * Des documents ABSTRAITS (formes génériques, aucune donnée réelle) arrivent
  * dispersés, sont rangés par catégorie, puis réunis dans un dossier organisé.

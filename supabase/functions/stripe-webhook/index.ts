@@ -25,7 +25,6 @@ import {
   isUuid,
   paymentEmailMatchesAccount,
   planIdFromSubscription,
-  lb13DiscountOutsideMonthly,
   subscriptionIdFromInvoice,
   subscriptionRow,
   type StripeLikeSubscription,
@@ -49,7 +48,7 @@ function json(status: number, body: Record<string, unknown>): Response {
 
 async function retrieveSubscription(id: string): Promise<StripeLikeSubscription> {
   return (await stripe.subscriptions.retrieve(id, {
-    expand: ['items.data.price.product', 'discounts'],
+    expand: ['items.data.price.product'],
   })) as unknown as StripeLikeSubscription;
 }
 
@@ -72,18 +71,6 @@ async function upsert(userId: string, sub: StripeLikeSubscription): Promise<void
     target_user_id: userId,
     metadata: { statut: sub.status, offre: row.plan_id ?? 'inconnue', fin_periode: row.current_period_end ?? '' },
   });
-  // Les droits viennent de l'offre (metadata.planId), jamais du montant remisé.
-  if (lb13DiscountOutsideMonthly(sub)) {
-    await admin.from('audit_logs').insert({
-      actor_id: userId,
-      actor_role: 'stripe_webhook',
-      action: 'lb13_hors_mensuel',
-      resource_type: 'abonnement',
-      resource_id: sub.id,
-      target_user_id: userId,
-      metadata: { offre: row.plan_id ?? 'inconnue', a_verifier: 'remise LB13 sur un abonnement non mensuel' },
-    });
-  }
 }
 
 /** Utilisateur déjà rattaché à cet abonnement (événements postérieurs au paiement). */

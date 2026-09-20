@@ -10,8 +10,8 @@ import { CATEGORIES, PLAN_LABELS, TYPOLOGY_LABELS, type PlanId } from "../../../
 
 /**
  * Console admin — automatisation (migration 20260917120000).
- * Chaque écriture est validée par la base (RLS, déclencheurs, RPC super
- * admin + AAL2) ; ces composants ne font que présenter et déclencher.
+ * Chaque écriture est validée par la base (RLS, déclencheurs, RPC réservées
+ * au super admin) ; ces composants ne font que présenter et déclencher.
  */
 
 const STATUS_LABELS: Record<string, string> = {
@@ -460,7 +460,7 @@ export function ClientEntitlementPanel({
       p_expires_at: null,
     });
     if (error) {
-      onError(error.message.includes("MFA_REQUIRED") ? "Vérification MFA requise." : "Modification refusée par le serveur.");
+      onError("Modification refusée par le serveur.");
       return;
     }
     onNotice("Quota mis à jour.");
@@ -478,7 +478,7 @@ export function ClientEntitlementPanel({
     }
     const res = await invokeAdminFunction("admin-users", { action, user_id: row.user_id, reason });
     if (!res.ok || res.error) {
-      onError("Action refusée (fonction serveur admin-users déployée ? session MFA ?).");
+      onError("Action refusée par le serveur (fonction admin-users non déployée, ou droits insuffisants).");
       return;
     }
     onNotice(action === "suspend" ? "Compte suspendu." : "Compte réactivé.");
@@ -524,7 +524,7 @@ export function ClientEntitlementPanel({
       })
       .eq("id", row.user_id);
     if (error) {
-      onError("Modification refusée (session MFA requise, ou téléphone invalide).");
+      onError("Modification refusée par le serveur (droits insuffisants, ou téléphone invalide).");
       return;
     }
     void logAudit("profil_client_modifie", "utilisateur", row.user_id, row.user_id);

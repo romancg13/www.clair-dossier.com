@@ -9,7 +9,7 @@
 //     service role), avec la ligne EXACTE produite par validate.ts + scoring.ts ;
 //   - listes fermées, URL http(s) seulement, cohérence partenariat, idempotence
 //     par identifiant de requête ;
-//   - l'admin ne lit qu'en AAL2, ne modifie que le statut, et chaque
+//   - seul l'admin (rôle serveur, sans MFA) lit ; il ne modifie que le statut, et chaque
 //     changement de statut est journalisé ;
 //   - la migration est rejouable, et sans effet si 20260829 est absente.
 //
@@ -322,16 +322,18 @@ await test('client connecté : 0 demande visible, aucune modification', async ()
   await rejects(q('select id from public.prospect_rate_limits'), /permission denied/);
 });
 
-console.log('Administration : AAL2, statut seul, journalisé');
-await test('admin en AAL1 : aucune demande visible, statut inchangé', async () => {
-  await asUser(ADMIN, 'aal1');
+// Depuis 20260920120000 : le rôle admin (app_admins) décide seul, quel que soit
+// le niveau de session. Les sessions admin sont ouvertes en aal1 (sans TOTP).
+console.log('Administration : rôle admin (sans MFA), statut seul, journalisé');
+await test('client en aal2 : toujours aucune demande, statut inchangé (le niveau de session ne donne aucun droit)', async () => {
+  await asUser(CLIENT, 'aal2');
   assert.equal((await q('select id from public.prospects')).length, 0);
   assert.equal((await q(`update public.prospects set statut = 'clos' where id = $1 returning id`, [partnerId])).length, 0);
   await asSuperuser();
   assert.equal((await q('select statut from public.prospects where id = $1', [partnerId]))[0].statut, 'nouveau');
 });
-await test('admin en AAL2 : lit les demandes, filtre par nature et statut', async () => {
-  await asUser(ADMIN, 'aal2');
+await test('admin en session normale : lit les demandes, filtre par nature et statut', async () => {
+  await asUser(ADMIN, 'aal1');
   const all = await q('select id from public.prospects');
   assert.ok(all.length >= 4);
   const partners = await q(
@@ -339,8 +341,8 @@ await test('admin en AAL2 : lit les demandes, filtre par nature et statut', asyn
   );
   assert.ok(partners.some((p) => p.id === partnerId && p.partner_type === 'prescripteur'));
 });
-await test('admin en AAL2 : change le statut → ajouté au journal (de → vers, auteur)', async () => {
-  await asUser(ADMIN, 'aal2');
+await test('admin : change le statut → ajouté au journal (de → vers, auteur)', async () => {
+  await asUser(ADMIN, 'aal1');
   const rows = await q(`update public.prospects set statut = 'contacte' where id = $1 returning id`, [partnerId]);
   assert.equal(rows.length, 1);
   await asSuperuser();
@@ -353,12 +355,12 @@ await test('admin en AAL2 : change le statut → ajouté au journal (de → vers
   assert.equal(last.actor, ADMIN);
   assert.equal(p.audit_log[0].action, 'creation', 'entrée de création conservée');
 });
-await test('admin en AAL2 : statut hors liste refusé', async () => {
-  await asUser(ADMIN, 'aal2');
+await test('admin : statut hors liste refusé', async () => {
+  await asUser(ADMIN, 'aal1');
   await rejects(q(`update public.prospects set statut = 'accepte' where id = $1`, [partnerId]), /prospects_statut_check/);
 });
-await test('admin en AAL2 : données déclarées et journal intangibles', async () => {
-  await asUser(ADMIN, 'aal2');
+await test('admin : données déclarées et journal intangibles', async () => {
+  await asUser(ADMIN, 'aal1');
   await rejects(q(`update public.prospects set message = 'réécrit' where id = $1`, [partnerId]), /permission denied/);
   await rejects(q(`update public.prospects set partner_type = 'autre' where id = $1`, [partnerId]), /permission denied/);
   await rejects(q(`update public.prospects set audit_log = '[]' where id = $1`, [partnerId]), /permission denied/);

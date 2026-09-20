@@ -2,7 +2,6 @@ import { useEffect, useRef } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { Nav } from "./Nav";
 import { Footer } from "./Footer";
-import { PromoBanner } from "./PromoBanner";
 
 export function Layout() {
   const location = useLocation();
@@ -27,7 +26,6 @@ export function Layout() {
       <a className="skip-nav" href="#main">
         Aller au contenu principal
       </a>
-      <PromoBanner />
       <Nav />
       <main
         id="main"

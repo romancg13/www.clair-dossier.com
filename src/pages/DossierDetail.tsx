@@ -989,8 +989,8 @@ export function DossierDetail() {
                             );
                             if (reason === null) return;
                             setActionError(null);
-                            // Champ re-lu : la corbeille est réservée au super admin en
-                            // session vérifiée (déclencheur + RLS) — jamais de faux succès.
+                            // Champ re-lu : la corbeille d'un dossier de tiers est réservée au
+                            // super admin (déclencheur + RLS) — jamais de faux succès.
                             const { data: rows, error } = await supabase
                               .from("dossiers")
                               .update({
@@ -1002,7 +1002,7 @@ export function DossierDetail() {
                               .select("id,deleted_at");
                             if (error || !(rows as { deleted_at: string | null }[] | null)?.[0]?.deleted_at) {
                               setActionError(
-                                "Mise à la corbeille refusée (réservée au super admin en session vérifiée).",
+                                "Mise à la corbeille refusée par le serveur (action réservée au super administrateur) : rien n'a été modifié.",
                               );
                               return;
                             }

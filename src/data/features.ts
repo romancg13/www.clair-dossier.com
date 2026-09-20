@@ -9,7 +9,7 @@ export type Feature = {
   hero: string;
   body: string[];
   bullets: string[];
-  /** Groupe d'usage (LB13 · chantier 12) — une fiche appartient à UN seul groupe. */
+  /** Groupe d'usage (chantier 12) — une fiche appartient à UN seul groupe. */
   group: FeatureGroupId;
   /** Bénéfice court, en une phrase (carte de /fonctionnalites et accueil). */
   benefit: string;
@@ -23,7 +23,7 @@ export type Feature = {
 };
 
 /**
- * Quatre groupes d'usage (LB13 · chantier 12) : ils remplacent la
+ * Quatre groupes d'usage (chantier 12) : ils remplacent la
  * présentation « neuf briques ». Chaque groupe ne décrit que ce qui est
  * réellement disponible (src/data/product-status.ts, DossierFlow,
  * DossierDetail, Account) — le produit ne lit pas les documents (CGV).
