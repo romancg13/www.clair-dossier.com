@@ -21,5 +21,7 @@ Disallow: /compte
 Disallow: /admin
 Disallow: /connexion
 Disallow: /inscription
+# Documents investisseurs : accessibles par lien direct, hors index public.
+Disallow: /investisseurs/
 
 Sitemap: https://www.clair-dossier.com/sitemap.xml
