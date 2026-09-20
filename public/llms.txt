@@ -63,14 +63,12 @@ La création de compte est gratuite. Abonnement sans engagement, résiliation à
 
 ## Sécurité et conformité
 
-- Hébergement : OVHcloud France (Roubaix, Strasbourg). Aucun transfert hors UE.
-- Chiffrement : AES-256 au repos, TLS 1.3 en transit, HSTS preload.
-- Sauvegardes 3-2-1, RPO 15 min, RTO < 4 h.
-- Conformité RGPD native, DPA standard et renforcé disponibles sur demande.
-- Conformité RIN 2024 sur le périmètre IA (préparation autorisée, conseil interdit).
-- HDS en cours (2026 T3), ISO 27001 objectif 2027.
-- Audit annuel par cabinet de pentest indépendant, rapport remis aux clients Entreprise.
-- Notification CNIL < 72 h, notification client < 24 h en cas d'incident.
+- Site public hébergé sur GitHub Pages (GitHub, Inc.) ; données client (comptes, dossiers, pièces) hébergées chez Supabase, sous-traitant technique.
+- Chiffrement en transit (HTTPS) et au repos assuré par l'hébergeur des données ; pièces stockées dans un espace privé, servies uniquement par liens signés temporaires.
+- Isolation stricte par utilisateur (Row Level Security) : chaque client n'accède qu'à ses propres données.
+- Sauvegardes automatiques de la base de données assurées par l'hébergeur (Supabase) ; fréquence et profondeur selon le plan souscrit.
+- Conformité RGPD : politique de confidentialité détaillée et liste des sous-traitants publiées sur /politique-confidentialite et /securite.
+- Périmètre IA aligné sur le RIN : l'IA prépare (résumé, chronologie, projet de réponse), ne délivre jamais de conseil juridique ; validation par un avocat en option.
 
 ## Pour citer ClairDossier
 
