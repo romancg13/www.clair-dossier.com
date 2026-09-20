@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { isGenericTitle } from '../lib/dossier-workspace';
 import {
+  checkAdminDeleteEnabled,
   checkSuperAdmin,
-  checkSuperAdminAal2,
   clientTrashEnabled,
   createSingleFlight,
   hasDossierTrash,
@@ -55,9 +55,6 @@ export function Account() {
   const [search, setSearch] = useState('');
   const [dossiers, setDossiers] = useState<DossierRow[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
-  // Session AAL2 (MFA vérifiée) : sans elle, la base ne renvoie AUCUNE donnée
-  // de tiers à l'admin — l'interface l'explique au lieu de faire semblant.
-  const [adminVerified, setAdminVerified] = useState(false);
   const [owners, setOwners] = useState<Record<string, string>>({});
   const [ownerProfiles, setOwnerProfiles] = useState<Record<string, ProfileRow>>({});
   const [menu, setMenu] = useState<TrashMenuState>({ kind: 'hidden' });
@@ -81,11 +78,6 @@ export function Account() {
       // Statut admin (renvoie un booléen pour l'appelant courant uniquement).
       const { data: adminFlag } = await supabase.rpc('is_admin');
       const admin = adminFlag === true;
-      let verified = false;
-      if (admin) {
-        const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-        verified = aal?.currentLevel === 'aal2';
-      }
 
       // Les politiques RLS renvoient automatiquement TOUS les dossiers à l'admin,
       // et uniquement les siens à un utilisateur normal.
@@ -94,18 +86,16 @@ export function Account() {
         .from('dossiers')
         .select(`id,user_id,typology,title,status,created_at${trashAware ? ',deleted_at,deleted_by' : ''}`)
         .order('created_at', { ascending: false });
-      // Dossiers de tiers : jamais affichés avant la vérification en deux
-      // étapes (la base l'impose aussi une fois la migration AAL2 appliquée).
       const allRows = (rawRows as DossierRow[] | null) ?? [];
-      const data = allRows.filter((r) => !r.deleted_at && (!admin || verified || r.user_id === user?.id));
+      const data = allRows.filter((r) => !r.deleted_at);
       const ownTrash = trashAware && (await clientTrashEnabled());
       if (active) {
         setClientTrash(ownTrash);
         setTrashed(allRows.filter((r) => r.deleted_at && r.user_id === user?.id));
       }
       if (admin) {
-        const [superAdmin, server] = await Promise.all([checkSuperAdmin(), checkSuperAdminAal2()]);
-        if (active) setMenu(trashMenuState({ isAdmin: true, superAdmin, aal2: verified, trashColumn: trashAware, server }));
+        const [superAdmin, server] = await Promise.all([checkSuperAdmin(), checkAdminDeleteEnabled()]);
+        if (active) setMenu(trashMenuState({ isAdmin: true, superAdmin, trashColumn: trashAware, server }));
       }
 
       // « À faire » : échéances ouvertes de l'utilisateur (si la table existe).
@@ -131,7 +121,7 @@ export function Account() {
 
       const ownerMap: Record<string, string> = {};
       const emailMap: Record<string, string> = {};
-      if (admin && verified) {
+      if (admin) {
         const { data: profs } = await supabase.from('profiles').select('id,company_name,full_name');
         const profMap: Record<string, ProfileRow> = {};
         (profs as ProfileRow[] | null)?.forEach((p) => {
@@ -149,7 +139,6 @@ export function Account() {
 
       if (!active) return;
       setIsAdmin(admin);
-      setAdminVerified(verified);
       setOwners(ownerMap);
       setEmails(emailMap);
       setDossiers((data as DossierRow[] | null) ?? []);
@@ -202,7 +191,7 @@ export function Account() {
     }
   }
 
-  /** Super admin AAL2 confirmé par le serveur → corbeille d'administration ; sinon corbeille du propriétaire. */
+  /** Super admin confirmé par le serveur → corbeille d'administration ; sinon corbeille du propriétaire. */
   function asAdmin(d: DossierRow): boolean {
     return menu.kind === 'enabled' && !(clientTrash && d.user_id === user?.id && !isAdmin);
   }
@@ -249,9 +238,7 @@ export function Account() {
                 Espace administrateur
               </p>
               <p className="mt-2 text-sm text-cream-50/85">
-                {adminVerified
-                  ? "Vous voyez l'intégralité des dossiers de la plateforme. Cliquez un dossier pour le détail (5 étapes) et le téléchargement des pièces."
-                  : 'Les dossiers clients sont protégés par la vérification en deux étapes : ouvrez la console pour vous authentifier et y accéder. Cette page ne montre que vos propres dossiers.'}
+                Vous voyez l'intégralité des dossiers de la plateforme. Cliquez un dossier pour le détail (5 étapes) et le téléchargement des pièces.
               </p>
               <Link
                 to="/admin"
@@ -314,7 +301,7 @@ export function Account() {
 
           <div className="mt-10 flex items-center justify-between gap-4">
             <h2 className="font-display text-2xl font-semibold text-navy-900">
-              {isAdmin && adminVerified ? `Tous les dossiers (${dossiers.length})` : 'Vos dossiers'}
+              {isAdmin ? `Tous les dossiers (${dossiers.length})` : 'Vos dossiers'}
             </h2>
             <Link
               to="/dossier/nouveau"

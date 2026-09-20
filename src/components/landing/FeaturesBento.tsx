@@ -7,7 +7,7 @@ import { TUNNEL_STEPS } from './demo-dossier';
 
 /**
  * Fonctionnalités — bento spécifique ClairDossier (ELEVATE de FeaturesGrid).
- * LB13 · chantier 12 : présentation en QUATRE groupes d'usage, même
+ * Chantier 12 : présentation en QUATRE groupes d'usage, même
  * vocabulaire que /fonctionnalites (src/data/features.ts → FEATURE_GROUPS).
  * Les neuf fiches réelles restent toutes présentes, avec leur lien vers
  * /fonctionnalites/{slug} ; le groupe « Créer et nommer » occupe le bloc

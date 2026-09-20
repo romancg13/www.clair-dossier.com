@@ -12,7 +12,6 @@ import {
   logAudit,
   fetchAdminEntitlements,
   hasAutomationEngine,
-  requireRecentMfa,
   type AdminEntitlementRow,
 } from "../lib/admin";
 import {
@@ -23,7 +22,6 @@ import {
 } from "../components/admin/AdminAutomation";
 import { AdminRequests } from "../components/admin/AdminRequests";
 import { CATEGORY_LABELS, effectiveCategory, formatBytes, hasDocExtras, isGenericTitle } from "../lib/dossier-workspace";
-import { mfaErrorDetails, mfaErrorMessage, mfaQrSrc } from "../lib/mfa-errors";
 
 /**
  * Console d'administration (/admin) — réservée à l'admin global.
@@ -130,205 +128,10 @@ function Stat({ label, value, warn = false }: { label: string; value: string | n
   );
 }
 
-/**
- * Porte MFA (§ sécurité admin) — TOTP natif Supabase, aucun système maison.
- * Après is_admin() : la console n'est rendue qu'en AAL2.
- *  - aucun facteur vérifié → enrôlement (QR + secret) puis vérification ;
- *  - facteur vérifié mais session AAL1 → challenge à 6 chiffres ;
- *  - erreur réseau → message + réessayer, jamais de contournement.
- * Les utilisateurs normaux ne passent jamais par cette porte.
- */
-function MfaGate({ onReady }: { onReady: () => void }) {
-  const [mode, setMode] = useState<"verification" | "enroll" | "challenge">("verification");
-  const [factorId, setFactorId] = useState<string | null>(null);
-  const [qr, setQr] = useState<string | null>(null);
-  const [secret, setSecret] = useState<string | null>(null);
-  const [code, setCode] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
-
-  async function bootstrap() {
-    setErr(null);
-    setMode("verification");
-    try {
-      const { data: aal, error: aalErr } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-      if (aalErr) throw aalErr;
-      if (aal.currentLevel === "aal2") {
-        onReady();
-        return;
-      }
-      const { data: factors, error: fErr } = await supabase.auth.mfa.listFactors();
-      if (fErr) throw fErr;
-      const verified = factors.totp.find((f) => f.status === "verified");
-      if (verified) {
-        setFactorId(verified.id);
-        setMode("challenge");
-        return;
-      }
-      // Facteurs non vérifiés abandonnés : repartir proprement.
-      for (const f of factors.all.filter((x) => x.status === "unverified")) {
-        await supabase.auth.mfa.unenroll({ factorId: f.id }).catch(() => {});
-      }
-      let enr = await supabase.auth.mfa.enroll({
-        factorType: "totp",
-        friendlyName: "ClairDossier admin",
-      });
-      if (enr.error?.code === "mfa_factor_name_conflict") {
-        // Un facteur homonyme n'a pas pu être nettoyé : repli sur un nom unique.
-        enr = await supabase.auth.mfa.enroll({
-          factorType: "totp",
-          friendlyName: `ClairDossier admin ${new Date().toISOString().slice(0, 16)}`,
-        });
-      }
-      if (enr.error) throw enr.error;
-      setFactorId(enr.data.id);
-      setQr(enr.data.totp.qr_code);
-      setSecret(enr.data.totp.secret);
-      setMode("enroll");
-    } catch (e) {
-      console.error("[ClairDossier] MFA admin :", mfaErrorDetails(e));
-      setErr(mfaErrorMessage(e, "bootstrap"));
-    }
-  }
-
-  useEffect(() => {
-    void bootstrap();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  async function submitCode() {
-    if (!factorId || code.trim().length < 6 || busy) return;
-    setBusy(true);
-    setErr(null);
-    try {
-      const { data: ch, error: cErr } = await supabase.auth.mfa.challenge({ factorId });
-      if (cErr) throw cErr;
-      const { error: vErr } = await supabase.auth.mfa.verify({
-        factorId,
-        challengeId: ch.id,
-        code: code.trim(),
-      });
-      if (vErr) throw vErr;
-      // N'ouvrir la console qu'une fois la session réellement en AAL2 (jamais
-      // de redirect sur un état obsolète) ; un seul refresh de rattrapage.
-      let { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-      if (aal?.currentLevel !== "aal2") {
-        await supabase.auth.refreshSession();
-        ({ data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel());
-      }
-      if (aal?.currentLevel !== "aal2") {
-        setErr("La session n'a pas atteint le niveau de sécurité requis. Réessayez.");
-        return;
-      }
-      onReady();
-    } catch (e) {
-      console.error("[ClairDossier] MFA admin :", mfaErrorDetails(e));
-      setErr(mfaErrorMessage(e, "verify"));
-    } finally {
-      setBusy(false);
-      setCode("");
-    }
-  }
-
-  return (
-    <section className="bg-cream-50">
-      <div className="mx-auto max-w-md px-5 py-20 sm:px-8">
-        <p className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-700">
-          Console d'administration
-        </p>
-        <h1 className="mt-2 font-display text-2xl font-semibold text-navy-900">
-          Vérification en deux étapes
-        </h1>
-
-        {mode === "verification" && !err && (
-          <p className="mt-4 text-sm text-slate-500">Vérification du niveau de session…</p>
-        )}
-
-        {mode === "enroll" && (
-          <div className="mt-5 rounded-2xl border hairline bg-white p-6 shadow-card">
-            <p className="text-sm leading-relaxed text-slate-500">
-              Scannez ce QR code avec votre application d'authentification (ou saisissez la clé),
-              puis entrez le code à 6 chiffres pour activer la protection de la console.
-            </p>
-            {qr && (
-              <img
-                src={mfaQrSrc(qr)}
-                alt="QR code d'enrôlement MFA"
-                width={180}
-                height={180}
-                className="mx-auto mt-4 rounded-lg border hairline bg-white p-2"
-              />
-            )}
-            {secret && (
-              <p className="mt-3 break-all text-center font-mono text-[0.7rem] text-slate-500">
-                Clé : {secret}
-              </p>
-            )}
-          </div>
-        )}
-
-        {mode === "challenge" && (
-          <p className="mt-4 text-sm leading-relaxed text-slate-500">
-            Entrez le code à 6 chiffres de votre application d'authentification.
-          </p>
-        )}
-
-        {(mode === "enroll" || mode === "challenge") && (
-          <form
-            className="mt-5 flex flex-wrap items-center gap-2"
-            onSubmit={(e) => {
-              e.preventDefault();
-              void submitCode();
-            }}
-          >
-            <label htmlFor="mfa-code" className="sr-only">
-              Code à 6 chiffres
-            </label>
-            <input
-              id="mfa-code"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              pattern="[0-9]*"
-              maxLength={6}
-              value={code}
-              onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-              placeholder="000000"
-              className="w-40 rounded-xl border hairline-strong bg-white px-4 py-3 text-center font-mono text-lg tracking-[0.3em] text-navy-900"
-            />
-            <button
-              type="submit"
-              disabled={busy || code.length < 6}
-              className="rounded-full bg-navy-900 px-5 py-3 text-sm font-semibold text-cream-50 transition-colors hover:bg-navy-800 disabled:opacity-60"
-            >
-              {busy ? "Vérification…" : "Valider"}
-            </button>
-          </form>
-        )}
-
-        {err && (
-          <p className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {err}{" "}
-            <button type="button" onClick={() => void bootstrap()} className="underline">
-              Réessayer
-            </button>
-          </p>
-        )}
-
-        <p className="mt-6 text-xs text-slate-500">
-          <Link to="/compte" className="underline">
-            ← Revenir à mon compte
-          </Link>
-        </p>
-      </div>
-    </section>
-  );
-}
-
 export function AdminConsole() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const [allowed, setAllowed] = useState<boolean | null>(null);
-  const [mfaOk, setMfaOk] = useState(false);
   const [superAdmin, setSuperAdmin] = useState(false);
   const [section, setSection] = useState<SectionId>("dashboard");
   const [error, setError] = useState<string | null>(null);
@@ -384,13 +187,10 @@ export function AdminConsole() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authLoading, user?.id]);
 
-  // Les données (dossiers, profils, e-mails…) ne sont demandées qu'APRÈS la
-  // porte MFA : en AAL1, aucune requête de données de tiers ne part du
-  // navigateur — et la base les refuserait de toute façon (migration
-  // 20260918100000). Charger avant la porte laisserait ensuite une console
-  // vide, les listes ayant été lues avec une session non vérifiée.
+  // Les données (dossiers, profils, e-mails…) ne sont demandées qu'une fois le
+  // rôle admin confirmé par la base (is_admin) et les capacités détectées.
   useEffect(() => {
-    if (!allowed || !mfaOk || !capsReady) return;
+    if (!allowed || !capsReady) return;
     let active = true;
     (async () => {
       await reloadAll(caps.trash, caps.audit, caps.notes, caps.docExtras, (fn) => active && fn());
@@ -401,7 +201,7 @@ export function AdminConsole() {
       active = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allowed, mfaOk, capsReady]);
+  }, [allowed, capsReady]);
 
   async function reloadAll(
     trash: boolean,
@@ -511,16 +311,16 @@ export function AdminConsole() {
       "Créé par erreur",
     );
     if (reason === null) return;
-    // .select() : sans lui, un refus RLS (session AAL2 expirée, droits retirés)
+    // .select() : sans lui, un refus RLS (session expirée, droits retirés)
     // renverrait 0 ligne SANS erreur et on annoncerait un faux succès. Le champ
-    // deleted_at est re-lu car le déclencheur le réserve au super admin vérifié.
+    // deleted_at est re-lu car le déclencheur le réserve au super admin.
     const { data: rows, error: e } = await supabase
       .from("dossiers")
       .update({ deleted_at: new Date().toISOString(), deleted_by: user?.id, delete_reason: reason || null })
       .eq("id", d.id)
       .select("id,deleted_at");
     if (e || !(rows as { deleted_at: string | null }[] | null)?.[0]?.deleted_at) {
-      setError("Mise à la corbeille refusée (réservée au super admin en session vérifiée ; migrations appliquées ?).");
+      setError("Mise à la corbeille refusée par le serveur (action réservée au super administrateur) : rien n'a été modifié.");
       return;
     }
     setNotice(`Dossier « ${d.title || d.typology} » placé dans la corbeille.`);
@@ -536,7 +336,7 @@ export function AdminConsole() {
       .select("id,deleted_at");
     const restored = (rows as { deleted_at: string | null }[] | null)?.[0];
     if (e || !restored || restored.deleted_at !== null) {
-      setError("Restauration refusée (réservée au super admin en session vérifiée).");
+      setError("Restauration refusée par le serveur (action réservée au super administrateur).");
       return;
     }
     setNotice(`Dossier « ${d.title || d.typology} » restauré.`);
@@ -546,10 +346,6 @@ export function AdminConsole() {
 
   async function hardDeleteDossier(d: DossierRow) {
     const docCount = docs.filter((x) => x.dossier_id === d.id).length;
-    if (!(await requireRecentMfa())) {
-      setError("Vérification MFA récente requise pour une suppression définitive.");
-      return;
-    }
     if (
       !confirmIrreversible(
         `Supprimer DÉFINITIVEMENT le dossier « ${d.title || d.typology} » (client ${emails[d.user_id] ?? d.user_id.slice(0, 8)}) et ses ${docCount} document(s) ?`,
@@ -561,7 +357,7 @@ export function AdminConsole() {
     const paths = docs.filter((x) => x.dossier_id === d.id).map((x) => x.file_path);
     const { data: rows, error: e } = await supabase.from("dossiers").delete().eq("id", d.id).select("id");
     if (e || !rows?.length) {
-      setError("Suppression définitive refusée (réservée au super admin, session vérifiée).");
+      setError("Suppression définitive refusée par le serveur (action réservée au super administrateur) : rien n'a été supprimé.");
       return;
     }
     let storageWarning: string | null = null;
@@ -584,7 +380,7 @@ export function AdminConsole() {
   async function changeStatus(d: DossierRow, status: string) {
     const { data: rows, error: e } = await supabase.from("dossiers").update({ status }).eq("id", d.id).select("id");
     if (e || !rows?.length) {
-      setError("Changement de statut refusé (session vérifiée requise ; migrations appliquées ?).");
+      setError("Changement de statut refusé par le serveur : rien n'a été modifié.");
       return;
     }
     void logAudit("dossier_statut", "dossier", d.id, d.user_id, { statut: status });
@@ -601,7 +397,7 @@ export function AdminConsole() {
       .eq("id", doc.id)
       .select("id");
     if (e || !rows?.length) {
-      setError("Action refusée (session vérifiée requise ; migrations appliquées ?).");
+      setError("Action refusée par le serveur : rien n'a été modifié.");
       return;
     }
     void logAudit("document_corbeille", "document", doc.id, doc.user_id);
@@ -615,7 +411,7 @@ export function AdminConsole() {
       .eq("id", doc.id)
       .select("id");
     if (e || !rows?.length) {
-      setError("Restauration refusée (session vérifiée requise).");
+      setError("Restauration refusée par le serveur.");
       return;
     }
     void logAudit("document_restaure", "document", doc.id, doc.user_id);
@@ -623,15 +419,11 @@ export function AdminConsole() {
   }
 
   async function hardDeleteDoc(doc: DocRow) {
-    if (!(await requireRecentMfa())) {
-      setError("Vérification MFA récente requise pour une suppression définitive.");
-      return;
-    }
     if (!confirmIrreversible(`Supprimer DÉFINITIVEMENT « ${doc.file_name} » ?`)) return;
     // Ligne d'abord (un refus n'a rien détruit), fichier ensuite.
     const { data: rows, error: e } = await supabase.from("dossier_documents").delete().eq("id", doc.id).select("id");
     if (e || !rows?.length) {
-      setError("Suppression refusée (réservée au super admin, session vérifiée).");
+      setError("Suppression refusée par le serveur (action réservée au super administrateur).");
       return;
     }
     const { error: sErr } = await supabase.storage.from("documents").remove([doc.file_path]);
@@ -687,7 +479,6 @@ export function AdminConsole() {
     );
   }
   if (!allowed) return null;
-  if (!mfaOk) return <MfaGate onReady={() => setMfaOk(true)} />;
 
   return (
     <>

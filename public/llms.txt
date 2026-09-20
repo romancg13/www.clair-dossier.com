@@ -65,7 +65,6 @@ La création de compte est gratuite. Abonnement sans engagement, résiliation à
 
 - Hébergement : OVHcloud France (Roubaix, Strasbourg). Aucun transfert hors UE.
 - Chiffrement : AES-256 au repos, TLS 1.3 en transit, HSTS preload.
-- 2FA obligatoire pour les accès administrateurs.
 - Sauvegardes 3-2-1, RPO 15 min, RTO < 4 h.
 - Conformité RGPD native, DPA standard et renforcé disponibles sur demande.
 - Conformité RIN 2024 sur le périmètre IA (préparation autorisée, conseil interdit).

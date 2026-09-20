@@ -20,55 +20,50 @@ import {
   type TrashRights,
 } from '../src/lib/admin';
 
-const SUPER_AAL2: TrashRights = { isAdmin: true, superAdmin: true, aal2: true, trashColumn: true, server: 'oui' };
+const SUPER: TrashRights = { isAdmin: true, superAdmin: true, trashColumn: true, server: 'oui' };
 
 /* ── Droits d'affichage du menu ───────────────────────────────────────── */
 
 test('client : aucun menu, quels que soient les autres signaux', () => {
-  assert.deepEqual(trashMenuState({ ...SUPER_AAL2, isAdmin: false }), { kind: 'hidden' });
+  assert.deepEqual(trashMenuState({ ...SUPER, isAdmin: false }), { kind: 'hidden' });
 });
 
-test('super admin + AAL2 + corbeille + confirmation serveur : « Supprimer » actif', () => {
-  assert.deepEqual(trashMenuState(SUPER_AAL2), { kind: 'enabled' });
+test('super admin + corbeille + confirmation serveur : « Supprimer » actif, sans vérification en deux étapes', () => {
+  assert.deepEqual(trashMenuState(SUPER), { kind: 'enabled' });
 });
 
 test('admin « support » : entrée désactivée, réservée au super administrateur', () => {
-  assert.deepEqual(trashMenuState({ ...SUPER_AAL2, superAdmin: false, server: 'non' }), {
+  assert.deepEqual(trashMenuState({ ...SUPER, superAdmin: false, server: 'non' }), {
     kind: 'disabled',
     reason: TRASH_REASONS.support,
   });
 });
 
-test('production actuelle (migrations non appliquées) : désactivé, « migration à appliquer »', () => {
-  // is_super_admin absent → repli is_admin (true) ; pas de deleted_at ; pas de super_admin_aal2.
-  const state = trashMenuState({ isAdmin: true, superAdmin: true, aal2: true, trashColumn: false, server: 'absente' });
-  assert.deepEqual(state, { kind: 'disabled', reason: TRASH_REASONS.migration });
-  assert.match(TRASH_REASONS.migration, /Corbeille indisponible : migration à appliquer/);
+test('base pas encore mise à jour : désactivé, raison lisible sans jargon « migration » ni « corbeille indisponible »', () => {
+  // is_super_admin absent → repli is_admin (true) ; pas de deleted_at ; pas de admin_delete_enabled.
+  const state = trashMenuState({ isAdmin: true, superAdmin: true, trashColumn: false, server: 'absente' });
+  assert.deepEqual(state, { kind: 'disabled', reason: TRASH_REASONS.unavailable });
+  for (const reason of Object.values(TRASH_REASONS)) {
+    assert.doesNotMatch(reason, /corbeille indisponible|migration à appliquer|deux étapes|MFA|TOTP/i);
+  }
 });
 
-test('garde serveur absente (colonne présente mais 20260918100000 non appliquée) : désactivé', () => {
-  assert.deepEqual(trashMenuState({ ...SUPER_AAL2, server: 'absente' }), {
+test('sonde serveur absente (colonne présente mais 20260920120000 non appliquée) : désactivé', () => {
+  assert.deepEqual(trashMenuState({ ...SUPER, server: 'absente' }), {
     kind: 'disabled',
-    reason: TRASH_REASONS.migration,
+    reason: TRASH_REASONS.unavailable,
   });
 });
 
-test('super admin en AAL1 : désactivé, vérification en deux étapes requise', () => {
-  assert.deepEqual(trashMenuState({ ...SUPER_AAL2, aal2: false, server: 'non' }), {
-    kind: 'disabled',
-    reason: TRASH_REASONS.mfa,
-  });
-});
-
-test('jeton client AAL2 mais serveur non confirmé : désactivé (jamais sur la seule foi du navigateur)', () => {
-  assert.deepEqual(trashMenuState({ ...SUPER_AAL2, server: 'non' }), { kind: 'disabled', reason: TRASH_REASONS.unconfirmed });
-  assert.deepEqual(trashMenuState({ ...SUPER_AAL2, superAdmin: null }), { kind: 'disabled', reason: TRASH_REASONS.unconfirmed });
-  assert.deepEqual(trashMenuState({ ...SUPER_AAL2, server: 'inconnue' }), { kind: 'disabled', reason: TRASH_REASONS.network });
+test('serveur non confirmé : désactivé (jamais sur la seule foi du navigateur)', () => {
+  assert.deepEqual(trashMenuState({ ...SUPER, server: 'non' }), { kind: 'disabled', reason: TRASH_REASONS.unconfirmed });
+  assert.deepEqual(trashMenuState({ ...SUPER, superAdmin: null }), { kind: 'disabled', reason: TRASH_REASONS.unconfirmed });
+  assert.deepEqual(trashMenuState({ ...SUPER, server: 'inconnue' }), { kind: 'disabled', reason: TRASH_REASONS.network });
 });
 
 test('sondes en échec réseau : raison « réseau », jamais une fausse raison de droits', () => {
   // checkSuperAdmin() se replie sur false en cas d'erreur : la sonde serveur prime.
-  assert.deepEqual(trashMenuState({ ...SUPER_AAL2, superAdmin: false, trashColumn: false, server: 'inconnue' }), {
+  assert.deepEqual(trashMenuState({ ...SUPER, superAdmin: false, trashColumn: false, server: 'inconnue' }), {
     kind: 'disabled',
     reason: TRASH_REASONS.network,
   });
@@ -78,20 +73,19 @@ test('exhaustif : actif si et seulement si toutes les conditions sont réunies',
   const servers: ServerTrashCheck[] = ['oui', 'non', 'absente', 'inconnue'];
   for (const isAdmin of [true, false])
     for (const superAdmin of [true, false, null])
-      for (const aal2 of [true, false])
-        for (const trashColumn of [true, false])
-          for (const server of servers) {
-            const state = trashMenuState({ isAdmin, superAdmin, aal2, trashColumn, server });
-            const expected = isAdmin && superAdmin === true && aal2 && trashColumn && server === 'oui';
-            assert.equal(state.kind === 'enabled', expected, JSON.stringify({ isAdmin, superAdmin, aal2, trashColumn, server }));
-            if (!isAdmin) assert.equal(state.kind, 'hidden');
-            if (state.kind === 'disabled') assert.ok(state.reason.length > 10, 'raison lisible');
-          }
+      for (const trashColumn of [true, false])
+        for (const server of servers) {
+          const state = trashMenuState({ isAdmin, superAdmin, trashColumn, server });
+          const expected = isAdmin && superAdmin === true && trashColumn && server === 'oui';
+          assert.equal(state.kind === 'enabled', expected, JSON.stringify({ isAdmin, superAdmin, trashColumn, server }));
+          if (!isAdmin) assert.equal(state.kind, 'hidden');
+          if (state.kind === 'disabled') assert.ok(state.reason.length > 10, 'raison lisible');
+        }
 });
 
 test('fonction RPC absente reconnue (PostgREST / PostgreSQL), pas les autres erreurs', () => {
-  assert.equal(isMissingFunction({ code: 'PGRST202', message: 'Could not find the function public.super_admin_aal2' }), true);
-  assert.equal(isMissingFunction({ code: '42883', message: 'function public.super_admin_aal2() does not exist' }), true);
+  assert.equal(isMissingFunction({ code: 'PGRST202', message: 'Could not find the function public.admin_delete_enabled' }), true);
+  assert.equal(isMissingFunction({ code: '42883', message: 'function public.admin_delete_enabled() does not exist' }), true);
   assert.equal(isMissingFunction({ message: 'TypeError: Failed to fetch' }), false);
   assert.equal(isMissingFunction({ code: '42501', message: 'permission denied' }), false);
   assert.equal(isMissingFunction(null), false);

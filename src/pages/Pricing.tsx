@@ -30,16 +30,6 @@ import {
 } from '../components/icons';
 import { WHATSAPP_DISPLAY, buildWhatsAppUrl } from '../lib/whatsapp';
 import { trackEvent } from '../lib/analytics';
-import {
-  LB13_INTENT_PARAM,
-  LB13_INTENT_VALUE,
-  LB13_LIVE_VERIFIED,
-  LB13_OFFER,
-  lb13DiscountedMonthly,
-  lb13Phase,
-  withLb13Prefill,
-  type Lb13Phase,
-} from '../data/promo';
 
 const DEVIS_CAPABILITIES = [
   {
@@ -103,19 +93,12 @@ const TRUST_ICONS = {
 
 export function Pricing() {
   const [billing, setBilling] = useState<Billing>("monthly");
-  // Intention promotionnelle et formule choisie, conservées pendant la
-  // connexion (?offre=lb13&formule=…). Lues après montage : le HTML prérendu
-  // reste identique au premier rendu client.
+  // Formule choisie, conservée pendant la connexion (?formule=…). Lue après
+  // montage : le HTML prérendu reste identique au premier rendu client.
   const [params] = useSearchParams();
-  const [lb13Intent, setLb13Intent] = useState(false);
-  const [phase, setPhase] = useState<Lb13Phase>(LB13_LIVE_VERIFIED ? "active" : "pending");
   useEffect(() => {
-    setPhase(lb13Phase(Date.now()));
-    const intent = params.get(LB13_INTENT_PARAM) === LB13_INTENT_VALUE;
-    setLb13Intent(intent);
-    if (intent) setBilling("monthly");
-    // Retour de connexion (formule choisie) ou lien de la bannière (#offre-lb13) :
-    // défilement après la remise en haut de page faite par le Layout.
+    // Retour de connexion (formule choisie) ou ancre de la page : défilement
+    // après la remise en haut de page faite par le Layout.
     const formule = params.get("formule");
     const target = formule ? `formule-${formule}` : window.location.hash.slice(1);
     if (!target) return;
@@ -230,8 +213,6 @@ export function Pricing() {
         </div>
       </section>
 
-      {phase !== "ended" && <Lb13Conditions phase={phase} yearly={billing === "yearly"} />}
-
       {/* 6 plans en grille 2 colonnes (desktop) */}
       <section className="bg-cream-50">
         <div className="mx-auto max-w-7xl px-5 pb-20 sm:px-8 lg:px-12">
@@ -241,7 +222,7 @@ export function Pricing() {
           >
             {plans.map((plan) => (
               <StaggerItem key={plan.id}>
-                <PlanCard plan={plan} billing={billing} lb13Intent={lb13Intent} phase={phase} />
+                <PlanCard plan={plan} billing={billing} />
               </StaggerItem>
             ))}
           </Stagger>
@@ -500,13 +481,9 @@ export function Pricing() {
 function PlanCard({
   plan,
   billing,
-  lb13Intent,
-  phase,
 }: {
   plan: Plan;
   billing: Billing;
-  lb13Intent: boolean;
-  phase: Lb13Phase;
 }) {
   const isDark = plan.variant === "dark";
   const isYearly = billing === "yearly";
@@ -641,8 +618,6 @@ function PlanCard({
         href={isYearly && plan.ctaHrefYearly ? plan.ctaHrefYearly : plan.ctaHref}
         planId={plan.id}
         monthly={!isYearly}
-        lb13Intent={lb13Intent}
-        phase={phase}
         label={plan.ctaLabel}
         className={`mt-7 inline-flex items-center justify-center gap-1.5 rounded-xl px-5 py-3.5 text-sm font-medium transition-colors ${ctaClass}`}
       />
@@ -660,16 +635,12 @@ function PlanCta({
   href,
   planId,
   monthly,
-  lb13Intent,
-  phase,
   label,
   className,
 }: {
   href: string;
   planId: string;
   monthly: boolean;
-  lb13Intent: boolean;
-  phase: Lb13Phase;
   label: string;
   className: string;
 }) {
@@ -677,7 +648,6 @@ function PlanCta({
   const isCheckout = href.startsWith("https://buy.stripe.com/");
   const checkoutEmail = useCheckoutEmail(isCheckout ? user?.id : undefined, user?.email ?? null);
   const back = new URLSearchParams({ formule: planId });
-  if (lb13Intent && monthly) back.set(LB13_INTENT_PARAM, LB13_INTENT_VALUE);
   const next = encodeURIComponent(`/tarifs?${back.toString()}`);
   if (isCheckout && !user) {
     return (
@@ -696,7 +666,7 @@ function PlanCta({
   if (isCheckout && user) {
     // Rattachement serveur du paiement au compte (webhook Stripe) : identifiant
     // du compte + e-mail de facturation (facultatif, repli sur le compte).
-    const url = new URL(withLb13Prefill(href, { monthly, intent: lb13Intent, phase }));
+    const url = new URL(href);
     url.searchParams.set("client_reference_id", user.id);
     if (checkoutEmail) url.searchParams.set("prefilled_email", checkoutEmail);
     return (
@@ -707,7 +677,6 @@ function PlanCta({
           trackEvent("debut_checkout", {
             formule: planId,
             facturation: monthly ? "mensuelle" : "annuelle",
-            offre: lb13Intent && monthly ? LB13_OFFER.code : "aucune",
           })
         }
       >
@@ -776,47 +745,5 @@ function FeatureRow({
       </span>
       <span>{labelText}</span>
     </li>
-  );
-}
-
-/**
- * Conditions de l'offre LB13 — mêmes valeurs que la bannière et que Stripe
- * (src/data/promo.ts). La réduction réelle est appliquée par Stripe.
- */
-function Lb13Conditions({ phase, yearly }: { phase: Lb13Phase; yearly: boolean }) {
-  const example = plans.find((p) => p.id === "essentiel")?.priceMonthly ?? 19;
-  return (
-    <section id="offre-lb13" aria-labelledby="offre-lb13-titre" className="scroll-mt-24 bg-cream-50">
-      <div className="mx-auto max-w-7xl px-5 pb-10 sm:px-8 lg:px-12">
-        <div className="rounded-2xl border border-gold-500/40 bg-navy-900 p-6 text-cream-50 sm:p-7">
-          <p className="font-mono text-[0.68rem] uppercase tracking-[0.18em] text-gold-500">Offre de lancement</p>
-          <h2 id="offre-lb13-titre" className="mt-2 font-display text-2xl font-semibold leading-tight">
-            Code {LB13_OFFER.code} : −{LB13_OFFER.percentOff} % pendant {LB13_OFFER.months} mois
-          </h2>
-          <ul className="mt-4 space-y-1.5 text-sm leading-relaxed text-cream-50/85">
-            <li>Formules mensuelles uniquement, d'Essentiel à Business / PME Premium — hors formules annuelles et sur-mesure.</li>
-            <li>
-              Code à saisir sur la page de paiement Stripe {LB13_OFFER.deadlineLabel} (00 h, heure de Paris).
-            </li>
-            <li>
-              −{LB13_OFFER.percentOff} % sur les {LB13_OFFER.months} premières mensualités, puis tarif en vigueur. Exemple :
-              Essentiel {formatEuro(example)} → {formatEuro(lb13DiscountedMonthly(example))} par mois pendant {LB13_OFFER.months} mois,
-              puis {formatEuro(example)}.
-            </li>
-            <li>Sans effet sur les quotas et fonctionnalités de la formule ; la remise figure sur vos factures.</li>
-          </ul>
-          <p className="mt-4 text-sm font-medium text-gold-500">
-            {phase === "active"
-              ? "Contrôlez le total remisé sur la page de paiement avant de valider."
-              : "Mise en service du code en cours côté paiement : s'il est refusé, ne finalisez pas le paiement et contactez-nous."}
-          </p>
-          {yearly && (
-            <p className="mt-2 text-xs text-cream-50/70">
-              Vous consultez les tarifs annuels : le code {LB13_OFFER.code} ne s'y applique pas.
-            </p>
-          )}
-        </div>
-      </div>
-    </section>
   );
 }

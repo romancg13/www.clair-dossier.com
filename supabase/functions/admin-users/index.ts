@@ -4,8 +4,7 @@
 // service) : impossible et interdit depuis le navigateur. La fonction vérifie :
 //   1. le jeton de l'appelant (signature validée par Supabase Auth) ;
 //   2. le rôle super_admin (table app_admins, lue côté serveur) ;
-//   3. une session AAL2 (MFA vérifié) ;
-//   4. un motif ; jamais sur soi-même ni sur un autre administrateur.
+//   3. un motif ; jamais sur soi-même ni sur un autre administrateur.
 // Les données du client sont CONSERVÉES ; seul l'accès est bloqué.
 // Chaque action est journalisée dans audit_logs.
 //
@@ -37,16 +36,6 @@ function reply(status: number, body: unknown, origin: string | null): Response {
   return new Response(JSON.stringify(body), { status, headers: cors(origin) });
 }
 
-/** Lit la revendication `aal` d'un jeton DÉJÀ validé par auth.getUser. */
-function aalOf(token: string): string | null {
-  try {
-    const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
-    return typeof payload.aal === 'string' ? payload.aal : null;
-  } catch {
-    return null;
-  }
-}
-
 Deno.serve(async (req) => {
   const origin = req.headers.get('origin');
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors(origin) });
@@ -61,7 +50,6 @@ Deno.serve(async (req) => {
 
   const { data: role } = await admin.from('app_admins').select('role').eq('user_id', callerId).maybeSingle();
   if ((role as { role?: string } | null)?.role !== 'super_admin') return reply(403, { error: 'forbidden' }, origin);
-  if (aalOf(token) !== 'aal2') return reply(403, { error: 'mfa_required' }, origin);
 
   let body: { action?: string; user_id?: string; reason?: string };
   try {

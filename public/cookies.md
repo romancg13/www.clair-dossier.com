@@ -1,13 +1,13 @@
 ---
 title: "Cookies"
 description: "Politique cookies ClairDossier — cookies techniques uniquement, aucun cookie de mesure d'audience ou marketing tiers."
-lastUpdate: 2026-09-15
+lastUpdate: 2026-09-20
 url: https://www.clair-dossier.com/cookies
 ---
 
 # Cookies
 
-*Dernière mise à jour : 15 septembre 2026*
+*Dernière mise à jour : 20 septembre 2026*
 
 Le site clair-dossier.com utilise un nombre minimal de cookies, strictement nécessaires au fonctionnement du service. Aucun cookie marketing, publicitaire ou de mesure d'audience tierce n'est déposé sans votre consentement explicite.
 
@@ -20,7 +20,6 @@ Un cookie est un petit fichier déposé sur votre terminal (ordinateur, tablette
 En l'état actuel du site, aucun cookie n'est déposé par nos soins : les informations strictement nécessaires au fonctionnement sont conservées dans le stockage local de votre navigateur (localStorage), exempté de consentement préalable au sens de l'article 82 de la loi Informatique et Libertés et de la délibération CNIL n° 2020-091 lorsqu'il est strictement nécessaire :
 
 - clairdossier-auth (stockage local du navigateur) — maintient votre session authentifiée. Conservé jusqu'à déconnexion ou expiration de la session.
-- Mémorisation de la fermeture du bandeau promotionnel (stockage local) — évite de réafficher un bandeau que vous avez fermé.
 - Brouillon de formulaire de création de dossier (stockage local) — évite de perdre votre saisie en cas de rechargement ; supprimé après envoi.
 
 ## Cookies tiers

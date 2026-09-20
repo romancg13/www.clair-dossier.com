@@ -6,7 +6,7 @@ import { FEATURE_ICONS, ArrowRightIcon } from '../icons';
 
 /**
  * Fonctionnalités — composition historique de l'accueil (flag HOME_CINEMATIC
- * désactivé). LB13 · chantier 12 : mêmes quatre groupes et même vocabulaire
+ * désactivé). Chantier 12 : mêmes quatre groupes et même vocabulaire
  * que /fonctionnalites et le bento de la home cinématique.
  */
 export function FeaturesGrid() {
