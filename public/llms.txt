@@ -16,7 +16,7 @@ ClairDossier ne se présente ni comme un cabinet d'avocats, ni comme un conseil 
 - /fonctionnalites               : Index des 9 fonctionnalités clés
 - /fonctionnalites/<slug>        : Détail par fonctionnalité (creation-guidee, pieces-ocr, chronologie, validation-avocat, suivi-statuts, messagerie-securisee, coffre-fort, calendrier-relances, reponse-auto-mails)
 - /tarifs                        : 7 formules (Essentiel, Entrepreneur, Business PME 20, Business PME 50, Business/PME Pro, Business/PME Premium) + offre sur-mesure
-- /securite                      : Architecture, conformité RGPD/RIN/HDS, audit annuel
+- /securite                      : Accès, protection des documents, traitement des données, sous-traitants, DPA
 - /blog                          : Journal éditorial
 - /blog/<slug>                   : 7 articles disponibles (voir Articles ci-dessous)
 - /inscription, /connexion, /compte : Création de compte et espace client (Supabase auth)
