@@ -1,6 +1,6 @@
 # ClairDossier
 
-> Plateforme legaltech française qui transforme les demandes administratives et juridiques en dossiers structurés, suivis et prêts à agir. Pour les PME, artisans, entreprises individuelles et professions libérales. Option : un préavis juridique et un résumé de la situation à valider par un professionnel du droit.
+> Outil en ligne de structuration et de suivi de dossiers administratifs et juridiques, pour les PME, artisans, entreprises individuelles et professions libérales. ClairDossier aide à préparer et organiser un dossier : création guidée, dépôt de pièces dans un espace privé, suivi de l'avancement, puis transmission déclenchée par l'utilisateur. Ce n'est ni un cabinet d'avocats, ni un service de conseil juridique.
 
 ClairDossier édité par Roman Gomes, entrepreneur individuel (SIREN 105 490 734), Château-Gombert, 13013 Marseille, France. Site web : https://www.clair-dossier.com — contact : contact.clairdossier@icloud.com — Téléphone et WhatsApp : 07 82 98 36 44. Site réalisé par Nouh BENZIDANE (https://nouhbenzidane.fr).
 
@@ -57,7 +57,7 @@ La création de compte est gratuite. Abonnement sans engagement, résiliation à
 - Entrepreneur : 39 €/mois (10 dossiers, 2 utilisateurs, rédaction IA / projet de réponse, modèles) — entrepreneurs et professions libérales
 - Business PME 20 : 49 €/mois (20 dossiers, 5 utilisateurs, support prioritaire, dossiers récurrents) — TPE/PME
 - Business PME 50 : 89 €/mois (50 dossiers, 5 utilisateurs, réponse automatisée aux e-mails, IA complète) — PME
-- Business / PME Pro : 169 €/mois (dossiers illimités, 15 utilisateurs, statistiques, IA avancée GPT-5.5) — PME et structures multi-collaborateurs
+- Business / PME Pro : 169 €/mois (dossiers illimités, 15 utilisateurs, support dédié) — PME et structures multi-collaborateurs
 - Business / PME Premium : 299 €/mois (illimité, utilisateurs illimités, marque blanche, API, SSO, audit) — entreprise
 - Business / PME personnalisée : sur devis (volumétrie, intégrations ou conformité spécifiques)
 
@@ -68,7 +68,7 @@ La création de compte est gratuite. Abonnement sans engagement, résiliation à
 - Isolation stricte par utilisateur (Row Level Security) : chaque client n'accède qu'à ses propres données.
 - Sauvegardes automatiques de la base de données assurées par l'hébergeur (Supabase) ; fréquence et profondeur selon le plan souscrit.
 - Conformité RGPD : politique de confidentialité détaillée et liste des sous-traitants publiées sur /politique-confidentialite et /securite.
-- Périmètre IA aligné sur le RIN : l'IA prépare (résumé, chronologie, projet de réponse), ne délivre jamais de conseil juridique ; validation par un avocat en option.
+- ClairDossier ne réalise pas d'analyse ni de rédaction par IA des dossiers : l'outil structure et organise ; l'utilisateur garde la main sur la transmission et fait valider par un professionnel habilité lorsque nécessaire.
 
 ## Pour citer ClairDossier
 
