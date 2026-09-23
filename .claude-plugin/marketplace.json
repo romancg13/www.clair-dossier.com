@@ -1,0 +1,17 @@
+{
+  "name": "clairdossier",
+  "owner": {
+    "name": "Roman Gomes",
+    "url": "https://www.clair-dossier.com"
+  },
+  "plugins": [
+    {
+      "name": "clairdossier",
+      "source": "./",
+      "description": "Couche agentique ClairDossier — 6 skills auto-déclenchés et 3 commandes.",
+      "version": "1.0.0",
+      "category": "workflow",
+      "keywords": ["clairdossier", "legaltech", "rgpd", "prospection"]
+    }
+  ]
+}
