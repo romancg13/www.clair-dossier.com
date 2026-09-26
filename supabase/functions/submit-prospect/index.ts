@@ -6,16 +6,26 @@
 // réponse) → accusé de réception au prospect + notification humaine minimisée
 // (échec d'e-mail non bloquant : la demande est déjà en base).
 //
+// Chantier 14 (« Devenir partenaire ») : nature 'partenariat' + champs
+// partner_type / site_url (validate.ts), idempotence par identifiant de
+// requête client (colonne client_request_id, migration 20260918130000 — à
+// appliquer AVANT de déployer cette version), réponse explicite
+// { ok, stored } : le site n'affiche « Demande enregistrée » que si
+// stored === true. Partenariat : AUCUN envoi automatique au demandeur (ni
+// délai promis ni accusé valant acceptation) — seule la notification
+// administrateur minimisée part, par e-mail uniquement.
+//
 // Secrets attendus (jamais dans le code) : SUPABASE_URL,
 // SUPABASE_SERVICE_ROLE_KEY (injectés par la plateforme), RESEND_API_KEY
 // (déjà présent pour notify-lead), PROSPECT_HASH_SALT (à créer).
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { validateProspect } from './validate.ts';
+import { PARTNER_TYPE_LABELS, validateProspect } from './validate.ts';
 import { qualifyProspect, SEUIL_ESCALADE } from './scoring.ts';
 
 const SITE = 'https://www.clair-dossier.com';
-const ADMIN_TO = 'prestige.seller@icloud.com';
+// Même destinataire que notify-lead (secret facultatif, repli historique).
+const ADMIN_TO = Deno.env.get('ADMIN_NOTIFICATION_EMAIL') || 'prestige.seller@icloud.com';
 const FROM = 'ClairDossier <noreply@clair-dossier.com>';
 
 const ALLOWED_ORIGINS = new Set([
@@ -107,6 +117,27 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
+    // ── Idempotence : même identifiant de requête = même demande ────────────
+    // Un double clic, un second onglet ou une nouvelle tentative après un
+    // délai dépassé ne crée jamais de doublon (ni e-mail en double) et ne
+    // consomme pas la limitation de débit.
+    const findExisting = async (): Promise<string | null> => {
+      if (!prospect.client_request_id) return null;
+      const { data } = await supabase
+        .from('prospects')
+        .select('id')
+        .eq('client_request_id', prospect.client_request_id)
+        .maybeSingle();
+      return data ? String((data as { id: string }).id) : null;
+    };
+    const alreadyStored = await findExisting();
+    if (alreadyStored) {
+      return new Response(
+        JSON.stringify({ ok: true, stored: true, duplicate: true, ref: alreadyStored.slice(0, 8) }),
+        { status: 200, headers }
+      );
+    }
+
     // ── Limitation de débit (hachés salés, aucune IP en clair) ──────────────
     const salt = Deno.env.get('PROSPECT_HASH_SALT') ?? 'clairdossier-prospects';
     const ip =
@@ -153,9 +184,15 @@ Deno.serve(async (req) => {
       motif: qual.motif,
       base_legale: 'mesures précontractuelles (art. 6.1.b RGPD)',
     };
+    // Colonnes du chantier 14 : n'envoyer que les valeurs renseignées.
+    const extra: Record<string, string> = {};
+    if (prospect.partner_type) extra.partner_type = prospect.partner_type;
+    if (prospect.site_url) extra.site_url = prospect.site_url;
+    if (prospect.client_request_id) extra.client_request_id = prospect.client_request_id;
     const { data: inserted, error: insertError } = await supabase
       .from('prospects')
       .insert({
+        ...extra,
         full_name: prospect.full_name,
         email: prospect.email,
         organization: prospect.organization,
@@ -173,11 +210,27 @@ Deno.serve(async (req) => {
       .select('id')
       .single();
     if (insertError || !inserted) {
+      // Course entre deux envois simultanés du même identifiant : la contrainte
+      // d'unicité a gardé le premier — c'est bien la même demande, enregistrée.
+      if ((insertError as { code?: string } | null)?.code === '23505') {
+        const existing = await findExisting();
+        if (existing) {
+          return new Response(
+            JSON.stringify({ ok: true, stored: true, duplicate: true, ref: existing.slice(0, 8) }),
+            { status: 200, headers }
+          );
+        }
+      }
       console.error('submit-prospect: insertion échouée', insertError);
       return new Response(JSON.stringify({ error: 'storage' }), { status: 500, headers });
     }
 
     const ref = String(inserted.id).slice(0, 8);
+    const isPartner = prospect.topic === 'partenariat';
+    const urgent = qual.human_flags.includes('escalade_immediate');
+    // À partir d'ici la demande EST enregistrée : aucun échec d'envoi ne doit
+    // produire une erreur côté visiteur (sinon fausse alerte → doublon).
+    const mails: Array<Promise<void>> = [];
 
     // ── Accusé de réception au prospect ─────────────────────────────────────
     const ackHtml = `<div style="font-family:system-ui,-apple-system,sans-serif;line-height:1.6;color:#0d1b3d">
@@ -191,10 +244,11 @@ Deno.serve(async (req) => {
       de confirmation. Vos données restent dans votre fiche de contact et ne sont jamais partagées ;
       détails : ${SITE}/politique-confidentialite</p>
     </div>`;
-    await sendEmail(prospect.email, 'ClairDossier — votre demande est bien reçue', ackHtml);
+    if (!isPartner) {
+      mails.push(sendEmail(prospect.email, 'ClairDossier — votre demande est bien reçue', ackHtml));
+    }
 
     // ── Notification humaine minimisée (modèle notify-lead : pas de contenu) ─
-    const urgent = qual.human_flags.includes('escalade_immediate');
     const notifHtml = `<div style="font-family:system-ui,-apple-system,sans-serif;line-height:1.6;color:#0d1b3d">
       <h2 style="font-size:18px;margin:0 0 12px">${urgent ? '🔔 Prospect à fort potentiel' : 'Nouveau prospect'}</h2>
       <p style="margin:4px 0">Segment : ${escapeHtml(prospect.segment)} · nature : ${escapeHtml(prospect.topic)}</p>
@@ -203,13 +257,29 @@ Deno.serve(async (req) => {
       <p style="margin:4px 0;color:#64748b">Référence : ${ref}… — détail complet dans la table prospects (accès admin).</p>
       <p style="margin-top:16px;font-size:12px;color:#64748b">Notification automatique — aucune donnée nominative dans cet e-mail.</p>
     </div>`;
-    await sendEmail(
-      ADMIN_TO,
-      urgent ? 'ClairDossier — prospect à fort potentiel' : 'ClairDossier — nouveau prospect',
-      notifHtml
+    const partnerHtml = `<div style="font-family:system-ui,-apple-system,sans-serif;line-height:1.6;color:#0d1b3d">
+      <h2 style="font-size:18px;margin:0 0 12px">Nouvelle demande de partenariat</h2>
+      <p style="margin:4px 0">Type : ${escapeHtml(PARTNER_TYPE_LABELS[prospect.partner_type ?? 'autre'])} · structure renseignée : ${prospect.organization ? 'oui' : 'non'} · site indiqué : ${prospect.site_url ? 'oui' : 'non'}</p>
+      ${qual.human_flags.length ? `<p style="margin:4px 0">Signaux : ${qual.human_flags.map(escapeHtml).join(', ')}</p>` : ''}
+      <p style="margin:4px 0;color:#64748b">Référence : ${ref}… — détail dans la console d'administration (section Demandes).</p>
+      <p style="margin:16px 0 4px"><a href="${SITE}/admin" style="color:#0d1b3d;font-weight:600">Ouvrir l’espace administrateur →</a></p>
+      <p style="margin-top:16px;font-size:12px;color:#64748b">Notification automatique — aucune donnée nominative dans cet e-mail. Aucun message n'a été envoyé au demandeur.</p>
+    </div>`;
+    mails.push(
+      isPartner
+        ? sendEmail(ADMIN_TO, 'ClairDossier — nouvelle demande de partenariat', partnerHtml)
+        : sendEmail(
+            ADMIN_TO,
+            urgent ? 'ClairDossier — prospect à fort potentiel' : 'ClairDossier — nouveau prospect',
+            notifHtml
+          )
     );
+    const sent = await Promise.allSettled(mails);
+    for (const s of sent) {
+      if (s.status === 'rejected') console.error('submit-prospect: envoi e-mail en échec', s.reason);
+    }
 
-    return new Response(JSON.stringify({ ok: true, routage: qual.routage }), {
+    return new Response(JSON.stringify({ ok: true, stored: true, ref, routage: qual.routage }), {
       status: 201,
       headers,
     });

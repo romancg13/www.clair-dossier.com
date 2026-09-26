@@ -2,7 +2,11 @@
  * État du produit (Vague 1 — 5.4) : ce qui est opérationnel, partiel et
  * prévu — généré à partir de ce que le CODE fait réellement (audit du
  * 2026-08-29/30 : routeur, pages, migrations SQL, fonctions edge), pas de
- * ce que dit le marketing.
+ * ce que dit le marketing. Revu le 2026-09-18 contre l'état de production
+ * constaté (sonde anonyme) : migrations 20260829120000, 20260915120000,
+ * 20260915150000, 20260916120000, 20260917120000, 20260918100000 NON
+ * appliquées ; seule la fonction notify-lead est déployée. Une fonction
+ * écrite n'est pas un service activé : elle reste en « partiel ».
  *
  * Règles de tenue :
  *  - toute évolution du produit met à jour cette liste ET la date ;
@@ -11,7 +15,7 @@
  *    (prompts/a1-qualification.system.md) sur les capacités du produit.
  */
 
-export const PRODUCT_STATUS_UPDATED = '2026-08-30';
+export const PRODUCT_STATUS_UPDATED = '2026-09-18';
 
 export type ProductStatusEntry = {
   label: string;
@@ -59,7 +63,7 @@ export const operational: ProductStatusEntry[] = [
   {
     label: 'Transmission déclenchée par vous, jamais automatique',
     detail:
-      'Envoi du dossier par e-mail ou WhatsApp sur action explicite de l’utilisateur. Aucune lecture ni exploitation automatique des pièces (engagement contractuel).',
+      'Le dossier validé est enregistré dans votre compte ; rien n’est envoyé par e-mail ou WhatsApp. Vous téléchargez vos pièces et transmettez le dossier vous-même au destinataire de votre choix. L’équipe reçoit une notification interne, sans pièce ni contenu de dossier. Aucune lecture ni exploitation automatique des pièces (engagement contractuel).',
     verification: '/fonctionnalites/transmission-validee · /cgv',
   },
   {
@@ -83,19 +87,29 @@ export const operational: ProductStatusEntry[] = [
 
 export const partial: ProductStatusEntry[] = [
   {
-    label: 'Quotas des formules affichés mais non appliqués',
+    label: 'Quotas de dossiers des formules',
     detail:
-      'Les plafonds de la grille tarifaire (nombre de dossiers, utilisateurs) sont affichés sur /tarifs mais ne sont pas encore appliqués techniquement dans l’application. Définition et application en cours d’arbitrage.',
+      'Le contrôle serveur des plafonds de dossiers (vérification et décompte à la validation, exceptions gérées par l’équipe) est écrit et testé hors production ; il n’est pas activé en production à ce jour. Aucune limite n’est appliquée à un abonné tant que son abonnement n’est pas rattaché.',
   },
   {
-    label: 'Paiement non relié automatiquement aux droits',
+    label: 'Rattachement automatique de l’abonnement aux droits',
     detail:
-      'L’abonnement Stripe n’active pas automatiquement de capacités dans l’application (pas de webhook) : le rapprochement est effectué manuellement par l’équipe.',
+      'Le rattachement de l’abonnement Stripe au compte via un webhook signé est écrit et testé hors production ; il n’est pas activé en production à ce jour. D’ici là, le rapprochement est effectué par l’équipe.',
   },
   {
     label: 'Capture des demandes de contact et de rendez-vous',
     detail:
-      'Enregistrement côté serveur des demandes (avec accusé de réception par e-mail) : code livré et testé, activation en cours de déploiement.',
+      'Enregistrement côté serveur des demandes (avec accusé de réception par e-mail) : code écrit et testé hors production, non activé en production à ce jour. D’ici là, les demandes passent par e-mail, téléphone ou WhatsApp.',
+  },
+  {
+    label: 'Gestion documentaire avancée',
+    detail:
+      'Catégorie de pièce corrigeable, corbeille avec restauration, échéances modifiables et journal d’activité du dossier : code écrit et testé hors production, non activé en production à ce jour. L’interface s’active d’elle-même lorsque la base le permet ; d’ici là, le fonctionnement actuel reste inchangé.',
+  },
+  {
+    label: 'Suppression du compte en libre-service',
+    detail:
+      'La fonction serveur de suppression est écrite, mais pas déployée à ce jour. La suppression du compte et des données se demande par e-mail (voir /securite, « Exercice des droits »).',
   },
   {
     label: 'Mesure d’audience sans cookie',

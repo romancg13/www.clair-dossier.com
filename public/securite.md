@@ -1,7 +1,7 @@
 ---
 title: "Sécurité & centre de confiance ClairDossier"
 description: "Sous-traitants nommés, localisation et durées de conservation, secret professionnel, continuité, DPA sur demande, journal daté des changements de sécurité."
-lastUpdate: 2026-08-30
+lastUpdate: 2026-09-18
 url: https://www.clair-dossier.com/securite
 ---
 
@@ -9,7 +9,7 @@ url: https://www.clair-dossier.com/securite
 
 Ce centre de confiance expose ce que nous faisons concrètement : chiffrement, isolation par utilisateur, sous-traitants nommés, durées de conservation et journal des changements. Ce que nous ne pouvons pas encore prouver est marqué « À CONFIRMER » — jamais maquillé.
 
-*Dernière mise à jour : 2026-08-30*
+*Dernière mise à jour : 2026-09-18*
 
 ## Ce qui est en place
 
@@ -23,8 +23,8 @@ Ce centre de confiance expose ce que nous faisons concrètement : chiffrement, i
 
 ### Supabase
 
-- **Finalité** : Base de données, authentification, stockage privé des pièces, fonctions serveur.
-- **Données** : Comptes et profils, dossiers, pièces déposées, demandes de contact.
+- **Finalité** : Base de données, authentification, stockage privé des pièces, fonctions serveur (dont la notification interne de l’équipe).
+- **Données** : Comptes et profils, dossiers, pièces déposées, notifications internes.
 - **Localisation** : Région cloud du projet : en cours de confirmation — sera affichée ici. *(À CONFIRMER)*
 - **Conservation** : Durée du contrat, puis délais de la politique de confidentialité (comptes : 12 mois après résiliation).
 - **DPA** : Cadre de sous-traitance Supabase : référence à publier ici. *(À CONFIRMER)*
@@ -39,27 +39,27 @@ Ce centre de confiance expose ce que nous faisons concrètement : chiffrement, i
 
 ### Resend
 
-- **Finalité** : E-mails transactionnels : confirmation de compte, notifications, accusés de réception.
-- **Données** : Adresse e-mail et contenu des messages transactionnels (minimisés : pas de contenu de dossier).
+- **Finalité** : Envoi des e-mails : confirmation de compte et notifications internes à l’équipe (nouvelle inscription, nouveau dossier).
+- **Données** : Adresse e-mail du destinataire et contenu du message. Les notifications internes ne contiennent ni pièce ni contenu de dossier.
 - **Localisation** : Société américaine — encadrement des transferts (clauses contractuelles types) : à confirmer. *(À CONFIRMER)*
 - **Conservation** : Journaux d’envoi côté prestataire : durée à confirmer.
 - **DPA** : DPA Resend : référence à publier ici. *(À CONFIRMER)*
 
-### GitHub Pages / Netlify
+### GitHub Pages (GitHub, Inc.)
 
-- **Finalité** : Diffusion du site public (fichiers statiques).
-- **Données** : Aucune donnée de dossier — journaux techniques de diffusion (adresses IP) côté hébergeur.
-- **Localisation** : Réseaux de diffusion mondiaux (contenu public uniquement).
-- **Conservation** : Journaux techniques selon les politiques de ces hébergeurs.
-- **DPA** : Conditions de service publiques de ces plateformes.
+- **Finalité** : Diffusion du site public (fichiers statiques) sur le domaine clair-dossier.com.
+- **Données** : Aucune donnée de dossier — journaux techniques de diffusion (dont l’adresse IP) côté hébergeur.
+- **Localisation** : Société américaine, réseau de diffusion mondial (contenu public uniquement) — encadrement des transferts : à confirmer. *(À CONFIRMER)*
+- **Conservation** : Journaux techniques selon la politique de l’hébergeur.
+- **DPA** : Conditions de traitement des données de GitHub : référence à publier ici. *(À CONFIRMER)*
 
 ### WhatsApp (Meta)
 
-- **Finalité** : Canal de contact et de transmission optionnel, toujours choisi et déclenché par vous.
-- **Données** : Uniquement ce que vous décidez d’y envoyer — régi par les conditions de WhatsApp.
-- **Localisation** : Hors de notre périmètre serveur : aucune pièce n’y transite sans votre action explicite.
+- **Finalité** : Canal de contact optionnel : vous choisissez d’écrire à l’équipe par WhatsApp.
+- **Données** : Uniquement ce que vous décidez d’y écrire ou d’y joindre — régi par les conditions de WhatsApp. Le service n’y envoie jamais vos dossiers.
+- **Localisation** : Hors de notre périmètre serveur : rien n’y transite sans votre action explicite.
 - **Conservation** : Selon vos réglages WhatsApp.
-- **DPA** : Sans objet (canal externe activé par l’utilisateur).
+- **DPA** : Sans objet (canal externe choisi par vous).
 
 ## Durées de conservation (politique publiée)
 
@@ -84,7 +84,8 @@ Le DPA s'obtient sans formulaire : demande par e-mail à contact.clairdossier@ic
 
 ## Journal des changements de sécurité
 
-- **2026-08-30** — En-têtes HTTP renforcés sur la cible d’hébergement (HSTS 1 an, CSP stricte, nosniff, anti-framing). Pré-rendu des pages publiques. Conception de la capture des demandes de contact : table verrouillée (aucun accès public direct), écriture par fonction serveur validée, limitation de débit par hachés salés — activation en cours.
+- **2026-09-18** — Tests SQL de cloisonnement entre comptes rejoués hors production sur l’ensemble des migrations du dépôt ; le relevé daté alimente les indicateurs de cette page.
+- **2026-08-30** — Pré-rendu des pages publiques. En-têtes HTTP renforcés (HSTS, CSP stricte, nosniff, anti-framing) préparés pour une cible d’hébergement alternative, non active sur le domaine à ce jour. Capture des demandes de contact conçue (table verrouillée sans accès public direct, écriture par fonction serveur validée, limitation de débit par hachés salés) : écrite, non activée en production.
 - **2026-08-23** — Baseline de sécurité et matrice de non-régression établies (inventaire complet du code, des accès et des flux Stripe/Supabase).
 - **2026-06-21** — Accès support restreint à un administrateur unique : liste d’admins hors d’atteinte des utilisateurs (aucune policy applicative), vérification par fonction dédiée, politiques de lecture additives — l’isolation entre clients reste inchangée.
 - **2026-06-15** — Isolation par utilisateur appliquée en base dès l’initialisation (Row Level Security sur dossiers, documents, profils et stockage) ; bucket de pièces privé, accès par liens signés temporaires.
@@ -96,6 +97,7 @@ Le DPA s'obtient sans formulaire : demande par e-mail à contact.clairdossier@ic
 - À CONFIRMER : Analyse d’impact (AIPD) : évaluation de la nécessité à documenter.
 - À CONFIRMER : Procédure d’incident rédigée et publiée (l’engagement réglementaire s’applique déjà — voir Continuité).
 - À CONFIRMER : Test de restauration des sauvegardes : à réaliser puis dater ici.
+- À CONFIRMER : Encadrement des transferts hors Union européenne (Resend, GitHub) : mécanisme à confirmer puis afficher.
 
 ## Divulgation responsable
 

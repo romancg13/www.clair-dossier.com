@@ -12,7 +12,7 @@ Les délais sont au cœur des dossiers : délai de contestation, date d'échéan
 
 Vous renseignez les échéances connues lors de la création du dossier. Elles sont enregistrées et affichées sur la page d'avancement, à côté des pièces et des étapes. Vous les retrouvez à chaque fois que vous ouvrez le dossier.
 
-Vous gardez ainsi vos dates importantes réunies au même endroit que le reste du dossier, plutôt que dispersées dans des notes ou des agendas séparés. Vous décidez ensuite quand transmettre le dossier, par e-mail ou par WhatsApp.
+Vous gardez ainsi vos dates importantes réunies au même endroit que le reste du dossier, plutôt que dispersées dans des notes ou des agendas séparés. Vous décidez ensuite quand et comment transmettre le dossier.
 
 ## Concrètement
 

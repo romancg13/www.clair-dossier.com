@@ -118,3 +118,12 @@
   for = "/index.html"
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
+
+# ── Documents investisseurs (deck de levée) : accessibles par lien direct,
+# volontairement hors index des moteurs. GitHub Pages (hôte actuel du domaine)
+# ne permet pas d'en-têtes personnalisés : la protection y repose sur
+# public/robots.txt. Ces règles prennent le relais après la bascule DNS.
+[[headers]]
+  for = "/investisseurs/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow, noarchive"

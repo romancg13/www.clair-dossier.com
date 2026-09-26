@@ -34,7 +34,7 @@ export function BlogPreview({ limit }: { limit?: number } = {}) {
             <StaggerItem key={post.slug}>
               <Link
                 to={`/blog/${post.slug}`}
-                className="group flex h-full flex-col overflow-hidden rounded-2xl border hairline bg-white transition-colors duration-300 hover:border-gold-500"
+                className="premium-card group relative flex h-full flex-col overflow-hidden rounded-2xl border hairline bg-white transition-colors duration-300 hover:border-gold-500"
               >
                 <div className="relative aspect-[16/9] overflow-hidden bg-cream-100">
                   <div

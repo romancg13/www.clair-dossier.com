@@ -1,12 +1,15 @@
 /**
  * WhatsApp click-to-chat helpers.
- * Numéro au format international sans + ni espaces (requis par wa.me).
+ * Numéro au format international sans + ni espaces (requis par wa.me) —
+ * source unique : src/data/contact.ts.
  */
-export const WHATSAPP_NUMBER = '33782983644';
-export const WHATSAPP_DISPLAY = '+33 7 82 98 36 44';
+import { PHONE_DISPLAY, PHONE_WA, WHATSAPP_URL } from '../data/contact';
+
+export const WHATSAPP_NUMBER = PHONE_WA;
+export const WHATSAPP_DISPLAY = PHONE_DISPLAY;
 
 export function buildWhatsAppUrl(message: string): string {
-  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+  return `${WHATSAPP_URL}?text=${encodeURIComponent(message)}`;
 }
 
 export function openWhatsApp(message: string): void {

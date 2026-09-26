@@ -9,7 +9,59 @@ export type Feature = {
   hero: string;
   body: string[];
   bullets: string[];
+  /** Groupe d'usage (chantier 12) — une fiche appartient à UN seul groupe. */
+  group: FeatureGroupId;
+  /** Bénéfice court, en une phrase (carte de /fonctionnalites et accueil). */
+  benefit: string;
+  /**
+   * Exemple concret. Les libellés d'interface cités entre « » sont les
+   * libellés RÉELS du produit (vérifiés par tests/features.test.ts).
+   */
+  example: string;
+  /** Ce que la fonctionnalité ne fait PAS aujourd'hui (projet, à l'étude). */
+  limit?: string;
 };
+
+/**
+ * Quatre groupes d'usage (chantier 12) : ils remplacent la
+ * présentation « neuf briques ». Chaque groupe ne décrit que ce qui est
+ * réellement disponible (src/data/product-status.ts, DossierFlow,
+ * DossierDetail, Account) — le produit ne lit pas les documents (CGV).
+ */
+export type FeatureGroupId = "creer" | "deposer" | "suivre" | "valider";
+
+export type FeatureGroup = {
+  id: FeatureGroupId;
+  title: string;
+  intro: string;
+};
+
+export const FEATURE_GROUPS: FeatureGroup[] = [
+  {
+    id: "creer",
+    title: "Créer et nommer",
+    intro:
+      "Un parcours en cinq étapes pour ouvrir un dossier propre dès le départ, avec un nom qui permet de le retrouver.",
+  },
+  {
+    id: "deposer",
+    title: "Déposer, classer, retrouver",
+    intro:
+      "Vos pièces rejoignent un espace privé, rangées par catégorie d'après leur nom de fichier, et vos dossiers restent à portée de recherche.",
+  },
+  {
+    id: "suivre",
+    title: "Suivre étapes et échéances",
+    intro:
+      "Chaque dossier a sa page d'avancement : l'étape en cours, les pièces et les dates renseignées, réunies sur un même écran.",
+  },
+  {
+    id: "valider",
+    title: "Valider, consulter, partager",
+    intro:
+      "Vous relisez avant d'enregistrer, vous consultez vos pièces quand vous le souhaitez, et vous transmettez vous-même : rien ne part automatiquement.",
+  },
+];
 
 export const features: Feature[] = [
   {
@@ -22,7 +74,7 @@ export const features: Feature[] = [
     hero: "Le bon dossier commence par les bonnes étapes. ClairDossier en propose 5, dans l'ordre.",
     body: [
       "La plupart des outils font remplir un formulaire générique d'un seul tenant. Résultat : des informations éparses, mal rangées, qu'il faut ensuite reprendre. Notre approche est inverse — guider la création étape par étape pour ne collecter que ce qui est utile, dans le bon ordre.",
-      "Le tunnel se déroule en cinq étapes : votre profil (artisan, indépendant, profession libérale ou PME), la nature du dossier, les informations, le dépôt des documents, puis un récapitulatif avant validation. À la première étape, vous donnez un nom au dossier — c'est obligatoire, pour le retrouver clairement dans votre liste.",
+      "Le tunnel se déroule en cinq étapes : votre profil (artisan, indépendant, profession libérale ou PME), la nature du dossier, les informations, le dépôt des documents, puis un récapitulatif avant validation. À l'étape « Nature », vous donnez un nom au dossier — c'est obligatoire, pour le retrouver clairement dans votre liste.",
       "Chaque étape ne demande que ce dont elle a besoin. Vous avancez d'un écran à l'autre sans vous perdre, et vous voyez à tout moment où vous en êtes dans la création.",
       "Le récapitulatif final vous montre l'ensemble de ce que vous avez saisi avant de confirmer. Vous relisez, vous corrigez si besoin, puis vous validez. Rien n'est figé tant que vous n'avez pas confirmé.",
     ],
@@ -32,6 +84,11 @@ export const features: Feature[] = [
       "Nom de dossier obligatoire pour un repérage clair",
       "Récapitulatif complet avant validation finale",
     ],
+    group: "creer",
+    benefit:
+      "Vous ne saisissez que l'utile, dans l'ordre, et chaque dossier porte un nom qui le rend facile à retrouver.",
+    example:
+      "Un artisan choisit le profil « Artisan », la nature « Facture / paiement » et nomme le dossier « Chantier rue des Lilas ». Il renseigne le débiteur, le montant et l'échéance, puis joint devis et facture. S'il s'interrompt, il reprend son brouillon depuis « Mon compte », sur le même appareil.",
   },
   {
     slug: "depot-de-pieces",
@@ -53,6 +110,11 @@ export const features: Feature[] = [
       "Pièces consultables et téléchargeables depuis le dossier",
       "Isolation des données par utilisateur",
     ],
+    group: "deposer",
+    benefit:
+      "Toutes les pièces d'un dossier au même endroit, rangées par catégorie d'après leur nom de fichier — leur contenu n'est jamais lu.",
+    example:
+      "Vous déposez « devis-signe.pdf » et « facture-0142.pdf » : ils se rangent sous « Devis & commandes » et « Factures & avoirs ». Plus tard, vous ajoutez un courrier avec « Ajouter des pièces », retrouvez un fichier par la recherche et récupérez l'ensemble avec « Tout télécharger (.zip) ».",
   },
   {
     slug: "chronologie",
@@ -74,6 +136,11 @@ export const features: Feature[] = [
       "Échéances renseignées affichées sur la page",
       "Une vue unique et fidèle aux informations saisies",
     ],
+    group: "suivre",
+    benefit:
+      "En ouvrant le dossier, vous savez où il en est : étape en cours, pièces et dates sur un même écran.",
+    example:
+      "Le dossier « Chantier rue des Lilas » affiche ses cinq étapes, de « Création du dossier » à « Option impayé / pré-contentieux ». L'étape en cours est mise en évidence, et chaque étape se déplie d'un clic pour montrer ce qu'elle recouvre.",
   },
   {
     slug: "transmission-validee",
@@ -81,20 +148,25 @@ export const features: Feature[] = [
     shortTitle: "Transmission",
     icon: "validate",
     blurb:
-      "Vous transmettez votre dossier par e-mail ou WhatsApp, quand vous le décidez. Rien ne part sans votre validation explicite.",
-    hero: "Le dossier ne part jamais tout seul. C'est vous qui déclenchez la transmission, par e-mail ou par WhatsApp.",
+      "Votre dossier validé est enregistré dans votre compte, jamais envoyé automatiquement. Vous le transmettez vous-même, au destinataire et au moment de votre choix.",
+    hero: "Le dossier ne part jamais tout seul. Il reste dans votre compte tant que vous ne décidez pas de le transmettre.",
     body: [
-      "ClairDossier prépare votre dossier ; c'est vous qui choisissez quand et à qui le transmettre. Aucun envoi automatique : tant que vous n'avez pas validé, rien ne quitte votre espace.",
-      "Quand votre dossier est prêt, vous le transmettez en un geste, par e-mail ou par WhatsApp. Vous décidez du destinataire et du moment. La transmission est toujours déclenchée par vous, explicitement.",
-      "Vous gardez ainsi la main du début à la fin : vous construisez le dossier dans le tunnel, vous relisez le récapitulatif, puis vous transmettez seulement lorsque tout vous convient.",
-      "Ce fonctionnement protège vos données : elles restent dans votre espace privé jusqu'à votre validation, et ne sont partagées qu'avec les personnes que vous avez choisies.",
+      "ClairDossier prépare votre dossier ; c'est vous qui choisissez quand et à qui le transmettre. Aucun envoi automatique : rien ne quitte votre espace sans votre action.",
+      "Quand votre dossier est prêt, vous retrouvez toutes ses pièces et informations dans votre compte : vous les téléchargez et transmettez le dossier au destinataire de votre choix, par le canal qui vous convient. La transmission est toujours effectuée par vous, explicitement.",
+      "Vous gardez ainsi la main du début à la fin : vous construisez le dossier dans le tunnel, vous relisez le récapitulatif, vous validez son enregistrement dans votre compte, puis vous transmettez seulement lorsque tout vous convient.",
+      "Ce fonctionnement protège vos données : elles restent dans votre espace privé, et ne sont partagées qu'avec les personnes que vous avez choisies, quand vous l'avez décidé.",
     ],
     bullets: [
-      "Transmission déclenchée par vous, jamais automatique",
-      "Envoi par e-mail ou par WhatsApp, à votre choix",
-      "Validation explicite avant tout partage",
-      "Données conservées dans votre espace privé jusqu'à l'envoi",
+      "Transmission décidée et effectuée par vous, jamais automatique",
+      "Dossier enregistré dans votre compte, pièces téléchargeables à tout moment",
+      "Aucun envoi sans votre action explicite",
+      "Données conservées dans votre espace privé jusqu'au partage que vous décidez",
     ],
+    group: "valider",
+    benefit:
+      "Le dossier ne part jamais seul : vous choisissez quand, à qui et par quel canal le transmettre.",
+    example:
+      "Votre comptable demande les justificatifs : depuis la page du dossier, « Tout télécharger (.zip) » réunit les pièces en un fichier, que vous lui envoyez vous-même, par le canal de votre choix.",
   },
   {
     slug: "suivi-statuts",
@@ -116,6 +188,11 @@ export const features: Feature[] = [
       "Accès direct à la page d'avancement de chaque dossier",
       "Isolation des données par utilisateur",
     ],
+    group: "deposer",
+    benefit:
+      "Tous vos dossiers au même endroit : vous voyez lesquels sont en cours et vous ouvrez le bon d'un clic.",
+    example:
+      "Dans « Mon compte », la liste « Vos dossiers » affiche chaque dossier avec son nom et son statut. À partir de quatre dossiers, une recherche et les filtres « Actifs » et « Archivés » apparaissent.",
   },
   {
     slug: "espace-securise",
@@ -129,7 +206,7 @@ export const features: Feature[] = [
       "Combien de pièces circulent encore par SMS, par e-mail personnel, par WhatsApp ? C'est un risque de confidentialité et une charge mentale dès qu'il faut retrouver le bon document. ClairDossier rassemble pièces et informations dans un espace privé, rattaché à votre dossier.",
       "L'accès à votre espace passe par une authentification : vous seul ouvrez vos dossiers. Les échanges en transit se font en HTTPS, et vos données sont chiffrées au repos côté hébergeur.",
       "Le stockage des pièces est privé : les fichiers ne sont accessibles que via des liens temporaires signés, jamais en accès libre. Vos documents restent rangés là où vous les avez déposés, dossier par dossier.",
-      "Quand vous le décidez, vous transmettez le dossier par e-mail ou par WhatsApp, à la personne de votre choix. Le partage n'a lieu que sur votre action explicite — rien ne sort de votre espace sans votre validation.",
+      "Quand vous le décidez, vous téléchargez vos pièces et transmettez le dossier à la personne de votre choix, par le canal qui vous convient. Le partage n'a lieu que sur votre action explicite — rien ne sort de votre espace sans votre validation.",
     ],
     bullets: [
       "Accès à l'espace par authentification",
@@ -137,6 +214,11 @@ export const features: Feature[] = [
       "Stockage privé des pièces, liens temporaires signés",
       "Partage uniquement sur transmission validée par vous",
     ],
+    group: "deposer",
+    benefit:
+      "Vos pièces quittent les SMS et les e-mails dispersés pour un espace que vous seul ouvrez.",
+    example:
+      "La photo d'un courrier prise avec votre téléphone rejoint le dossier. Pour la revoir, vous vous connectez : le fichier s'ouvre par un lien temporaire, jamais par une adresse publique.",
   },
   {
     slug: "donnees-protegees",
@@ -149,7 +231,7 @@ export const features: Feature[] = [
     body: [
       "Le RGPD n'est pas une case à cocher. ClairDossier traite vos informations avec le souci de la protection des données, et vous conservez vos droits sur ce qui vous concerne.",
       "Vos données sont hébergées chez un sous-traitant conforme RGPD, chiffrées au repos côté hébergeur et transmises en HTTPS. L'isolation par utilisateur assure que vos dossiers restent séparés de ceux des autres comptes ; l'accès se fait par authentification.",
-      "Vous gardez la main sur vos droits : accès, export et suppression de vos données. Ces demandes se font via le contact ou votre espace, et sont traitées dans un délai raisonnable (jusqu'à 30 jours), sauf obligation légale de conservation.",
+      "Vous gardez la main sur vos droits : accès, export et suppression de vos données. Ces demandes se font par e-mail, à l'adresse de contact, et sont traitées dans un délai raisonnable (jusqu'à 30 jours), sauf obligation légale de conservation.",
       "Tant que vous ne demandez pas de modification, vos données restent là où vous les avez placées, dans votre espace privé. Vous décidez de ce que vous transmettez, et à qui.",
     ],
     bullets: [
@@ -158,6 +240,11 @@ export const features: Feature[] = [
       "Accès, export et suppression sur demande",
       "Demandes traitées sous 30 jours (sauf obligation légale)",
     ],
+    group: "valider",
+    benefit:
+      "Vos données restent séparées de celles des autres comptes, et vos droits RGPD s'exercent sur simple demande.",
+    example:
+      "Vous souhaitez une copie de vos données : vous écrivez à l'adresse de contact en précisant votre demande, et la réponse vous parvient sous 30 jours au plus.",
   },
   {
     slug: "calendrier-relances",
@@ -170,7 +257,7 @@ export const features: Feature[] = [
     body: [
       "Les délais sont au cœur des dossiers : délai de contestation, date d'échéance, paiement, rendez-vous. Les garder en vue, c'est déjà éviter de les laisser passer. ClairDossier conserve ces dates avec le dossier auquel elles se rattachent.",
       "Vous renseignez les échéances connues lors de la création du dossier. Elles sont enregistrées et affichées sur la page d'avancement, à côté des pièces et des étapes. Vous les retrouvez à chaque fois que vous ouvrez le dossier.",
-      "Vous gardez ainsi vos dates importantes réunies au même endroit que le reste du dossier, plutôt que dispersées dans des notes ou des agendas séparés. Vous décidez ensuite quand transmettre le dossier, par e-mail ou par WhatsApp.",
+      "Vous gardez ainsi vos dates importantes réunies au même endroit que le reste du dossier, plutôt que dispersées dans des notes ou des agendas séparés. Vous décidez ensuite quand et comment transmettre le dossier.",
     ],
     bullets: [
       "Échéances renseignées à la création du dossier",
@@ -178,6 +265,13 @@ export const features: Feature[] = [
       "Échéances réunies avec les pièces et les étapes",
       "Transmission du dossier décidée et déclenchée par vous",
     ],
+    group: "suivre",
+    benefit:
+      "Vos dates clés restent visibles à côté des pièces, là où vous suivez le dossier.",
+    example:
+      "Vous indiquez l'« Échéance de paiement » en créant un dossier « Facture / paiement » : elle apparaît dans l'onglet « Échéances » du dossier, sous « Dates renseignées à la création ».",
+    limit:
+      "Aucun rappel n'est envoyé à votre place aujourd'hui : cette possibilité est à l'étude.",
   },
   {
     slug: "recapitulatif-transmission",
@@ -185,19 +279,24 @@ export const features: Feature[] = [
     shortTitle: "Récapitulatif",
     icon: "ai-brief",
     blurb:
-      "Avant d'envoyer, ClairDossier vous présente un récapitulatif complet du dossier. Vous relisez, vous corrigez si besoin, puis vous transmettez.",
-    hero: "On relit avant d'envoyer. ClairDossier réunit tout le dossier dans un récapitulatif clair.",
+      "Avant de valider, ClairDossier vous présente un récapitulatif complet du dossier. Vous relisez, vous corrigez si besoin, puis vous enregistrez le dossier dans votre compte.",
+    hero: "On relit avant de valider. ClairDossier réunit tout le dossier dans un récapitulatif clair.",
     body: [
-      "Avant de transmettre un dossier, il faut être sûr de ce qu'il contient : les informations, les pièces, les échéances. ClairDossier réunit l'ensemble dans une étape de récapitulatif, à la fin du tunnel de création.",
-      "Le récapitulatif affiche le profil, la nature du dossier, les informations saisies et les pièces déposées. Vous relisez le tout d'un seul écran, vous revenez en arrière pour corriger si besoin, puis vous confirmez. Rien n'est transmis tant que vous n'avez pas validé.",
-      "Une fois le dossier confirmé, vous le transmettez quand vous le décidez, par e-mail ou par WhatsApp, à la personne de votre choix. Vous gardez la main sur le contenu comme sur l'envoi.",
+      "Avant de valider un dossier, il faut être sûr de ce qu'il contient : les informations, les pièces, les échéances. ClairDossier réunit l'ensemble dans une étape de récapitulatif, à la fin du tunnel de création.",
+      "Le récapitulatif affiche le profil, la nature du dossier, les informations saisies et les pièces déposées. Vous relisez le tout d'un seul écran, vous revenez en arrière pour corriger si besoin, puis vous validez : le dossier est enregistré dans votre compte. Rien n'est transmis à qui que ce soit sans votre action.",
+      "Une fois le dossier enregistré, vous le retrouvez dans votre espace : vous le transmettez quand vous le décidez, à la personne de votre choix, par le canal qui vous convient. Vous gardez la main sur le contenu comme sur l'envoi.",
     ],
     bullets: [
       "Récapitulatif complet à la fin du tunnel de création",
       "Profil, nature, informations et pièces réunis sur un écran",
       "Retour en arrière possible pour corriger avant de valider",
-      "Transmission par e-mail ou WhatsApp, déclenchée par vous",
+      "Transmission décidée et effectuée par vous, jamais automatique",
     ],
+    group: "valider",
+    benefit:
+      "Vous relisez tout avant d'enregistrer : rien n'est validé à votre place.",
+    example:
+      "À l'étape 5, le récapitulatif réunit nom, profil, informations et pièces jointes. Vous cliquez sur « Modifier » pour corriger un montant, puis sur « Valider et enregistrer mon dossier ».",
   },
 ];
 
@@ -220,4 +319,18 @@ export function getFeatureBySlug(
 ): Feature | undefined {
   if (!slug) return undefined;
   return features.find((f) => f.slug === slug);
+}
+
+/** Les quatre groupes, dans l'ordre, chacun avec ses fiches (ordre de `features`). */
+export function featuresByGroup(): Array<FeatureGroup & { features: Feature[] }> {
+  return FEATURE_GROUPS.map((g) => ({
+    ...g,
+    features: features.filter((f) => f.group === g.id),
+  }));
+}
+
+export function getFeatureGroup(id: FeatureGroupId): FeatureGroup {
+  const group = FEATURE_GROUPS.find((g) => g.id === id);
+  if (!group) throw new Error(`Groupe de fonctionnalités inconnu : ${id}`);
+  return group;
 }

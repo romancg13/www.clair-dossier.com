@@ -1,0 +1,6 @@
+{
+  "CFBundleDisplayName": "ClairDossier",
+  "NSCameraUsageDescription": "ClairDossier utilise l'appareil photo pour scanner un document et l'ajouter à votre dossier. Aucune image n'est envoyée sans votre action.",
+  "NSPhotoLibraryUsageDescription": "ClairDossier accède à vos photos pour importer un document existant dans un dossier. Seuls les fichiers que vous choisissez sont envoyés.",
+  "NSFaceIDUsageDescription": "ClairDossier utilise Face ID pour verrouiller l'accès à vos dossiers sur cet appareil."
+}

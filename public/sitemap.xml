@@ -6,164 +6,170 @@
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://www.clair-dossier.com/fonctionnalites</loc>
+    <loc>https://www.clair-dossier.com/fonctionnalites/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://www.clair-dossier.com/tarifs</loc>
+    <loc>https://www.clair-dossier.com/tarifs/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://www.clair-dossier.com/securite</loc>
+    <loc>https://www.clair-dossier.com/securite/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.clair-dossier.com/blog</loc>
+    <loc>https://www.clair-dossier.com/blog/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.clair-dossier.com/contact</loc>
+    <loc>https://www.clair-dossier.com/contact/</loc>
     <changefreq>yearly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://www.clair-dossier.com/etat-du-produit</loc>
+    <loc>https://www.clair-dossier.com/etat-du-produit/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://www.clair-dossier.com/cabinets-avocats</loc>
+    <loc>https://www.clair-dossier.com/cabinets-avocats/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.clair-dossier.com/experts-comptables</loc>
+    <loc>https://www.clair-dossier.com/experts-comptables/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.clair-dossier.com/grands-comptes</loc>
+    <loc>https://www.clair-dossier.com/grands-comptes/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.clair-dossier.com/rendez-vous</loc>
+    <loc>https://www.clair-dossier.com/rendez-vous/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://www.clair-dossier.com/marseille</loc>
+    <loc>https://www.clair-dossier.com/marseille/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://www.clair-dossier.com/fonctionnalites/creation-guidee</loc>
+    <loc>https://www.clair-dossier.com/fonctionnalites/creation-guidee/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://www.clair-dossier.com/fonctionnalites/depot-de-pieces</loc>
+    <loc>https://www.clair-dossier.com/fonctionnalites/depot-de-pieces/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://www.clair-dossier.com/fonctionnalites/chronologie</loc>
+    <loc>https://www.clair-dossier.com/fonctionnalites/chronologie/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://www.clair-dossier.com/fonctionnalites/transmission-validee</loc>
+    <loc>https://www.clair-dossier.com/fonctionnalites/transmission-validee/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://www.clair-dossier.com/fonctionnalites/suivi-statuts</loc>
+    <loc>https://www.clair-dossier.com/fonctionnalites/suivi-statuts/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://www.clair-dossier.com/fonctionnalites/espace-securise</loc>
+    <loc>https://www.clair-dossier.com/fonctionnalites/espace-securise/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://www.clair-dossier.com/fonctionnalites/donnees-protegees</loc>
+    <loc>https://www.clair-dossier.com/fonctionnalites/donnees-protegees/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://www.clair-dossier.com/fonctionnalites/calendrier-relances</loc>
+    <loc>https://www.clair-dossier.com/fonctionnalites/calendrier-relances/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://www.clair-dossier.com/fonctionnalites/recapitulatif-transmission</loc>
+    <loc>https://www.clair-dossier.com/fonctionnalites/recapitulatif-transmission/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://www.clair-dossier.com/blog/preparer-rendez-vous-avocat</loc>
-    <lastmod>2026-05-20</lastmod>
+    <loc>https://www.clair-dossier.com/blog/organiser-un-dossier/</loc>
+    <lastmod>2026-09-18</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.clair-dossier.com/blog/chronologie-prud-homale</loc>
-    <lastmod>2026-05-12</lastmod>
+    <loc>https://www.clair-dossier.com/blog/preparer-rendez-vous-avocat/</loc>
+    <lastmod>2026-09-18</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.clair-dossier.com/blog/mise-en-demeure</loc>
-    <lastmod>2026-04-15</lastmod>
+    <loc>https://www.clair-dossier.com/blog/chronologie-prud-homale/</loc>
+    <lastmod>2026-09-18</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.clair-dossier.com/blog/conservation-documents</loc>
-    <lastmod>2026-03-28</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://www.clair-dossier.com/blog/mediation-contentieux</loc>
-    <lastmod>2026-02-12</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://www.clair-dossier.com/blog/rgpd-legaltech</loc>
-    <lastmod>2026-04-28</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://www.clair-dossier.com/blog/ia-droit</loc>
+    <loc>https://www.clair-dossier.com/blog/ia-droit/</loc>
     <lastmod>2026-05-02</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.clair-dossier.com/mentions-legales</loc>
+    <loc>https://www.clair-dossier.com/blog/rgpd-legaltech/</loc>
+    <lastmod>2026-09-18</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.clair-dossier.com/blog/mise-en-demeure/</loc>
+    <lastmod>2026-04-15</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.clair-dossier.com/blog/conservation-documents/</loc>
+    <lastmod>2026-09-18</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.clair-dossier.com/blog/mediation-contentieux/</loc>
+    <lastmod>2026-02-12</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.clair-dossier.com/mentions-legales/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://www.clair-dossier.com/cgv</loc>
+    <loc>https://www.clair-dossier.com/cgv/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://www.clair-dossier.com/politique-confidentialite</loc>
+    <loc>https://www.clair-dossier.com/politique-confidentialite/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://www.clair-dossier.com/cookies</loc>
+    <loc>https://www.clair-dossier.com/cookies/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>
   </url>

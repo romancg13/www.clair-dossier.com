@@ -1,12 +1,28 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { isGenericTitle } from '../lib/dossier-workspace';
-import { hasDossierTrash } from '../lib/admin';
+import {
+  checkAdminDeleteEnabled,
+  checkSuperAdmin,
+  clientTrashEnabled,
+  createSingleFlight,
+  hasDossierTrash,
+  ownerIdentity,
+  trashMenuState,
+  trashThenRemove,
+  trashWithServerCheck,
+  type TrashMenuState,
+} from '../lib/admin';
+import { DossierCardMenu } from '../components/account/DossierCardMenu';
+import { ConfirmDeleteDialog } from '../components/account/ConfirmDeleteDialog';
 import { hasDeadlines, deadlineStatus } from '../lib/dossier-workspace';
 import { Seo } from '../lib/seo';
 import { useAuth } from '../lib/auth';
 import { supabase } from '../lib/supabase';
 import { ArrowRightIcon } from '../components/icons';
+import { useMyProfile } from '../lib/profile';
+import { DraftsPanel, ProfilePanel, SubscriptionPanel } from '../components/account/AccountPanels';
+import { greeting } from '../../packages/core/src/index';
 
 type DossierRow = {
   id: string;
@@ -15,6 +31,8 @@ type DossierRow = {
   title: string | null;
   status: string;
   created_at: string;
+  deleted_at?: string | null;
+  deleted_by?: string | null;
 };
 
 type ProfileRow = { id: string; company_name: string | null; full_name: string | null };
@@ -38,12 +56,25 @@ export function Account() {
   const [dossiers, setDossiers] = useState<DossierRow[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [owners, setOwners] = useState<Record<string, string>>({});
+  const [ownerProfiles, setOwnerProfiles] = useState<Record<string, ProfileRow>>({});
+  const [menu, setMenu] = useState<TrashMenuState>({ kind: 'hidden' });
+  // Corbeille du propriétaire : menu « Supprimer » sur ses dossiers + section Corbeille.
+  const [clientTrash, setClientTrash] = useState(false);
+  const [trashed, setTrashed] = useState<DossierRow[]>([]);
+  const [restoring, setRestoring] = useState<string | null>(null);
+  const [restoreError, setRestoreError] = useState<string | null>(null);
+  const [toTrash, setToTrash] = useState<DossierRow | null>(null);
+  const [trashPending, setTrashPending] = useState(false);
+  const [trashError, setTrashError] = useState<string | null>(null);
+  const trashTrigger = useRef<HTMLButtonElement | null>(null);
+  const singleFlight = useRef(createSingleFlight());
   const [emails, setEmails] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   // Une erreur réseau/RLS ne doit pas s'afficher comme « aucun dossier »
   // (état vide trompeur) : on la distingue et on propose de réessayer.
   const [loadError, setLoadError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
+  const { profile, extended, reload: reloadProfile } = useMyProfile(user?.id);
 
   useEffect(() => {
     let active = true;
@@ -57,12 +88,20 @@ export function Account() {
       const trashAware = await hasDossierTrash();
       const { data: rawRows, error: dossiersError } = await supabase
         .from('dossiers')
-        .select(`id,user_id,typology,title,status,created_at${trashAware ? ',deleted_at' : ''}`)
+        .select(`id,user_id,typology,title,status,created_at${trashAware ? ',deleted_at,deleted_by' : ''}`)
         .order('created_at', { ascending: false });
       if (dossiersError) throw dossiersError;
-      const data = ((rawRows as unknown as (DossierRow & { deleted_at?: string | null })[] | null) ?? []).filter(
-        (r) => !r.deleted_at,
-      );
+      const allRows = (rawRows as unknown as DossierRow[] | null) ?? [];
+      const data = allRows.filter((r) => !r.deleted_at);
+      const ownTrash = trashAware && (await clientTrashEnabled());
+      if (active) {
+        setClientTrash(ownTrash);
+        setTrashed(allRows.filter((r) => r.deleted_at && r.user_id === user?.id));
+      }
+      if (admin) {
+        const [superAdmin, server] = await Promise.all([checkSuperAdmin(), checkAdminDeleteEnabled()]);
+        if (active) setMenu(trashMenuState({ isAdmin: true, superAdmin, trashColumn: trashAware, server }));
+      }
 
       // « À faire » : échéances ouvertes de l'utilisateur (si la table existe).
       if (await hasDeadlines()) {
@@ -89,10 +128,13 @@ export function Account() {
       const emailMap: Record<string, string> = {};
       if (admin) {
         const { data: profs } = await supabase.from('profiles').select('id,company_name,full_name');
+        const profMap: Record<string, ProfileRow> = {};
         (profs as ProfileRow[] | null)?.forEach((p) => {
+          profMap[p.id] = p;
           const name = p.company_name || p.full_name;
           if (name) ownerMap[p.id] = name;
         });
+        if (active) setOwnerProfiles(profMap);
         // Identité (e-mail) du propriétaire — réservé à l'admin (fonction gardée par is_admin()).
         const { data: em } = await supabase.rpc('admin_user_emails');
         (em as { id: string; email: string }[] | null)?.forEach((e) => {
@@ -117,6 +159,78 @@ export function Account() {
     };
   }, [reloadKey]);
 
+  async function confirmTrash(reason: string) {
+    const d = toTrash;
+    if (!d || !user) return;
+    setTrashError(null);
+    setTrashPending(true);
+    const outcome = await singleFlight.current(() =>
+      trashThenRemove(
+        () =>
+          trashWithServerCheck({
+            update: async () => {
+              const { data, error } = await supabase
+                .from('dossiers')
+                .update(
+                  asAdmin(d)
+                    ? { deleted_at: new Date().toISOString(), deleted_by: user.id, delete_reason: reason || null }
+                    : { deleted_at: new Date().toISOString() },
+                )
+                .eq('id', d.id)
+                .select('deleted_at');
+              return { rows: data as { deleted_at: string | null }[] | null, error };
+            },
+            reread: async () => {
+              const { data, error } = await supabase.from('dossiers').select('deleted_at').eq('id', d.id).maybeSingle();
+              return { row: data as { deleted_at: string | null } | null, error };
+            },
+          }),
+        () => {
+          setDossiers((rows) => rows.filter((r) => r.id !== d.id));
+          if (d.user_id === user.id) setTrashed((t) => [{ ...d, deleted_at: new Date().toISOString(), deleted_by: user.id }, ...t]);
+        },
+      ),
+    );
+    setTrashPending(false);
+    if (!outcome) return;
+    if (outcome.ok) {
+      setToTrash(null);
+      trashTrigger.current?.focus();
+    } else {
+      setTrashError(outcome.error);
+    }
+  }
+
+  /** Super admin confirmé par le serveur → corbeille d'administration ; sinon corbeille du propriétaire. */
+  function asAdmin(d: DossierRow): boolean {
+    return menu.kind === 'enabled' && !(clientTrash && d.user_id === user?.id && !isAdmin);
+  }
+
+  function cardMenu(d: DossierRow): TrashMenuState {
+    if (menu.kind === 'enabled') return menu;
+    if (clientTrash && d.user_id === user?.id) return { kind: 'enabled' };
+    return menu;
+  }
+
+  async function restore(d: DossierRow) {
+    if (restoring) return;
+    setRestoring(d.id);
+    setRestoreError(null);
+    const { data, error } = await supabase
+      .from('dossiers')
+      .update(isAdmin && menu.kind === 'enabled' ? { deleted_at: null, deleted_by: null, delete_reason: null } : { deleted_at: null })
+      .eq('id', d.id)
+      .select('deleted_at');
+    const row = (data as { deleted_at: string | null }[] | null)?.[0];
+    setRestoring(null);
+    if (error || !row || row.deleted_at !== null) {
+      setRestoreError("Restauration refusée par le serveur : le dossier reste dans la corbeille.");
+      return;
+    }
+    setTrashed((t) => t.filter((x) => x.id !== d.id));
+    setDossiers((rows) => [{ ...d, deleted_at: null, deleted_by: null }, ...rows].sort((a, b) => b.created_at.localeCompare(a.created_at)));
+  }
+
   async function handleSignOut() {
     await signOut();
     navigate('/');
@@ -127,16 +241,6 @@ export function Account() {
       <Seo title="Mon compte" description="Votre espace ClairDossier." path="/compte" noindex />
       <section className="bg-cream-50">
         <div className="mx-auto max-w-4xl px-5 py-16 sm:px-8 lg:px-12">
-          {paidPlan && (
-            <div className="mb-8 rounded-2xl border hairline-gold bg-gold-500/10 p-5">
-              <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">
-                Abonnement confirmé
-              </p>
-              <p className="mt-2 text-sm text-navy-900">
-                Merci — votre paiement a bien été pris en compte. Votre abonnement est actif.
-              </p>
-            </div>
-          )}
 
           {isAdmin && (
             <div className="mb-8 rounded-2xl border border-navy-900 bg-navy-900 p-5 text-cream-50">
@@ -144,8 +248,7 @@ export function Account() {
                 Espace administrateur
               </p>
               <p className="mt-2 text-sm text-cream-50/85">
-                Vous voyez l'intégralité des dossiers de la plateforme. Cliquez un dossier pour le
-                détail (5 étapes) et le téléchargement des pièces.
+                Vous voyez l'intégralité des dossiers de la plateforme. Cliquez un dossier pour le détail (5 étapes) et le téléchargement des pièces.
               </p>
               <Link
                 to="/admin"
@@ -186,7 +289,7 @@ export function Account() {
                 {isAdmin ? 'Administration' : 'Mon compte'}
               </p>
               <h1 className="mt-3 font-display text-4xl font-semibold leading-[1.05] text-navy-900">
-                Bonjour{user?.email ? `, ${user.email}` : ''}
+                {greeting(profile)}
               </h1>
             </div>
             <button
@@ -197,6 +300,14 @@ export function Account() {
               Se déconnecter
             </button>
           </div>
+
+          {profile && extended && (
+            <ProfilePanel profile={profile} accountEmail={user?.email ?? null} onSaved={() => void reloadProfile()} />
+          )}
+
+          <SubscriptionPanel paidReturn={Boolean(paidPlan)} />
+
+          <DraftsPanel />
 
           <div className="mt-10 flex items-center justify-between gap-4">
             <h2 className="font-display text-2xl font-semibold text-navy-900">
@@ -283,10 +394,10 @@ export function Account() {
                   return [d.title, d.typology, STATUS_LABELS[d.status]].filter(Boolean).some((v) => String(v).toLowerCase().includes(q));
                 })
                 .map((d) => (
-                <li key={d.id}>
+                <li key={d.id} className="flex items-center gap-2">
                   <Link
                     to={`/compte/dossier/${d.id}`}
-                    className="group flex flex-wrap items-center justify-between gap-3 rounded-2xl border hairline bg-white p-5 shadow-card transition-all duration-200 hover:-translate-y-0.5 hover:border-gold-500 hover:shadow-card-hover"
+                    className="group flex min-w-0 flex-1 flex-wrap items-center justify-between gap-3 rounded-2xl border hairline bg-white p-5 shadow-card transition-all duration-200 hover:-translate-y-0.5 hover:border-gold-500 hover:shadow-card-hover"
                   >
                     <div>
                       <p className="font-display text-lg font-semibold text-navy-900">
@@ -315,9 +426,79 @@ export function Account() {
                       />
                     </div>
                   </Link>
+                  {cardMenu(d).kind !== 'hidden' && (
+                    <DossierCardMenu
+                      dossierLabel={d.title || d.typology}
+                      state={cardMenu(d) as Exclude<TrashMenuState, { kind: 'hidden' }>}
+                      onDelete={(trigger) => {
+                        trashTrigger.current = trigger;
+                        setTrashError(null);
+                        setToTrash(d);
+                      }}
+                    />
+                  )}
                 </li>
               ))}
             </ul>
+          )}
+          {clientTrash && trashed.length > 0 && (
+            <div className="mt-12">
+              <h2 className="font-display text-2xl font-semibold text-navy-900">Corbeille</h2>
+              <p className="mt-1 text-sm text-slate-500">
+                Dossiers supprimés, pièces et échéances conservées. Restaurez-les à tout moment.
+              </p>
+              {restoreError && (
+                <p role="alert" className="mt-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                  {restoreError}
+                </p>
+              )}
+              <ul className="mt-4 space-y-2">
+                {trashed.map((d) => (
+                  <li key={d.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border hairline bg-white p-4">
+                    <div className="min-w-0">
+                      <p className="break-words font-medium text-navy-900">{d.title || d.typology}</p>
+                      <p className="mt-0.5 font-mono text-[0.7rem] uppercase tracking-[0.14em] text-slate-500">
+                        Supprimé le {d.deleted_at ? new Date(d.deleted_at).toLocaleDateString('fr-FR') : '—'}
+                      </p>
+                    </div>
+                    {d.deleted_by === user?.id ? (
+                      <button
+                        type="button"
+                        onClick={() => void restore(d)}
+                        disabled={restoring === d.id}
+                        className="inline-flex min-h-[44px] items-center rounded-full border hairline-strong bg-white px-4 text-sm font-medium text-navy-900 transition-colors hover:bg-cream-100 disabled:opacity-60"
+                      >
+                        {restoring === d.id ? 'Restauration…' : 'Restaurer'}
+                      </button>
+                    ) : (
+                      <span className="text-xs text-slate-500">Retiré par l'équipe ClairDossier — contactez-nous pour le récupérer.</span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {toTrash && (
+            <ConfirmDeleteDialog
+              open
+              audience={asAdmin(toTrash) ? 'admin' : 'client'}
+              dossierTitle={toTrash.title || toTrash.typology}
+              owner={ownerIdentity({
+                companyName: ownerProfiles[toTrash.user_id]?.company_name,
+                fullName: ownerProfiles[toTrash.user_id]?.full_name,
+                email: emails[toTrash.user_id],
+                userId: toTrash.user_id,
+              })}
+              meta={`Créé le ${new Date(toTrash.created_at).toLocaleDateString('fr-FR')} · ${STATUS_LABELS[toTrash.status] ?? toTrash.status}`}
+              pending={trashPending}
+              error={trashError}
+              onConfirm={(reason) => void confirmTrash(reason)}
+              onCancel={() => {
+                if (trashPending) return;
+                setToTrash(null);
+                trashTrigger.current?.focus();
+              }}
+            />
           )}
         </div>
       </section>

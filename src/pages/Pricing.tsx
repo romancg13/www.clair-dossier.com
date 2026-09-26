@@ -1,7 +1,8 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { motion } from "motion/react";
 import { useAuth } from "../lib/auth";
+import { useCheckoutEmail } from "../lib/profile";
 import { Seo, breadcrumbSchema } from "../lib/seo";
 import { Reveal, Stagger, StaggerItem } from "../components/primitives/Reveal";
 import { Accordion } from "../components/ui/Accordion";
@@ -92,6 +93,21 @@ const TRUST_ICONS = {
 
 export function Pricing() {
   const [billing, setBilling] = useState<Billing>("monthly");
+  // Formule choisie, conservée pendant la connexion (?formule=…). Lue après
+  // montage : le HTML prérendu reste identique au premier rendu client.
+  const [params] = useSearchParams();
+  useEffect(() => {
+    // Retour de connexion (formule choisie) ou ancre de la page : défilement
+    // après la remise en haut de page faite par le Layout.
+    const formule = params.get("formule");
+    const target = formule ? `formule-${formule}` : window.location.hash.slice(1);
+    if (!target) return;
+    const timer = window.setTimeout(
+      () => document.getElementById(target)?.scrollIntoView({ block: formule ? "center" : "start" }),
+      250,
+    );
+    return () => window.clearTimeout(timer);
+  }, [params]);
 
   return (
     <>
@@ -462,7 +478,13 @@ export function Pricing() {
   );
 }
 
-function PlanCard({ plan, billing }: { plan: Plan; billing: Billing }) {
+function PlanCard({
+  plan,
+  billing,
+}: {
+  plan: Plan;
+  billing: Billing;
+}) {
   const isDark = plan.variant === "dark";
   const isYearly = billing === "yearly";
 
@@ -484,7 +506,7 @@ function PlanCard({ plan, billing }: { plan: Plan; billing: Billing }) {
     : "border hairline bg-white text-navy-900 hover:border-navy-900 hover:bg-cream-100/60";
 
   return (
-    <article className={`premium-card ${isDark ? 'premium-recommended-plan' : ''} ${cardBase} ${cardSkin}`}>
+    <article id={`formule-${plan.id}`} className={`premium-card scroll-mt-24 ${isDark ? 'premium-recommended-plan' : ''} ${cardBase} ${cardSkin}`}>
       {plan.badge && (
         <span
           className={`absolute -top-3 left-1/2 -translate-x-1/2 rounded-full px-3 py-1 font-mono text-[0.68rem] font-semibold uppercase tracking-[0.18em] ${
@@ -594,6 +616,8 @@ function PlanCard({ plan, billing }: { plan: Plan; billing: Billing }) {
 
       <PlanCta
         href={isYearly && plan.ctaHrefYearly ? plan.ctaHrefYearly : plan.ctaHref}
+        planId={plan.id}
+        monthly={!isYearly}
         label={plan.ctaLabel}
         className={`mt-7 inline-flex items-center justify-center gap-1.5 rounded-xl px-5 py-3.5 text-sm font-medium transition-colors ${ctaClass}`}
       />
@@ -607,19 +631,55 @@ function PlanCard({ plan, billing }: { plan: Plan; billing: Billing }) {
  * compte, puis revient sur les tarifs (?next). Les liens internes (devis,
  * contact) restent inchangés.
  */
-function PlanCta({ href, label, className }: { href: string; label: string; className: string }) {
+function PlanCta({
+  href,
+  planId,
+  monthly,
+  label,
+  className,
+}: {
+  href: string;
+  planId: string;
+  monthly: boolean;
+  label: string;
+  className: string;
+}) {
   const { user } = useAuth();
   const isCheckout = href.startsWith("https://buy.stripe.com/");
+  const checkoutEmail = useCheckoutEmail(isCheckout ? user?.id : undefined, user?.email ?? null);
+  const back = new URLSearchParams({ formule: planId });
+  const next = encodeURIComponent(`/tarifs?${back.toString()}`);
   if (isCheckout && !user) {
     return (
-      <Link to={`/connexion?next=${encodeURIComponent("/tarifs")}`} className={className}>
+      <Link to={`/connexion?next=${next}`} className={className}>
         {label}
       </Link>
     );
   }
-  if (isCheckout && !user) {
+  if (isCheckout && user && !user.email_confirmed_at) {
     return (
-      <a href={href} className={className}>
+      <Link to={`/inscription?next=${next}`} state={{ verifier: user.email }} className={className}>
+        {label}
+      </Link>
+    );
+  }
+  if (isCheckout && user) {
+    // Rattachement serveur du paiement au compte (webhook Stripe) : identifiant
+    // du compte + e-mail de facturation (facultatif, repli sur le compte).
+    const url = new URL(href);
+    url.searchParams.set("client_reference_id", user.id);
+    if (checkoutEmail) url.searchParams.set("prefilled_email", checkoutEmail);
+    return (
+      <a
+        href={url.toString()}
+        className={className}
+        onClick={() =>
+          trackEvent("debut_checkout", {
+            formule: planId,
+            facturation: monthly ? "mensuelle" : "annuelle",
+          })
+        }
+      >
         {label}
       </a>
     );

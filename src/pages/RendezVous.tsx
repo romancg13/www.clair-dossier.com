@@ -71,7 +71,7 @@ export function RendezVous() {
     <>
       <Seo
         title="Prendre rendez-vous"
-        description="Réservez une démonstration ClairDossier de 30 minutes, sur vos cas réels : cabinets d'avocats, experts-comptables, structures à fort volume documentaire. Réponse rapide, sans engagement."
+        description="Réservez une démonstration ClairDossier de 30 minutes : cabinets d'avocats, experts-comptables, structures à fort volume documentaire. Sans engagement."
         path="/rendez-vous"
         jsonLd={breadcrumbSchema([
           { name: 'Accueil', path: '/' },

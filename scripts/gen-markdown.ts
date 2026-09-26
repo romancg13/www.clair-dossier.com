@@ -133,7 +133,7 @@ function generateHome(): void {
 
   lines.push('## Contact');
   lines.push('');
-  lines.push('- WhatsApp : +33 7 82 98 36 44 (réponse en moyenne sous 1 h en journée)');
+  lines.push('- Téléphone et WhatsApp : 07 82 98 36 44 (réponse en moyenne sous 1 h en journée)');
   lines.push('- Email : contact.clairdossier@icloud.com (réponse sous 24 h ouvrées)');
   lines.push('- Sécurité (divulgation responsable) : contact.clairdossier@icloud.com');
   lines.push(`- Formulaire : ${SITE}/contact`);
@@ -369,7 +369,7 @@ function generatePricing(): void {
   lines.push('## Devis sur-mesure');
   lines.push('');
   lines.push(
-    'Pour structures avec exigences de marque blanche, intégration API, SSO, audit dédié, ou volumétrie au-dessus du Premium — proposition chiffrée sous 48 h. Contact : contact.clairdossier@icloud.com ou WhatsApp +33 7 82 98 36 44.'
+    'Pour structures avec exigences de marque blanche, intégration API, SSO, audit dédié, ou volumétrie au-dessus du Premium — proposition chiffrée sous 48 h. Contact : contact.clairdossier@icloud.com ou téléphone / WhatsApp 07 82 98 36 44.'
   );
   lines.push('');
 
@@ -489,7 +489,7 @@ function generateContact(): void {
     '',
     '## Canaux',
     '',
-    '- **WhatsApp** : +33 7 82 98 36 44 — réponse en moyenne sous 1 h en journée (9 h – 19 h, lundi-vendredi).',
+    '- **Téléphone et WhatsApp** : 07 82 98 36 44 — réponse en moyenne sous 1 h en journée (9 h – 19 h, lundi-vendredi).',
     '- **Email général** : contact.clairdossier@icloud.com — réponse sous 24 h ouvrées.',
     '- **Sécurité (divulgation responsable)** : contact.clairdossier@icloud.com — réponse sous 24 h.',
     `- **Formulaire guidé** : ${SITE}/contact`,

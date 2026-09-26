@@ -21,13 +21,13 @@ export const homeFaq: FaqEntry[] = [
     id: "obligation-avocat",
     question: "Suis-je obligé de passer par un tiers via ClairDossier ?",
     answer:
-      "Non. ClairDossier vous sert à constituer et organiser votre dossier, puis à le transmettre quand vous le décidez — par e-mail ou WhatsApp — au destinataire de votre choix. Rien n'est envoyé sans votre validation explicite, et vous n'êtes obligé de passer par aucun intermédiaire imposé.",
+      "Non. ClairDossier vous sert à constituer et organiser votre dossier, enregistré dans votre compte. Vous le transmettez ensuite vous-même, quand vous le décidez, au destinataire de votre choix. Rien n'est envoyé sans votre action explicite, et vous n'êtes obligé de passer par aucun intermédiaire imposé.",
   },
   {
     id: "compatible-cabinet",
     question: "Comment je récupère ou partage mes dossiers ?",
     answer:
-      "Depuis la liste de vos dossiers, ouvrez la page détail « Avancement du dossier » : vous y consultez les 5 étapes, téléchargez chaque pièce et voyez les échéances. Quand vous le souhaitez, vous transmettez le dossier par e-mail ou WhatsApp au destinataire de votre choix, après votre validation.",
+      "Depuis la liste de vos dossiers, ouvrez la page détail « Avancement du dossier » : vous y consultez les 5 étapes, téléchargez chaque pièce et voyez les échéances. Quand vous le souhaitez, vous téléchargez vos pièces et transmettez le dossier vous-même au destinataire de votre choix — rien ne part automatiquement.",
   },
   {
     id: "refus-avocat",
@@ -45,7 +45,7 @@ export const homeFaq: FaqEntry[] = [
     id: "export-possible",
     question: "Puis-je récupérer mes pièces et mon dossier ?",
     answer:
-      "Oui. Depuis la page détail du dossier, chaque pièce déposée est téléchargeable. Vous pouvez aussi transmettre le dossier par e-mail ou WhatsApp, au moment où vous le décidez. Pour une copie complète de vos données personnelles, une demande d'export RGPD est possible via le contact (traitement sous 30 jours).",
+      "Oui. Depuis la page détail du dossier, chaque pièce déposée est téléchargeable. Vous pouvez ainsi transmettre le dossier au destinataire de votre choix, au moment où vous le décidez. Pour une copie complète de vos données personnelles, une demande d'export RGPD est possible via le contact (traitement sous 30 jours).",
   },
   {
     id: "rgpd-donnees",

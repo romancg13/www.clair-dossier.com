@@ -10,7 +10,7 @@ Pas de formulaire en file d'attente, pas de tickets perdus. Vous écrivez, on li
 
 ## Canaux
 
-- **WhatsApp** : +33 7 82 98 36 44 — réponse en moyenne sous 1 h en journée (9 h – 19 h, lundi-vendredi).
+- **Téléphone et WhatsApp** : 07 82 98 36 44 — réponse en moyenne sous 1 h en journée (9 h – 19 h, lundi-vendredi).
 - **Email général** : contact.clairdossier@icloud.com — réponse sous 24 h ouvrées.
 - **Sécurité (divulgation responsable)** : contact.clairdossier@icloud.com — réponse sous 24 h.
 - **Formulaire guidé** : https://www.clair-dossier.com/contact

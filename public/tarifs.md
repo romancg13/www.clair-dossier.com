@@ -21,7 +21,7 @@ Facturation annuelle : 205,20 € HT/an, soit 17,10 € HT/mois (−10 %).
 - **Support** : Support email
 
 Fonctionnalités incluses :
-- Transmission par e-mail ou WhatsApp : ✓
+- Transmission décidée et effectuée par vous : ✓
 - Échéances affichées sur le dossier : limité
 - Récapitulatif du dossier : limité
 - Suivi par étapes métier : ✗
@@ -41,7 +41,7 @@ Facturation annuelle : 421,20 € HT/an, soit 35,10 € HT/mois (−10 %).
 - **Support** : Support email prioritaire
 
 Fonctionnalités incluses :
-- Transmission par e-mail ou WhatsApp : ✓
+- Transmission décidée et effectuée par vous : ✓
 - Échéances affichées sur le dossier : ✓
 - Récapitulatif du dossier : ✓
 - Suivi par étapes métier : limité
@@ -61,7 +61,7 @@ Facturation annuelle : 529,20 € HT/an, soit 44,10 € HT/mois (−10 %).
 - **Support** : Support prioritaire
 
 Fonctionnalités incluses :
-- Transmission par e-mail ou WhatsApp : ✓
+- Transmission décidée et effectuée par vous : ✓
 - Échéances affichées sur le dossier : ✓
 - Récapitulatif du dossier : ✓
 - Suivi par étapes métier : ✓
@@ -81,7 +81,7 @@ Facturation annuelle : 961,20 € HT/an, soit 80,10 € HT/mois (−10 %).
 - **Support** : Support prioritaire
 
 Fonctionnalités incluses :
-- Transmission par e-mail ou WhatsApp : ✓
+- Transmission décidée et effectuée par vous : ✓
 - Échéances affichées sur le dossier : ✓
 - Récapitulatif du dossier : ✓
 - Suivi par étapes métier : ✓
@@ -101,7 +101,7 @@ Facturation annuelle : 1825,20 € HT/an, soit 152,10 € HT/mois (−10 %).
 - **Support** : Support dédié
 
 Fonctionnalités incluses :
-- Transmission par e-mail ou WhatsApp : ✓
+- Transmission décidée et effectuée par vous : ✓
 - Échéances affichées sur le dossier : ✓
 - Récapitulatif du dossier : ✓
 - Suivi par étapes métier : ✓
@@ -121,7 +121,7 @@ Facturation annuelle : 3229,20 € HT/an, soit 269,10 € HT/mois (−10 %).
 - **Support** : Support entreprise
 
 Fonctionnalités incluses :
-- Transmission par e-mail ou WhatsApp : ✓
+- Transmission décidée et effectuée par vous : ✓
 - Échéances affichées sur le dossier : ✓
 - Récapitulatif du dossier : ✓
 - Suivi par étapes métier : ✓
@@ -139,7 +139,7 @@ Fonctionnalités incluses :
 - **Support** : Accompagnement dédié
 
 Fonctionnalités incluses :
-- Transmission par e-mail ou WhatsApp : ✓
+- Transmission décidée et effectuée par vous : ✓
 - Échéances affichées sur le dossier : ✓
 - Récapitulatif du dossier : ✓
 - Suivi par étapes métier : ✓
@@ -150,12 +150,12 @@ Fonctionnalités incluses :
 
 ## Devis sur-mesure
 
-Pour structures avec exigences de marque blanche, intégration API, SSO, audit dédié, ou volumétrie au-dessus du Premium — proposition chiffrée sous 48 h. Contact : contact.clairdossier@icloud.com ou WhatsApp +33 7 82 98 36 44.
+Pour structures avec exigences de marque blanche, intégration API, SSO, audit dédié, ou volumétrie au-dessus du Premium — proposition chiffrée sous 48 h. Contact : contact.clairdossier@icloud.com ou téléphone / WhatsApp 07 82 98 36 44.
 
 ## Engagement
 
 - **Données protégées.** Chiffrement en transit (HTTPS) et au repos côté hébergeur, pièces stockées dans un espace privé, accès par authentification.
-- **Vous gardez la main.** Rien ne part sans votre validation : la transmission du dossier, par e-mail ou WhatsApp, est déclenchée par vous.
+- **Vous gardez la main.** Rien ne part sans votre validation : vous téléchargez vos pièces et transmettez le dossier vous-même, quand vous le décidez.
 - **Sans engagement.** Résiliez à tout moment. Accès, export et suppression de vos données sur demande.
 
 

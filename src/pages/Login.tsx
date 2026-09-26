@@ -10,6 +10,7 @@ export function Login() {
   const [params] = useSearchParams();
   const next = params.get('next') || '/compte';
   const [error, setError] = useState<string | null>(null);
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
@@ -23,6 +24,7 @@ export function Login() {
     setLoading(false);
     if (res.error) {
       setError(res.error);
+      setUnverifiedEmail(res.error.includes('non confirmé') ? email : null);
       return;
     }
     navigate(next, { replace: true });
@@ -65,6 +67,18 @@ export function Login() {
             {error && (
               <p className="mt-5 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
                 {error}
+                {unverifiedEmail && (
+                  <>
+                    {' '}
+                    <Link
+                      to={`/inscription${next !== '/compte' ? `?next=${encodeURIComponent(next)}` : ''}`}
+                      state={{ verifier: unverifiedEmail }}
+                      className="font-medium underline underline-offset-4"
+                    >
+                      Saisir mon code de vérification
+                    </Link>
+                  </>
+                )}
               </p>
             )}
 

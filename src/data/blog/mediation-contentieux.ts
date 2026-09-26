@@ -1,16 +1,17 @@
-import type { BlogPost } from './types';
+import type { BlogPostInput } from './types';
 
-export const mediationContentieux: BlogPost = {
+export const mediationContentieux: BlogPostInput = {
   slug: 'mediation-contentieux',
   title: "Médiation ou contentieux : trois critères pour choisir",
-  metaTitle: "Médiation ou contentieux — comment choisir la bonne voie",
+  metaTitle: "Médiation ou contentieux : choisir la bonne voie",
   metaDescription:
     "Aller au tribunal ou tenter la médiation ? Trois critères concrets pour décider sans regret : relation, asymétrie, besoin de jurisprudence.",
   summary:
     "Aller au tribunal coûte cher, dure des mois, et la décision peut surprendre. La médiation coûte peu, dure quelques semaines, et la décision vous appartient. Mais elle ne convient pas à tous les dossiers. Trois critères concrets pour choisir.",
   author: 'redaction',
   date: '2026-02-12',
-  readMinutes: 7,
+  // Non révisé lors de la passe du 2026-09-18 : relecture demandée (alerte admin).
+  reviewBy: '2026-10-19',
   category: 'Résolution de conflit',
   tags: ['médiation', 'contentieux', 'résolution amiable', 'stratégie'],
   heroImageQuery: 'mediation handshake table',

@@ -2,62 +2,70 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>ClairDossier — Journal</title>
-    <link>https://www.clair-dossier.com/blog</link>
+    <link>https://www.clair-dossier.com/blog/</link>
     <atom:link href="https://www.clair-dossier.com/feed.xml" rel="self" type="application/rss+xml" />
     <description>Méthode, conformité et IA documentaire : les articles du Journal ClairDossier pour préparer et suivre vos dossiers administratifs et juridiques.</description>
     <language>fr</language>
     <item>
+      <title>Organiser un dossier : une méthode simple en quatre temps</title>
+      <link>https://www.clair-dossier.com/blog/organiser-un-dossier/</link>
+      <guid isPermaLink="true">https://www.clair-dossier.com/blog/organiser-un-dossier/</guid>
+      <pubDate>Fri, 18 Sep 2026 08:00:00 GMT</pubDate>
+      <description>Contrat dans un tiroir, factures dans une boîte mail, photos sur un téléphone : avant de chercher un argument, il faut retrouver ses pièces. Quatre temps suffisent pour obtenir un dossier lisible.</description>
+      <category>Méthode</category>
+    </item>
+    <item>
       <title>Préparer son rendez-vous avocat : la checklist en 8 étapes</title>
-      <link>https://www.clair-dossier.com/blog/preparer-rendez-vous-avocat</link>
-      <guid isPermaLink="true">https://www.clair-dossier.com/blog/preparer-rendez-vous-avocat</guid>
+      <link>https://www.clair-dossier.com/blog/preparer-rendez-vous-avocat/</link>
+      <guid isPermaLink="true">https://www.clair-dossier.com/blog/preparer-rendez-vous-avocat/</guid>
       <pubDate>Wed, 20 May 2026 08:00:00 GMT</pubDate>
-      <description>Une heure de consultation chez un avocat coûte entre 200 et 400 euros en moyenne. La passer à reconstruire votre chronologie ou à chercher une facture, c'est du temps perdu. Voici les huit étapes qui transforment un premier rendez-vous brouillon en consultation efficace.</description>
+      <description>Une consultation chez un avocat a un coût. La passer à reconstruire votre chronologie ou à chercher une facture, c'est du temps perdu. Voici les huit étapes qui transforment un premier rendez-vous brouillon en consultation efficace.</description>
       <category>Méthode</category>
     </item>
     <item>
       <title>Préparer un dossier prud'homal : la chronologie qui fait la différence</title>
-      <link>https://www.clair-dossier.com/blog/chronologie-prud-homale</link>
-      <guid isPermaLink="true">https://www.clair-dossier.com/blog/chronologie-prud-homale</guid>
+      <link>https://www.clair-dossier.com/blog/chronologie-prud-homale/</link>
+      <guid isPermaLink="true">https://www.clair-dossier.com/blog/chronologie-prud-homale/</guid>
       <pubDate>Tue, 12 May 2026 08:00:00 GMT</pubDate>
-      <description>Dans un dossier prud'homal, la chronologie reconstituée pèse souvent plus lourd que la qualité des arguments juridiques. Voici comment la construire correctement, dès le premier rendez-vous client, et pourquoi cette discipline change la stratégie de l'avocat.</description>
+      <description>Dans un dossier prud'homal, la chronologie reconstituée pèse souvent autant que la qualité des arguments juridiques. Voici comment la construire correctement, dès le premier rendez-vous client, et pourquoi cette discipline peut changer la stratégie.</description>
       <category>Droit social</category>
     </item>
     <item>
       <title>L'IA dans le droit : assistante de préparation, pas substitut</title>
-      <link>https://www.clair-dossier.com/blog/ia-droit</link>
-      <guid isPermaLink="true">https://www.clair-dossier.com/blog/ia-droit</guid>
+      <link>https://www.clair-dossier.com/blog/ia-droit/</link>
+      <guid isPermaLink="true">https://www.clair-dossier.com/blog/ia-droit/</guid>
       <pubDate>Sat, 02 May 2026 08:00:00 GMT</pubDate>
       <description>L'IA générative bouleverse les métiers du droit, mais une frontière reste non négociable : l'IA prépare le travail du professionnel — elle ne le remplace pas. Voici où l'IA est utile, où elle est dangereuse, et pourquoi cette frontière protège autant les avocats que leurs clients.</description>
       <category>IA et droit</category>
     </item>
     <item>
-      <title>RGPD et legaltech : où vont vraiment vos données juridiques ?</title>
-      <link>https://www.clair-dossier.com/blog/rgpd-legaltech</link>
-      <guid isPermaLink="true">https://www.clair-dossier.com/blog/rgpd-legaltech</guid>
+      <title>Protéger ses dossiers : ce que le RGPD exige des prestataires qui y accèdent</title>
+      <link>https://www.clair-dossier.com/blog/rgpd-legaltech/</link>
+      <guid isPermaLink="true">https://www.clair-dossier.com/blog/rgpd-legaltech/</guid>
       <pubDate>Tue, 28 Apr 2026 08:00:00 GMT</pubDate>
-      <description>Quand vous déposez le contrat de travail d'un salarié sur une plateforme legaltech, vous engagez la conformité RGPD du cabinet, pas seulement la vôtre. Voici comment vérifier qu'une legaltech tient ses engagements — et ce que les articles 28, 32 et 35 du RGPD exigent concrètement.</description>
+      <description>Dès qu'un prestataire accède à vos dossiers pour votre compte, il devient en principe votre sous-traitant au sens du RGPD, et vous restez responsable. Ce qu'impose l'article 28, comment penser la sécurité, et les réflexes à adopter.</description>
       <category>Conformité</category>
     </item>
     <item>
       <title>Mise en demeure : le courrier qui débloque (souvent) la situation</title>
-      <link>https://www.clair-dossier.com/blog/mise-en-demeure</link>
-      <guid isPermaLink="true">https://www.clair-dossier.com/blog/mise-en-demeure</guid>
+      <link>https://www.clair-dossier.com/blog/mise-en-demeure/</link>
+      <guid isPermaLink="true">https://www.clair-dossier.com/blog/mise-en-demeure/</guid>
       <pubDate>Wed, 15 Apr 2026 08:00:00 GMT</pubDate>
       <description>Dans de nombreuses situations, une tentative de résolution amiable est obligatoire ou recommandée avant de saisir un juge, selon la nature et le montant du litige. La mise en demeure est souvent le premier outil de cette tentative. Bien rédigée, elle débloque souvent la situation sans aller plus loin. Mal rédigée, elle peut être inopposable et faire perdre un temps précieux.</description>
       <category>Procédure amiable</category>
     </item>
     <item>
-      <title>Conservation des documents juridiques : durées légales et bonnes pratiques</title>
-      <link>https://www.clair-dossier.com/blog/conservation-documents</link>
-      <guid isPermaLink="true">https://www.clair-dossier.com/blog/conservation-documents</guid>
+      <title>Conservation des documents : combien de temps garder chaque pièce selon sa nature</title>
+      <link>https://www.clair-dossier.com/blog/conservation-documents/</link>
+      <guid isPermaLink="true">https://www.clair-dossier.com/blog/conservation-documents/</guid>
       <pubDate>Sat, 28 Mar 2026 08:00:00 GMT</pubDate>
-      <description>Combien de temps faut-il garder ses contrats, factures, bulletins de paie, actes notariés ? La règle change selon le document et la situation, et l'erreur a deux directions : trop court (vous perdez une preuve), trop long (vous violez le RGPD). Voici le guide.</description>
+      <description>Garder trop peu, c'est risquer de ne plus pouvoir prouver un paiement ou un droit. Il n'existe pas de durée unique : elle dépend de la nature du document et de votre situation. Voici les repères officiels, avec leurs nuances.</description>
       <category>Conformité</category>
     </item>
     <item>
       <title>Médiation ou contentieux : trois critères pour choisir</title>
-      <link>https://www.clair-dossier.com/blog/mediation-contentieux</link>
-      <guid isPermaLink="true">https://www.clair-dossier.com/blog/mediation-contentieux</guid>
+      <link>https://www.clair-dossier.com/blog/mediation-contentieux/</link>
+      <guid isPermaLink="true">https://www.clair-dossier.com/blog/mediation-contentieux/</guid>
       <pubDate>Thu, 12 Feb 2026 08:00:00 GMT</pubDate>
       <description>Aller au tribunal coûte cher, dure des mois, et la décision peut surprendre. La médiation coûte peu, dure quelques semaines, et la décision vous appartient. Mais elle ne convient pas à tous les dossiers. Trois critères concrets pour choisir.</description>
       <category>Résolution de conflit</category>

@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow, noarchive" />
+    <meta name="theme-color" content="#0d1b3d" />
+    <title>ClairDossier — Téléchargement du deck d'investissement</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <style>
+      :root { color-scheme: light; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 2rem 1.25rem;
+        box-sizing: border-box;
+        background: #f7f8fb;
+        color: #0a1228;
+        font-family: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+        line-height: 1.6;
+      }
+      main {
+        max-width: 32rem;
+        width: 100%;
+        background: #fff;
+        border-radius: 1.125rem;
+        box-shadow: 0 2px 24px rgba(13, 27, 61, 0.08);
+        padding: 2.5rem 2rem;
+        text-align: center;
+      }
+      .brand {
+        font-family: "Cormorant Garamond", "Iowan Old Style", Georgia, serif;
+        font-size: 1.75rem;
+        font-weight: 600;
+        margin: 0 0 1.5rem;
+        color: #0d1b3d;
+      }
+      h1 { font-size: 1.15rem; font-weight: 600; margin: 0 0 0.5rem; }
+      p { margin: 0 0 1.5rem; color: #4a5468; font-size: 0.95rem; }
+      .btn {
+        display: inline-block;
+        background: #0d1b3d;
+        color: #fff;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 0.95rem;
+        padding: 0.85rem 1.5rem;
+        border-radius: 9999px;
+        transition: background 160ms cubic-bezier(0.22, 1, 0.36, 1);
+      }
+      .btn:hover, .btn:focus-visible { background: #16295a; }
+      .alt { margin: 1.5rem 0 0; font-size: 0.85rem; }
+      .alt a { color: #0d1b3d; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p class="brand">ClairDossier</p>
+      <h1>Deck d'investissement</h1>
+      <p>Le téléchargement démarre automatiquement. S'il ne démarre pas, utilisez le bouton ci-dessous.</p>
+      <a
+        id="dl"
+        class="btn"
+        href="/investisseurs/clairdossier-pitch-deck.pdf"
+        download="ClairDossier-Pitch-Deck-2026.pdf"
+        >Télécharger le PDF (26 pages)</a
+      >
+      <p class="alt">
+        Ou <a href="/investisseurs/clairdossier-pitch-deck.pdf">consulter le deck dans le navigateur</a>.
+      </p>
+    </main>
+    <script>
+      // Déclenche le téléchargement une seule fois, sans quitter la page.
+      window.addEventListener('DOMContentLoaded', function () {
+        var link = document.getElementById('dl');
+        if (link && typeof link.click === 'function') link.click();
+      });
+    </script>
+  </body>
+</html>

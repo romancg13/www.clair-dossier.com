@@ -1,8 +1,8 @@
 # ClairDossier
 
-> Plateforme legaltech française qui transforme les demandes administratives et juridiques en dossiers structurés, suivis et prêts à agir. Pour les PME, artisans, entreprises individuelles et professions libérales. Option : un préavis juridique et un résumé de la situation à valider par un professionnel du droit.
+> Outil en ligne de structuration et de suivi de dossiers administratifs et juridiques, pour les PME, artisans, entreprises individuelles et professions libérales. ClairDossier aide à préparer et organiser un dossier : création guidée, dépôt de pièces dans un espace privé, suivi de l'avancement, puis transmission déclenchée par l'utilisateur. Ce n'est ni un cabinet d'avocats, ni un service de conseil juridique.
 
-ClairDossier édité par Roman Gomes, entrepreneur individuel (SIREN 105 490 734), Château-Gombert, 13013 Marseille, France. Site web : https://www.clair-dossier.com — contact : contact.clairdossier@icloud.com — Service Assistance ClairDossier : 04 91 95 90 32 — WhatsApp : +33 7 82 98 36 44. Site réalisé par Nouh BENZIDANE (https://nouhbenzidane.fr).
+ClairDossier édité par Roman Gomes, entrepreneur individuel (SIREN 105 490 734), Château-Gombert, 13013 Marseille, France. Site web : https://www.clair-dossier.com — contact : contact.clairdossier@icloud.com — Téléphone et WhatsApp : 07 82 98 36 44. Site réalisé par Nouh BENZIDANE (https://nouhbenzidane.fr).
 
 L'éditeur peut être contacté pour toute citation, vérification ou correction. Les articles du journal sont publiés sous le nom collectif « Rédaction ClairDossier ». Position éthique : l'IA prépare les dossiers (résumé, chronologie, projet de réponse), un professionnel du droit peut les valider en option — l'IA ne délivre jamais de conseil juridique.
 
@@ -16,7 +16,7 @@ ClairDossier ne se présente ni comme un cabinet d'avocats, ni comme un conseil 
 - /fonctionnalites               : Index des 9 fonctionnalités clés
 - /fonctionnalites/<slug>        : Détail par fonctionnalité (creation-guidee, pieces-ocr, chronologie, validation-avocat, suivi-statuts, messagerie-securisee, coffre-fort, calendrier-relances, reponse-auto-mails)
 - /tarifs                        : 7 formules (Essentiel, Entrepreneur, Business PME 20, Business PME 50, Business/PME Pro, Business/PME Premium) + offre sur-mesure
-- /securite                      : Architecture, conformité RGPD/RIN/HDS, audit annuel
+- /securite                      : Accès, protection des documents, traitement des données, sous-traitants, DPA
 - /blog                          : Journal éditorial
 - /blog/<slug>                   : 7 articles disponibles (voir Articles ci-dessous)
 - /inscription, /connexion, /compte : Création de compte et espace client (Supabase auth)
@@ -57,21 +57,18 @@ La création de compte est gratuite. Abonnement sans engagement, résiliation à
 - Entrepreneur : 39 €/mois (10 dossiers, 2 utilisateurs, rédaction IA / projet de réponse, modèles) — entrepreneurs et professions libérales
 - Business PME 20 : 49 €/mois (20 dossiers, 5 utilisateurs, support prioritaire, dossiers récurrents) — TPE/PME
 - Business PME 50 : 89 €/mois (50 dossiers, 5 utilisateurs, réponse automatisée aux e-mails, IA complète) — PME
-- Business / PME Pro : 169 €/mois (dossiers illimités, 15 utilisateurs, statistiques, IA avancée GPT-5.5) — PME et structures multi-collaborateurs
+- Business / PME Pro : 169 €/mois (dossiers illimités, 15 utilisateurs, support dédié) — PME et structures multi-collaborateurs
 - Business / PME Premium : 299 €/mois (illimité, utilisateurs illimités, marque blanche, API, SSO, audit) — entreprise
 - Business / PME personnalisée : sur devis (volumétrie, intégrations ou conformité spécifiques)
 
 ## Sécurité et conformité
 
-- Hébergement : OVHcloud France (Roubaix, Strasbourg). Aucun transfert hors UE.
-- Chiffrement : AES-256 au repos, TLS 1.3 en transit, HSTS preload.
-- 2FA obligatoire pour les accès administrateurs.
-- Sauvegardes 3-2-1, RPO 15 min, RTO < 4 h.
-- Conformité RGPD native, DPA standard et renforcé disponibles sur demande.
-- Conformité RIN 2024 sur le périmètre IA (préparation autorisée, conseil interdit).
-- HDS en cours (2026 T3), ISO 27001 objectif 2027.
-- Audit annuel par cabinet de pentest indépendant, rapport remis aux clients Entreprise.
-- Notification CNIL < 72 h, notification client < 24 h en cas d'incident.
+- Site public hébergé sur GitHub Pages (GitHub, Inc.) ; données client (comptes, dossiers, pièces) hébergées chez Supabase, sous-traitant technique.
+- Chiffrement en transit (HTTPS) et au repos assuré par l'hébergeur des données ; pièces stockées dans un espace privé, servies uniquement par liens signés temporaires.
+- Isolation stricte par utilisateur (Row Level Security) : chaque client n'accède qu'à ses propres données.
+- Sauvegardes automatiques de la base de données assurées par l'hébergeur (Supabase) ; fréquence et profondeur selon le plan souscrit.
+- Conformité RGPD : politique de confidentialité détaillée et liste des sous-traitants publiées sur /politique-confidentialite et /securite.
+- ClairDossier ne réalise pas d'analyse ni de rédaction par IA des dossiers : l'outil structure et organise ; l'utilisateur garde la main sur la transmission et fait valider par un professionnel habilité lorsque nécessaire.
 
 ## Pour citer ClairDossier
 

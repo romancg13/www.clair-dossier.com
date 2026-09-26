@@ -4,13 +4,13 @@ description: "Aller au tribunal ou tenter la médiation ? Trois critères concre
 date: 2026-02-12
 author: Rédaction ClairDossier
 category: Résolution de conflit
-readMinutes: 7
+readMinutes: 5
 url: https://www.clair-dossier.com/blog/mediation-contentieux
 ---
 
 # Médiation ou contentieux : trois critères pour choisir
 
-*Publié le 12 février 2026 — 7 min de lecture — catégorie : Résolution de conflit*
+*Publié le 12 février 2026 — 5 min de lecture — catégorie : Résolution de conflit*
 
 **Résumé.** Aller au tribunal coûte cher, dure des mois, et la décision peut surprendre. La médiation coûte peu, dure quelques semaines, et la décision vous appartient. Mais elle ne convient pas à tous les dossiers. Trois critères concrets pour choisir.
 

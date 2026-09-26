@@ -65,7 +65,9 @@ Pour chaque élément existant, choisir une des trois actions :
 ### I.5 Exceptions de modification expressément autorisées
 **I.5.1 Identité publique.** Retirer nom et prénom personnels des zones commerciales (footer commercial, contact, communications, interfaces, métadonnées non obligatoires, support, zone publique) et les remplacer par **« ClairDossier »**. Conserver dans les Mentions légales toute identité dont la réglementation impose la publication.
 **I.5.2 Téléphone.** Remplacer partout l'ancien numéro par :
-> **Service Assistance ClairDossier — 04 91 95 90 32** (`tel:0491959032`)
+> **Service Assistance ClairDossier — 07 82 98 36 44** (`tel:+33782983644`, WhatsApp `wa.me/33782983644`)
+>
+> *Mise à jour 2026-09-18 (décision du propriétaire) : le 07 82 98 36 44 remplace le 04 91 95 90 32, désormais retiré partout.*
 Rechercher l'ancien numéro dans : frontend, backend, footer, header, pages, templates, e-mails, SEO, JSON-LD, CGV, mentions légales, FAQ, configuration, seed data. Le remplacement doit être exhaustif.
 ### I.6 Règle anti-destruction finale (à garder en tête à chaque tâche)
 > Il est interdit de décider « le site actuel est moins bon, je remplace tout » — même en cas de conviction de mieux faire.
@@ -103,7 +105,7 @@ Contenu minimal à maintenir dans `CLAUDE.md` à la racine :
 - Stack en place : [à renseigner après Phase 0 — ne jamais remplacer sans nécessité majeure]
 - Base de données : Supabase existant — KEEP SUPABASE (voir IX.5)
 - Paiement : Stripe existant — NE PAS REFAIRE STRIPE (voir V.3)
-- Téléphone officiel : 04 91 95 90 32 — identité publique : "ClairDossier" (voir I.5)
+- Téléphone officiel : 07 82 98 36 44 — identité publique : "ClairDossier" (voir I.5)
 - Baseline de référence : CLAIRDOSSIER_BASELINE.md
 - Avant tout commit destructif ou migration : demander confirmation humaine (voir II.5)
 ```
@@ -336,7 +338,7 @@ Moteur indépendant, exécuté pour toute production complexe :
 | **Auto-Follow-Up** | Moteur de rappels configurable (J-30, J-7, J-3, J-1, jour J, retard), chaque rappel traçable |
 | **Auto-Report** | Rapports automatiques hebdo/mensuels : dossiers actifs, nouvelles pièces, échéances, anomalies, actions, dossiers incomplets |
 | **Auto-Onboarding** | Après paiement, l'IA demande « Que souhaitez-vous gérer ? », détermine le besoin, crée le dossier, ne demande que l'utile, guide le dépôt. Objectif : **0 intervention humaine** |
-| **Auto-Support** | Résout connexion, mot de passe, abonnement, facture, upload, fonctionnalité, export, quota ; sinon affiche Service Assistance ClairDossier — 04 91 95 90 32 |
+| **Auto-Support** | Résout connexion, mot de passe, abonnement, facture, upload, fonctionnalité, export, quota ; sinon affiche Service Assistance ClairDossier — 07 82 98 36 44 |
 ---
 ## PARTIE V — BUSINESS & MONÉTISATION
 ### V.1 Abonnement obligatoire & parcours
@@ -401,7 +403,7 @@ Pages à créer progressivement (uniquement si réellement utiles) : `/intellige
 **Personas de contenu :** PME, artisans, dirigeants, indépendants, professions libérales, avocats, experts-comptables (si pertinent). Chaque page doit être unique.
 ### VII.3 SEO local
 Priorité **Marseille**, puis Bouches-du-Rhône, Aix-en-Provence, Aubagne, PACA — uniquement du contenu correspondant à une activité réelle, aucune doorway page, aucun spam de villes.
-Identité locale cohérente : **ClairDossier — 04 91 95 90 32.** Ne jamais inventer d'adresse. Google Business Profile uniquement si l'entreprise est réellement éligible.
+Identité locale cohérente : **ClairDossier — 07 82 98 36 44.** Ne jamais inventer d'adresse. Google Business Profile uniquement si l'entreprise est réellement éligible.
 ### VII.4 Content engine
 Transformer le Journal existant en clusters : Impayés, Contrats, Gestion documentaire, Préparer son dossier, Entreprise, IA documentaire. Chaque cluster : pillar page ↔ articles de support ↔ pages fonctionnalités.
 ### VII.5 SEO Command Center (admin)

@@ -4,13 +4,13 @@ description: "Ce que l'IA peut et ne doit pas faire dans le droit : synthèses, 
 date: 2026-05-02
 author: Rédaction ClairDossier
 category: IA et droit
-readMinutes: 7
+readMinutes: 5
 url: https://www.clair-dossier.com/blog/ia-droit
 ---
 
 # L'IA dans le droit : assistante de préparation, pas substitut
 
-*Publié le 2 mai 2026 — 7 min de lecture — catégorie : IA et droit*
+*Publié le 2 mai 2026 — 5 min de lecture — catégorie : IA et droit*
 
 **Résumé.** L'IA générative bouleverse les métiers du droit, mais une frontière reste non négociable : l'IA prépare le travail du professionnel — elle ne le remplace pas. Voici où l'IA est utile, où elle est dangereuse, et pourquoi cette frontière protège autant les avocats que leurs clients.
 
@@ -94,7 +94,7 @@ L'information loyale du client relève des règles déontologiques de la profess
 ## Articles liés
 
 - [Préparer un dossier prud'homal : la chronologie qui fait la différence](https://www.clair-dossier.com/blog/chronologie-prud-homale)
-- [RGPD et legaltech : où vont vraiment vos données juridiques ?](https://www.clair-dossier.com/blog/rgpd-legaltech)
+- [Protéger ses dossiers : ce que le RGPD exige des prestataires qui y accèdent](https://www.clair-dossier.com/blog/rgpd-legaltech)
 
 
 ---

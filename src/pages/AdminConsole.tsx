@@ -10,7 +10,17 @@ import {
   hasAuditLogs,
   hasDossierTrash,
   logAudit,
+  fetchAdminEntitlements,
+  hasAutomationEngine,
+  type AdminEntitlementRow,
 } from "../lib/admin";
+import {
+  ClientEntitlementPanel,
+  NewDossiersSection,
+  NotificationsSection,
+  SubscriptionsTable,
+} from "../components/admin/AdminAutomation";
+import { AdminRequests } from "../components/admin/AdminRequests";
 import { CATEGORY_LABELS, effectiveCategory, formatBytes, hasDocExtras, isGenericTitle } from "../lib/dossier-workspace";
 
 /**
@@ -40,6 +50,7 @@ type DossierRow = {
   status: string;
   created_at: string;
   deleted_at?: string | null;
+  deleted_by?: string | null;
   delete_reason?: string | null;
 };
 
@@ -78,10 +89,13 @@ const STATUS_LABELS: Record<string, string> = {
 
 const SECTIONS = [
   { id: "dashboard", label: "Tableau de bord" },
+  { id: "nouveaux", label: "Nouveaux dossiers" },
   { id: "clients", label: "Clients" },
   { id: "dossiers", label: "Dossiers" },
   { id: "corbeille", label: "Corbeille" },
   { id: "activite", label: "Activité" },
+  { id: "notifications", label: "Notifications" },
+  { id: "demandes", label: "Demandes & Journal" },
   { id: "abonnements", label: "Abonnements" },
   { id: "diagnostic", label: "Diagnostic" },
 ] as const;
@@ -114,185 +128,10 @@ function Stat({ label, value, warn = false }: { label: string; value: string | n
   );
 }
 
-/**
- * Porte MFA (§ sécurité admin) — TOTP natif Supabase, aucun système maison.
- * Après is_admin() : la console n'est rendue qu'en AAL2.
- *  - aucun facteur vérifié → enrôlement (QR + secret) puis vérification ;
- *  - facteur vérifié mais session AAL1 → challenge à 6 chiffres ;
- *  - erreur réseau → message + réessayer, jamais de contournement.
- * Les utilisateurs normaux ne passent jamais par cette porte.
- */
-function MfaGate({ onReady }: { onReady: () => void }) {
-  const [mode, setMode] = useState<"verification" | "enroll" | "challenge">("verification");
-  const [factorId, setFactorId] = useState<string | null>(null);
-  const [qr, setQr] = useState<string | null>(null);
-  const [secret, setSecret] = useState<string | null>(null);
-  const [code, setCode] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
-
-  async function bootstrap() {
-    setErr(null);
-    setMode("verification");
-    try {
-      const { data: aal, error: aalErr } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-      if (aalErr) throw aalErr;
-      if (aal.currentLevel === "aal2") {
-        onReady();
-        return;
-      }
-      const { data: factors, error: fErr } = await supabase.auth.mfa.listFactors();
-      if (fErr) throw fErr;
-      const verified = factors.totp.find((f) => f.status === "verified");
-      if (verified) {
-        setFactorId(verified.id);
-        setMode("challenge");
-        return;
-      }
-      // Facteurs non vérifiés abandonnés : repartir proprement.
-      for (const f of factors.all.filter((x) => x.status === "unverified")) {
-        await supabase.auth.mfa.unenroll({ factorId: f.id }).catch(() => {});
-      }
-      const { data: enr, error: eErr } = await supabase.auth.mfa.enroll({
-        factorType: "totp",
-        friendlyName: "ClairDossier admin",
-      });
-      if (eErr) throw eErr;
-      setFactorId(enr.id);
-      setQr(enr.totp.qr_code);
-      setSecret(enr.totp.secret);
-      setMode("enroll");
-    } catch {
-      setErr("Vérification MFA impossible pour le moment. Réessayez.");
-    }
-  }
-
-  useEffect(() => {
-    void bootstrap();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  async function submitCode() {
-    if (!factorId || code.trim().length < 6) return;
-    setBusy(true);
-    setErr(null);
-    try {
-      const { data: ch, error: cErr } = await supabase.auth.mfa.challenge({ factorId });
-      if (cErr) throw cErr;
-      const { error: vErr } = await supabase.auth.mfa.verify({
-        factorId,
-        challengeId: ch.id,
-        code: code.trim(),
-      });
-      if (vErr) throw vErr;
-      onReady();
-    } catch {
-      setErr("Code invalide ou expiré. Réessayez.");
-    } finally {
-      setBusy(false);
-      setCode("");
-    }
-  }
-
-  return (
-    <section className="bg-cream-50">
-      <div className="mx-auto max-w-md px-5 py-20 sm:px-8">
-        <p className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-700">
-          Console d'administration
-        </p>
-        <h1 className="mt-2 font-display text-2xl font-semibold text-navy-900">
-          Vérification en deux étapes
-        </h1>
-
-        {mode === "verification" && !err && (
-          <p className="mt-4 text-sm text-slate-500">Vérification du niveau de session…</p>
-        )}
-
-        {mode === "enroll" && (
-          <div className="mt-5 rounded-2xl border hairline bg-white p-6 shadow-card">
-            <p className="text-sm leading-relaxed text-slate-500">
-              Scannez ce QR code avec votre application d'authentification (ou saisissez la clé),
-              puis entrez le code à 6 chiffres pour activer la protection de la console.
-            </p>
-            {qr && (
-              <img
-                src={`data:image/svg+xml;utf8,${encodeURIComponent(qr)}`}
-                alt="QR code d'enrôlement MFA"
-                width={180}
-                height={180}
-                className="mx-auto mt-4 rounded-lg border hairline bg-white p-2"
-              />
-            )}
-            {secret && (
-              <p className="mt-3 break-all text-center font-mono text-[0.7rem] text-slate-500">
-                Clé : {secret}
-              </p>
-            )}
-          </div>
-        )}
-
-        {mode === "challenge" && (
-          <p className="mt-4 text-sm leading-relaxed text-slate-500">
-            Entrez le code à 6 chiffres de votre application d'authentification.
-          </p>
-        )}
-
-        {(mode === "enroll" || mode === "challenge") && (
-          <form
-            className="mt-5 flex flex-wrap items-center gap-2"
-            onSubmit={(e) => {
-              e.preventDefault();
-              void submitCode();
-            }}
-          >
-            <label htmlFor="mfa-code" className="sr-only">
-              Code à 6 chiffres
-            </label>
-            <input
-              id="mfa-code"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              pattern="[0-9]*"
-              maxLength={6}
-              value={code}
-              onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-              placeholder="000000"
-              className="w-40 rounded-xl border hairline-strong bg-white px-4 py-3 text-center font-mono text-lg tracking-[0.3em] text-navy-900"
-            />
-            <button
-              type="submit"
-              disabled={busy || code.length < 6}
-              className="rounded-full bg-navy-900 px-5 py-3 text-sm font-semibold text-cream-50 transition-colors hover:bg-navy-800 disabled:opacity-60"
-            >
-              {busy ? "Vérification…" : "Valider"}
-            </button>
-          </form>
-        )}
-
-        {err && (
-          <p className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {err}{" "}
-            <button type="button" onClick={() => void bootstrap()} className="underline">
-              Réessayer
-            </button>
-          </p>
-        )}
-
-        <p className="mt-6 text-xs text-slate-500">
-          <Link to="/compte" className="underline">
-            ← Revenir à mon compte
-          </Link>
-        </p>
-      </div>
-    </section>
-  );
-}
-
 export function AdminConsole() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const [allowed, setAllowed] = useState<boolean | null>(null);
-  const [mfaOk, setMfaOk] = useState(false);
   const [superAdmin, setSuperAdmin] = useState(false);
   const [section, setSection] = useState<SectionId>("dashboard");
   const [error, setError] = useState<string | null>(null);
@@ -300,6 +139,10 @@ export function AdminConsole() {
 
   // Capacités (migrations appliquées ou non).
   const [caps, setCaps] = useState({ trash: false, audit: false, notes: false, docExtras: false });
+  const [capsReady, setCapsReady] = useState(false);
+  const [automation, setAutomation] = useState(false);
+  const [entitlements, setEntitlements] = useState<AdminEntitlementRow[] | null>(null);
+  const [newCount, setNewCount] = useState(0);
 
   // Données.
   const [profiles, setProfiles] = useState<ProfileRow[]>([]);
@@ -336,7 +179,21 @@ export function AdminConsole() {
       if (!active) return;
       setSuperAdmin(sa);
       setCaps({ trash, audit: auditOk, notes: notesOk, docExtras: extras });
-      await reloadAll(trash, auditOk, notesOk, extras, (fn) => active && fn());
+      setCapsReady(true);
+    })();
+    return () => {
+      active = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading, user?.id]);
+
+  // Les données (dossiers, profils, e-mails…) ne sont demandées qu'une fois le
+  // rôle admin confirmé par la base (is_admin) et les capacités détectées.
+  useEffect(() => {
+    if (!allowed || !capsReady) return;
+    let active = true;
+    (async () => {
+      await reloadAll(caps.trash, caps.audit, caps.notes, caps.docExtras, (fn) => active && fn());
       if (active) setLoading(false);
       void logAudit("admin_console_ouverte", "console");
     })();
@@ -344,7 +201,7 @@ export function AdminConsole() {
       active = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authLoading, user?.id]);
+  }, [allowed, capsReady]);
 
   async function reloadAll(
     trash: boolean,
@@ -353,7 +210,7 @@ export function AdminConsole() {
     extras: boolean,
     guard: (fn: () => void) => void = (fn) => fn(),
   ) {
-    const dossierCols = `id,user_id,typology,title,status,created_at${trash ? ",deleted_at,delete_reason" : ""}`;
+    const dossierCols = `id,user_id,typology,title,status,created_at${trash ? ",deleted_at,deleted_by,delete_reason" : ""}`;
     const docCols = `id,dossier_id,user_id,file_name,file_path,kind,size_bytes,created_at${extras ? ",category,deleted_at" : ""}`;
     const [p, em, d, dc, au, no] = await Promise.all([
       supabase.from("profiles").select("id,full_name,company_name,company_type,phone,created_at"),
@@ -375,7 +232,23 @@ export function AdminConsole() {
             .limit(200)
         : Promise.resolve({ data: [] }),
     ]);
+    const ents = await fetchAdminEntitlements();
+    const automationOk = await hasAutomationEngine();
+    let unseen = 0;
+    if (automationOk) {
+      const { count } = await supabase
+        .from("dossiers")
+        .select("id", { count: "exact", head: true })
+        .not("submitted_at", "is", null)
+        .is("admin_seen_at", null)
+        .is("deleted_at", null)
+        .not("status", "in", "(en-cours,valide,archive)");
+      unseen = count ?? 0;
+    }
     guard(() => {
+      setNewCount(unseen);
+      setEntitlements(ents);
+      setAutomation(automationOk);
       setProfiles((p.data as ProfileRow[] | null) ?? []);
       const map: Record<string, string> = {};
       for (const e of (em.data as { id: string; email: string }[] | null) ?? []) map[e.id] = e.email;
@@ -392,7 +265,12 @@ export function AdminConsole() {
   }
 
   const activeDossiers = dossiers.filter((d) => !d.deleted_at);
-  const trashedDossiers = dossiers.filter((d) => Boolean(d.deleted_at));
+  const [trashFilter, setTrashFilter] = useState("");
+  const trashedDossiers = dossiers.filter((d) => {
+    if (!d.deleted_at) return false;
+    const q = trashFilter.trim().toLowerCase();
+    return !q || [emails[d.user_id], d.title, d.typology].filter(Boolean).some((v) => String(v).toLowerCase().includes(q));
+  });
   const activeDocs = docs.filter((d) => !d.deleted_at);
   const trashedDocs = docs.filter((d) => Boolean(d.deleted_at));
   const storageBytes = activeDocs.reduce((s, d) => s + (d.size_bytes ?? 0), 0);
@@ -433,12 +311,16 @@ export function AdminConsole() {
       "Créé par erreur",
     );
     if (reason === null) return;
-    const { error: e } = await supabase
+    // .select() : sans lui, un refus RLS (session expirée, droits retirés)
+    // renverrait 0 ligne SANS erreur et on annoncerait un faux succès. Le champ
+    // deleted_at est re-lu car le déclencheur le réserve au super admin.
+    const { data: rows, error: e } = await supabase
       .from("dossiers")
       .update({ deleted_at: new Date().toISOString(), deleted_by: user?.id, delete_reason: reason || null })
-      .eq("id", d.id);
-    if (e) {
-      setError("Mise à la corbeille refusée (migration super admin appliquée ?).");
+      .eq("id", d.id)
+      .select("id,deleted_at");
+    if (e || !(rows as { deleted_at: string | null }[] | null)?.[0]?.deleted_at) {
+      setError("Mise à la corbeille refusée par le serveur (action réservée au super administrateur) : rien n'a été modifié.");
       return;
     }
     setNotice(`Dossier « ${d.title || d.typology} » placé dans la corbeille.`);
@@ -447,12 +329,14 @@ export function AdminConsole() {
   }
 
   async function restoreDossier(d: DossierRow) {
-    const { error: e } = await supabase
+    const { data: rows, error: e } = await supabase
       .from("dossiers")
       .update({ deleted_at: null, deleted_by: null, delete_reason: null })
-      .eq("id", d.id);
-    if (e) {
-      setError("Restauration refusée.");
+      .eq("id", d.id)
+      .select("id,deleted_at");
+    const restored = (rows as { deleted_at: string | null }[] | null)?.[0];
+    if (e || !restored || restored.deleted_at !== null) {
+      setError("Restauration refusée par le serveur (action réservée au super administrateur).");
       return;
     }
     setNotice(`Dossier « ${d.title || d.typology} » restauré.`);
@@ -468,25 +352,35 @@ export function AdminConsole() {
       )
     )
       return;
-    // 1. Fichiers storage, 2. lignes documents (cascade couvre aussi), 3. dossier.
+    // Ordre sûr : la ligne dossier d'abord (le refus éventuel n'a alors rien
+    // détruit), les fichiers ensuite. Chemins capturés AVANT la cascade.
     const paths = docs.filter((x) => x.dossier_id === d.id).map((x) => x.file_path);
-    if (paths.length) await supabase.storage.from("documents").remove(paths);
-    const { error: e } = await supabase.from("dossiers").delete().eq("id", d.id);
-    if (e) {
-      setError("Suppression définitive refusée (réservée au super admin).");
+    const { data: rows, error: e } = await supabase.from("dossiers").delete().eq("id", d.id).select("id");
+    if (e || !rows?.length) {
+      setError("Suppression définitive refusée par le serveur (action réservée au super administrateur) : rien n'a été supprimé.");
       return;
     }
-    setNotice("Dossier supprimé définitivement (fichiers inclus).");
+    let storageWarning: string | null = null;
+    if (paths.length) {
+      const { error: sErr } = await supabase.storage.from("documents").remove(paths);
+      if (sErr) storageWarning = `${paths.length} fichier(s) restent à purger du stockage (chemins dans l'audit).`;
+    }
+    setNotice(
+      storageWarning
+        ? `Dossier supprimé définitivement. ${storageWarning}`
+        : "Dossier supprimé définitivement (fichiers inclus).",
+    );
     void logAudit("dossier_suppression_definitive", "dossier", d.id, d.user_id, {
       documents: String(docCount),
+      ...(storageWarning ? { fichiers_a_purger: paths.join(" ") } : {}),
     });
     await refresh();
   }
 
   async function changeStatus(d: DossierRow, status: string) {
-    const { error: e } = await supabase.from("dossiers").update({ status }).eq("id", d.id);
-    if (e) {
-      setError("Changement de statut refusé (migration super admin appliquée ?).");
+    const { data: rows, error: e } = await supabase.from("dossiers").update({ status }).eq("id", d.id).select("id");
+    if (e || !rows?.length) {
+      setError("Changement de statut refusé par le serveur : rien n'a été modifié.");
       return;
     }
     void logAudit("dossier_statut", "dossier", d.id, d.user_id, { statut: status });
@@ -497,12 +391,13 @@ export function AdminConsole() {
 
   async function trashDoc(doc: DocRow) {
     if (!window.confirm(`Mettre « ${doc.file_name} » à la corbeille ?`)) return;
-    const { error: e } = await supabase
+    const { data: rows, error: e } = await supabase
       .from("dossier_documents")
       .update({ deleted_at: new Date().toISOString(), deleted_by: user?.id })
-      .eq("id", doc.id);
-    if (e) {
-      setError("Action refusée (migrations appliquées ?).");
+      .eq("id", doc.id)
+      .select("id");
+    if (e || !rows?.length) {
+      setError("Action refusée par le serveur : rien n'a été modifié.");
       return;
     }
     void logAudit("document_corbeille", "document", doc.id, doc.user_id);
@@ -510,12 +405,13 @@ export function AdminConsole() {
   }
 
   async function restoreDoc(doc: DocRow) {
-    const { error: e } = await supabase
+    const { data: rows, error: e } = await supabase
       .from("dossier_documents")
       .update({ deleted_at: null, deleted_by: null })
-      .eq("id", doc.id);
-    if (e) {
-      setError("Restauration refusée.");
+      .eq("id", doc.id)
+      .select("id");
+    if (e || !rows?.length) {
+      setError("Restauration refusée par le serveur.");
       return;
     }
     void logAudit("document_restaure", "document", doc.id, doc.user_id);
@@ -524,13 +420,17 @@ export function AdminConsole() {
 
   async function hardDeleteDoc(doc: DocRow) {
     if (!confirmIrreversible(`Supprimer DÉFINITIVEMENT « ${doc.file_name} » ?`)) return;
-    await supabase.storage.from("documents").remove([doc.file_path]);
-    const { error: e } = await supabase.from("dossier_documents").delete().eq("id", doc.id);
-    if (e) {
-      setError("Suppression refusée.");
+    // Ligne d'abord (un refus n'a rien détruit), fichier ensuite.
+    const { data: rows, error: e } = await supabase.from("dossier_documents").delete().eq("id", doc.id).select("id");
+    if (e || !rows?.length) {
+      setError("Suppression refusée par le serveur (action réservée au super administrateur).");
       return;
     }
-    void logAudit("document_suppression_definitive", "document", doc.id, doc.user_id);
+    const { error: sErr } = await supabase.storage.from("documents").remove([doc.file_path]);
+    void logAudit("document_suppression_definitive", "document", doc.id, doc.user_id, {
+      ...(sErr ? { fichier_a_purger: doc.file_path } : {}),
+    });
+    if (sErr) setNotice("Document supprimé ; le fichier reste à purger du stockage (chemin dans l'audit).");
     await refresh();
   }
 
@@ -579,7 +479,6 @@ export function AdminConsole() {
     );
   }
   if (!allowed) return null;
-  if (!mfaOk) return <MfaGate onReady={() => setMfaOk(true)} />;
 
   return (
     <>
@@ -662,6 +561,7 @@ export function AdminConsole() {
                 }`}
               >
                 {s.label}
+                {s.id === "nouveaux" && newCount > 0 ? ` (${newCount})` : ""}
                 {s.id === "corbeille" && trashedDossiers.length + trashedDocs.length > 0
                   ? ` (${trashedDossiers.length + trashedDocs.length})`
                   : ""}
@@ -749,6 +649,49 @@ export function AdminConsole() {
                 </div>
               )}
 
+              {section === "nouveaux" &&
+                (automation ? (
+                  <NewDossiersSection
+                    userId={user?.id}
+                    emails={emails}
+                    names={Object.fromEntries(profiles.map((pr) => [pr.id, pr.full_name || pr.company_name || ""]))}
+                    onCount={setNewCount}
+                    onViewClient={(uid) => {
+                      setSection("clients");
+                      setClientOpen(uid);
+                      setQuery(emails[uid] ?? "");
+                    }}
+                    onError={setError}
+                    onNotice={setNotice}
+                  />
+                ) : (
+                  <Card className="mt-8">
+                    <p className="text-sm text-slate-500">
+                      La file des nouveaux dossiers s'active après application de la migration
+                      « automatisation » (voir TODO_ADMIN.md). En attendant, l'onglet Dossiers liste tout.
+                    </p>
+                  </Card>
+                ))}
+
+              {section === "notifications" &&
+                (automation ? (
+                  <NotificationsSection
+                    userId={user?.id}
+                    emails={emails}
+                    names={Object.fromEntries(profiles.map((pr) => [pr.id, pr.full_name || pr.company_name || ""]))}
+                    onError={setError}
+                    onNotice={setNotice}
+                  />
+                ) : (
+                  <Card className="mt-8">
+                    <p className="text-sm text-slate-500">
+                      Les notifications internes s'activent après application de la migration « automatisation ».
+                    </p>
+                  </Card>
+                ))}
+
+              {section === "demandes" && <AdminRequests onError={setError} />}
+
               {section === "clients" && (
                 <div className="mt-8 space-y-3">
                   {profiles.filter(matchProfile).map((p) => {
@@ -791,7 +734,15 @@ export function AdminConsole() {
                         </div>
                         {open && (
                           <div className="mt-4 border-t hairline pt-4">
-                            <p className="font-mono text-[0.65rem] uppercase tracking-[0.14em] text-slate-500">
+                            <ClientEntitlementPanel
+                              row={entitlements?.find((r) => r.user_id === p.id)}
+                              email={email ?? null}
+                              superAdmin={superAdmin}
+                              onChanged={() => void refresh()}
+                              onError={setError}
+                              onNotice={setNotice}
+                            />
+                            <p className="mt-4 font-mono text-[0.65rem] uppercase tracking-[0.14em] text-slate-500">
                               Dossiers (vue client via l'espace normal)
                             </p>
                             <ul className="mt-2 space-y-1.5">
@@ -916,9 +867,19 @@ export function AdminConsole() {
                   )}
                   {caps.trash && (
                     <Card>
-                      <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">
-                        Dossiers ({trashedDossiers.length})
-                      </p>
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">
+                          Dossiers ({trashedDossiers.length})
+                        </p>
+                        <input
+                          type="search"
+                          value={trashFilter}
+                          onChange={(e) => setTrashFilter(e.target.value)}
+                          placeholder="Filtrer : client ou titre"
+                          aria-label="Filtrer la corbeille par client ou titre"
+                          className="min-h-[40px] rounded-lg border hairline bg-white px-3 text-sm text-navy-900 focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/20"
+                        />
+                      </div>
                       <ul className="mt-3 space-y-2">
                         {trashedDossiers.length === 0 && (
                           <li className="text-sm text-slate-500">Aucun dossier dans la corbeille.</li>
@@ -929,6 +890,7 @@ export function AdminConsole() {
                               <p className="truncate text-navy-900">{d.title || d.typology}</p>
                               <p className="mt-0.5 font-mono text-[0.62rem] text-slate-500">
                                 {emails[d.user_id] ?? "—"} · supprimé le {d.deleted_at ? fmt(d.deleted_at) : "—"}
+                                {d.deleted_by ? (d.deleted_by === d.user_id ? " par le client" : " par l'administration") : ""}
                                 {d.delete_reason ? ` · ${d.delete_reason}` : ""}
                               </p>
                             </div>
@@ -1011,12 +973,24 @@ export function AdminConsole() {
                   <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">
                     Abonnements
                   </p>
-                  <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-500">
-                    Les paiements passent par des Stripe Payment Links : <strong className="text-navy-900">Stripe est la source de vérité financière</strong>. Aucune donnée d'abonnement n'est
-                    répliquée dans la base ClairDossier aujourd'hui — rien n'est donc affiché ici
-                    pour ne pas montrer d'information invérifiable. Gérez clients, factures,
-                    remboursements et résiliations directement dans le dashboard Stripe.
-                  </p>
+                  {entitlements ? (
+                    <>
+                      <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-500">
+                        <strong className="text-navy-900">Stripe est la source de vérité financière</strong> :
+                        ces lignes sont recopiées par le webhook signé (offre, statut, période). Changements
+                        d'offre, remboursements et résiliations se font dans le dashboard Stripe ; les
+                        exceptions de quota se règlent dans la fiche client.
+                      </p>
+                      <SubscriptionsTable rows={entitlements} />
+                    </>
+                  ) : (
+                    <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-500">
+                      Les paiements passent par des Stripe Payment Links : <strong className="text-navy-900">Stripe est la source de vérité financière</strong>. La synchronisation des
+                      abonnements s'active après application de la migration « automatisation » et
+                      configuration du webhook Stripe. Gérez clients, factures, remboursements et
+                      résiliations directement dans le dashboard Stripe.
+                    </p>
+                  )}
                   <a
                     href="https://dashboard.stripe.com/"
                     target="_blank"

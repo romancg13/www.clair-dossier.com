@@ -278,6 +278,8 @@ auth_token = "env(SUPABASE_AUTH_SMS_TWILIO_AUTH_TOKEN)"
 max_enrolled_factors = 10
 
 # Control MFA via App Authenticator (TOTP)
+# Non utilisé : la console /admin n'exige plus de vérification en deux étapes
+# (migration 20260920120000). Valeurs par défaut de Supabase.
 [auth.mfa.totp]
 enroll_enabled = false
 verify_enabled = false
@@ -382,3 +384,8 @@ s3_region = "env(S3_REGION)"
 s3_access_key = "env(S3_ACCESS_KEY)"
 # Configures AWS_SECRET_ACCESS_KEY for S3 bucket
 s3_secret_key = "env(S3_SECRET_KEY)"
+
+# Webhook Stripe : Stripe n'envoie pas de jeton Supabase — la signature
+# Stripe (STRIPE_WEBHOOK_SECRET) est vérifiée dans la fonction à la place.
+[functions.stripe-webhook]
+verify_jwt = false

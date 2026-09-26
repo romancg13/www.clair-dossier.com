@@ -12,3 +12,14 @@ dist-ssr
 .env
 .env.*
 !.env.example
+
+# Application mobile (Expo / EAS)
+mobile/.expo
+mobile/ios
+mobile/android
+mobile/*.jks
+mobile/*.p8
+mobile/*.p12
+mobile/*.key
+mobile/*.mobileprovision
+mobile/.easignore

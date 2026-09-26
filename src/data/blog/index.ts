@@ -3,20 +3,38 @@ import { conservationDocuments } from './conservation-documents';
 import { iaDroit } from './ia-droit';
 import { mediationContentieux } from './mediation-contentieux';
 import { miseEnDemeure } from './mise-en-demeure';
+import { organiserUnDossier } from './organiser-un-dossier';
 import { preparerRendezVousAvocat } from './preparer-rendez-vous-avocat';
+import { readableWordCount, readingMinutes, postsToReview } from './reading';
 import { rgpdLegaltech } from './rgpd-legaltech';
-import type { BlogPost } from './types';
+import type { BlogPost, BlogPostInput } from './types';
 
-// Tri descendant par date de publication — les plus récents en premier.
-export const blogPosts: BlogPost[] = [
-  preparerRendezVousAvocat, // 2026-05-20
-  chronologiePrudHomale,    // 2026-05-12 (existant)
-  miseEnDemeure,            // 2026-04-15
-  conservationDocuments,    // 2026-03-28
-  mediationContentieux,     // 2026-02-12
-  rgpdLegaltech,            // (existant — date dans le fichier)
-  iaDroit,                  // (existant — date dans le fichier)
+const ALL: BlogPostInput[] = [
+  organiserUnDossier,
+  preparerRendezVousAvocat,
+  chronologiePrudHomale,
+  rgpdLegaltech,
+  miseEnDemeure,
+  conservationDocuments,
+  mediationContentieux,
+  iaDroit,
 ];
+
+function withReading(post: BlogPostInput): BlogPost {
+  const wordCount = readableWordCount(post);
+  return { ...post, wordCount, readMinutes: readingMinutes(wordCount) };
+}
+
+// Articles publiés (les brouillons ne sont ni listés, ni routés, ni pré-rendus),
+// du plus récent au plus ancien selon la date de première publication.
+export const blogPosts: BlogPost[] = ALL.filter((p) => (p.status ?? 'published') === 'published')
+  .map(withReading)
+  .sort((a, b) => b.date.localeCompare(a.date));
+
+/** Alerte de révision éditoriale (brouillons compris) — destinée à l'administration. */
+export function journalReviewAlerts(today: string | Date, horizonDays = 30) {
+  return postsToReview(ALL, today, horizonDays);
+}
 
 export function getPostBySlug(slug: string | undefined): BlogPost | undefined {
   if (!slug) return undefined;

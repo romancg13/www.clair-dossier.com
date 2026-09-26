@@ -10,7 +10,7 @@
  * art. 30) — à formaliser côté conformité.
  */
 
-export const TRUST_UPDATED = '2026-08-30';
+export const TRUST_UPDATED = '2026-09-18';
 
 export type Subprocessor = {
   name: string;
@@ -26,8 +26,8 @@ export type Subprocessor = {
 export const subprocessors: Subprocessor[] = [
   {
     name: 'Supabase',
-    finalite: 'Base de données, authentification, stockage privé des pièces, fonctions serveur.',
-    donnees: 'Comptes et profils, dossiers, pièces déposées, demandes de contact.',
+    finalite: 'Base de données, authentification, stockage privé des pièces, fonctions serveur (dont la notification interne de l’équipe).',
+    donnees: 'Comptes et profils, dossiers, pièces déposées, notifications internes.',
     localisation: 'Région cloud du projet : en cours de confirmation — sera affichée ici.',
     localisationTodo: true,
     retention: 'Durée du contrat, puis délais de la politique de confidentialité (comptes : 12 mois après résiliation).',
@@ -44,8 +44,8 @@ export const subprocessors: Subprocessor[] = [
   },
   {
     name: 'Resend',
-    finalite: 'E-mails transactionnels : confirmation de compte, notifications, accusés de réception.',
-    donnees: 'Adresse e-mail et contenu des messages transactionnels (minimisés : pas de contenu de dossier).',
+    finalite: 'Envoi des e-mails : confirmation de compte et notifications internes à l’équipe (nouvelle inscription, nouveau dossier).',
+    donnees: 'Adresse e-mail du destinataire et contenu du message. Les notifications internes ne contiennent ni pièce ni contenu de dossier.',
     localisation: 'Société américaine — encadrement des transferts (clauses contractuelles types) : à confirmer.',
     localisationTodo: true,
     retention: 'Journaux d’envoi côté prestataire : durée à confirmer.',
@@ -53,20 +53,22 @@ export const subprocessors: Subprocessor[] = [
     dpaTodo: true,
   },
   {
-    name: 'GitHub Pages / Netlify',
-    finalite: 'Diffusion du site public (fichiers statiques).',
-    donnees: 'Aucune donnée de dossier — journaux techniques de diffusion (adresses IP) côté hébergeur.',
-    localisation: 'Réseaux de diffusion mondiaux (contenu public uniquement).',
-    retention: 'Journaux techniques selon les politiques de ces hébergeurs.',
-    dpa: 'Conditions de service publiques de ces plateformes.',
+    name: 'GitHub Pages (GitHub, Inc.)',
+    finalite: 'Diffusion du site public (fichiers statiques) sur le domaine clair-dossier.com.',
+    donnees: 'Aucune donnée de dossier — journaux techniques de diffusion (dont l’adresse IP) côté hébergeur.',
+    localisation: 'Société américaine, réseau de diffusion mondial (contenu public uniquement) — encadrement des transferts : à confirmer.',
+    localisationTodo: true,
+    retention: 'Journaux techniques selon la politique de l’hébergeur.',
+    dpa: 'Conditions de traitement des données de GitHub : référence à publier ici.',
+    dpaTodo: true,
   },
   {
     name: 'WhatsApp (Meta)',
-    finalite: 'Canal de contact et de transmission optionnel, toujours choisi et déclenché par vous.',
-    donnees: 'Uniquement ce que vous décidez d’y envoyer — régi par les conditions de WhatsApp.',
-    localisation: 'Hors de notre périmètre serveur : aucune pièce n’y transite sans votre action explicite.',
+    finalite: 'Canal de contact optionnel : vous choisissez d’écrire à l’équipe par WhatsApp.',
+    donnees: 'Uniquement ce que vous décidez d’y écrire ou d’y joindre — régi par les conditions de WhatsApp. Le service n’y envoie jamais vos dossiers.',
+    localisation: 'Hors de notre périmètre serveur : rien n’y transite sans votre action explicite.',
     retention: 'Selon vos réglages WhatsApp.',
-    dpa: 'Sans objet (canal externe activé par l’utilisateur).',
+    dpa: 'Sans objet (canal externe choisi par vous).',
   },
 ];
 
@@ -84,9 +86,14 @@ export const retentionRows = [
 /** Journal daté des changements de sécurité — chaque entrée est vérifiable (migrations SQL, configuration, commits). */
 export const securityChangelog: Array<{ date: string; entry: string }> = [
   {
+    date: '2026-09-18',
+    entry:
+      'Tests SQL de cloisonnement entre comptes rejoués hors production sur l’ensemble des migrations du dépôt ; le relevé daté alimente les indicateurs de cette page.',
+  },
+  {
     date: '2026-08-30',
     entry:
-      'En-têtes HTTP renforcés sur la cible d’hébergement (HSTS 1 an, CSP stricte, nosniff, anti-framing). Pré-rendu des pages publiques. Conception de la capture des demandes de contact : table verrouillée (aucun accès public direct), écriture par fonction serveur validée, limitation de débit par hachés salés — activation en cours.',
+      'Pré-rendu des pages publiques. En-têtes HTTP renforcés (HSTS, CSP stricte, nosniff, anti-framing) préparés pour une cible d’hébergement alternative, non active sur le domaine à ce jour. Capture des demandes de contact conçue (table verrouillée sans accès public direct, écriture par fonction serveur validée, limitation de débit par hachés salés) : écrite, non activée en production.',
   },
   {
     date: '2026-08-23',
@@ -112,4 +119,5 @@ export const openTodos: string[] = [
   'Analyse d’impact (AIPD) : évaluation de la nécessité à documenter.',
   'Procédure d’incident rédigée et publiée (l’engagement réglementaire s’applique déjà — voir Continuité).',
   'Test de restauration des sauvegardes : à réaliser puis dater ici.',
+  'Encadrement des transferts hors Union européenne (Resend, GitHub) : mécanisme à confirmer puis afficher.',
 ];
