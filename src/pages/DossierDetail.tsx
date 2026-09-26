@@ -1026,19 +1026,20 @@ export function DossierDetail() {
               </div>
 
               {actionError && (
-                <p className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                <p role="alert" className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                   {actionError}
                 </p>
               )}
 
-              {/* ── Onglets ───────────────────────────────────────────── */}
-              <div className="mt-8 flex gap-1 overflow-x-auto whitespace-nowrap border-b hairline" role="tablist">
+              {/* ── Onglets (boutons de section : aria-pressed, pattern du
+                     filtre de src/pages/Account.tsx — pas de role="tab" sans
+                     tabpanel associé) ─────────────────────────────────── */}
+              <div className="mt-8 flex gap-1 overflow-x-auto whitespace-nowrap border-b hairline">
                 {TABS.map((t) => (
                   <button
                     key={t.id}
                     type="button"
-                    role="tab"
-                    aria-selected={activeTab === t.id}
+                    aria-pressed={activeTab === t.id}
                     onClick={() => setActiveTab(t.id)}
                     className={`-mb-px shrink-0 rounded-t-lg px-4 py-2.5 text-sm font-medium transition-colors ${
                       activeTab === t.id

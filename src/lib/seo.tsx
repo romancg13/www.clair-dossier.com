@@ -108,6 +108,7 @@ export function Seo({
   // oublie de le demander (ex. /dossier/nouveau).
   const noindex = noindexProp || isPrivatePath(path);
   const absImage = image.startsWith('http') ? image : `${SITE_URL}${image}`;
+  const jsonLdKey = jsonLd ? JSON.stringify(jsonLd) : '';
 
   if (import.meta.env.SSR) {
     ssrSeoCollector?.({
@@ -167,7 +168,10 @@ export function Seo({
         document.head.appendChild(s);
       });
     }
-  }, [fullTitle, description, url, type, absImage, jsonLd, noindex]);
+    // jsonLd est comparé par valeur sérialisée (jsonLdKey) : les appelants
+    // passent un littéral neuf à chaque rendu, qui purgeait/réinjectait les
+    // <script> JSON-LD à chaque re-render.
+  }, [fullTitle, description, url, type, absImage, jsonLdKey, noindex]);
 
   return null;
 }

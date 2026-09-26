@@ -1,9 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
+import { isSupabaseConfigured } from './supabase-env';
 
 const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 
-export const isSupabaseConfigured = Boolean(url && anonKey);
+// Ré-export : les consommateurs existants importent le booléen d'ici ;
+// la source vit dans ./supabase-env (module sans SDK).
+export { isSupabaseConfigured };
 
 if (!isSupabaseConfigured && import.meta.env.DEV) {
   // eslint-disable-next-line no-console

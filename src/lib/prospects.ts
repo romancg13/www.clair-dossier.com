@@ -20,7 +20,7 @@
  * pour un renvoi idempotent). Capture désactivée, fonction absente, réponse
  * neutre anti-robot, délai dépassé : jamais présentés comme « enregistrés ».
  */
-import { isSupabaseConfigured } from './supabase';
+import { isSupabaseConfigured } from './supabase-env';
 import { SEGMENTS, type Segment } from '../../supabase/functions/submit-prospect/validate';
 
 // Listes fermées et normalisation d'URL : source unique partagée avec
