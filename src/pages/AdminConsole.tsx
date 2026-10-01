@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Seo } from "../lib/seo";
 import { useAuth } from "../lib/auth";
 import { supabase } from "../lib/supabase";
+import { signDocument } from "../lib/document-links";
 import {
   checkSuperAdmin,
   confirmIrreversible,
@@ -435,9 +436,22 @@ export function AdminConsole() {
   }
 
   async function openDoc(doc: DocRow) {
-    const { data } = await supabase.storage.from("documents").createSignedUrl(doc.file_path, 600);
-    if (data?.signedUrl) window.open(data.signedUrl, "_blank", "noopener");
-    else setError("Lien indisponible pour ce fichier.");
+    // Onglet ouvert pendant le clic (sinon bloqué après l'attente réseau), lien signé frais.
+    const w = window.open("about:blank", "_blank");
+    const state = await signDocument(doc.file_path, 600);
+    if (state.status === "ok") {
+      if (w) {
+        w.opener = null;
+        w.location.href = state.url;
+      } else window.open(state.url, "_blank", "noopener");
+      return;
+    }
+    w?.close();
+    setError(
+      state.status === "missing"
+        ? `Fichier à réimporter : « ${doc.file_name} » est absent du stockage. Réimportez-le depuis la fiche du dossier.`
+        : "Lien momentanément indisponible pour ce fichier. Réessayez dans un instant.",
+    );
   }
 
   /* ── Clients ──────────────────────────────────────────────────────────── */

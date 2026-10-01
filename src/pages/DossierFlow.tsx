@@ -34,6 +34,7 @@ import {
 } from "../../packages/core/src/index";
 import { useAuth } from "../lib/auth";
 import { supabase } from "../lib/supabase";
+import { uploadVerified } from "../lib/document-links";
 
 type DraftAnswers = Record<string, string>;
 
@@ -151,19 +152,17 @@ export function DossierFlow() {
     let failures = 0;
     for (const file of files) {
       const path = `${user.id}/${dossierId}/${Date.now()}-${sanitizeFileName(file.name)}`;
-      const up = await supabase.storage.from("documents").upload(path, file, { upsert: false });
-      if (up.error) {
+      // Dépôt vérifié : la ligne n'existe que si le fichier est réellement stocké.
+      try {
+        await uploadVerified(path, file, {
+          dossier_id: dossierId,
+          user_id: user.id,
+          file_name: file.name,
+          size_bytes: file.size,
+        });
+      } catch {
         failures++;
-        continue;
       }
-      const ins = await supabase.from("dossier_documents").insert({
-        dossier_id: dossierId,
-        user_id: user.id,
-        file_path: path,
-        file_name: file.name,
-        size_bytes: file.size,
-      });
-      if (ins.error) failures++;
     }
     return failures;
   }

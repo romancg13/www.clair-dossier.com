@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { zipSync } from "fflate";
 import { Seo } from "../lib/seo";
@@ -36,6 +36,17 @@ import {
   validateUpload,
   duplicateWarning,
 } from "../lib/dossier-workspace";
+import {
+  LINK_MAX_AGE_MS,
+  displayExt,
+  downloadName,
+  locateMissingObject,
+  signDocument,
+  uploadErrorMessage,
+  uploadVerified,
+  withDownload,
+  type LinkState,
+} from "../lib/document-links";
 
 type DossierRow = {
   id: string;
@@ -94,7 +105,9 @@ type TabId = "apercu" | "pieces" | "echeances" | "dashboard" | "activite";
 /* ── Ligne document : nom + méta, actions sobres, menu ••• ─────────────── */
 function DocRow({
   doc,
-  viewHref,
+  link,
+  onRefreshLink,
+  onReimport,
   selected,
   onToggleSelect,
   onRename,
@@ -105,7 +118,12 @@ function DocRow({
   showCategory = true,
 }: {
   doc: DocumentRow;
-  viewHref?: string;
+  /** undefined = lien en préparation. */
+  link?: LinkState;
+  /** Régénère un lien signé frais (lien expiré ou erreur transitoire). */
+  onRefreshLink?: () => Promise<LinkState>;
+  /** Remplace le fichier absent du stockage (même ligne, même nom). */
+  onReimport?: (file: File) => void;
   selected?: boolean;
   onToggleSelect?: () => void;
   onRename?: () => void;
@@ -116,11 +134,30 @@ function DocRow({
   showCategory?: boolean;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const dlHref = viewHref
-    ? `${viewHref}${viewHref.includes("?") ? "&" : "?"}download=${encodeURIComponent(doc.file_name)}`
-    : undefined;
+  const [retrying, setRetrying] = useState(false);
+  const dlName = downloadName(doc.file_name, doc.file_path);
+  const viewHref = link?.status === "ok" ? link.url : undefined;
+  const dlHref = viewHref ? withDownload(viewHref, dlName) : undefined;
   const isDeliverable = doc.kind === "deliverable";
-  const ext = doc.file_name.split(".").pop()?.toUpperCase() ?? "";
+  const ext = displayExt(doc.file_name, doc.file_path);
+
+  // Lien signé trop ancien (page restée ouverte) : régénéré au clic, jamais d'URL expirée.
+  async function openFresh(e: MouseEvent, download: boolean) {
+    if (link?.status === "ok" && Date.now() - link.at < LINK_MAX_AGE_MS) return;
+    if (!onRefreshLink) return;
+    e.preventDefault();
+    const w = download ? null : window.open("about:blank", "_blank");
+    const next = await onRefreshLink();
+    if (next.status !== "ok") {
+      w?.close();
+      return;
+    }
+    const target = download ? withDownload(next.url, dlName) : next.url;
+    if (w) {
+      w.opener = null;
+      w.location.href = target;
+    } else window.location.assign(target);
+  }
   const cat = effectiveCategory(doc.file_name, doc.category);
   const hasMenu = Boolean(onRename || onRecategorize || onTrash || onDelete);
 
@@ -156,19 +193,59 @@ function DocRow({
                 href={viewHref}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={(e) => void openFresh(e, false)}
                 className="inline-flex min-h-[40px] items-center font-medium text-navy-900 border-b hairline-gold transition-colors hover:text-gold-700"
               >
                 Visualiser
               </a>
               <a
                 href={dlHref}
+                download={dlName}
+                onClick={(e) => void openFresh(e, true)}
                 className="inline-flex min-h-[40px] items-center font-medium text-navy-900 border-b hairline-gold transition-colors hover:text-gold-700"
               >
                 Télécharger
               </a>
             </>
+          ) : link === undefined ? (
+            <span className="text-xs text-slate-500">Préparation du lien…</span>
+          ) : link.status === "missing" ? (
+            <>
+              <span className="text-xs font-medium text-gold-700">Fichier à réimporter</span>
+              {onReimport && (
+                <label className="inline-flex min-h-[40px] cursor-pointer items-center font-medium text-navy-900 border-b hairline-gold transition-colors hover:text-gold-700">
+                  Réimporter
+                  <input
+                    type="file"
+                    className="hidden"
+                    disabled={busy}
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      e.currentTarget.value = "";
+                      if (f) onReimport(f);
+                    }}
+                  />
+                </label>
+              )}
+            </>
           ) : (
-            <span className="text-xs text-slate-500">Lien indisponible</span>
+            <>
+              <span className="text-xs text-slate-500">Lien momentanément indisponible</span>
+              {onRefreshLink && (
+                <button
+                  type="button"
+                  disabled={retrying}
+                  onClick={async () => {
+                    setRetrying(true);
+                    await onRefreshLink();
+                    setRetrying(false);
+                  }}
+                  className="inline-flex min-h-[40px] items-center font-medium text-navy-900 border-b hairline-gold transition-colors hover:text-gold-700 disabled:opacity-60"
+                >
+                  {retrying ? "…" : "Réessayer"}
+                </button>
+              )}
+            </>
           )}
           {hasMenu && (
             <button
@@ -253,7 +330,7 @@ export function DossierDetail() {
   const navigate = useNavigate();
   const [dossier, setDossier] = useState<DossierRow | null>(null);
   const [documents, setDocuments] = useState<DocumentRow[]>([]);
-  const [links, setLinks] = useState<Record<string, string>>({});
+  const [links, setLinks] = useState<Record<string, LinkState>>({});
   const [isAdmin, setIsAdmin] = useState(false);
   const [trashCap, setTrashCap] = useState(false);
   const [ownerEmail, setOwnerEmail] = useState<string | null>(null);
@@ -351,7 +428,7 @@ export function DossierDetail() {
 
       if (row) {
         await Promise.all([
-          reloadDocuments(row.id, extras, (v) => {
+          reloadDocuments(row.id, row.user_id, extras, (v) => {
             if (active) {
               setDocuments(v.docs);
               setLinks(v.links);
@@ -371,8 +448,9 @@ export function DossierDetail() {
 
   async function reloadDocuments(
     dossierId: string,
+    ownerUserId: string,
     extras: boolean,
-    apply: (v: { docs: DocumentRow[]; links: Record<string, string> }) => void,
+    apply: (v: { docs: DocumentRow[]; links: Record<string, LinkState> }) => void,
   ) {
     const cols = extras ? `${DOC_COLS_BASE},category,deleted_at` : DOC_COLS_BASE;
     const { data: docs } = await supabase
@@ -391,13 +469,23 @@ export function DossierDetail() {
       category: d.category ?? null,
       deleted_at: d.deleted_at ?? null,
     }));
-    const signed: Record<string, string> = {};
+    // Liens générés à partir du chemin stable stocké en base (jamais d'URL
+    // enregistrée). Fichier introuvable : recherche du chemin réel dans le
+    // dossier de stockage puis mise à jour de la ligne ; sinon « à réimporter ».
+    const signed: Record<string, LinkState> = {};
+    const referenced = new Set(list.map((d) => d.file_path));
     await Promise.all(
       list.map(async (doc) => {
-        const { data: url } = await supabase.storage
-          .from("documents")
-          .createSignedUrl(doc.file_path, 3600);
-        if (url?.signedUrl) signed[doc.id] = url.signedUrl;
+        let state = await signDocument(doc.file_path);
+        if (state.status === "missing") {
+          const found = await locateMissingObject(doc, ownerUserId, dossierId, referenced);
+          if (found) {
+            doc.file_path = found;
+            referenced.add(found);
+            state = await signDocument(found);
+          }
+        }
+        signed[doc.id] = state;
       }),
     );
     apply({ docs: list, links: signed });
@@ -424,10 +512,51 @@ export function DossierDetail() {
 
   async function refreshDocs() {
     if (!dossier) return;
-    await reloadDocuments(dossier.id, docExtras, (v) => {
+    await reloadDocuments(dossier.id, dossier.user_id, docExtras, (v) => {
       setDocuments(v.docs);
       setLinks(v.links);
     });
+  }
+
+  async function refreshLink(doc: DocumentRow): Promise<LinkState> {
+    const state = await signDocument(doc.file_path);
+    setLinks((l) => ({ ...l, [doc.id]: state }));
+    return state;
+  }
+
+  // Remplace le fichier d'une ligne dont l'objet est absent du stockage :
+  // dépôt vérifié sous un nouveau chemin, puis mise à jour de la ligne.
+  async function handleReimport(doc: DocumentRow, file: File) {
+    if (!dossier || !user) return;
+    const err = validateUpload(file);
+    if (err) {
+      setActionError(err);
+      return;
+    }
+    setBusyId(doc.id);
+    setActionError(null);
+    const prefix = doc.kind === "deliverable" ? "deliverable-" : "";
+    const path = `${dossier.user_id}/${dossier.id}/${prefix}${Date.now()}-${sanitizeFileName(file.name)}`;
+    try {
+      await uploadVerified(path, file, null);
+      const { data, error } = await supabase
+        .from("dossier_documents")
+        .update({ file_path: path, size_bytes: file.size })
+        .eq("id", doc.id)
+        .select("id");
+      if (error || !data?.length) {
+        await supabase.storage.from("documents").remove([path]);
+        throw error ?? new Error("mise à jour refusée");
+      }
+      await refreshDocs();
+      void logDossierEvent(dossier.id, user.id, "document_reimporte", `« ${doc.file_name} »`).then(
+        refreshEvents,
+      );
+    } catch (e) {
+      setActionError(uploadErrorMessage(e, "La réimportation a échoué. Réessayez."));
+    } finally {
+      setBusyId(null);
+    }
   }
 
   async function refreshEvents() {
@@ -543,22 +672,21 @@ export function DossierDetail() {
     try {
       for (const file of files) {
         const path = `${ownerId}/${dossier.id}/${Date.now()}-${sanitizeFileName(file.name)}`;
-        const up = await supabase.storage.from("documents").upload(path, file, { upsert: false });
-        if (up.error) throw up.error;
-        const ins = await supabase.from("dossier_documents").insert({
+        await uploadVerified(path, file, {
           dossier_id: dossier.id,
           user_id: ownerId,
-          file_path: path,
           file_name: file.name,
           size_bytes: file.size,
           kind: "piece",
         });
-        if (ins.error) throw ins.error;
       }
       await refreshDocs();
       setActiveTab("pieces");
-    } catch {
-      setActionError("Le dépôt a échoué. Vérifiez votre connexion puis réessayez.");
+    } catch (e) {
+      await refreshDocs();
+      setActionError(
+        uploadErrorMessage(e, "Le dépôt a échoué. Vérifiez votre connexion puis réessayez."),
+      );
     } finally {
       setUploading(false);
     }
@@ -680,13 +808,17 @@ export function DossierDetail() {
     try {
       const entries: Record<string, Uint8Array> = {};
       const used = new Set<string>();
+      let skipped = 0;
       for (const d of docs) {
-        const href = links[d.id];
-        if (!href) continue;
-        const res = await fetch(href);
-        if (!res.ok) continue;
+        // Lien régénéré à chaque export : jamais d'URL expirée.
+        const state = await refreshLink(d);
+        const res = state.status === "ok" ? await fetch(state.url).catch(() => null) : null;
+        if (!res?.ok) {
+          skipped++;
+          continue;
+        }
         const buf = new Uint8Array(await res.arrayBuffer());
-        let name = d.file_name || d.id;
+        let name = downloadName(d.file_name, d.file_path);
         while (used.has(name)) name = `copie-${name}`;
         used.add(name);
         entries[name] = buf;
@@ -695,6 +827,10 @@ export function DossierDetail() {
         setActionError("Téléchargement indisponible pour le moment.");
         return;
       }
+      if (skipped > 0)
+        setActionError(
+          `${skipped} fichier(s) non inclus dans l'archive (à réimporter ou momentanément indisponibles).`,
+        );
       const zipped = zipSync(entries, { level: 0 });
       const blob = new Blob([zipped as BlobPart], { type: "application/zip" });
       const url = URL.createObjectURL(blob);
@@ -722,21 +858,18 @@ export function DossierDetail() {
     try {
       for (const file of Array.from(fileList)) {
         const path = `${dossier.user_id}/${dossier.id}/deliverable-${Date.now()}-${sanitizeFileName(file.name)}`;
-        const up = await supabase.storage.from("documents").upload(path, file, { upsert: false });
-        if (up.error) throw up.error;
-        const ins = await supabase.from("dossier_documents").insert({
+        await uploadVerified(path, file, {
           dossier_id: dossier.id,
           user_id: dossier.user_id,
-          file_path: path,
           file_name: file.name,
           size_bytes: file.size,
           kind: "deliverable",
         });
-        if (ins.error) throw ins.error;
       }
       await refreshDocs();
-    } catch {
-      setActionError("L'envoi du livrable a échoué. Réessayez.");
+    } catch (e) {
+      await refreshDocs();
+      setActionError(uploadErrorMessage(e, "L'envoi du livrable a échoué. Réessayez."));
     } finally {
       setDelivering(false);
     }
@@ -1323,7 +1456,9 @@ export function DossierDetail() {
                               <DocRow
                                 key={doc.id}
                                 doc={doc}
-                                viewHref={links[doc.id]}
+                                link={links[doc.id]}
+                                onRefreshLink={() => refreshLink(doc)}
+                                onReimport={(f) => void handleReimport(doc, f)}
                                 selected={selectedIds.has(doc.id)}
                                 onToggleSelect={() =>
                                   setSelectedIds((s) => {
@@ -1358,7 +1493,9 @@ export function DossierDetail() {
                           <DocRow
                             key={doc.id}
                             doc={doc}
-                            viewHref={links[doc.id]}
+                            link={links[doc.id]}
+                            onRefreshLink={() => refreshLink(doc)}
+                            onReimport={(f) => void handleReimport(doc, f)}
                             selected={selectedIds.has(doc.id)}
                             onToggleSelect={() =>
                               setSelectedIds((s) => {
@@ -1470,7 +1607,9 @@ export function DossierDetail() {
                         <DocRow
                           key={doc.id}
                           doc={doc}
-                          viewHref={links[doc.id]}
+                          link={links[doc.id]}
+                          onRefreshLink={() => refreshLink(doc)}
+                          onReimport={isAdmin ? (f) => void handleReimport(doc, f) : undefined}
                           onDelete={isAdmin ? () => handleHardDelete(doc) : undefined}
                           busy={busyId === doc.id}
                           showCategory={false}
