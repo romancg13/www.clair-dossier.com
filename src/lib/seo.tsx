@@ -13,7 +13,7 @@ type SeoProps = {
 
 export const SITE_URL = 'https://www.clair-dossier.com';
 const SITE_NAME = 'ClairDossier';
-const TAGLINE = 'Dossier juridique clair, structuré et suivi';
+const TAGLINE = 'Dossiers administratifs et juridiques, clairs et suivis';
 /** Au-delà, Google tronque le titre : la signature longue cède la place à « — ClairDossier ». */
 const TITLE_MAX = 70;
 
