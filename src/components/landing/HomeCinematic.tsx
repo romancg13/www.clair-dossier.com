@@ -63,7 +63,7 @@ export function HomeCinematic() {
   return (
     <>
       <Seo
-        title="ClairDossier — Des documents dispersés, un dossier clair, structuré et suivi"
+        title="ClairDossier — Vos dossiers administratifs et juridiques, clairs et suivis"
         description="ClairDossier réunit vos pièces dans un espace privé, structure votre dossier administratif ou juridique en cinq étapes, affiche vos échéances et ne transmet rien sans votre validation. Pour PME, artisans, indépendants et professions libérales."
         path="/"
         jsonLd={[orgSchema, websiteSchema, softwareSchema, faqSchema]}
