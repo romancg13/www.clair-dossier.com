@@ -34,6 +34,7 @@ import {
 } from "../../packages/core/src/index";
 import { useAuth } from "../lib/auth";
 import { supabase } from "../lib/supabase";
+import { uploadVerified } from "../lib/document-links";
 
 type DraftAnswers = Record<string, string>;
 
@@ -151,35 +152,16 @@ export function DossierFlow() {
     let failures = 0;
     for (const file of files) {
       const path = `${user.id}/${dossierId}/${Date.now()}-${sanitizeFileName(file.name)}`;
-      const up = await supabase.storage.from("documents").upload(path, file, { upsert: false });
-      if (up.error) {
+      // Dépôt vérifié : la ligne n'existe que si le fichier est réellement stocké.
+      try {
+        await uploadVerified(path, file, {
+          dossier_id: dossierId,
+          user_id: user.id,
+          file_name: file.name,
+          size_bytes: file.size,
+        });
+      } catch {
         failures++;
-        continue;
-      }
-      const ins = await supabase.from("dossier_documents").insert({
-        dossier_id: dossierId,
-        user_id: user.id,
-        file_path: path,
-        file_name: file.name,
-        size_bytes: file.size,
-      });
-      if (ins.error) {
-        failures++;
-        // Fichier uploadé sans ligne de métadonnées : invisible dans l'interface
-        // → on retire l'objet orphelin du bucket. Garde-fou : la requête a pu
-        // échouer APRÈS le commit de l'insert, donc on ne supprime que si
-        // aucune ligne n'existe réellement pour ce chemin.
-        const { data: existing, error: lookupError } = await supabase
-          .from("dossier_documents")
-          .select("id")
-          .eq("file_path", path)
-          .maybeSingle();
-        if (!lookupError && !existing) {
-          const cleanup = await supabase.storage.from("documents").remove([path]);
-          if (cleanup.error) console.error("Nettoyage du document orphelin impossible", cleanup.error);
-        } else if (lookupError) {
-          console.error("Vérification des métadonnées du document impossible", lookupError);
-        }
       }
     }
     return failures;

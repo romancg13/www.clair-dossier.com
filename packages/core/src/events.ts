@@ -11,6 +11,7 @@ export type EventType =
   | 'document_corbeille'
   | 'document_restaure'
   | 'document_supprime'
+  | 'document_reimporte'
   | 'dossier_renomme'
   | 'dossier_transmis'
   | 'echeance_creee'
@@ -26,6 +27,7 @@ export const EVENT_LABELS: Record<EventType, string> = {
   document_corbeille: 'Document placé dans la corbeille',
   document_restaure: 'Document restauré',
   document_supprime: 'Document supprimé définitivement',
+  document_reimporte: 'Fichier réimporté',
   dossier_renomme: 'Dossier renommé',
   // Ajout mobile (2026-09-16) : la transmission est une action utilisateur explicite.
   dossier_transmis: 'Dossier transmis',
