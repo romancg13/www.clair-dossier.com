@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { AnimatePresence, motion, useMotionValueEvent, useScroll } from 'motion/react';
 import { Logo } from './Logo';
@@ -35,6 +35,21 @@ export function Nav() {
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
+  }, [open]);
+
+  // Gestion du focus du menu mobile : entrer dans le panneau à l'ouverture,
+  // revenir sur le bouton à la fermeture (a11y clavier / lecteur d'écran).
+  const menuBtnRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLElement>(null);
+  const wasOpen = useRef(false);
+  useEffect(() => {
+    if (open) {
+      wasOpen.current = true;
+      panelRef.current?.querySelector<HTMLElement>('a, button')?.focus();
+    } else if (wasOpen.current) {
+      wasOpen.current = false;
+      menuBtnRef.current?.focus();
+    }
   }, [open]);
 
   return (
@@ -106,6 +121,7 @@ export function Nav() {
 
         <button
           type="button"
+          ref={menuBtnRef}
           className="ml-auto grid h-11 w-11 place-items-center rounded-md border hairline lg:hidden"
           aria-expanded={open}
           aria-controls="mobile-menu"
@@ -143,6 +159,7 @@ export function Nav() {
               onClick={() => setOpen(false)}
             />
             <motion.nav
+              ref={panelRef}
               className="absolute inset-x-0 top-0 bg-cream-50 border-b hairline px-5 py-6 shadow-card"
               initial={{ y: '-30%' }}
               animate={{ y: 0 }}

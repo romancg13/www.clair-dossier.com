@@ -1,13 +1,13 @@
 @import "tailwindcss";
 
 /* Sous-ensembles latins uniquement (Phase 4b, perf) : couvrent le français (accents, œ, €) ;
-   12 @font-face au lieu de 65 dans la CSS bloquante. */
+   10 @font-face au lieu de 65 dans la CSS bloquante (Inter 300 retiré : aucun
+   font-light / font-weight:300 dans src/). */
 @import "@fontsource/cormorant-garamond/latin-400.css";
 @import "@fontsource/cormorant-garamond/latin-500.css";
 @import "@fontsource/cormorant-garamond/latin-500-italic.css";
 @import "@fontsource/cormorant-garamond/latin-600.css";
 @import "@fontsource/cormorant-garamond/latin-700.css";
-@import "@fontsource/inter/latin-300.css";
 @import "@fontsource/inter/latin-400.css";
 @import "@fontsource/inter/latin-500.css";
 @import "@fontsource/inter/latin-600.css";
