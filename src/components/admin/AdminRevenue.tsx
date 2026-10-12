@@ -1,21 +1,44 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
-import { computeRevenue, conversionRate, formatCents, type RevenueRow, type RevenueSummary } from "../../lib/revenue";
+import {
+  cohortConversion,
+  computeRevenue,
+  formatCents,
+  type RevenueRow,
+  type RevenueSummary,
+} from "../../lib/revenue";
 
 /**
  * Revenus et conversions (console admin). Lecture seule de `subscriptions`,
  * protégée par la RLS (`is_admin()`) : un compte non administrateur ne lit rien.
  * Aucun chiffre estimé : sans montant synchronisé depuis Stripe, l'indicateur
- * l'annonce au lieu d'afficher une valeur.
+ * l'annonce au lieu d'afficher une valeur. Toutes les lignes sont lues (pagination).
  */
 
-const BASE_COLUMNS = "status, plan_id, cancel_at_period_end, canceled_at, created_at";
+const BASE_COLUMNS = "user_id, status, plan_id, cancel_at_period_end, canceled_at, created_at";
 const AMOUNT_COLUMNS = "unit_amount, currency, billing_interval, interval_count, quantity";
+const PAGE = 1000;
 
 type State =
   | { kind: "loading" }
   | { kind: "error" }
-  | { kind: "ready"; summary: RevenueSummary; amountsMigrated: boolean };
+  | { kind: "ready"; rows: RevenueRow[]; summary: RevenueSummary; amountsMigrated: boolean };
+
+/** Lit toute la table par pages ordonnées (la limite par défaut de l'API est de 1 000 lignes). */
+async function fetchAll(columns: string): Promise<{ rows: RevenueRow[]; code?: string }> {
+  const rows: RevenueRow[] = [];
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await supabase
+      .from("subscriptions")
+      .select(columns)
+      .order("created_at", { ascending: true })
+      .order("id", { ascending: true })
+      .range(from, from + PAGE - 1);
+    if (error) return { rows, code: error.code ?? "erreur" };
+    rows.push(...((data ?? []) as unknown as RevenueRow[]));
+    if (!data || data.length < PAGE) return { rows };
+  }
+}
 
 function Tile({ label, value, hint, warn = false }: { label: string; value: string; hint?: string; warn?: boolean }) {
   return (
@@ -29,21 +52,21 @@ function Tile({ label, value, hint, warn = false }: { label: string; value: stri
 
 const pct = (v: number | null) => (v === null ? "—" : `${(v * 100).toLocaleString("fr-FR", { maximumFractionDigits: 1 })} %`);
 
-export function AdminRevenue({ signups30d }: { signups30d: number }) {
+export function AdminRevenue({ recentSignupIds }: { recentSignupIds: string[] }) {
   const [state, setState] = useState<State>({ kind: "loading" });
 
   useEffect(() => {
     let alive = true;
     (async () => {
       let amountsMigrated = true;
-      let res = await supabase.from("subscriptions").select(`${BASE_COLUMNS}, ${AMOUNT_COLUMNS}`);
-      if (res.error?.code === "42703" || res.error?.code === "PGRST204") {
+      let res = await fetchAll(`${BASE_COLUMNS}, ${AMOUNT_COLUMNS}`);
+      if (res.code === "42703" || res.code === "PGRST204") {
         amountsMigrated = false;
-        res = await supabase.from("subscriptions").select(BASE_COLUMNS);
+        res = await fetchAll(BASE_COLUMNS);
       }
       if (!alive) return;
-      if (res.error) return setState({ kind: "error" });
-      setState({ kind: "ready", summary: computeRevenue((res.data ?? []) as RevenueRow[]), amountsMigrated });
+      if (res.code) return setState({ kind: "error" });
+      setState({ kind: "ready", rows: res.rows, summary: computeRevenue(res.rows), amountsMigrated });
     })();
     return () => {
       alive = false;
@@ -59,38 +82,48 @@ export function AdminRevenue({ signups30d }: { signups30d: number }) {
     );
   }
 
-  const { summary: s, amountsMigrated } = state;
-  const currency = s.currencies[0] ?? "eur";
-  const noAmount = !amountsMigrated || (s.mrrCents === 0 && s.missingAmount > 0);
-  const money = (cents: number) => (noAmount ? "—" : formatCents(cents, currency));
+  const { rows, summary: s, amountsMigrated } = state;
+  const mrrKnown = amountsMigrated && !(s.mrrCents === 0 && s.missingAmount > 0);
+  const money = (cents: number, known: boolean) => (known ? formatCents(cents, s.currency) : "—");
+  const atRiskKnown = amountsMigrated && s.missingAtRisk === 0;
 
   return (
     <section aria-labelledby="revenus-titre" className="mt-6">
       <h3 id="revenus-titre" className="font-display text-xl font-semibold text-navy-900">Revenus & conversions</h3>
       <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
-        <Tile label="MRR" value={money(s.mrrCents)} hint="Abonnements actifs, ramenés au mois" />
-        <Tile label="ARR" value={money(s.arrCents)} hint="MRR × 12" />
+        <Tile label="MRR" value={money(s.mrrCents, mrrKnown)} hint="Abonnements actifs, ramenés au mois" />
+        <Tile label="ARR" value={money(s.arrCents, mrrKnown)} hint="MRR × 12" />
         <Tile label="Abonnés actifs" value={String(s.active)} hint={`${s.trialing} en essai`} />
-        <Tile label="Impayés" value={String(s.pastDue)} hint={noAmount ? undefined : `${money(s.atRiskCents)} / mois à risque`} warn={s.pastDue > 0} />
+        <Tile
+          label="Impayés"
+          value={String(s.pastDue)}
+          hint={s.pastDue === 0 ? undefined : atRiskKnown ? `${money(s.atRiskCents, true)} / mois à risque` : "Montant à risque inconnu"}
+          warn={s.pastDue > 0}
+        />
         <Tile label="Résiliations 30 j" value={String(s.canceled30d)} hint={`Attrition ${pct(s.churnRate30d)}`} warn={s.canceled30d > 0} />
         <Tile label="Fin de période demandée" value={String(s.cancelingAtPeriodEnd)} hint="À recontacter avant l'échéance" warn={s.cancelingAtPeriodEnd > 0} />
-        <Tile label="Nouveaux abonnements 30 j" value={String(s.new30d)} />
-        <Tile label="Conversion 30 j" value={pct(conversionRate(signups30d, s.new30d))} hint={`${signups30d} inscription(s) sur 30 jours`} />
+        <Tile label="Nouveaux abonnements 30 j" value={String(s.new30d)} hint="Payants (hors essais)" />
+        <Tile
+          label="Conversion des inscrits 30 j"
+          value={pct(cohortConversion(rows, recentSignupIds))}
+          hint={`${recentSignupIds.length} inscription(s) sur 30 jours`}
+        />
       </div>
       {s.byPlan.length > 0 ? (
         <ul className="mt-4 space-y-1 text-sm text-navy-900">
           {s.byPlan.map((p) => (
             <li key={p.planId}>
-              <span className="font-medium">{p.planId}</span> · {p.active} actif(s) · {money(p.mrrCents)} / mois
+              <span className="font-medium">{p.planId}</span> · {p.active} actif(s) · {money(p.mrrCents, mrrKnown)} / mois
             </li>
           ))}
         </ul>
       ) : null}
-      {noAmount || s.missingAmount > 0 ? (
+      {!amountsMigrated || s.missingAmount > 0 || s.missingAtRisk > 0 || s.otherCurrency > 0 ? (
         <p className="mt-3 text-xs text-slate-500">
-          {amountsMigrated
-            ? `${s.missingAmount} abonnement(s) sans montant synchronisé : lancer scripts/sync-stripe-subscriptions.ts --apply pour les compléter depuis Stripe.`
-            : "Montants non encore synchronisés : appliquer la migration 20261012120000_revenus_abonnements puis relancer la synchronisation Stripe. Aucun montant n'est estimé."}
+          {!amountsMigrated
+            ? "Montants non encore synchronisés : appliquer la migration 20261012120000_revenus_abonnements puis relancer la synchronisation Stripe. Aucun montant n'est estimé."
+            : `${s.missingAmount + s.missingAtRisk} abonnement(s) sans montant synchronisé : lancer scripts/sync-stripe-subscriptions.ts --apply pour les compléter depuis Stripe.`}
+          {s.otherCurrency > 0 ? ` ${s.otherCurrency} abonnement(s) dans une autre devise que ${s.currency.toUpperCase()}, exclu(s) des totaux.` : ""}
         </p>
       ) : null}
     </section>

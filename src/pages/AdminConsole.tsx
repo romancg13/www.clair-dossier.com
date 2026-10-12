@@ -997,7 +997,9 @@ export function AdminConsole() {
                         exceptions de quota se règlent dans la fiche client.
                       </p>
                       <AdminRevenue
-                        signups30d={profiles.filter((p) => Date.now() - Date.parse(p.created_at) < 30 * 86_400_000).length}
+                        recentSignupIds={profiles
+                          .filter((p) => Date.now() - Date.parse(p.created_at) < 30 * 86_400_000)
+                          .map((p) => p.id)}
                       />
                       <SubscriptionsTable rows={entitlements} />
                     </>

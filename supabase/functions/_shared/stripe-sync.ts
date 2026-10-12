@@ -86,16 +86,38 @@ export function subscriptionRow(userId: string, sub: StripeLikeSubscription, kno
 /**
  * Conditions tarifaires de l'abonnement (migration 20261012120000), pour le
  * tableau de bord revenus. Montants en centimes, tels que facturés par Stripe.
+ * Plusieurs lignes : leur total est enregistré (quantité 1) si elles partagent devise et
+ * périodicité ; sinon AUCUN montant n'est écrit (jamais de total partiel ni d'estimation).
  */
 export function priceTerms(sub: StripeLikeSubscription) {
-  const item = sub.items?.data?.[0];
-  const price = item?.price;
+  const unknown = { unit_amount: null, currency: null, billing_interval: null, interval_count: null, quantity: null };
+  const items = sub.items?.data ?? [];
+  const first = items[0]?.price;
+  if (!first) return unknown;
+  const same = items.every(
+    (it) =>
+      typeof it.price?.unit_amount === 'number' &&
+      it.price.currency === first.currency &&
+      it.price.recurring?.interval === first.recurring?.interval &&
+      (it.price.recurring?.interval_count ?? 1) === (first.recurring?.interval_count ?? 1),
+  );
+  if (!same) return unknown;
+  if (items.length === 1) {
+    const item = items[0]!;
+    return {
+      unit_amount: first.unit_amount ?? null,
+      currency: first.currency ?? null,
+      billing_interval: first.recurring?.interval ?? null,
+      interval_count: first.recurring?.interval_count ?? null,
+      quantity: typeof item.quantity === 'number' ? item.quantity : null,
+    };
+  }
   return {
-    unit_amount: typeof price?.unit_amount === 'number' ? price.unit_amount : null,
-    currency: price?.currency ?? null,
-    billing_interval: price?.recurring?.interval ?? null,
-    interval_count: price?.recurring?.interval_count ?? null,
-    quantity: typeof item?.quantity === 'number' ? item.quantity : null,
+    unit_amount: items.reduce((sum, it) => sum + (it.price!.unit_amount as number) * (it.quantity ?? 1), 0),
+    currency: first.currency ?? null,
+    billing_interval: first.recurring?.interval ?? null,
+    interval_count: first.recurring?.interval_count ?? null,
+    quantity: 1,
   };
 }
 
