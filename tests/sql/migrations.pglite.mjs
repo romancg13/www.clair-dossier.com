@@ -369,6 +369,18 @@ await test('client ne peut pas se donner une exception ni changer d\'offre', asy
     throw new Error('aucune ligne modifiée (attendu)');
   }), /aucune ligne modifiée/);
 });
+await test('revenus : le client lit le montant de son abonnement mais ne peut pas le modifier', async () => {
+  await asSuperuser();
+  await q(`update public.subscriptions set unit_amount = 4900, currency = 'eur', billing_interval = 'month' where user_id = $1`, [Q]);
+  await rejects(q(`update public.subscriptions set unit_amount = -1 where user_id = $1`, [Q]), /check constraint|violates/);
+  await asUser(Q);
+  const [own] = await q('select unit_amount from public.subscriptions where user_id = $1', [Q]);
+  assert.equal(own.unit_amount, 4900);
+  await q(`update public.subscriptions set unit_amount = 1 where user_id = $1`, [Q]);
+  await asSuperuser();
+  const [s] = await q('select unit_amount from public.subscriptions where user_id = $1', [Q]);
+  assert.equal(s.unit_amount, 4900);
+});
 
 console.log('Exception j.gomes@avocats-gojuris.fr');
 await subscribe(JGOMES, 'business-pme-20');
