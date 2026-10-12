@@ -23,3 +23,6 @@ mobile/*.p12
 mobile/*.key
 mobile/*.mobileprovision
 mobile/.easignore
+
+# État local de Serena (outil de développement)
+.serena/
