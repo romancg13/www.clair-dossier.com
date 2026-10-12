@@ -10,6 +10,14 @@ Articles écrits par la rédaction ClairDossier, relus par des avocats. Pédagog
 
 ## Articles publiés
 
+### Kit documentaire : cinq listes de contrôle pour constituer un dossier complet
+
+*12 octobre 2026 — 3 min — Méthode*
+
+Un dossier incomplet coûte des allers-retours. Ces cinq listes de contrôle, à imprimer ou à suivre dans ClairDossier, aident à réunir les pièces courantes d'une situation. Ce sont des aide-mémoire d'organisation, pas des conseils juridiques.
+
+Lire : https://www.clair-dossier.com/blog/kit-documentaire-checklists · Markdown : https://www.clair-dossier.com/blog/kit-documentaire-checklists.md
+
 ### Organiser un dossier : une méthode simple en quatre temps
 
 *18 septembre 2026 — 3 min — Méthode*

@@ -1,6 +1,7 @@
 import { chronologiePrudHomale } from './chronologie-prud-homale';
 import { conservationDocuments } from './conservation-documents';
 import { iaDroit } from './ia-droit';
+import { kitDocumentaire } from './kit-documentaire';
 import { mediationContentieux } from './mediation-contentieux';
 import { miseEnDemeure } from './mise-en-demeure';
 import { organiserUnDossier } from './organiser-un-dossier';
@@ -18,6 +19,7 @@ const ALL: BlogPostInput[] = [
   conservationDocuments,
   mediationContentieux,
   iaDroit,
+  kitDocumentaire,
 ];
 
 function withReading(post: BlogPostInput): BlogPost {

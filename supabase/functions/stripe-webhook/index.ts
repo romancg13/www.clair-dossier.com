@@ -22,8 +22,10 @@ import Stripe from 'npm:stripe@17';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import {
   HANDLED_EVENTS,
+  isMissingColumn,
   isUuid,
   paymentEmailMatchesAccount,
+  priceTerms,
   planIdFromSubscription,
   subscriptionIdFromInvoice,
   subscriptionRow,
@@ -60,7 +62,13 @@ async function knownPlan(planId: string | null): Promise<string | null> {
 
 async function upsert(userId: string, sub: StripeLikeSubscription): Promise<void> {
   const row = subscriptionRow(userId, sub, await knownPlan(planIdFromSubscription(sub)));
-  const { error } = await admin.from('subscriptions').upsert(row, { onConflict: 'stripe_subscription_id' });
+  let { error } = await admin
+    .from('subscriptions')
+    .upsert({ ...row, ...priceTerms(sub) }, { onConflict: 'stripe_subscription_id' });
+  // Montants non encore migrés en base : la synchronisation du statut passe quand même.
+  if (error && isMissingColumn(error.code)) {
+    ({ error } = await admin.from('subscriptions').upsert(row, { onConflict: 'stripe_subscription_id' }));
+  }
   if (error) throw new Error(`upsert subscriptions: ${error.code ?? 'erreur'}`);
   await admin.from('audit_logs').insert({
     actor_id: userId,

@@ -14,6 +14,8 @@ const PARCOURS = [
   { to: "/cabinets-avocats", label: "Cabinets d'avocats" },
   { to: "/experts-comptables", label: "Experts-comptables" },
   { to: "/grands-comptes", label: "Grands comptes" },
+  { to: "/artisans-btp", label: "Artisans du BTP" },
+  { to: "/professionnels-immobilier", label: "Immobilier" },
   { to: "/rendez-vous", label: "Prendre rendez-vous" },
 ];
 

@@ -63,6 +63,10 @@ export async function preloadForPath(pathname: string): Promise<void> {
                       ? 'ExpertsComptables'
                       : clean === '/grands-comptes'
                         ? 'GrandsComptes'
+                        : clean === '/artisans-btp'
+                          ? 'ArtisansBtp'
+                          : clean === '/professionnels-immobilier'
+                            ? 'ProfessionnelsImmobilier'
                         : clean === '/etat-du-produit'
                           ? 'ProductStatus'
                           : clean === '/rendez-vous'
@@ -131,6 +135,8 @@ const DossierDetail = named(() => import('./pages/DossierDetail'), 'DossierDetai
 const CabinetsAvocats = named(() => import('./pages/SegmentPage'), 'CabinetsAvocats');
 const ExpertsComptables = named(() => import('./pages/SegmentPage'), 'ExpertsComptables');
 const GrandsComptes = named(() => import('./pages/SegmentPage'), 'GrandsComptes');
+const ArtisansBtp = named(() => import('./pages/SegmentPage'), 'ArtisansBtp');
+const ProfessionnelsImmobilier = named(() => import('./pages/SegmentPage'), 'ProfessionnelsImmobilier');
 const ProductStatus = named(() => import('./pages/ProductStatus'), 'ProductStatus');
 const RendezVous = named(() => import('./pages/RendezVous'), 'RendezVous');
 const Marseille = named(() => import('./pages/Marseille'), 'Marseille');
@@ -319,6 +325,22 @@ export default function App() {
           element={
             <Suspense fallback={<RouteFallback />}>
               <GrandsComptes />
+            </Suspense>
+          }
+        />
+        <Route
+          path="artisans-btp"
+          element={
+            <Suspense fallback={<RouteFallback />}>
+              <ArtisansBtp />
+            </Suspense>
+          }
+        />
+        <Route
+          path="professionnels-immobilier"
+          element={
+            <Suspense fallback={<RouteFallback />}>
+              <ProfessionnelsImmobilier />
             </Suspense>
           }
         />

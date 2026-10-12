@@ -1,6 +1,7 @@
 /**
  * Parcours métier (Vague 1 — 5.1) : cabinets d'avocats, experts-comptables,
- * grands comptes.
+ * grands comptes ; packs métier (2026-10) : artisans du BTP, professionnels de
+ * l'immobilier (segments de qualification existants « artisan » et « pme »).
  *
  * Règle de contenu ABSOLUE : preuves vérifiables uniquement — chaque preuve
  * cite l'endroit où elle se vérifie (code, CGV, page publique). Aucun logo
@@ -18,7 +19,7 @@ export type SegmentProof = {
 export type SegmentPageData = {
   slug: string;
   /** Segment transmis au parcours de qualification (lib/prospects). */
-  segmentId: 'cabinet-avocats' | 'expert-comptable' | 'grand-compte';
+  segmentId: 'cabinet-avocats' | 'expert-comptable' | 'grand-compte' | 'artisan' | 'pme';
   navLabel: string;
   surtitre: string;
   title: string;
@@ -157,6 +158,70 @@ export const segmentPages: SegmentPageData[] = [
     proofs: [PROOF_ISOLATION, PROOF_HONESTY, PROOF_VALIDATION, PROOF_NO_AI_READING, PROOF_STORAGE],
   },
 ];
+
+/** Packs métier (2026-10) — mêmes règles : aucune promesse hors de ce que le produit fait. */
+segmentPages.push(
+  {
+    slug: 'artisans-btp',
+    segmentId: 'artisan',
+    navLabel: 'Artisans du BTP',
+    surtitre: 'Parcours dédié · artisans du bâtiment',
+    title: 'Chaque chantier a son dossier, chaque facture sa trace.',
+    metaTitle: 'Artisans du BTP',
+    metaDescription:
+      "ClairDossier pour les artisans du bâtiment : devis, factures, attestations et relances d'un chantier réunis dans un dossier privé et daté, prêt à transmettre.",
+    promesse:
+      "Devis signé, photos, factures, relances : les pièces d'un chantier sont partout — téléphone, camionnette, boîte mail. ClairDossier les réunit dans un dossier daté, que vous transmettez vous-même à votre comptable ou à votre avocat le jour où vous en avez besoin.",
+    frictions: [
+      {
+        title: 'Des pièces de chantier dispersées',
+        body:
+          "Le devis est dans un e-mail, l'avenant sur papier, les photos sur le téléphone. Au moment de facturer ou de justifier, il faut tout retrouver.",
+      },
+      {
+        title: 'Un impayé repoussé faute de dossier',
+        body:
+          "Quand une facture reste impayée, il faut réunir le devis signé, la facture et l'historique des relances. Sans dossier prêt, la démarche attend — et le délai joue contre vous.",
+      },
+      {
+        title: 'Les mêmes justificatifs redemandés',
+        body:
+          "Attestation d'assurance, avis de situation, attestations administratives : chaque nouveau client ou donneur d'ordre redemande les mêmes documents.",
+      },
+    ],
+    proofs: [PROOF_ISOLATION, PROOF_VALIDATION, PROOF_STORAGE, PROOF_NO_AI_READING, PROOF_HONESTY],
+  },
+  {
+    slug: 'professionnels-immobilier',
+    segmentId: 'pme',
+    navLabel: 'Immobilier',
+    surtitre: 'Parcours dédié · professionnels de l’immobilier',
+    title: 'Des dossiers complets avant la signature.',
+    metaTitle: "Professionnels de l'immobilier",
+    metaDescription:
+      "ClairDossier pour les professionnels de l'immobilier : chaque affaire dans un dossier privé, daté et ordonné, que vous transmettez quand il est complet.",
+    promesse:
+      "Mandats, diagnostics, pièces administratives, échanges avec les parties : une affaire mobilise des dizaines de documents. ClairDossier donne à chacune un dossier privé, daté et ordonné — et c'est vous qui décidez quand et à qui le transmettre.",
+    frictions: [
+      {
+        title: 'Des pièces qui arrivent au compte-gouttes',
+        body:
+          "Chaque partie envoie ses documents en plusieurs fois, par des canaux différents. Savoir ce qui manque prend plus de temps que de le réclamer.",
+      },
+      {
+        title: 'Des documents personnels dans les boîtes mail',
+        body:
+          "Pièces d'identité et justificatifs transitent par des messageries qui ne sont pas faites pour cela : le risque de confidentialité pèse sur le professionnel.",
+      },
+      {
+        title: "Retrouver l'historique d'une affaire",
+        body:
+          "Des mois plus tard, il faut reconstituer qui a fourni quoi, et quand. Sans dossier daté, la réponse dépend de la mémoire de chacun.",
+      },
+    ],
+    proofs: [PROOF_ISOLATION, PROOF_STORAGE, PROOF_VALIDATION, PROOF_NO_AI_READING, PROOF_HONESTY],
+  },
+);
 
 export function getSegmentPage(slug: string | undefined): SegmentPageData | undefined {
   if (!slug) return undefined;

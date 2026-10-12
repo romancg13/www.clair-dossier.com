@@ -22,6 +22,7 @@ import {
   SubscriptionsTable,
 } from "../components/admin/AdminAutomation";
 import { AdminRequests } from "../components/admin/AdminRequests";
+import { AdminRevenue } from "../components/admin/AdminRevenue";
 import { CATEGORY_LABELS, effectiveCategory, formatBytes, hasDocExtras, isGenericTitle } from "../lib/dossier-workspace";
 
 /**
@@ -995,6 +996,11 @@ export function AdminConsole() {
                         d'offre, remboursements et résiliations se font dans le dashboard Stripe ; les
                         exceptions de quota se règlent dans la fiche client.
                       </p>
+                      <AdminRevenue
+                        recentSignupIds={profiles
+                          .filter((p) => Date.now() - Date.parse(p.created_at) < 30 * 86_400_000)
+                          .map((p) => p.id)}
+                      />
                       <SubscriptionsTable rows={entitlements} />
                     </>
                   ) : (
