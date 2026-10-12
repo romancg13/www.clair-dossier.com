@@ -1,5 +1,5 @@
 {
-  "checkedAt": "2026-09-20T18:20:13.181Z",
+  "checkedAt": "2026-10-12T11:33:12.343Z",
   "passed": 71,
   "failed": 0,
   "suite": "tests/sql/migrations.pglite.mjs",

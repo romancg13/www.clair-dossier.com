@@ -3,6 +3,9 @@
 
 export type StripeLikePrice = {
   id?: string;
+  unit_amount?: number | null;
+  currency?: string | null;
+  recurring?: { interval?: string | null; interval_count?: number | null } | null;
   metadata?: Record<string, string> | null;
   product?: string | { id?: string; metadata?: Record<string, string> | null } | null;
 };
@@ -18,6 +21,7 @@ export type StripeLikeSubscription = {
   items?: {
     data?: Array<{
       price?: StripeLikePrice | null;
+      quantity?: number | null;
       current_period_start?: number | null;
       current_period_end?: number | null;
     }>;
@@ -77,6 +81,27 @@ export function subscriptionRow(userId: string, sub: StripeLikeSubscription, kno
     canceled_at: iso(sub.canceled_at),
     updated_at: new Date().toISOString(),
   };
+}
+
+/**
+ * Conditions tarifaires de l'abonnement (migration 20261012120000), pour le
+ * tableau de bord revenus. Montants en centimes, tels que facturés par Stripe.
+ */
+export function priceTerms(sub: StripeLikeSubscription) {
+  const item = sub.items?.data?.[0];
+  const price = item?.price;
+  return {
+    unit_amount: typeof price?.unit_amount === 'number' ? price.unit_amount : null,
+    currency: price?.currency ?? null,
+    billing_interval: price?.recurring?.interval ?? null,
+    interval_count: price?.recurring?.interval_count ?? null,
+    quantity: typeof item?.quantity === 'number' ? item.quantity : null,
+  };
+}
+
+/** Colonne inconnue : la migration des montants n'est pas encore appliquée. */
+export function isMissingColumn(code: string | undefined): boolean {
+  return code === 'PGRST204' || code === '42703';
 }
 
 /**
