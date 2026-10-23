@@ -33,11 +33,11 @@ npm run typecheck  # tsc --noEmit
 | Route | Description |
 |---|---|
 | `/` | Home — 11 sections (Hero, Partners, Avant/Après, Features, Workspaces tabs, Workflow, Sécurité, Pricing, Témoignages, Blog preview, FAQ, Final CTA) |
-| `/fonctionnalites` | Index des 8 fonctionnalités |
-| `/fonctionnalites/:slug` | 8 pages détail (200-400 mots chacune) |
-| `/tarifs` | 3 plans + toggle annuel/mensuel + matrice comparatif + add-ons |
+| `/fonctionnalites` | Index des 9 fonctionnalités |
+| `/fonctionnalites/:slug` | 9 pages détail (200-400 mots chacune) |
+| `/tarifs` | 7 formules + toggle annuel/mensuel (−10 %) + matrice comparative |
 | `/securite` | Schéma archi + 6 piliers détaillés + badges + documents |
-| `/blog` | Index + 3 articles complets (800-1200 mots) |
+| `/blog` | Index + 7 articles complets (800-1200 mots) |
 | `/blog/:slug` | Article avec drop cap, citations, "À retenir", FAQ inline |
 | `/contact` | Formulaire 4 topics avec état submitted simulé |
 | `/dossier/nouveau` | Flow 3 étapes avec persistance localStorage |
@@ -72,3 +72,21 @@ Voir `PLAN.md` pour le détail d'implémentation et les 10 détails signature.
 | `index.css` | 88 KB | 25 KB |
 
 Fonts chargées en woff/woff2 par sous-set (latin + latin-ext), ~30-50 KB chacune.
+
+## Couche agentique
+
+Les règles de travail ClairDossier (auto-contrôle, identité de marque, vérité
+produit, normes PDF, sourcing B2B conforme, contenu) sont packagées en skills
+Claude Code auto-déclenchés dans `.claude/skills/`, avec trois commandes dans
+`.claude/commands/` : `/prospect`, `/verif`, `/pilotage`.
+
+Elles s'appliquent automatiquement dans toute session ouverte sur ce dépôt.
+Pour les utiliser ailleurs, le dépôt s'installe comme plugin :
+
+```bash
+/plugin marketplace add romancg13/www.clair-dossier.com
+/plugin install clairdossier@clairdossier
+```
+
+Documentation : `docs/agentic/README.md`. Arbitrages ouverts :
+`docs/agentic/decisions.md`.

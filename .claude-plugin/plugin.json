@@ -1,0 +1,22 @@
+{
+  "name": "clairdossier",
+  "displayName": "ClairDossier",
+  "version": "1.0.0",
+  "description": "Couche agentique ClairDossier : auto-contrôle CLAIR-VERIF, identité de marque, vérité produit, normes PDF, sourcing B2B conforme et contenu multicanal.",
+  "author": {
+    "name": "Roman Gomes",
+    "url": "https://www.clair-dossier.com"
+  },
+  "homepage": "https://www.clair-dossier.com",
+  "repository": "https://github.com/romancg13/www.clair-dossier.com",
+  "keywords": [
+    "clairdossier",
+    "legaltech",
+    "rgpd",
+    "prospection",
+    "identite-de-marque",
+    "auto-controle"
+  ],
+  "skills": "./.claude/skills/",
+  "commands": ["./.claude/commands/"]
+}
