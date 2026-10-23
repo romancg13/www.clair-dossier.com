@@ -3,6 +3,7 @@
   "specifiers": {
     "npm:@anthropic-ai/sdk@1.1.0": "1.1.0_zod@4.6.7",
     "npm:@supabase/supabase-js@2": "2.118.0",
+    "npm:fflate@0.8.3": "0.8.3",
     "npm:mammoth@1.13.0": "1.13.0",
     "npm:pdf-lib@1.17.1": "1.17.1",
     "npm:xlsx@0.18.5": "0.18.5",
@@ -131,6 +132,9 @@
     },
     "fast-sha256@1.3.0": {
       "integrity": "sha512-n11RGP/lrWEFI/bWdygLxhI+pVeo1ZYIVwvvPkW7azl/rOy+F3HYRZ2K5zeE9mmkhQppyv9sQFx0JM9UabnpPQ=="
+    },
+    "fflate@0.8.3": {
+      "integrity": "sha512-tbZNuJrLwGUp3zshBtdy4W+ORxZuIh8a5ilyIEQDC5rY1f3U20JMry0Ll3WBzU58EZKsEuJFXhb5gwv8CsPvgA=="
     },
     "frac@1.1.2": {
       "integrity": "sha512-w/XBfkibaTl3YDqASwfDUqkna4Z2p9cFSr1aHDt0WoMTECnRfBOv2WArlZILlqgWlmdIlALXGpM2AOhEk5W3IA=="
@@ -291,32 +295,9 @@
     }
   },
   "workspace": {
-    "packageJson": {
-      "dependencies": [
-        "npm:@fontsource/cormorant-garamond@^5.2.5",
-        "npm:@fontsource/inter@^5.2.5",
-        "npm:@fontsource/jetbrains-mono@^5.2.5",
-        "npm:@react-three/drei@^10.7.8",
-        "npm:@react-three/fiber@^9.7.0",
-        "npm:@supabase/supabase-js@^2.108.2",
-        "npm:@tailwindcss/vite@4",
-        "npm:@types/node@22",
-        "npm:@types/react-dom@19",
-        "npm:@types/react@19",
-        "npm:@types/three@0.186",
-        "npm:@vitejs/plugin-react@^4.3.4",
-        "npm:fflate@~0.8.3",
-        "npm:motion@^11.15.0",
-        "npm:react-dom@19",
-        "npm:react-router-dom@^7.1.0",
-        "npm:react@19",
-        "npm:stripe@^22.6.2",
-        "npm:tailwindcss@4",
-        "npm:three@0.186",
-        "npm:tsx@^4.19.0",
-        "npm:typescript@^5.7.0",
-        "npm:vite@6"
-      ]
-    }
+    "dependencies": [
+      "npm:fflate@0.8.3",
+      "npm:pdf-lib@1.17.1"
+    ]
   }
 }

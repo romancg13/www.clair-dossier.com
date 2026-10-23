@@ -1146,5 +1146,115 @@ await test('IA : désactivation → travaux annulés, plus aucune mise en file',
   assert.equal((await q('select 1 from public.ai_jobs where dossier_id = $1', [IA_DOSSIER_B])).length, 0);
 });
 
+// ── Moteur IA : corrections, clôture, notifications, volume ─────────────────
+const IA_C = await newUser('ia-c@test.local');
+await subscribe(IA_C, 'essentiel');
+const IA_DOSSIER_C = await insertDossier(IA_C, { title: 'Dossier IA C' });
+async function addPiece(userId, dossierId, name) {
+  await asUser(userId);
+  const [r] = await q(`insert into public.dossier_documents (dossier_id, user_id, file_path, file_name, kind) values ($1, $2, $3, $4, 'piece') returning id`, [dossierId, userId, `${userId}/${dossierId}/${name}`, name]);
+  return r.id;
+}
+const openJobs = async (dossierId, kind) => {
+  await asSuperuser();
+  return (await q(`select id from public.ai_jobs where dossier_id = $1 and kind = $2 and status in ('queued','running')`, [dossierId, kind])).length;
+};
+
+await test('IA : bail expiré au-delà du maximum de tentatives → échec définitif (jamais de boucle infinie)', async () => {
+  await addPiece(IA_C, IA_DOSSIER_C, 'c1.pdf');
+  await asUser(IA_C);
+  await q('select public.enable_ai_processing($1, $2)', [IA_DOSSIER_C, 'ia-2026-10']);
+  await asSuperuser();
+  const [j] = await q(`select id from public.ai_jobs where dossier_id = $1 and kind = 'extract'`, [IA_DOSSIER_C]);
+  await q(`update public.ai_jobs set status = 'running', attempts = 3, lease_until = now() - interval '1 minute' where id = $1`, [j.id]);
+  await asService();
+  const claimed = await q(`select id from public.ai_claim_jobs('w', 5)`);
+  assert.ok(!claimed.some((c) => c.id === j.id), 'non réclamé à nouveau');
+  await asSuperuser();
+  const [row] = await q('select status, last_error from public.ai_jobs where id = $1', [j.id]);
+  assert.equal(row.status, 'failed');
+  assert.match(row.last_error, /interrompu/);
+});
+
+await test('IA : corrections de chronologie — append-only, auteur imposé, isolation, rendu sans appel IA', async () => {
+  await asUser(IA_C);
+  await q(`insert into public.ai_event_overrides (dossier_id, user_id, event_key, retained_date, reason, created_by, author_role) values ($1, $2, '2026-09-20:relance', '2026-09-22', 'cachet de la poste', $3, 'equipe')`, [IA_DOSSIER_C, IA_C, ADMIN]);
+  await rejects(q(`insert into public.ai_event_overrides (dossier_id, user_id, event_key, reason) values ($1, $2, 'k', 'x')`, [IA_DOSSIER_C, IA_C]), /check/);
+  await rejects(q(`insert into public.ai_event_overrides (dossier_id, user_id, event_key, retained_date, reason) values ($1, $2, 'k', 'demain', 'motif ok')`, [IA_DOSSIER_C, IA_C]), /check/);
+  const [o] = await q('select created_by, author_role from public.ai_event_overrides where dossier_id = $1', [IA_DOSSIER_C]);
+  assert.deepEqual(o, { created_by: IA_C, author_role: 'titulaire' }, 'auteur et rôle imposés par la base');
+  assert.equal((await q(`update public.ai_event_overrides set reason = 'réécrit' where dossier_id = $1 returning id`, [IA_DOSSIER_C])).length, 0, 'aucune réécriture');
+  assert.equal((await q('delete from public.ai_event_overrides where dossier_id = $1 returning id', [IA_DOSSIER_C])).length, 0, 'aucune suppression');
+  assert.equal(await openJobs(IA_DOSSIER_C, 'render'), 1, 'rendu temporisé mis en file');
+  // Tiers : ni lecture ni écriture ; owner_id forgé refusé.
+  await asUser(IA_B);
+  assert.equal((await q('select 1 from public.ai_event_overrides where dossier_id = $1', [IA_DOSSIER_C])).length, 0);
+  await rejects(q(`insert into public.ai_event_overrides (dossier_id, user_id, event_key, reason) values ($1, $2, 'k', 'motif tiers')`, [IA_DOSSIER_C, IA_C]), /row-level security/);
+  await rejects(q(`insert into public.ai_event_overrides (dossier_id, user_id, event_key, reason) values ($1, $2, 'k', 'motif forgé')`, [IA_DOSSIER_C, IA_B]), /row-level security/);
+  // Administration : correction tracée comme « équipe ».
+  await asUser(ADMIN);
+  await q(`insert into public.ai_event_overrides (dossier_id, user_id, event_key, hidden, reason) values ($1, $2, '2026-09-20:relance', true, 'doublon de pièce')`, [IA_DOSSIER_C, IA_C]);
+  await asSuperuser();
+  assert.deepEqual((await q('select author_role from public.ai_event_overrides where dossier_id = $1 order by created_at', [IA_DOSSIER_C])).map((r) => r.author_role), ['titulaire', 'equipe']);
+});
+
+await test('IA : clôture (titulaire ou admin) → travaux annulés et plus rien en file ; réouverture → reprise des seules pièces non lues', async () => {
+  await asService();
+  const [p1] = await q(`select id from public.dossier_documents where dossier_id = $1 and kind = 'piece'`, [IA_DOSSIER_C]);
+  await q(`insert into public.ai_extractions (dossier_id, user_id, document_id, status) values ($1, $2, $3, 'ok') on conflict (document_id) do nothing`, [IA_DOSSIER_C, IA_C, p1.id]);
+  await asUser(IA_B);
+  await rejects(q(`insert into public.dossier_events (dossier_id, user_id, type, label) values ($1, $2, 'dossier_cloture', 'x')`, [IA_DOSSIER_C, IA_C]), /row-level security/);
+  await asUser(IA_C);
+  await q(`insert into public.dossier_events (dossier_id, user_id, type, label) values ($1, $2, 'dossier_cloture', 'Dossier clôturé')`, [IA_DOSSIER_C, IA_C]);
+  assert.equal(await openJobs(IA_DOSSIER_C, 'render'), 0, 'travaux en attente annulés');
+  await addPiece(IA_C, IA_DOSSIER_C, 'c2.pdf');
+  assert.equal(await openJobs(IA_DOSSIER_C, 'extract'), 0, 'rien en file pour un dossier clôturé');
+  await asUser(IA_C);
+  await rejects(q('select public.enable_ai_processing($1, $2)', [IA_DOSSIER_C, 'ia-2026-10']), /DOSSIER_CLOTURE/);
+  await rejects(q('select public.dossier_is_closed($1)', [IA_DOSSIER_C]), /permission denied/);
+  // Réouverture par l'administration : seule la pièce jamais lue est reprise.
+  await new Promise((r) => setTimeout(r, 5));
+  await asUser(ADMIN);
+  await q(`insert into public.dossier_events (dossier_id, user_id, type, label) values ($1, $2, 'dossier_rouvert', 'Dossier rouvert')`, [IA_DOSSIER_C, IA_C]);
+  await asSuperuser();
+  const ex = await q(`select d.file_name from public.ai_jobs j join public.dossier_documents d on d.id = j.document_id where j.dossier_id = $1 and j.kind = 'extract' and j.status = 'queued'`, [IA_DOSSIER_C]);
+  assert.deepEqual(ex.map((r) => r.file_name), ['c2.pdf']);
+  assert.equal(await openJobs(IA_DOSSIER_C, 'consolidate'), 1);
+});
+
+await test('IA : registre des notifications — un seul e-mail par dossier et révision ; lecture par le seul titulaire', async () => {
+  await asService();
+  await q(`insert into public.ai_notifications (dossier_id, user_id, kind, revision) values ($1, $2, 'client_livrables_disponibles', 1)`, [IA_DOSSIER_C, IA_C]);
+  await rejects(q(`insert into public.ai_notifications (dossier_id, user_id, kind, revision) values ($1, $2, 'client_livrables_disponibles', 1)`, [IA_DOSSIER_C, IA_C]), /duplicate key/);
+  await rejects(q(`insert into public.ai_notifications (dossier_id, user_id, kind, revision) values ($1, $2, 'mise_en_demeure_tiers', 2)`, [IA_DOSSIER_C, IA_C]), /check/);
+  await asUser(IA_C);
+  assert.equal((await q('select 1 from public.ai_notifications where dossier_id = $1', [IA_DOSSIER_C])).length, 1);
+  await rejects(q(`insert into public.ai_notifications (dossier_id, user_id, kind, revision) values ($1, $2, 'client_livrables_disponibles', 9)`, [IA_DOSSIER_C, IA_C]), /row-level security/);
+  await asUser(IA_B);
+  assert.equal((await q('select 1 from public.ai_notifications where dossier_id = $1', [IA_DOSSIER_C])).length, 0);
+});
+
+await test('IA : dossier de 190 pièces → 190 extractions + 1 consolidation, réclamation par lots sans doublon', async () => {
+  const D = await insertDossier(IA_C, { title: 'Dossier volumineux' });
+  await asUser(IA_C);
+  await q('select public.enable_ai_processing($1, $2)', [D, 'ia-2026-10']);
+  await q(`insert into public.dossier_documents (dossier_id, user_id, file_path, file_name, kind)
+           select $1::uuid, $2::uuid, $2::text || '/' || $1::text || '/p' || g || '.pdf', 'p' || g || '.pdf', 'piece' from generate_series(1, 190) g`, [D, IA_C]);
+  assert.equal(await openJobs(D, 'extract'), 190);
+  assert.equal(await openJobs(D, 'consolidate'), 1, 'une seule consolidation, temporisée');
+  await asUser(IA_C);
+  await q('select public.enable_ai_processing($1, $2)', [D, 'ia-2026-10']);
+  assert.equal(await openJobs(D, 'extract'), 190, 'réactivation : aucun doublon');
+  await asService();
+  const seen = new Set();
+  for (let i = 0; i < 12; i++) {
+    for (const r of await q(`select id from public.ai_claim_jobs('lot', 20)`)) {
+      assert.ok(!seen.has(r.id), 'jamais réclamé deux fois');
+      seen.add(r.id);
+    }
+  }
+  assert.ok(seen.size >= 190, `${seen.size} travaux réclamés`);
+});
+
 console.log(`\n${passed} réussis, ${failed} échoués`);
 process.exit(failed ? 1 : 0);

@@ -62,11 +62,11 @@ export const DEMO = {
     daysInMonth: 31,
     status: 'À venir',
   },
-  /** Étape métier atteinte (1-indexée) et statut réel (statuses.ts). */
-  step: 3,
+  /** Étape de suivi atteinte (1-indexée) et statut réel (statuses.ts). */
+  step: 2,
   status: 'En cours',
-  /** Texte réel STEP_NEXT_ACTIONS[3] (DossierDetail.tsx). */
-  nextAction: 'Mettez à jour le suivi : nouveaux courriers, relances, pièces reçues.',
+  /** Texte réel STEP_NEXT_ACTIONS[2] (packages/core/src/dossiers.ts). */
+  nextAction: 'Ajoutez les pièces complémentaires au fur et à mesure\u00A0; aucune autre action n\u2019est requise.',
   pieces: [
     { name: 'Devis D-2026-018 signé.pdf', type: 'devis', tag: 'Devis', meta: '2 pages · déposé le 12 sept.' },
     { name: 'Facture F-2026-042.pdf', type: 'facture', tag: 'Facture', meta: '1 page · déposée le 13 sept.' },
