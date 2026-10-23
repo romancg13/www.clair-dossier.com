@@ -7,6 +7,7 @@ import { supabase } from "../lib/supabase";
 import { ArrowRightIcon, CheckIcon } from "../components/icons";
 import { hasDossierTrash, logAudit } from "../lib/admin";
 import { hasQuotaEngine } from "../lib/dossier-workspace";
+import { AiPanel } from "../components/dossier/AiPanel";
 // Statuts, typologies, étapes et libellés de réponses : source unique partagée
 // avec l'application mobile (packages/core) — mêmes libellés des deux côtés.
 import {
@@ -1594,6 +1595,15 @@ export function DossierDetail() {
                       </button>
                     )}
                   </div>
+
+                  <AiPanel
+                    dossierId={dossier.id}
+                    canManage={isAdmin || dossier.user_id === user?.id}
+                    isAdmin={isAdmin}
+                    pieceCount={pieces.length}
+                    documentNames={Object.fromEntries(documents.map((d) => [d.id, d.file_name]))}
+                    onPublished={() => void refreshDocs()}
+                  />
 
                   {deliverables.length === 0 ? (
                     <p className="mt-4 text-sm leading-relaxed text-slate-500">

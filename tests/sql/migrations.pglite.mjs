@@ -1013,5 +1013,138 @@ await test('admin (sans MFA) : suppression définitive des dossiers de A et de B
   assert.equal((await q('select id from public.dossier_submissions where dossier_id = any($1)', [cibles])).length, 0, 'registre détaché du dossier supprimé');
 });
 
+// ── Moteur documentaire IA (20261023120000) ──────────────────────────────────
+async function asService() {
+  await db.exec(`set role service_role; set request.jwt.claims = '{"role":"service_role"}';`);
+}
+const IA_A = await newUser('ia-a@test.local');
+const IA_B = await newUser('ia-b@test.local');
+const IA_DOSSIER_A = await insertDossier(IA_A, { title: 'Dossier IA A' });
+const IA_DOSSIER_B = await insertDossier(IA_B, { title: 'Dossier IA B' });
+
+await test('IA : activation refusée sans abonnement, par un tiers, et en anonyme', async () => {
+  await asUser(IA_A);
+  await rejects(q('select public.enable_ai_processing($1, $2)', [IA_DOSSIER_A, 'ia-2026-10']), /SUBSCRIPTION_REQUIRED/);
+  await asAnon();
+  await rejects(q('select public.enable_ai_processing($1, $2)', [IA_DOSSIER_A, 'ia-2026-10']), /AUTH_REQUIRED|permission denied/);
+  await subscribe(IA_B, 'essentiel');
+  await asUser(IA_B);
+  await rejects(q('select public.enable_ai_processing($1, $2)', [IA_DOSSIER_A, 'ia-2026-10']), /FORBIDDEN/);
+  await asSuperuser();
+  assert.equal((await q('select 1 from public.ai_jobs where dossier_id = $1', [IA_DOSSIER_A])).length, 0, 'aucun travail créé');
+});
+
+await test('IA : rien n\'est mis en file pour un dossier non activé ; impossible d\'activer en écrivant la table', async () => {
+  await asUser(IA_A);
+  await q(`insert into public.dossier_documents (dossier_id, user_id, file_path, file_name, kind) values ($1, $2, $3, 'piece.pdf', 'piece')`, [IA_DOSSIER_A, IA_A, `${IA_A}/${IA_DOSSIER_A}/piece.pdf`]);
+  await rejects(q('insert into public.dossier_ai_settings (dossier_id, user_id, enabled_at) values ($1, $2, now())', [IA_DOSSIER_A, IA_A]), /row-level security|permission denied/);
+  await asSuperuser();
+  assert.equal((await q('select 1 from public.ai_jobs where dossier_id = $1', [IA_DOSSIER_A])).length, 0);
+});
+
+await test('IA : activation par le titulaire abonné → trace, pièces existantes en file, consolidation temporisée unique', async () => {
+  await subscribe(IA_A, 'essentiel');
+  await asUser(IA_A);
+  await q('select public.enable_ai_processing($1, $2)', [IA_DOSSIER_A, 'ia-2026-10']);
+  const [s] = await q('select enabled_at, enabled_by, terms_version from public.dossier_ai_settings where dossier_id = $1', [IA_DOSSIER_A]);
+  assert.ok(s.enabled_at);
+  assert.equal(s.enabled_by, IA_A);
+  assert.equal(s.terms_version, 'ia-2026-10');
+  assert.equal((await q(`select 1 from public.dossier_events where dossier_id = $1 and type = 'ia_activee'`, [IA_DOSSIER_A])).length, 1);
+  // Deuxième pièce : extraction propre + la MÊME consolidation (repoussée), jamais deux.
+  await q(`insert into public.dossier_documents (dossier_id, user_id, file_path, file_name, kind) values ($1, $2, $3, 'piece2.pdf', 'piece')`, [IA_DOSSIER_A, IA_A, `${IA_A}/${IA_DOSSIER_A}/piece2.pdf`]);
+  // Un livrable déposé par l'admin n'entraîne aucune extraction.
+  await asSuperuser();
+  await q(`insert into public.dossier_documents (dossier_id, user_id, file_path, file_name, kind) values ($1, $2, $3, 'livrable.pdf', 'deliverable')`, [IA_DOSSIER_A, IA_A, `${IA_A}/${IA_DOSSIER_A}/deliverable-x.pdf`]);
+  const jobs = await q(`select kind, status, run_after > now() as differe from public.ai_jobs where dossier_id = $1 order by kind`, [IA_DOSSIER_A]);
+  assert.deepEqual(jobs.map((j) => j.kind), ['consolidate', 'extract', 'extract']);
+  assert.equal(jobs[0].differe, true, 'consolidation temporisée');
+  // Isolation : B ne voit ni les réglages ni les travaux de A.
+  await asUser(IA_B);
+  assert.equal((await q('select 1 from public.dossier_ai_settings where dossier_id = $1', [IA_DOSSIER_A])).length, 0);
+  assert.equal((await q('select 1 from public.ai_jobs where dossier_id = $1', [IA_DOSSIER_A])).length, 0);
+  await asUser(IA_A);
+  assert.equal((await q('select 1 from public.ai_jobs where dossier_id = $1', [IA_DOSSIER_A])).length, 3);
+});
+
+await test('IA : réclamation réservée au service role ; bail, tentatives bornées, backoff, requeue des baux expirés', async () => {
+  await asUser(IA_A);
+  await rejects(q(`select * from public.ai_claim_jobs('w', 5)`), /FORBIDDEN|permission denied/);
+  await asAnon();
+  await rejects(q(`select * from public.ai_claim_jobs('w', 5)`), /FORBIDDEN|permission denied/);
+  await asService();
+  const claimed = await q(`select id, kind, status, attempts, locked_by from public.ai_claim_jobs('w1', 5)`);
+  assert.deepEqual(claimed.map((j) => j.kind), ['extract', 'extract'], 'la consolidation temporisée n\'est pas encore réclamable');
+  assert.ok(claimed.every((j) => j.status === 'running' && j.attempts === 1 && j.locked_by === 'w1'));
+  assert.equal((await q(`select id from public.ai_claim_jobs('w2', 5)`)).length, 0, 'un travail réclamé ne l\'est pas deux fois');
+  const [j1, j2] = claimed;
+  await q('select public.ai_finish_job($1, true)', [j1.id]);
+  await q('select public.ai_finish_job($1, false, $2)', [j2.id, 'panne fournisseur']);
+  let rows = await q('select id, status, attempts, last_error, run_after > now() as differe from public.ai_jobs where id = any($1) order by status', [[j1.id, j2.id]]);
+  assert.deepEqual(rows.map((r) => [r.status, r.attempts]), [['done', 1], ['queued', 1]]);
+  assert.equal(rows[1].last_error, 'panne fournisseur');
+  assert.equal(rows[1].differe, true, 'backoff');
+  // Bail expiré : le travail retourne en file au prochain passage.
+  await q(`update public.ai_jobs set run_after = now() - interval '1 minute' where id = $1`, [j2.id]);
+  await q(`select id from public.ai_claim_jobs('w3', 5)`);
+  await q(`update public.ai_jobs set lease_until = now() - interval '1 minute' where id = $1`, [j2.id]);
+  const again = await q(`select id, attempts from public.ai_claim_jobs('w4', 5)`);
+  assert.deepEqual(again.map((r) => [r.id, r.attempts]), [[j2.id, 3]]);
+  await q('select public.ai_finish_job($1, false, $2)', [j2.id, 'troisième échec']);
+  rows = await q('select status, finished_at is not null as fini from public.ai_jobs where id = $1', [j2.id]);
+  assert.deepEqual(rows, [{ status: 'failed', fini: true }], 'max_attempts atteint');
+});
+
+await test('IA : extractions et analyses écrites par le service, lues par le seul titulaire ; coût mensuel', async () => {
+  await asSuperuser();
+  const [doc] = await q(`select id from public.dossier_documents where dossier_id = $1 and kind = 'piece' limit 1`, [IA_DOSSIER_A]);
+  await asService();
+  await q(`insert into public.ai_extractions (dossier_id, user_id, document_id, status, model, data, cost_cents) values ($1, $2, $3, 'ok', 'claude-opus-5-5', '{"summary":"x"}', 12.5)`, [IA_DOSSIER_A, IA_A, doc.id]);
+  await q(`insert into public.ai_analyses (dossier_id, user_id, revision, data, cost_cents) values ($1, $2, 1, '{"summary_short":"y"}', 7.5)`, [IA_DOSSIER_A, IA_A]);
+  assert.equal(Number((await q('select public.ai_month_cost_cents($1) as c', [IA_A]))[0].c), 20);
+  await asUser(IA_A);
+  assert.equal((await q('select 1 from public.ai_analyses where dossier_id = $1', [IA_DOSSIER_A])).length, 1);
+  await rejects(q(`insert into public.ai_analyses (dossier_id, user_id, revision, data) values ($1, $2, 2, '{}')`, [IA_DOSSIER_A, IA_A]), /row-level security|permission denied/);
+  await rejects(q('select public.ai_month_cost_cents($1)', [IA_A]), /permission denied/);
+  await asUser(IA_B);
+  assert.equal((await q('select 1 from public.ai_analyses where dossier_id = $1', [IA_DOSSIER_A])).length, 0);
+  assert.equal((await q('select 1 from public.ai_extractions where dossier_id = $1', [IA_DOSSIER_A])).length, 0);
+});
+
+await test('IA : échéances — l\'upsert du worker respecte les corrections humaines', async () => {
+  await asService();
+  await q(`insert into public.dossier_deadlines (dossier_id, user_id, title, due_date, ai_key) values ($1, $2, 'Réponse', '2026-11-03', '2026-11-03:reponse')`, [IA_DOSSIER_A, IA_A]);
+  await q(`insert into public.dossier_deadlines (dossier_id, user_id, title, due_date, ai_key) values ($1, $2, 'Audience', '2026-12-01', '2026-12-01:audience')`, [IA_DOSSIER_A, IA_A]);
+  // Échéance manuelle (sans clé) : jamais en conflit.
+  await asUser(IA_A);
+  await q(`insert into public.dossier_deadlines (dossier_id, user_id, title, due_date) values ($1, $2, 'Perso', '2026-11-20')`, [IA_DOSSIER_A, IA_A]);
+  await q(`update public.dossier_deadlines set due_date = '2026-11-05' where dossier_id = $1 and ai_key = '2026-11-03:reponse'`, [IA_DOSSIER_A]);
+  await asService();
+  const edited = await q(`select ai_key, user_edited from public.dossier_deadlines where dossier_id = $1 and ai_key is not null order by ai_key`, [IA_DOSSIER_A]);
+  assert.deepEqual(edited, [{ ai_key: '2026-11-03:reponse', user_edited: true }, { ai_key: '2026-12-01:audience', user_edited: false }]);
+  // Réanalyse : le worker ne touche pas la ligne corrigée, met à jour l'autre.
+  const frozen = (await q(`select ai_key from public.dossier_deadlines where dossier_id = $1 and user_edited`, [IA_DOSSIER_A])).map((r) => r.ai_key);
+  const rows = [['2026-11-03:reponse', 'Réponse (v2)', '2026-11-03'], ['2026-12-01:audience', 'Audience (v2)', '2026-12-01']].filter((r) => !frozen.includes(r[0]));
+  for (const [key, title, date] of rows) {
+    await q(`insert into public.dossier_deadlines (dossier_id, user_id, ai_key, title, due_date) values ($1, $2, $3, $4, $5)
+             on conflict (dossier_id, ai_key) do update set title = excluded.title, due_date = excluded.due_date`, [IA_DOSSIER_A, IA_A, key, title, date]);
+  }
+  const after = await q(`select title, due_date::text as d from public.dossier_deadlines where dossier_id = $1 and ai_key is not null order by ai_key`, [IA_DOSSIER_A]);
+  assert.deepEqual(after, [{ title: 'Réponse', d: '2026-11-05' }, { title: 'Audience (v2)', d: '2026-12-01' }]);
+});
+
+await test('IA : désactivation → travaux annulés, plus aucune mise en file', async () => {
+  await asUser(IA_A);
+  await q('select public.disable_ai_processing($1)', [IA_DOSSIER_A]);
+  await q(`insert into public.dossier_documents (dossier_id, user_id, file_path, file_name, kind) values ($1, $2, $3, 'piece3.pdf', 'piece')`, [IA_DOSSIER_A, IA_A, `${IA_A}/${IA_DOSSIER_A}/piece3.pdf`]);
+  await asSuperuser();
+  const open = await q(`select 1 from public.ai_jobs where dossier_id = $1 and status in ('queued','running')`, [IA_DOSSIER_A]);
+  assert.equal(open.length, 0);
+  assert.equal((await q('select enabled_at from public.dossier_ai_settings where dossier_id = $1', [IA_DOSSIER_A]))[0].enabled_at, null);
+  assert.equal((await q(`select 1 from public.dossier_events where dossier_id = $1 and type = 'ia_desactivee'`, [IA_DOSSIER_A])).length, 1);
+  // Le dossier B, jamais activé, n'a rien.
+  assert.equal((await q('select 1 from public.ai_jobs where dossier_id = $1', [IA_DOSSIER_B])).length, 0);
+});
+
 console.log(`\n${passed} réussis, ${failed} échoués`);
 process.exit(failed ? 1 : 0);
