@@ -66,12 +66,12 @@ test('corrections humaines : la dernière l’emporte, masquage conservé, histo
 });
 
 test('suivi en 4 étapes fondé sur les événements réels', () => {
-  assert.deepEqual(TIMELINE_STEPS, ['Dossier créé', 'Traitement en cours', 'Livrables disponibles', 'Dossier clôturé']);
+  assert.deepEqual(TIMELINE_STEPS, ['Dossier créé', 'Traitement en cours', 'Documents disponibles', 'Dossier clôturé']);
   const f = { status: 'brouillon', hasDeliverables: false, processing: false, closed: false };
   assert.equal(trackingStep(f), 1);
   assert.equal(trackingStep({ ...f, processing: true }), 2);
   assert.equal(trackingStep({ ...f, status: 'valide' }), 2, '« valide » sans livrable ne déclare pas de livrable');
-  assert.equal(trackingStep({ ...f, hasDeliverables: true, processing: true }), 3, 'mise à jour en cours : les livrables restent disponibles');
+  assert.equal(trackingStep({ ...f, hasDeliverables: true, processing: true }), 3, 'mise à jour en cours : les documents restent disponibles');
   assert.equal(trackingStep({ ...f, hasDeliverables: true, closed: true }), 4);
   assert.equal(trackingStep({ ...f, forcedStep: 5 }), 2, 'ancienne étape forcée (1–5) bornée au traitement');
 });

@@ -12,7 +12,7 @@ import { DEMO_FAILED, DEMO_PIECES, DEMO_TITLE, DEMO_UNSUPPORTED, bulkPieces, dem
 /**
  * DÉMONSTRATION isolée (build VITE_DEMO=1 uniquement, jamais en production) :
  * dossier fictif, aucun appel Supabase, aucun e-mail, aucune IA appelée. Les
- * états du traitement sont SIMULÉS (accélérés) ; les six livrables sont de
+ * états du traitement sont SIMULÉS (accélérés) ; les six documents sont de
  * vrais fichiers PDF/DOCX/XLSX/CSV/ICS générés dans le navigateur par le même
  * code que le worker de production.
  */
@@ -22,7 +22,7 @@ type Scenario = "cree" | "traitement" | "disponible" | "partiel" | "volumineux" 
 const SCENARIOS: { id: Scenario; label: string }[] = [
   { id: "cree", label: "Dossier créé" },
   { id: "traitement", label: "Traitement en cours" },
-  { id: "disponible", label: "Livrables disponibles" },
+  { id: "disponible", label: "Documents disponibles" },
   { id: "partiel", label: "Analyse partielle" },
   { id: "volumineux", label: "190 pièces" },
   { id: "pause", label: "Pause (plafond)" },
@@ -54,15 +54,15 @@ function initial(s: Scenario): State {
     case "traitement":
       return { ...base, read: 0, revision: 0, journal: j("Traitement automatique activé — conditions ia-2026-10") };
     case "partiel":
-      return { ...base, partial: true, pieces: [...DEMO_PIECES, DEMO_UNSUPPORTED, DEMO_FAILED], read: DEMO_PIECES.length + 2, journal: j("Livrables disponibles — révision 1 (analyse partielle)") };
+      return { ...base, partial: true, pieces: [...DEMO_PIECES, DEMO_UNSUPPORTED, DEMO_FAILED], read: DEMO_PIECES.length + 2, journal: j("Documents disponibles — révision 1 (analyse partielle)") };
     case "volumineux":
       return { ...base, bulk: true, pieces: [...DEMO_PIECES, ...bulkPieces().pieces], read: 0, revision: 0, journal: j("190 pièces déposées — lecture en cours") };
     case "pause":
       return { ...base, paused: true, pieces: [...DEMO_PIECES, { id: "p20", file_name: "Avenant au devis.pdf", created_at: now() }], journal: j("Traitement en pause : plafond mensuel atteint") };
     case "cloture":
-      return { ...base, closed: true, journal: [{ at: now(), label: "Livrables disponibles — révision 1" }, { at: now(), label: "Dossier clôturé" }] };
+      return { ...base, closed: true, journal: [{ at: now(), label: "Documents disponibles — révision 1" }, { at: now(), label: "Dossier clôturé" }] };
     default:
-      return { ...base, journal: j("Livrables disponibles — révision 1") };
+      return { ...base, journal: j("Documents disponibles — révision 1") };
   }
 }
 
@@ -118,7 +118,7 @@ export function DemoDossier() {
           ...v,
           consolidating: false,
           revision: v.revision + 1,
-          journal: [{ at: now(), label: `Livrables ${v.revision ? "mis à jour" : "disponibles"} — révision ${v.revision + 1}` }, ...v.journal],
+          journal: [{ at: now(), label: `Documents ${v.revision ? "mis à jour" : "disponibles"} — révision ${v.revision + 1}` }, ...v.journal],
         })),
       1400,
     );
@@ -159,7 +159,7 @@ export function DemoDossier() {
   const downloadAll = () => {
     const zip = zipSync(Object.fromEntries(files.map((f) => [f.name, f.bytes])), { level: 6 });
     const url = URL.createObjectURL(new Blob([zip as BlobPart], { type: "application/zip" }));
-    download(url, `livrables-demo-r${s.revision}.zip`);
+    download(url, `documents-demo-r${s.revision}.zip`);
     setTimeout(() => URL.revokeObjectURL(url), 10_000);
   };
 
@@ -171,14 +171,14 @@ export function DemoDossier() {
     : processing
       ? s.read < s.pieces.length
         ? `${s.read}/${s.pieces.length} pièces lues — consolidation à suivre`
-        : "Consolidation et préparation des livrables…"
+        : "Analyse et préparation de vos documents…"
       : null;
 
   const addPiece = () =>
     setS((v) => ({
       ...v,
       pieces: [...v.pieces, { id: `n${v.pieces.length}`, file_name: `Nouvelle pièce (simulée) ${v.pieces.length + 1}.pdf`, created_at: now() }],
-      journal: [{ at: now(), label: "Pièce ajoutée — actualisation des livrables" }, ...v.journal],
+      journal: [{ at: now(), label: "Pièce ajoutée — actualisation des documents" }, ...v.journal],
     }));
   const toggleClosed = () => setS((v) => ({ ...v, closed: !v.closed, journal: [{ at: now(), label: v.closed ? "Dossier rouvert" : "Dossier clôturé" }, ...v.journal] }));
   const activate = () => setS((v) => ({ ...v, enabled: true, journal: [{ at: now(), label: "Traitement automatique activé — conditions ia-2026-10" }, ...v.journal] }));
@@ -186,25 +186,29 @@ export function DemoDossier() {
     setS((v) => ({
       ...v,
       overrides: [...v.overrides, { event_key: eventKey, label: null, ...change, author: "Vous (démonstration)", created_at: now() }],
-      journal: [{ at: now(), label: "Date corrigée — livrables régénérés sans nouvel appel IA" }, ...v.journal],
+      journal: [{ at: now(), label: "Date corrigée — documents régénérés sans nouvel appel IA" }, ...v.journal],
     }));
   }, []);
 
   return (
     <>
-      <Seo title="Démonstration — suivi et livrables" description="Démonstration fictive du suivi de dossier et des six livrables ClairDossier." path="/demo" noindex />
+      <Seo title="Démonstration — suivi et documents" description="Démonstration fictive du suivi de dossier et des six documents ClairDossier." path="/demo" noindex />
       <div className="mx-auto max-w-6xl px-5 py-10 sm:px-8 lg:px-12">
-        <div role="note" className="rounded-2xl border border-gold-500/40 bg-gold-500/10 p-4 text-sm leading-relaxed text-navy-900">
-          <strong className="font-semibold">Démonstration — données entièrement fictives.</strong> Aucun dossier client, aucune IA appelée, aucun
-          e-mail envoyé : les étapes du traitement sont <em>simulées</em> (accélérées). Les six livrables sont de vrais fichiers générés dans
-          votre navigateur par le moteur de production.
+        <div role="note" className="rounded-2xl border border-gold-500/40 bg-gold-500/10 px-4 py-3 text-sm leading-relaxed text-navy-900">
+          <strong className="font-semibold">Démonstration — données fictives, analyse simulée.</strong>
+          <details className="mt-1 text-[0.8rem] text-slate-600">
+            <summary className="cursor-pointer font-medium text-navy-900">En savoir plus</summary>
+            Aucun dossier client, aucune IA appelée, aucun e-mail envoyé : les étapes du traitement sont simulées (accélérées), jamais une
+            véritable analyse. Les documents téléchargeables sont en revanche de vrais fichiers, générés dans votre navigateur par le même
+            code que le moteur de production.
+          </details>
         </div>
 
         <header className="mt-8">
           <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">Espace client · /compte/dossier/demo</p>
           <h1 className="mt-2 font-display text-3xl leading-tight text-navy-900 sm:text-4xl">{DEMO_TITLE}</h1>
           <p className="mt-2 text-sm text-slate-500">
-            {s.pieces.length} pièce{s.pieces.length > 1 ? "s" : ""} · {s.revision ? `révision ${s.revision}` : "aucun livrable encore"} · {s.closed ? "clôturé" : "ouvert"}
+            {s.pieces.length} pièce{s.pieces.length > 1 ? "s" : ""} · {s.revision ? `révision ${s.revision}` : "aucun document encore"} · {s.closed ? "clôturé" : "ouvert"}
           </p>
         </header>
 
@@ -252,7 +256,7 @@ export function DemoDossier() {
           <DeliverablesGrid
             files={deliverableFiles}
             caption={s.revision ? `Révision ${s.revision} · générée dans votre navigateur${generating ? " · génération en cours…" : ""}` : null}
-            emptyLabel={processing ? "En préparation…" : s.enabled ? "Pas encore disponible." : "Activez le traitement pour générer ce livrable."}
+            emptyLabel={processing ? "En préparation…" : s.enabled ? "Pas encore disponible." : "Activez le traitement pour générer ce document."}
             busy={generating}
             onDownloadAll={downloadAll}
           />

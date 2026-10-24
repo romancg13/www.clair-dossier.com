@@ -33,9 +33,8 @@ export function ChapterStructure() {
         }
         body={
           <p>
-            Profil, nature du dossier, informations, pièces, récapitulatif : le tunnel guide la
-            saisie et ne demande que l’utile. Ce que vous renseignez devient un dossier structuré,
-            relu avant validation — sans lecture automatique de vos pièces.
+            Profil, nature, informations, pièces, récapitulatif : la création guide la saisie et
+            ne demande que l’utile. Le résultat : un dossier structuré, relu avant validation.
           </p>
         }
       >

@@ -53,8 +53,8 @@ export interface TrackingFacts {
 }
 
 /**
- * Étape du suivi fondée sur les événements réels : « Livrables disponibles »
- * exige un livrable, « Dossier clôturé » une clôture — la livraison et la
+ * Étape du suivi fondée sur les événements réels : « Documents disponibles »
+ * exige un document livré, « Dossier clôturé » une clôture — la livraison et la
  * clôture restent deux événements distincts.
  */
 export function trackingStep(f: TrackingFacts): number {
@@ -65,26 +65,26 @@ export function trackingStep(f: TrackingFacts): number {
 }
 
 /** Suivi du dossier — 4 étapes (mêmes libellés sur le web et le mobile). */
-export const TIMELINE_STEPS = ['Dossier créé', 'Traitement en cours', 'Livrables disponibles', 'Dossier clôturé'];
+export const TIMELINE_STEPS = ['Dossier créé', 'Traitement en cours', 'Documents disponibles', 'Dossier clôturé'];
 
 export const STEP_PANELS: string[] = [
   'Le dossier est créé : informations clés et premières pièces sont réunies dans un espace sécurisé unique.',
   'Le dossier est en cours de traitement : les pièces sont étudiées et organisées ; chaque nouvelle pièce est prise en compte.',
-  'Les livrables sont disponibles : résumé, tableau de bord, chronologie, dates, échéances et projets de relance, à consulter et télécharger.',
-  'Le dossier est clôturé : pièces et livrables restent consultables et téléchargeables ; il peut être rouvert à tout moment.',
+  'Vos documents sont disponibles : résumé, tableau de bord, chronologie, dates, échéances et projets de relance — à consulter et télécharger.',
+  'Le dossier est clôturé : pièces et documents restent consultables et téléchargeables ; il peut être rouvert à tout moment.',
 ];
 
 export const STEP_MESSAGES: Record<number, string> = {
   1: "Votre dossier est créé. Déposez vos pièces : elles sont prises en compte dès leur dépôt.",
   2: 'Votre dossier est en cours de traitement. Vous pouvez continuer à ajouter des pièces.',
-  3: "Vos livrables sont disponibles dans l'onglet DashBoard ; ils sont actualisés lorsqu'une nouvelle pièce est ajoutée.",
+  3: "Vos documents sont disponibles dans l'onglet Tableau de bord ; ils sont actualisés à chaque nouvelle pièce.",
   4: 'Votre dossier est clôturé. Ses pièces et ses livrables restent accessibles.',
 };
 
 export const STEP_NEXT_ACTIONS: Record<number, string> = {
   1: 'Déposez les pièces de votre dossier : contrats, courriers, factures, e-mails, photos.',
   2: 'Ajoutez les pièces complémentaires au fur et à mesure ; aucune autre action n’est requise.',
-  3: 'Consultez vos livrables, vérifiez les dates retenues et corrigez-les si nécessaire.',
+  3: 'Consultez vos documents, vérifiez les dates retenues et corrigez-les si nécessaire.',
   4: 'Rouvrez le dossier si un nouvel élément survient.',
 };
 

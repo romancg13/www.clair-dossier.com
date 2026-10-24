@@ -196,18 +196,6 @@ async function renderPdf(title: string, subtitle: string, blocks: PdfBlock[], de
   const W = 595.28, H = 841.89, M = 54, LH = 14.5;
   let page: PDFPage;
   let y = 0;
-  const header = (first: boolean) => {
-    page = pdf.addPage([W, H]);
-    const band = first ? 96 : 34;
-    page.drawRectangle({ x: 0, y: H - band, width: W, height: band, color: NAVY });
-    page.drawText('ClairDossier', { x: M, y: H - 22, size: 9.5, font: bold, color: GOLD });
-    if (demo) page.drawText('DÉMONSTRATION — DONNÉES FICTIVES', { x: W - M - bold.widthOfTextAtSize('DÉMONSTRATION — DONNÉES FICTIVES', 8), y: H - 22, size: 8, font: bold, color: GOLD });
-    if (first) {
-      page.drawText(pdfSafe(title), { x: M, y: H - 56, size: 20, font: bold, color: rgb(1, 1, 1) });
-      page.drawText(pdfSafe(subtitle).slice(0, 120), { x: M, y: H - 78, size: 8.5, font, color: GOLD });
-    }
-    y = H - band - 30;
-  };
   const wrap = (text: string, f: PDFFont, size: number, width: number): string[] => {
     const out: string[] = [];
     for (const para of pdfSafe(text).split('\n')) {
@@ -222,6 +210,21 @@ async function renderPdf(title: string, subtitle: string, blocks: PdfBlock[], de
       out.push(line);
     }
     return out;
+  };
+  const header = (first: boolean) => {
+    page = pdf.addPage([W, H]);
+    const band = first ? 96 : 34;
+    page.drawRectangle({ x: 0, y: H - band, width: W, height: band, color: NAVY });
+    page.drawText('ClairDossier', { x: M, y: H - 22, size: 9.5, font: bold, color: GOLD });
+    if (demo) page.drawText('DÉMONSTRATION — DONNÉES FICTIVES', { x: W - M - bold.widthOfTextAtSize('DÉMONSTRATION — DONNÉES FICTIVES', 8), y: H - 22, size: 8, font: bold, color: GOLD });
+    if (first) {
+      page.drawText(pdfSafe(title), { x: M, y: H - 56, size: 20, font: bold, color: rgb(1, 1, 1) });
+      // Sous-titre complet, sur deux lignes au besoin (jamais tronqué en silence).
+      wrap(subtitle, font, 8.5, W - 2 * M)
+        .slice(0, 2)
+        .forEach((l, i) => page.drawText(l, { x: M, y: H - 76 - i * 11, size: 8.5, font, color: GOLD }));
+    }
+    y = H - band - 30;
   };
   const ensure = (h: number) => {
     if (y - h < M + 20) header(false);

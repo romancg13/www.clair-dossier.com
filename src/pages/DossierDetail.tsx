@@ -1041,7 +1041,7 @@ export function DossierDetail() {
     },
     {
       id: "dashboard",
-      label: `DashBoard ClairDossier${deliverables.length ? ` (${deliverables.length})` : ""}`,
+      label: `Tableau de bord${deliverables.length ? ` (${deliverables.length})` : ""}`,
     },
     { id: "activite", label: "Activité" },
   ];
@@ -1595,7 +1595,7 @@ export function DossierDetail() {
                     caption={aiDeliverables.length ? `Dernière version publiée le ${fmtDate(aiDeliverables[aiDeliverables.length - 1].created_at)}` : null}
                     emptyLabel={aiProgress.processing ? "En préparation…" : "Pas encore disponible."}
                     busy={zipping}
-                    onDownloadAll={() => downloadZip(deliverables, `livrables-${dossier.title || dossier.id}.zip`)}
+                    onDownloadAll={() => downloadZip(deliverables, `documents-${dossier.title || dossier.id}.zip`)}
                   />
 
                   <div className="mt-8 border-t hairline pt-6">

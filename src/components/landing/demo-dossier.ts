@@ -10,16 +10,12 @@
  *    automatique des pièces, pas de rappel envoyé — voir /etat-du-produit).
  */
 
+import { TIMELINE_STEPS } from '../../../packages/core/src/dossiers';
+
 export const DEMO_LABEL = 'Dossier de démonstration';
 
-/** Les 5 étapes métier de la page « Avancement du dossier » (DossierDetail.tsx). */
-export const BUSINESS_STEPS = [
-  'Création du dossier',
-  'Devis, contrat ou accord',
-  'Suivi du dossier',
-  'Facture et paiement',
-  'Option impayé / pré-contentieux',
-] as const;
+/** Les 4 étapes du suivi de dossier — source unique : packages/core (DossierDetail.tsx). */
+export const BUSINESS_STEPS = TIMELINE_STEPS;
 
 /** Les 5 étapes du tunnel de création (DossierFlow.tsx). */
 export const TUNNEL_STEPS = ['Profil', 'Nature', 'Informations', 'Pièces', 'Récapitulatif'] as const;
@@ -99,12 +95,10 @@ export const SCATTERED_DOCS: DemoPiece[] = [
   { name: 'Extrait Kbis client', type: 'courrier', tag: 'Administratif', meta: '' },
 ];
 
-/** Événements datés de la frise (un par statut réel, dans l'ordre de statuses.ts). */
-export const DEMO_TIMELINE: Array<{ statusId: string; event: string; when: string }> = [
-  { statusId: 'brouillon', event: 'Dossier créé, nommé, profil renseigné', when: '12 sept.' },
-  { statusId: 'complete', event: '4 pièces déposées, récapitulatif relu', when: '13 sept.' },
-  { statusId: 'attente-avocat', event: 'Transmis par e-mail — sur votre validation', when: '14 sept.' },
-  { statusId: 'validation', event: 'Suivi en cours · échéance du 15 oct. affichée', when: 'aujourd’hui' },
-  { statusId: 'valide', event: 'Dossier complet, prêt à être partagé', when: 'à venir' },
-  { statusId: 'archive', event: 'Affaire close, données conservées et isolées', when: 'à venir' },
+/** Événements datés de la frise — un par étape du suivi (BUSINESS_STEPS, dans l'ordre). */
+export const DEMO_TIMELINE: Array<{ step: number; event: string; when: string }> = [
+  { step: 1, event: 'Dossier créé, 4 pièces déposées dans l’espace privé', when: '12 sept.' },
+  { step: 2, event: 'Dossier pris en charge : pièces vérifiées et organisées', when: '13 sept.' },
+  { step: 3, event: 'Résumé, chronologie et échéances déposés dans votre espace', when: 'aujourd’hui' },
+  { step: 4, event: 'À la clôture, tout reste consultable et téléchargeable', when: 'à venir' },
 ];

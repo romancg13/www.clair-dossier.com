@@ -95,9 +95,9 @@ export function AiPanel({ dossierId, ownerId, canManage, isAdmin, closed, pieceC
     : budgetPaused
       ? "Traitement en pause : plafond mensuel atteint."
       : reading
-        ? `${Math.min(extracted, pieceCount)}/${pieceCount} pièce${pieceCount > 1 ? "s" : ""} lue${pieceCount > 1 ? "s" : ""} — consolidation à suivre`
+        ? `${Math.min(extracted, pieceCount)}/${pieceCount} pièce${pieceCount > 1 ? "s" : ""} lue${pieceCount > 1 ? "s" : ""} — l’analyse suit`
         : hasOpen
-          ? "Consolidation et préparation des livrables en cours."
+          ? "Analyse et préparation de vos documents en cours."
           : null;
 
   useEffect(() => {
@@ -148,8 +148,8 @@ export function AiPanel({ dossierId, ownerId, canManage, isAdmin, closed, pieceC
             </h3>
             <p className="mt-1 text-sm leading-relaxed text-slate-600">
               {settings?.enabled_at
-                ? "Vos pièces sont lues et consolidées automatiquement ; les livrables paraissent ici dès qu'ils sont prêts et sont actualisés à chaque nouvelle pièce."
-                : "Sur activation, ClairDossier lit vos pièces et prépare les six livrables : résumé, dashboard, chronologie, dates, échéances et projets de relance."}
+                ? "Vos pièces sont lues et consolidées automatiquement ; vos documents paraissent ici dès qu'ils sont prêts et sont actualisés à chaque nouvelle pièce."
+                : "Sur activation, ClairDossier lit vos pièces et prépare vos documents : résumé, tableau de bord, chronologie, dates, échéances et projets de relance."}
             </p>
             {detail && <p className="mt-2 font-mono text-xs text-gold-700">{detail}</p>}
           </div>

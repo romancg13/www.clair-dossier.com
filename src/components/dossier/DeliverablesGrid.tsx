@@ -21,7 +21,7 @@ type Props = {
 const VIEW_ORDER = ["pdf", "csv", "ics"];
 const ext = (n: string) => n.split(".").pop()?.toLowerCase() ?? "";
 
-/** Les six livrables ClairDossier : Visualiser, Télécharger chaque format, Tout télécharger. */
+/** Les six documents ClairDossier : Visualiser, Télécharger chaque format, Tout télécharger. */
 export function DeliverablesGrid({ files, caption, emptyLabel, busy, onDownloadAll }: Props) {
   const ready = files.length > 0;
   return (
@@ -29,7 +29,7 @@ export function DeliverablesGrid({ files, caption, emptyLabel, busy, onDownloadA
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h3 id="livrables-title" className="font-display text-xl text-navy-900">
-            Livrables ClairDossier
+            Vos documents ClairDossier
           </h3>
           {caption && <p className="mt-1 text-xs text-slate-500">{caption}</p>}
         </div>

@@ -17,6 +17,7 @@ import {
   TUNNEL_STEPS,
 } from '../src/components/landing/demo-dossier.ts';
 import { statuses } from '../src/data/statuses.ts';
+import { TIMELINE_STEPS } from '../packages/core/src/dossiers.ts';
 
 test('readFlag : défaut, désactivation explicite, activation', () => {
   assert.equal(readFlag(undefined, true), true);
@@ -35,21 +36,16 @@ test('la démonstration est étiquetée comme telle', () => {
   assert.match(DEMO_LABEL, /démonstration/i);
 });
 
-test('les étapes mises en scène sont celles du produit (DossierDetail / DossierFlow)', () => {
-  assert.deepEqual([...BUSINESS_STEPS], [
-    'Création du dossier',
-    'Devis, contrat ou accord',
-    'Suivi du dossier',
-    'Facture et paiement',
-    'Option impayé / pré-contentieux',
-  ]);
+test('les étapes mises en scène sont celles du produit (packages/core / DossierFlow)', () => {
+  assert.equal(BUSINESS_STEPS, TIMELINE_STEPS, 'même référence : aucune dérive possible');
+  assert.deepEqual([...BUSINESS_STEPS], ['Dossier créé', 'Traitement en cours', 'Documents disponibles', 'Dossier clôturé']);
   assert.deepEqual([...TUNNEL_STEPS], ['Profil', 'Nature', 'Informations', 'Pièces', 'Récapitulatif']);
   assert.ok(DEMO.step >= 1 && DEMO.step <= BUSINESS_STEPS.length);
 });
 
-test('la frise couvre exactement les six statuts réels, dans l’ordre', () => {
-  assert.equal(DEMO_TIMELINE.length, statuses.length);
-  DEMO_TIMELINE.forEach((e, i) => assert.equal(e.statusId, statuses[i].id));
+test('la frise couvre exactement les quatre étapes du suivi, dans l’ordre', () => {
+  assert.equal(DEMO_TIMELINE.length, BUSINESS_STEPS.length);
+  DEMO_TIMELINE.forEach((e, i) => assert.equal(e.step, i + 1));
   assert.ok(statuses.some((s) => s.label === DEMO.status), 'le statut de démo doit exister');
 });
 
