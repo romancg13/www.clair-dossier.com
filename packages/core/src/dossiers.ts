@@ -25,54 +25,67 @@ export function statusLabel(status: string): string {
   return STATUS_LABELS[status] ?? status;
 }
 
-/** Statut ≠ étape : le statut est l'état général, l'étape la position workflow. */
+/** Statut ≠ étape : le statut est l'état général, l'étape la position dans le suivi (4 étapes). */
 export function currentStep(status: string): number {
   switch (status) {
-    case 'brouillon':
-      return 1;
     case 'transmis':
     case 'en-cours':
-      return 3;
     case 'valide':
-      return 4;
+      return 2;
     case 'archive':
-      return 5;
+      return 4;
     default:
       return 1;
   }
 }
 
-/** Avancement du dossier — 5 étapes métier (mêmes libellés que la page web). */
-export const TIMELINE_STEPS = [
-  'Création du dossier',
-  'Devis, contrat ou accord',
-  'Suivi du dossier',
-  'Facture et paiement',
-  'Option impayé / pré-contentieux',
-];
+/** Faits réels d'un dossier qui déterminent son étape de suivi. */
+export interface TrackingFacts {
+  status: string;
+  /** Étape forcée par l'administration (historique 1–5) : ne peut que signaler un traitement en cours. */
+  forcedStep?: number | null;
+  /** Au moins un livrable (manuel ou généré) visible par le client. */
+  hasDeliverables: boolean;
+  /** Traitement en cours (travaux ouverts, prise en charge par l'équipe). */
+  processing: boolean;
+  /** Dernier événement de cycle de vie = clôture (ou statut historique « archive »). */
+  closed: boolean;
+}
+
+/**
+ * Étape du suivi fondée sur les événements réels : « Documents disponibles »
+ * exige un document livré, « Dossier clôturé » une clôture — la livraison et la
+ * clôture restent deux événements distincts.
+ */
+export function trackingStep(f: TrackingFacts): number {
+  if (f.closed) return 4;
+  if (f.hasDeliverables) return 3;
+  if (f.processing || (f.forcedStep ?? 0) >= 2 || currentStep(f.status) >= 2) return 2;
+  return 1;
+}
+
+/** Suivi du dossier — 4 étapes (mêmes libellés sur le web et le mobile). */
+export const TIMELINE_STEPS = ['Dossier créé', 'Traitement en cours', 'Documents disponibles', 'Dossier clôturé'];
 
 export const STEP_PANELS: string[] = [
-  'Le dossier est créé : profil, nature, informations clés et premières pièces sont réunis dans un espace unique.',
-  'Les documents qui fondent la relation (devis, contrat, bon de commande, accord) sont rassemblés et datés.',
-  'Le dossier vit : échanges, relances, pièces complémentaires et échéances sont suivis au même endroit.',
-  'La facturation et les règlements sont tracés : montants, échéances, acomptes et solde restant dû.',
-  "En cas d'impayé, le dossier est prêt : relances, mise en demeure et pièces sont organisées pour être transmises à un professionnel habilité.",
+  'Le dossier est créé : informations clés et premières pièces sont réunies dans un espace sécurisé unique.',
+  'Le dossier est en cours de traitement : les pièces sont étudiées et organisées ; chaque nouvelle pièce est prise en compte.',
+  'Vos documents sont disponibles : résumé, tableau de bord, chronologie, dates, échéances et projets de relance — à consulter et télécharger.',
+  'Le dossier est clôturé : pièces et documents restent consultables et téléchargeables ; il peut être rouvert à tout moment.',
 ];
 
 export const STEP_MESSAGES: Record<number, string> = {
-  1: "Votre dossier vient d'être créé. Complétez les informations et déposez vos pièces pour le structurer.",
-  2: "Rassemblez les documents qui fondent l'accord (devis, contrat, commande) pour sécuriser la suite.",
-  3: 'Votre dossier est suivi. Ajoutez les nouveaux échanges et pièces au fur et à mesure.',
-  4: 'Suivez la facturation et les règlements : renseignez les montants et les échéances de paiement.',
-  5: 'Le dossier est prêt à être transmis à un professionnel du droit en cas de contentieux.',
+  1: "Votre dossier est créé. Déposez vos pièces : elles sont prises en compte dès leur dépôt.",
+  2: 'Votre dossier est en cours de traitement. Vous pouvez continuer à ajouter des pièces.',
+  3: "Vos documents sont disponibles dans l'onglet Tableau de bord ; ils sont actualisés à chaque nouvelle pièce.",
+  4: 'Votre dossier est clôturé. Ses pièces et ses livrables restent accessibles.',
 };
 
 export const STEP_NEXT_ACTIONS: Record<number, string> = {
-  1: 'Vérifiez les informations du dossier et déposez les premières pièces.',
-  2: "Ajoutez le devis, le contrat ou l’accord signé au dossier.",
-  3: 'Mettez à jour le suivi : nouveaux courriers, relances, pièces reçues.',
-  4: "Renseignez la facture, le montant dû et l’échéance de paiement.",
-  5: 'Préparez la transmission à un professionnel habilité si le litige persiste.',
+  1: 'Déposez les pièces de votre dossier : contrats, courriers, factures, e-mails, photos.',
+  2: 'Ajoutez les pièces complémentaires au fur et à mesure ; aucune autre action n’est requise.',
+  3: 'Consultez vos documents, vérifiez les dates retenues et corrigez-les si nécessaire.',
+  4: 'Rouvrez le dossier si un nouvel élément survient.',
 };
 
 /* ── Typologies ──────────────────────────────────────────────────────────── */

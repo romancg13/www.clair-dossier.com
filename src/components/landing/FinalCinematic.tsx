@@ -1,27 +1,18 @@
-import { useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { motion, useReducedMotion, useScroll } from 'motion/react';
-// Phase 4b — convergence finale 3D (client-only, différée, desktop).
-import { CinematicGate } from './cinematics/CinematicGate';
-import { CINEMATIC_SCENES } from './cinematics/scenes';
-import { useMediaQuery } from './useCinematic';
+import { motion, useReducedMotion } from 'motion/react';
 import { Magnetic } from '../primitives/Magnetic';
 import { ArrowRightIcon } from '../icons';
-import { BUSINESS_STEPS, DEMO } from './demo-dossier';
-import { DocumentGlyph } from './DocumentGlyph';
-import { DemoBadge } from './Stage';
+import { DossierShowcase } from './DossierShowcase';
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
 /**
- * Séquence finale — l'interface se recentre, les modules apparaissent, puis
- * une phrase et une seule action. Même CTA principal que le hero (§32).
+ * Séquence finale — la maquette produit (ex-visuel du Hero, réaffectée ici),
+ * puis une phrase et une seule action. Même CTA principal que le hero (§32).
+ * Sa scène 3D de convergence est devenue la scène principale du Hero.
  */
 export function FinalCinematic() {
   const reduce = useReducedMotion();
-  const sectionRef = useRef<HTMLElement>(null);
-  const desktop = useMediaQuery('(min-width: 1024px)');
-  const { scrollYProgress: approach } = useScroll({ target: sectionRef, offset: ['start 92%', 'center 50%'], layoutEffect: false });
   const enter = (delay: number) =>
     reduce
       ? {}
@@ -33,65 +24,24 @@ export function FinalCinematic() {
         };
 
   return (
-    <section ref={sectionRef} className="cd-cinema cd-grain relative isolate overflow-hidden text-cream-50">
-      {CINEMATIC_SCENES.final.enabled && desktop && (
-        <CinematicGate load={CINEMATIC_SCENES.final.load} progress={approach} className="cd-gl" nearMargin="90%" farMargin="220%" />
-      )}
+    <section className="cd-cinema cd-grain relative isolate overflow-hidden text-cream-50">
       <div aria-hidden="true" className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-gold-500/60 to-transparent" />
       <div aria-hidden="true" className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-gold-500/60 to-transparent" />
 
-      <div className="mx-auto max-w-6xl px-5 py-24 text-center sm:px-8 sm:py-32 lg:px-12 lg:py-40">
-        {/* L'interface se recentre */}
+      <div className="mx-auto max-w-6xl px-5 py-24 text-center sm:px-8 sm:py-32 lg:py-36">
+        {/* La maquette « Suivi du dossier » (ancien visuel du Hero) */}
         <motion.div
-          aria-hidden="true"
-          className="mx-auto max-w-2xl"
+          className="mx-auto max-w-[560px] text-left"
           {...(reduce
             ? {}
             : {
-                initial: { opacity: 0, scale: 0.94, y: 24 },
+                initial: { opacity: 0, scale: 0.96, y: 24 },
                 whileInView: { opacity: 1, scale: 1, y: 0 },
                 viewport: { once: true, amount: 0.3 },
                 transition: { duration: 1, ease: EASE },
               })}
         >
-          <div className="cd-stage rounded-[1.25rem] p-4 text-left sm:p-5">
-            <div className="flex items-center justify-between gap-3">
-              <span className="truncate font-display text-lg font-semibold text-cream-50">{DEMO.title}</span>
-              <DemoBadge />
-            </div>
-            <div className="mt-4 grid gap-3 sm:grid-cols-3">
-              <motion.div {...enter(0.25)} className="rounded-lg border cd-hairline bg-navy-950/40 p-3">
-                <p className="font-mono text-[0.56rem] uppercase tracking-[0.14em] text-silver-400">Étapes</p>
-                <div className="mt-2 grid grid-cols-5 gap-1">
-                  {BUSINESS_STEPS.map((s, i) => (
-                    <span
-                      key={s}
-                      className={`h-1 rounded-full ${i + 1 < DEMO.step ? 'bg-cream-50/80' : i + 1 === DEMO.step ? 'bg-gold-500' : 'bg-cream-50/12'}`}
-                    />
-                  ))}
-                </div>
-                <p className="mt-2 text-[0.74rem] text-cream-50">
-                  {DEMO.step} / {BUSINESS_STEPS.length} · {BUSINESS_STEPS[DEMO.step - 1]}
-                </p>
-              </motion.div>
-              <motion.div {...enter(0.4)} className="rounded-lg border cd-hairline bg-navy-950/40 p-3">
-                <p className="font-mono text-[0.56rem] uppercase tracking-[0.14em] text-silver-400">Pièces</p>
-                <ul className="mt-2 space-y-1">
-                  {DEMO.pieces.slice(0, 3).map((piece) => (
-                    <li key={piece.name} className="flex items-center gap-1.5 text-[0.72rem] text-cream-50">
-                      <DocumentGlyph type={piece.type} width={12} height={12} className="shrink-0 text-silver-400" />
-                      <span className="truncate">{piece.name}</span>
-                    </li>
-                  ))}
-                </ul>
-              </motion.div>
-              <motion.div {...enter(0.55)} className="rounded-lg border cd-hairline bg-navy-950/40 p-3">
-                <p className="font-mono text-[0.56rem] uppercase tracking-[0.14em] text-silver-400">Échéance</p>
-                <p className="mt-2 font-display text-base font-semibold text-gold-400">{DEMO.deadline.dateShort}</p>
-                <p className="text-[0.72rem] text-cream-50">{DEMO.deadline.label}</p>
-              </motion.div>
-            </div>
-          </div>
+          <DossierShowcase />
         </motion.div>
 
         <motion.p {...enter(0.5)} className="mt-14 font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-400">
@@ -104,8 +54,7 @@ export function FinalCinematic() {
           Transformez vos dossiers en décisions claires.
         </motion.h2>
         <motion.p {...enter(0.7)} className="mx-auto mt-6 max-w-2xl text-[1.05rem] leading-relaxed text-silver-200/78">
-          Centralisez vos pièces, suivez chaque étape et transmettez quand vous le décidez — avec
-          ClairDossier.
+          Vos pièces au même endroit, votre dossier suivi, la transmission à votre main.
         </motion.p>
         <motion.div {...enter(0.8)} className="mt-10 flex flex-wrap items-center justify-center gap-3">
           <Magnetic strength={0.12}>

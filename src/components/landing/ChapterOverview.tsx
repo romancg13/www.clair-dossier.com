@@ -13,7 +13,7 @@ import { useCinematic } from './useCinematic';
  * Desktop : scène épinglée, assemblage piloté par le scroll. Sinon : reveal.
  */
 
-const TABS = ['Vue d’ensemble', 'Pièces', 'Échéances', 'DashBoard ClairDossier'];
+const TABS = ['Vue d’ensemble', 'Pièces', 'Échéances', 'Tableau de bord'];
 
 export function ChapterOverview() {
   const cinematic = useCinematic();
@@ -36,9 +36,8 @@ function Copy() {
         sur un seul écran.
       </h2>
       <p className="mt-5 max-w-lg text-[1.02rem] leading-[1.65] text-silver-200/78">
-        Les cinq étapes, les pièces, les échéances et la prochaine action à mener : la page
-        « Avancement du dossier » réunit ce que vous avez construit. Vous comprenez le dossier
-        avant même de l’ouvrir.
+        L’avancement, les pièces, les échéances et la prochaine action : l’essentiel du dossier,
+        réuni sur un seul écran.
       </p>
     </div>
   );
@@ -150,7 +149,7 @@ function Dashboard({ children }: { children: (region: ReactNode, i: number) => R
       </span>
     </div>,
 
-    // 1 — onglets réels + 5 étapes métier
+    // 1 — onglets réels + les 4 étapes du suivi
     <div key="steps" className="mt-5">
       <div className="flex flex-wrap gap-1 border-b cd-hairline pb-2" aria-hidden="true">
         {TABS.map((t, i) => (
@@ -164,7 +163,7 @@ function Dashboard({ children }: { children: (region: ReactNode, i: number) => R
           </span>
         ))}
       </div>
-      <ol className="mt-4 grid grid-cols-5 gap-1.5" aria-label="Avancement sur cinq étapes métier">
+      <ol className="mt-4 grid grid-cols-4 gap-1.5" aria-label="Avancement sur les quatre étapes du suivi">
         {BUSINESS_STEPS.map((label, i) => {
           const n = i + 1;
           const state = n < DEMO.step ? 'done' : n === DEMO.step ? 'active' : 'todo';

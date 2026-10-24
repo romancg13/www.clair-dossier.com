@@ -155,11 +155,27 @@ function RouteFallback() {
   );
 }
 
+// Démonstration fictive : n'existe que dans un build VITE_DEMO=1 (preview), jamais en production.
+const DemoDossier =
+  import.meta.env.VITE_DEMO === '1'
+    ? lazy(() => import('./pages/DemoDossier').then((m) => ({ default: m.DemoDossier })))
+    : null;
+
 export default function App() {
   return (
     <Routes>
       <Route element={<Layout />}>
         <Route index element={<Home />} />
+        {DemoDossier && (
+          <Route
+            path="demo"
+            element={
+              <Suspense fallback={<RouteFallback />}>
+                <DemoDossier />
+              </Suspense>
+            }
+          />
+        )}
         <Route
           path="fonctionnalites"
           element={

@@ -4,19 +4,21 @@ import { zipSync } from "fflate";
 import { Seo } from "../lib/seo";
 import { useAuth } from "../lib/auth";
 import { supabase } from "../lib/supabase";
-import { ArrowRightIcon, CheckIcon } from "../components/icons";
+import { ArrowRightIcon } from "../components/icons";
 import { hasDossierTrash, logAudit } from "../lib/admin";
 import { hasQuotaEngine } from "../lib/dossier-workspace";
+import { AiPanel, type AiProgress } from "../components/dossier/AiPanel";
+import { DossierTracker } from "../components/dossier/DossierTracker";
+import { DeliverablesGrid, type DeliverableFile } from "../components/dossier/DeliverablesGrid";
+import { deliverableKeyOf } from "../../supabase/functions/_shared/deliverables.ts";
 // Statuts, typologies, étapes et libellés de réponses : source unique partagée
 // avec l'application mobile (packages/core) — mêmes libellés des deux côtés.
 import {
   STATUS_LABELS,
   TYPOLOGY_LABELS,
   TIMELINE_STEPS as TIMELINE,
-  STEP_PANELS,
-  STEP_MESSAGES,
   STEP_NEXT_ACTIONS,
-  currentStep,
+  trackingStep,
   answerLabel as labelFor,
   isDateKey,
 } from "../../packages/core/src/index";
@@ -85,7 +87,7 @@ type DeadlineRow = {
   done: boolean;
 };
 
-type EventRow = { id: string; label: string; created_at: string };
+type EventRow = { id: string; type?: string; label: string; created_at: string };
 
 function fmtDate(iso: string, withTime = false): string {
   const d = new Date(iso);
@@ -335,7 +337,8 @@ export function DossierDetail() {
   const [trashCap, setTrashCap] = useState(false);
   const [ownerEmail, setOwnerEmail] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [openStep, setOpenStep] = useState(0);
+  const [aiProgress, setAiProgress] = useState<AiProgress>({ processing: false, detail: null, enabled: false });
+  const [lifecycleBusy, setLifecycleBusy] = useState(false);
   const [delivering, setDelivering] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [zipping, setZipping] = useState(false);
@@ -503,7 +506,7 @@ export function DossierDetail() {
   async function reloadEvents(dossierId: string, apply: (v: EventRow[]) => void) {
     const { data } = await supabase
       .from("dossier_events")
-      .select("id,label,created_at")
+      .select("id,type,label,created_at")
       .eq("dossier_id", dossierId)
       .order("created_at", { ascending: false })
       .limit(200);
@@ -567,12 +570,38 @@ export function DossierDetail() {
   const answerEntries = Object.entries(answers).filter(([, v]) => v?.trim());
   const dateEntries = answerEntries.filter(([k]) => isDateKey(k));
   const situation = answers.situation?.trim();
-  const step = dossier ? (dossier.current_step ?? currentStep(dossier.status)) : 1;
-  const shownStep = openStep || step;
-
   const pieces = documents.filter((d) => d.kind !== "deliverable" && !d.deleted_at);
   const trashed = documents.filter((d) => d.kind !== "deliverable" && Boolean(d.deleted_at));
   const deliverables = documents.filter((d) => d.kind === "deliverable" && !d.deleted_at);
+  // Livrables générés (« <Livrable>-r<n>.<ext> ») et livrables déposés à la main par l'équipe.
+  const aiDeliverables = deliverables.filter((d) => deliverableKeyOf(d.file_name));
+  const manualDeliverables = deliverables.filter((d) => !deliverableKeyOf(d.file_name));
+  // Clôture = dernier événement de cycle de vie (journal), à défaut statut historique « archive ».
+  const lifecycle = events.find((e) => e.type === "dossier_cloture" || e.type === "dossier_rouvert");
+  const closed = lifecycle ? lifecycle.type === "dossier_cloture" : dossier?.status === "archive";
+  const step = dossier
+    ? trackingStep({
+        status: dossier.status,
+        forcedStep: dossier.current_step,
+        hasDeliverables: deliverables.length > 0,
+        processing: aiProgress.processing,
+        closed,
+      })
+    : 1;
+  const deliverableFiles: DeliverableFile[] = aiDeliverables.map((d) => ({
+    key: deliverableKeyOf(d.file_name)!,
+    name: d.file_name,
+    open: async () => {
+      const l = await signDocument(d.file_path, 300);
+      if (l.status === "ok") window.open(l.url, "_blank", "noopener,noreferrer");
+      else setActionError("Ce fichier n'est pas accessible pour le moment. Réessayez.");
+    },
+    download: async () => {
+      const l = await signDocument(d.file_path, 300);
+      if (l.status === "ok") window.location.assign(withDownload(l.url, d.file_name));
+      else setActionError("Ce fichier n'est pas accessible pour le moment. Réessayez.");
+    },
+  }));
 
   const openDeadlines = deadlines.filter((d) => !d.done);
   const nextDeadline = openDeadlines
@@ -851,6 +880,24 @@ export function DossierDetail() {
   }
 
   // Admin : livrer le travail au client (inchangé).
+  /** Clôture / réouverture : un événement du journal (jamais une écriture sur le dossier). */
+  async function toggleClosed() {
+    if (!dossier) return;
+    const type = closed ? "dossier_rouvert" : "dossier_cloture";
+    if (!closed && !window.confirm("Clôturer ce dossier ? Pièces et livrables resteront accessibles ; vous pourrez le rouvrir.")) return;
+    setLifecycleBusy(true);
+    setActionError(null);
+    const { error } = await supabase.from("dossier_events").insert({
+      dossier_id: dossier.id,
+      user_id: dossier.user_id,
+      type,
+      label: closed ? "Dossier rouvert" : "Dossier clôturé",
+    });
+    if (error) setActionError("La clôture n'a pas pu être enregistrée. Réessayez.");
+    await reloadEvents(dossier.id, setEvents);
+    setLifecycleBusy(false);
+  }
+
   async function handleDeliver(fileList: FileList | null) {
     if (!fileList || fileList.length === 0 || !dossier) return;
     setActionError(null);
@@ -994,7 +1041,7 @@ export function DossierDetail() {
     },
     {
       id: "dashboard",
-      label: `DashBoard ClairDossier${deliverables.length ? ` (${deliverables.length})` : ""}`,
+      label: `Tableau de bord${deliverables.length ? ` (${deliverables.length})` : ""}`,
     },
     { id: "activite", label: "Activité" },
   ];
@@ -1081,7 +1128,7 @@ export function DossierDetail() {
 
                   <p className="mt-3 font-mono text-[0.7rem] uppercase tracking-[0.14em] text-slate-500">
                     {TYPOLOGY_LABELS[dossier.typology] ?? dossier.typology}
-                    {" · "}Étape {step}/5 · {TIMELINE[step - 1]}
+                    {" · "}Étape {step}/{TIMELINE.length} · {TIMELINE[step - 1]}
                   </p>
                   {isAdmin && (
                     <p className="mt-1 font-mono text-[0.7rem] uppercase tracking-[0.14em] text-gold-700">
@@ -1190,7 +1237,7 @@ export function DossierDetail() {
                   <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                     {[
                       { k: "Statut", v: STATUS_LABELS[dossier.status] ?? dossier.status },
-                      { k: "Étape", v: `${step}/5 · ${TIMELINE[step - 1]}` },
+                      { k: "Étape", v: `${step}/${TIMELINE.length} · ${TIMELINE[step - 1]}` },
                       { k: "Pièces", v: `${pieces.length} déposée${pieces.length > 1 ? "s" : ""}` },
                       {
                         k: "Prochaine échéance",
@@ -1228,77 +1275,30 @@ export function DossierDetail() {
                     </button>
                   </div>
 
-                  {/* Avancement du dossier (timeline conservée). */}
-                  <div className="mt-6 rounded-2xl border hairline bg-white p-7 shadow-card sm:p-9">
-                    <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">
-                      Avancement du dossier
-                    </p>
-
-                    <ol className="mt-7 space-y-3 sm:space-y-0 sm:flex sm:items-start sm:gap-2">
-                      {TIMELINE.map((label, i) => {
-                        const n = i + 1;
-                        const done = step > n;
-                        const active = step === n;
-                        const selected = shownStep === n;
-                        return (
-                          <li key={label} className="sm:flex-1">
-                            <button
-                              type="button"
-                              onClick={() => setOpenStep(n)}
-                              aria-expanded={selected}
-                              aria-label={`Étape ${n} : ${label}${active ? " (étape en cours)" : ""}`}
-                              className={`flex w-full items-start gap-3 rounded-xl p-2 text-left transition-colors hover:bg-cream-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500/40 sm:flex-col sm:items-stretch ${
-                                selected ? "bg-cream-100" : ""
-                              }`}
-                            >
-                              <div className="flex items-center gap-3 sm:w-full">
-                                <span
-                                  className={`grid h-7 w-7 shrink-0 place-items-center rounded-full font-mono text-[0.7rem] font-semibold transition-colors ${
-                                    done || active
-                                      ? "bg-navy-900 text-cream-50"
-                                      : "border hairline-strong bg-white text-slate-500"
-                                  }`}
-                                >
-                                  {done ? <CheckIcon width={12} height={12} strokeWidth={2.5} /> : n}
-                                </span>
-                                {i < TIMELINE.length - 1 && (
-                                  <span
-                                    className={`hidden h-px flex-1 transition-colors sm:block ${
-                                      step > n ? "bg-navy-900" : "bg-slate-300/40"
-                                    }`}
-                                  />
-                                )}
-                              </div>
-                              <p
-                                className={`text-sm leading-snug sm:mt-3 ${
-                                  done || active ? "font-medium text-navy-900" : "text-slate-500"
-                                }`}
-                              >
-                                {label}
-                                {active && (
-                                  <span className="mt-0.5 block font-mono text-[0.62rem] uppercase tracking-[0.14em] text-gold-700">
-                                    En cours
-                                  </span>
-                                )}
-                              </p>
-                            </button>
-                          </li>
-                        );
-                      })}
-                    </ol>
-
-                    <div className="mt-7 rounded-xl bg-cream-50 p-5">
-                      <p className="font-mono text-[0.7rem] uppercase tracking-[0.16em] text-slate-500">
-                        Étape {shownStep} · {TIMELINE[shownStep - 1]}
-                      </p>
-                      <p className="mt-2 text-sm leading-relaxed text-navy-900">
-                        {STEP_PANELS[shownStep - 1]}
-                      </p>
-                    </div>
-
-                    <p className="mt-5 border-t hairline pt-5 text-sm leading-relaxed text-slate-500">
-                      {STEP_MESSAGES[step]}
-                    </p>
+                  {/* Suivi du dossier : 4 étapes fondées sur les événements réels. */}
+                  <div className="mt-6">
+                    <DossierTracker
+                      step={step}
+                      detail={aiProgress.detail}
+                      updating={aiProgress.processing && deliverables.length > 0}
+                    />
+                    {eventsOn && (isAdmin || dossier.user_id === user?.id) && (
+                      <div className="mt-3 flex flex-wrap items-center justify-end gap-3">
+                        <p className="text-xs text-slate-500">
+                          {closed
+                            ? "Dossier clôturé : pièces et livrables restent accessibles."
+                            : "La clôture est distincte de la livraison et peut être annulée."}
+                        </p>
+                        <button
+                          type="button"
+                          disabled={lifecycleBusy}
+                          onClick={() => void toggleClosed()}
+                          className="rounded-full border hairline-strong px-4 py-2 text-xs font-semibold text-navy-900 transition-colors hover:bg-cream-100 disabled:opacity-60"
+                        >
+                          {closed ? "Rouvrir le dossier" : "Clôturer le dossier"}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </>
               )}
@@ -1576,34 +1576,44 @@ export function DossierDetail() {
               )}
 
               {activeTab === "dashboard" && (
-                <div className="mt-6 rounded-2xl border hairline bg-white p-7 shadow-card sm:p-9">
+                <div className="mt-6 space-y-6">
+                  <AiPanel
+                    dossierId={dossier.id}
+                    ownerId={dossier.user_id}
+                    canManage={isAdmin || dossier.user_id === user?.id}
+                    isAdmin={isAdmin}
+                    closed={closed}
+                    pieceCount={pieces.length}
+                    documentNames={Object.fromEntries(documents.map((d) => [d.id, d.file_name]))}
+                    onProgress={setAiProgress}
+                    onPublished={() => void refreshDocs()}
+                  />
+
+                  <div className="rounded-2xl border hairline bg-white p-6 shadow-card sm:p-8">
+                  <DeliverablesGrid
+                    files={deliverableFiles}
+                    caption={aiDeliverables.length ? `Dernière version publiée le ${fmtDate(aiDeliverables[aiDeliverables.length - 1].created_at)}` : null}
+                    emptyLabel={aiProgress.processing ? "En préparation…" : "Pas encore disponible."}
+                    busy={zipping}
+                    onDownloadAll={() => downloadZip(deliverables, `documents-${dossier.title || dossier.id}.zip`)}
+                  />
+
+                  <div className="mt-8 border-t hairline pt-6">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">
-                      DashBoard ClairDossier
+                      Documents déposés par l'équipe ClairDossier
                     </p>
-                    {deliverables.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          downloadZip(deliverables, `travail-${dossier.title || dossier.id}.zip`)
-                        }
-                        disabled={zipping}
-                        className="shrink-0 rounded-full bg-navy-900 px-4 py-2 text-xs font-semibold text-cream-50 transition-colors hover:bg-navy-800 disabled:opacity-60"
-                      >
-                        {zipping ? "Préparation…" : "Tout télécharger"}
-                      </button>
-                    )}
                   </div>
 
-                  {deliverables.length === 0 ? (
+                  {manualDeliverables.length === 0 ? (
                     <p className="mt-4 text-sm leading-relaxed text-slate-500">
                       {isAdmin
-                        ? "Aucun livrable pour l'instant. Déposez le travail réalisé ci-dessous : le client y accédera depuis son espace."
-                        : "Le travail réalisé par ClairDossier apparaîtra ici une fois livré."}
+                        ? "Aucun document déposé manuellement. Vous pouvez en ajouter ci-dessous : le client y accédera depuis son espace."
+                        : "Les documents déposés par l'équipe ClairDossier apparaîtront ici."}
                     </p>
                   ) : (
                     <ul className="mt-5 space-y-2">
-                      {deliverables.map((doc) => (
+                      {manualDeliverables.map((doc) => (
                         <DocRow
                           key={doc.id}
                           doc={doc}
@@ -1621,7 +1631,7 @@ export function DossierDetail() {
                   {isAdmin && (
                     <div className="mt-6 border-t hairline pt-5">
                       <label className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-gold-500 px-5 py-2.5 text-sm font-semibold text-navy-900 shadow-gold transition-transform hover:-translate-y-0.5">
-                        {delivering ? "Envoi…" : "Livrer le travail au client"}
+                        {delivering ? "Envoi…" : "Déposer un document pour le client"}
                         {!delivering && <ArrowRightIcon width={14} height={14} strokeWidth={2} />}
                         <input
                           type="file"
@@ -1640,6 +1650,8 @@ export function DossierDetail() {
                       </p>
                     </div>
                   )}
+                  </div>
+                  </div>
                 </div>
               )}
 
