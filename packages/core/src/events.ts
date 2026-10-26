@@ -42,7 +42,7 @@ export const EVENT_LABELS: Record<EventType, string> = {
   // Moteur documentaire IA (2026-10-23) : activation explicite, livrables générés.
   ia_activee: 'Traitement automatique activé',
   ia_desactivee: 'Traitement automatique désactivé',
-  livrables_generes: 'Livrables générés',
+  livrables_generes: 'Documents générés',
 };
 
 /** Libellé exact enregistré dans `dossier_events.label` (même règle que le web). */

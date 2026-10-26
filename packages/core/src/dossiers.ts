@@ -78,7 +78,7 @@ export const STEP_MESSAGES: Record<number, string> = {
   1: "Votre dossier est créé. Déposez vos pièces : elles sont prises en compte dès leur dépôt.",
   2: 'Votre dossier est en cours de traitement. Vous pouvez continuer à ajouter des pièces.',
   3: "Vos documents sont disponibles dans l'onglet Tableau de bord ; ils sont actualisés à chaque nouvelle pièce.",
-  4: 'Votre dossier est clôturé. Ses pièces et ses livrables restent accessibles.',
+  4: 'Votre dossier est clôturé. Ses pièces et ses documents restent accessibles.',
 };
 
 export const STEP_NEXT_ACTIONS: Record<number, string> = {

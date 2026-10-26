@@ -50,6 +50,14 @@ import {
   type LinkState,
 } from "../lib/document-links";
 
+/**
+ * Moteur documentaire IA exposé aux clients : jamais par défaut. La migration
+ * seule ne suffit pas — les CGV (art. 6) excluent l'analyse automatique tant
+ * que le propriétaire n'a pas validé le nouveau texte. Activation : build avec
+ * VITE_AI_ENGINE=1 (voir docs/MOTEUR_IA.md).
+ */
+const AI_ENGINE = import.meta.env.VITE_AI_ENGINE === "1";
+
 type DossierRow = {
   id: string;
   user_id: string;
@@ -884,7 +892,7 @@ export function DossierDetail() {
   async function toggleClosed() {
     if (!dossier) return;
     const type = closed ? "dossier_rouvert" : "dossier_cloture";
-    if (!closed && !window.confirm("Clôturer ce dossier ? Pièces et livrables resteront accessibles ; vous pourrez le rouvrir.")) return;
+    if (!closed && !window.confirm("Clôturer ce dossier ? Pièces et documents resteront accessibles ; vous pourrez le rouvrir.")) return;
     setLifecycleBusy(true);
     setActionError(null);
     const { error } = await supabase.from("dossier_events").insert({
@@ -1286,7 +1294,7 @@ export function DossierDetail() {
                       <div className="mt-3 flex flex-wrap items-center justify-end gap-3">
                         <p className="text-xs text-slate-500">
                           {closed
-                            ? "Dossier clôturé : pièces et livrables restent accessibles."
+                            ? "Dossier clôturé : pièces et documents restent accessibles."
                             : "La clôture est distincte de la livraison et peut être annulée."}
                         </p>
                         <button
@@ -1577,7 +1585,7 @@ export function DossierDetail() {
 
               {activeTab === "dashboard" && (
                 <div className="mt-6 space-y-6">
-                  <AiPanel
+                  {AI_ENGINE && <AiPanel
                     dossierId={dossier.id}
                     ownerId={dossier.user_id}
                     canManage={isAdmin || dossier.user_id === user?.id}
@@ -1587,7 +1595,7 @@ export function DossierDetail() {
                     documentNames={Object.fromEntries(documents.map((d) => [d.id, d.file_name]))}
                     onProgress={setAiProgress}
                     onPublished={() => void refreshDocs()}
-                  />
+                  />}
 
                   <div className="rounded-2xl border hairline bg-white p-6 shadow-card sm:p-8">
                   <DeliverablesGrid

@@ -41,7 +41,7 @@ Un administrateur unique peut, côté support, consulter votre dossier et les pi
 Artisan, indépendant, profession libérale ou PME : retrouvez la liste de vos dossiers et l'avancement de chacun depuis un seul espace. Chaque compte ne voit que ses propres dossiers.
 
 - Liste de tous vos dossiers avec leur étape en cours
-- Page détail « Avancement du dossier » pour chaque dossier
+- Page détail « Suivi du dossier » pour chaque dossier
 - Données isolées par compte : vous ne voyez que les vôtres
 - Pièces téléchargeables et transmission à votre main, dossier par dossier
 

@@ -14,7 +14,7 @@ type Props = {
   updating?: boolean;
 };
 
-/** Suivi du dossier en 4 étapes : Dossier créé → Traitement en cours → Livrables disponibles → Dossier clôturé. */
+/** Suivi du dossier en 4 étapes : Dossier créé → Traitement en cours → Documents disponibles → Dossier clôturé. */
 export function DossierTracker({ step, detail, updating }: Props) {
   const [open, setOpen] = useState(0);
   const shown = open || step;

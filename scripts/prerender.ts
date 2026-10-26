@@ -242,6 +242,12 @@ async function main(): Promise<void> {
         warnings.push(`${route.path} : description de ${dl} caractères (cible ${DESCRIPTION_WARN_MIN}–${DESCRIPTION_WARN_MAX})`);
       }
     }
+    // Paiement rattaché au compte (client_reference_id) : un visiteur passe
+    // toujours par la connexion ; un lien Stripe direct en HTML statique ne
+    // pourrait être rattaché à aucun compte.
+    if (html.includes('href="https://buy.stripe.com/')) {
+      throw new Error(`prerender: ${route.path} expose un lien Stripe direct aux visiteurs — utiliser PlanCta.`);
+    }
     const h1Count = (html.match(/<h1[\s>]/g) ?? []).length;
     if (h1Count !== 1) warnings.push(`${route.path} : ${h1Count} balise(s) <h1> (attendu : 1)`);
     const page = injectIntoTemplate(template, html, seo, route.path);

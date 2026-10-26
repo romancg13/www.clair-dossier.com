@@ -70,10 +70,29 @@ branche, et s'arrête là. La mise en production reste une décision humaine
 - Google AI Overviews / Bing Copilot : aucun opt-in spécifique requis tant que
   l'indexation classique est propre (sitemap, canonical, contenu rendu).
 
-## Accès manquants (une action humaine chacun)
+## Activation (2026-10-26)
 
-1. **Google Search Console** : valider la propriété `clair-dossier.com`
-   (enregistrement DNS TXT ou fichier HTML) puis partager l'accès.
-2. **Bing Webmaster Tools** : import en un clic depuis Search Console.
-Sans ces accès, l'autopilot mesure le lab et l'état servi, mais pas les
-impressions/clics réels ni les erreurs de couverture.
+Tâche planifiée locale `clairdossier-seo-hebdo` (application Claude, lundi
+8 h) : Lighthouse mobile ×3 sur 4 pages + contrôles robots/sitemap/llms en
+production, **lecture seule**, rapport de 10 lignes, aucun correctif appliqué.
+Elle tourne quand l'application est ouverte (sinon au lancement suivant).
+
+## Search Console et Bing — préparation (action propriétaire, ~10 min)
+
+Aucun code à modifier : la méthode recommandée est la propriété **Domaine**
+(DNS), qui couvre `www`, l'apex et les sous-domaines.
+
+1. https://search.google.com/search-console → Ajouter une propriété →
+   « Domaine » → `clair-dossier.com` → copier l'enregistrement
+   `google-site-verification=…` → l'ajouter en **TXT** à la racine du DNS
+   chez le registraire → « Valider ».
+2. Sitemaps → soumettre `https://www.clair-dossier.com/sitemap.xml`.
+3. https://www.bing.com/webmasters → « Importer depuis Google Search
+   Console » (reprend propriété et sitemap ; Bing alimente aussi Copilot).
+4. Facultatif : ajouter en utilisateur (lecture) le compte qui pilote
+   l'autopilot, pour joindre impressions et couverture au rapport mensuel.
+
+Sans ces accès, l'autopilot mesure le lab et l'état servi, pas les
+impressions/clics réels ni les erreurs de couverture. Ne pas utiliser
+l'Indexing API de Google : réservée aux offres d'emploi et diffusions en
+direct.

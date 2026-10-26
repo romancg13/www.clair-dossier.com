@@ -61,6 +61,13 @@ Puis, au tableau de bord Supabase : activer l'extension **pg_cron** (Database �
 20261023120000 (idempotente) pour enregistrer la tâche `clairdossier-ai-worker` ; vérifier dans `cron.job_run_details`
 qu'elle tourne toutes les minutes et que `ai-worker` répond 200 (ou 503 tant que la clé n'est pas posée).
 
+**Exposition aux clients — interrupteur distinct (2026-10-26).** Appliquer la migration ne montre RIEN aux clients :
+le panneau d'activation (`AiPanel`) n'est rendu que dans un build `VITE_AI_ENGINE=1`. Ordre imposé :
+1. décision écrite du propriétaire + nouveau texte CGV art. 6 et politique de confidentialité publiés (section ci-dessous) ;
+2. migration + fonctions + secrets (commandes ci-dessus), test sur un dossier interne ;
+3. seulement alors : ajouter `VITE_AI_ENGINE: '1'` à l'étape de build de `.github/workflows/deploy.yml`.
+Retour arrière immédiat : retirer la variable (le panneau disparaît au build suivant) et/ou l'arrêt d'urgence ci-dessous.
+
 ## Supervision et reprise
 
 - État des travaux : `select kind, status, count(*) from ai_jobs group by 1,2;` — `failed` avec `last_error` lisible dans
@@ -74,10 +81,9 @@ qu'elle tourne toutes les minutes et que `ai-worker` répond 200 (ou 503 tant qu
 
 ## Limites connues (état livré)
 
-- Livrables : PDF (résumé, chronologie, relances-brouillons), CSV (chronologie, échéances, dates modifiables), ICS.
-  DOCX et XLSX natifs non produits (ponytail : à ajouter via `npm:docx` / SheetJS quand l'édition bureautique est demandée).
-- « Dates modifiables » : édition via l'onglet Échéances existant (lignes `ai_key`, protégées une fois modifiées) ;
-  pas encore d'édition en ligne des événements de chronologie.
+- Livrables (6) : 13 fichiers PDF / DOCX / XLSX / CSV / ICS générés par `_shared/deliverables.ts` (DOCX/XLSX via
+  `_shared/office.ts`, fflate seul) ; chronologie éditable en ligne (`ChronologyEditor`, corrections tracées et
+  append-only dans `ai_event_overrides`).
 - Dépendances `npm:` épinglées (`@anthropic-ai/sdk@1.1.0`, `zod@4.6.7`, `pdf-lib@1.17.1`, `mammoth@1.13.0`, `xlsx@0.18.5`), lock dans `supabase/functions/ai-worker/deno.lock` ; vérification locale : `npx -y deno@2 check --node-modules-dir=none supabase/functions/ai-worker/index.ts`.
 - Aucun test de bout en bout avec le vrai fournisseur n'a pu être exécuté (pas de clé, pas d'accès au projet).
 
@@ -100,3 +106,7 @@ aujourd'hui qu'aucune lecture, extraction ni analyse automatique n'est faite. Av
    marketing : à faire évoluer en même temps que le contenu public, pas avant.
 5. **RGPD** — AIPD à évaluer (données potentiellement sensibles ou pénales dans les pièces), base légale : exécution du
    contrat sur demande expresse du client ; information des clients existants avant toute activation.
+6. **Points déjà ouverts dans la politique de confidentialité en production** (indépendants de l'IA, à lever avant) :
+   région d'hébergement Supabase « en cours de confirmation » ; encadrement des transferts hors UE de Resend et GitHub
+   « en cours de confirmation » ; référence du DPA Supabase à publier (page Sécurité). Ajouter Anthropic à ces mêmes
+   rubriques (localisation, garanties de transfert, conservation) — `À CONFIRMER` sur contrat.
