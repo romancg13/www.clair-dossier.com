@@ -67,6 +67,10 @@ le panneau d'activation (`AiPanel`) n'est rendu que dans un build `VITE_AI_ENGIN
 2. migration + fonctions + secrets (commandes ci-dessus), test sur un dossier interne ;
 3. seulement alors : ajouter `VITE_AI_ENGINE: '1'` à l'étape de build de `.github/workflows/deploy.yml`.
 Retour arrière immédiat : retirer la variable (le panneau disparaît au build suivant) et/ou l'arrêt d'urgence ci-dessous.
+Retour arrière base : `supabase/rollback/20261023120000_moteur_documentaire_ia.down.sql` (niveau 1 : neutralisation
+sans perte — cron retiré, déclencheurs supprimés, activation révoquée, travaux ouverts annulés ; niveau 2 commenté :
+suppression complète). Prouvé par `tests/sql/migrations.pglite.mjs`. Toujours exporter la base avant (Dashboard →
+Database → Backups, ou `pg_dump`).
 
 ## Supervision et reprise
 

@@ -1256,5 +1256,25 @@ await test('IA : dossier de 190 pièces → 190 extractions + 1 consolidation, r
   assert.ok(seen.size >= 190, `${seen.size} travaux réclamés`);
 });
 
+// Dernier test : le retour arrière modifie le schéma pour la suite.
+await test('IA : retour arrière niveau 1 — moteur neutralisé, données conservées', async () => {
+  const D = await insertDossier(IA_C, { title: 'Avant retour arrière' });
+  await asUser(IA_C);
+  await q('select public.enable_ai_processing($1, $2)', [D, 'ia-2026-10']);
+  await q(`insert into public.dossier_documents (dossier_id, user_id, file_path, file_name, kind) values ($1::uuid, $2::uuid, $2::text || '/' || $1::text || '/a.pdf', 'a.pdf', 'piece')`, [D, IA_C]);
+  assert.equal(await openJobs(D, 'extract'), 1);
+  await asSuperuser();
+  const before = (await q('select count(*)::int n from public.ai_jobs'))[0].n;
+  await db.exec(readFileSync(join(root, 'supabase', 'rollback', '20261023120000_moteur_documentaire_ia.down.sql'), 'utf8'));
+  assert.equal(await openJobs(D, 'extract'), 0, 'travaux ouverts annulés');
+  assert.equal((await q('select count(*)::int n from public.ai_jobs'))[0].n, before, 'historique conservé');
+  assert.equal((await q('select public.ai_engine_enabled() as on'))[0].on, false);
+  await asUser(IA_C);
+  await q(`insert into public.dossier_documents (dossier_id, user_id, file_path, file_name, kind) values ($1::uuid, $2::uuid, $2::text || '/' || $1::text || '/b.pdf', 'b.pdf', 'piece')`, [D, IA_C]);
+  assert.equal(await openJobs(D, 'extract'), 0, 'nouvelle pièce : aucune mise en file');
+  await asUser(IA_C);
+  await rejects(q('select public.enable_ai_processing($1, $2)', [D, 'ia-2026-10']), /permission denied/);
+});
+
 console.log(`\n${passed} réussis, ${failed} échoués`);
 process.exit(failed ? 1 : 0);
