@@ -118,20 +118,20 @@ export const features: Feature[] = [
   },
   {
     slug: "chronologie",
-    title: "Avancement du dossier en 5 étapes",
+    title: "Suivi du dossier en 4 étapes",
     shortTitle: "Avancement",
     icon: "timeline",
     blurb:
-      "Une page d'avancement claire qui suit votre dossier à travers 5 étapes métier, avec pièces et échéances réunies au même endroit.",
-    hero: "Où en est mon dossier ? Vous l'ouvrez, vous voyez les 5 étapes, vous savez.",
+      "Un suivi clair en 4 étapes — dossier créé, traitement en cours, documents disponibles, dossier clôturé — avec pièces et échéances au même endroit.",
+    hero: "Où en est mon dossier ? Vous l'ouvrez, vous voyez les 4 étapes, vous savez.",
     body: [
-      "La première chose à faire face à un dossier, c'est de savoir où il en est. ClairDossier répond à cette question avec une page d'avancement dédiée, organisée en cinq étapes métier cliquables.",
-      "Chaque dossier ouvre sur sa page « Avancement du dossier ». Les cinq étapes y sont affichées et cliquables : vous suivez la progression d'un coup d'œil, du début jusqu'à la transmission.",
+      "La première chose à faire face à un dossier, c'est de savoir où il en est. ClairDossier répond à cette question avec un suivi dédié, organisé en quatre étapes cliquables.",
+      "Chaque dossier ouvre sur son « Suivi du dossier » : dossier créé, traitement en cours, documents disponibles, dossier clôturé. Chaque étape se déplie pour montrer ce qu'elle recouvre.",
       "Sur cette même page, vos pièces déposées sont listées et téléchargeables, et vos échéances renseignées sont affichées. Tout ce qui concerne le dossier est réuni en un seul écran, sans avoir à chercher ailleurs.",
       "La vue reste fidèle à ce que vous avez saisi : les informations, les documents et les dates que vous avez fournis. Vous gardez une image nette de l'état du dossier à tout moment.",
     ],
     bullets: [
-      "Page d'avancement à 5 étapes métier cliquables",
+      "Suivi du dossier en 4 étapes cliquables",
       "Pièces du dossier consultables et téléchargeables",
       "Échéances renseignées affichées sur la page",
       "Une vue unique et fidèle aux informations saisies",
@@ -140,7 +140,7 @@ export const features: Feature[] = [
     benefit:
       "En ouvrant le dossier, vous savez où il en est : étape en cours, pièces et dates sur un même écran.",
     example:
-      "Le dossier « Chantier rue des Lilas » affiche ses cinq étapes, de « Création du dossier » à « Option impayé / pré-contentieux ». L'étape en cours est mise en évidence, et chaque étape se déplie d'un clic pour montrer ce qu'elle recouvre.",
+      "Le dossier « Chantier rue des Lilas » affiche ses quatre étapes, de « Dossier créé » à « Dossier clôturé ». L'étape en cours est mise en évidence, et chaque étape se déplie d'un clic pour montrer ce qu'elle recouvre.",
   },
   {
     slug: "transmission-validee",
@@ -148,7 +148,7 @@ export const features: Feature[] = [
     shortTitle: "Transmission",
     icon: "validate",
     blurb:
-      "Votre dossier validé est enregistré dans votre compte, jamais envoyé automatiquement. Vous le transmettez vous-même, au destinataire et au moment de votre choix.",
+      "Votre dossier validé est enregistré dans votre compte, jamais envoyé automatiquement. Vous le transmettez vous-même, au destinataire, au moment de votre choix.",
     hero: "Le dossier ne part jamais tout seul. Il reste dans votre compte tant que vous ne décidez pas de le transmettre.",
     body: [
       "ClairDossier prépare votre dossier ; c'est vous qui choisissez quand et à qui le transmettre. Aucun envoi automatique : rien ne quitte votre espace sans votre action.",
@@ -179,7 +179,7 @@ export const features: Feature[] = [
     body: [
       "La première difficulté quand on suit plusieurs affaires, c'est de savoir lesquelles sont en cours et où chacune en est. ClairDossier répond à ce besoin avec une liste claire de vos dossiers, dans votre espace de compte.",
       "Après création de votre compte, gratuite et confirmée par e-mail, vous accédez à votre espace. Chaque dossier que vous créez s'y ajoute, identifié par le nom que vous lui avez donné. Vous ouvrez celui que vous voulez d'un clic.",
-      "Depuis la liste, vous entrez sur la page d'avancement de chaque dossier : ses cinq étapes, ses pièces, ses échéances. Vous passez d'un dossier à l'autre sans rien perdre de vue.",
+      "Depuis la liste, vous entrez sur le suivi de chaque dossier : ses quatre étapes, ses pièces, ses échéances. Vous passez d'un dossier à l'autre sans rien perdre de vue.",
       "Vos dossiers restent isolés : votre espace ne contient que les vôtres. Cette séparation par utilisateur assure que vos informations ne se mélangent jamais avec celles d'un autre compte.",
     ],
     bullets: [
@@ -279,7 +279,7 @@ export const features: Feature[] = [
     shortTitle: "Récapitulatif",
     icon: "ai-brief",
     blurb:
-      "Avant de valider, ClairDossier vous présente un récapitulatif complet du dossier. Vous relisez, vous corrigez si besoin, puis vous enregistrez le dossier dans votre compte.",
+      "Avant de valider, ClairDossier vous présente un récapitulatif complet. Vous relisez, corrigez si besoin, puis vous enregistrez le dossier dans votre compte.",
     hero: "On relit avant de valider. ClairDossier réunit tout le dossier dans un récapitulatif clair.",
     body: [
       "Avant de valider un dossier, il faut être sûr de ce qu'il contient : les informations, les pièces, les échéances. ClairDossier réunit l'ensemble dans une étape de récapitulatif, à la fin du tunnel de création.",

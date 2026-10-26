@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "../../lib/supabase";
-import { applyOverrides, type AnalysisData, type CoverageInfo, type EventOverride } from "../../../supabase/functions/_shared/deliverables.ts";
+import { applyOverrides, type AnalysisData, type CoverageInfo, type EventOverride } from "../../../supabase/functions/_shared/analysis-model.ts";
 import { AnalysisView } from "./AnalysisView";
 import { ChronologyEditor } from "./ChronologyEditor";
 

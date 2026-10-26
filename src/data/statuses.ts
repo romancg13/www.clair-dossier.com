@@ -40,7 +40,7 @@ export const statuses: CaseStatus[] = [
     label: "En cours",
     short: "En cours",
     description:
-      "Le dossier suit son avancement sur les 5 étapes métier, cliquables depuis la page détail. Les pièces restent téléchargeables et les échéances affichées.",
+      "Le dossier suit son avancement sur les 4 étapes du suivi, cliquables depuis la page détail. Les pièces restent téléchargeables et les échéances affichées.",
     who: "plateforme",
     next: "valide",
   },

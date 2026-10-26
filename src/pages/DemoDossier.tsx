@@ -6,7 +6,7 @@ import { DossierTracker } from "../components/dossier/DossierTracker";
 import { DeliverablesGrid, type DeliverableFile } from "../components/dossier/DeliverablesGrid";
 import { ChronologyEditor } from "../components/dossier/ChronologyEditor";
 import { AnalysisView } from "../components/dossier/AnalysisView";
-import { applyOverrides, buildDeliverables, type CoverageInfo, type EventOverride, type PieceRef } from "../../supabase/functions/_shared/deliverables.ts";
+import { applyOverrides, type CoverageInfo, type EventOverride, type PieceRef } from "../../supabase/functions/_shared/analysis-model.ts";
 import { DEMO_FAILED, DEMO_PIECES, DEMO_TITLE, DEMO_UNSUPPORTED, bulkPieces, demoAnalysis } from "../demo/fixture";
 
 /**
@@ -134,14 +134,16 @@ export function DemoDossier() {
     let live = true;
     setGenerating(true);
     const exploited = s.pieces.filter((p) => p.id !== DEMO_UNSUPPORTED.id && p.id !== DEMO_FAILED.id);
-    void buildDeliverables({ title: DEMO_TITLE, revision: s.revision, generatedAt: new Date(), analysis, coverage: { ...coverage, pending: 0 }, pieces: exploited, overrides: s.overrides, demo: true }).then((out) => {
+    // Génération des fichiers : module chargé à la demande (pdf-lib et fflate
+    // restent hors du bundle initial de la page démo).
+    void import("../../supabase/functions/_shared/deliverables.ts").then(({ buildDeliverables }) => buildDeliverables({ title: DEMO_TITLE, revision: s.revision, generatedAt: new Date(), analysis, coverage: { ...coverage, pending: 0 }, pieces: exploited, overrides: s.overrides, demo: true }).then((out) => {
       if (!live) return;
       urls.current.forEach((u) => URL.revokeObjectURL(u));
       const next = out.map((f) => ({ name: f.name, key: f.key, bytes: f.bytes, url: URL.createObjectURL(new Blob([f.bytes as BlobPart], { type: f.mime })) }));
       urls.current = next.map((f) => f.url);
       setFiles(next);
       setGenerating(false);
-    });
+    }));
     return () => {
       live = false;
     };

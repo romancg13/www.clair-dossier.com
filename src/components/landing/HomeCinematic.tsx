@@ -31,7 +31,7 @@ const softwareSchema = {
   '@context': 'https://schema.org',
   '@type': 'SoftwareApplication',
   name: 'ClairDossier',
-  applicationCategory: 'LegalService',
+  applicationCategory: 'BusinessApplication',
   operatingSystem: 'Web',
   offers: {
     '@type': 'Offer',
@@ -57,8 +57,8 @@ export function HomeCinematic() {
   return (
     <>
       <Seo
-        title="ClairDossier — Vos dossiers administratifs et juridiques, clairs et suivis"
-        description="ClairDossier réunit vos documents dans un espace privé, structure votre dossier administratif ou juridique, suit son avancement et vos échéances — et ne transmet rien sans votre validation. Pour les entreprises, indépendants et cabinets."
+        title="ClairDossier — Dossiers administratifs et juridiques clairs et suivis"
+        description="ClairDossier réunit vos documents dans un espace privé, structure votre dossier, suit avancement et échéances. Pour entreprises, indépendants et cabinets."
         path="/"
         jsonLd={[orgSchema, websiteSchema, softwareSchema, faqSchema]}
       />

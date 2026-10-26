@@ -10,7 +10,7 @@ import { hasQuotaEngine } from "../lib/dossier-workspace";
 import { AiPanel, type AiProgress } from "../components/dossier/AiPanel";
 import { DossierTracker } from "../components/dossier/DossierTracker";
 import { DeliverablesGrid, type DeliverableFile } from "../components/dossier/DeliverablesGrid";
-import { deliverableKeyOf } from "../../supabase/functions/_shared/deliverables.ts";
+import { deliverableKeyOf } from "../../supabase/functions/_shared/analysis-model.ts";
 // Statuts, typologies, étapes et libellés de réponses : source unique partagée
 // avec l'application mobile (packages/core) — mêmes libellés des deux côtés.
 import {

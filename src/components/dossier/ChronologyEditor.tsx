@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { frDate, type EventOverride, type RetainedEvent } from "../../../supabase/functions/_shared/deliverables.ts";
+import { frDate, type EventOverride, type RetainedEvent } from "../../../supabase/functions/_shared/analysis-model.ts";
 
 type Props = {
   events: RetainedEvent[];

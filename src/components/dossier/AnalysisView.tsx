@@ -1,4 +1,4 @@
-import { coverageLabel, frDate, type AnalysisData, type CoverageInfo } from "../../../supabase/functions/_shared/deliverables.ts";
+import { coverageLabel, frDate, type AnalysisData, type CoverageInfo } from "../../../supabase/functions/_shared/analysis-model.ts";
 
 type Props = {
   analysis: AnalysisData;

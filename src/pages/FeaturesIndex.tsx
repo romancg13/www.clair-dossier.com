@@ -27,7 +27,7 @@ export function FeaturesIndex() {
     <>
       <Seo
         title="Tout pour organiser et suivre vos dossiers"
-        description="Créer et nommer un dossier en 5 étapes, déposer et retrouver vos pièces dans un espace privé, suivre étapes et échéances, valider puis transmettre vous-même : les fonctionnalités ClairDossier disponibles aujourd'hui."
+        description="Créer un dossier en 5 étapes, déposer vos pièces dans un espace privé, suivre étapes et échéances, valider puis transmettre vous-même."
         path="/fonctionnalites"
         jsonLd={[
           breadcrumbSchema([

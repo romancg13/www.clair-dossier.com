@@ -1,4 +1,4 @@
-import { DELIVERABLE_CATALOG, type DeliverableKey } from "../../../supabase/functions/_shared/deliverables.ts";
+import { DELIVERABLE_CATALOG, type DeliverableKey } from "../../../supabase/functions/_shared/analysis-model.ts";
 
 /** Fichier d'un livrable, quelle que soit sa source (stockage Supabase ou génération locale de démonstration). */
 export type DeliverableFile = {

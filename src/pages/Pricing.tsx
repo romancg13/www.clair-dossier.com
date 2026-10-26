@@ -113,7 +113,7 @@ export function Pricing() {
     <>
       <Seo
         title="Tarifs"
-        description="Sept formules ClairDossier, de l'indépendant à l'entreprise : Essentiel, Entrepreneur, Business PME 20/50, Pro, Premium et offre sur-mesure. Compte gratuit, sans engagement. −10 % en annuel."
+        description="Sept formules, de l'indépendant à l'entreprise : Essentiel, Entrepreneur, Business PME, Pro, Premium et sur-mesure. Compte gratuit, −10 % en annuel."
         path="/tarifs"
         jsonLd={[
           breadcrumbSchema([

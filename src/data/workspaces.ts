@@ -26,7 +26,7 @@ export const workspaces: Workspace[] = [
       "Vous construisez votre dossier à votre rythme. Vous voyez en permanence où il en est, qui agit, ce qui est attendu de vous.",
     capabilities: [
       "Création guidée en 5 étapes (profil, nature, informations, pièces, récapitulatif)",
-      "Suivi de l'avancement sur les 5 étapes métier de votre dossier",
+      "Suivi du dossier en 4 étapes, du dépôt à la clôture",
       "Transmission décidée et effectuée par vous, jamais automatique",
       "Récupération de vos pièces et données sur demande",
     ],

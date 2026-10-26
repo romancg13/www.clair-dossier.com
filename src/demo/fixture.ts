@@ -4,7 +4,7 @@
  * le même code de chronologie et de génération que le worker de production
  * (supabase/functions/_shared/deliverables.ts) à ces données synthétiques.
  */
-import { buildChronology, type AnalysisData, type PieceRef } from "../../supabase/functions/_shared/deliverables.ts";
+import { buildChronology, type AnalysisData, type PieceRef } from "../../supabase/functions/_shared/analysis-model.ts";
 
 export const DEMO_TITLE = "Facture impayée — chantier « Maison Témoin » (dossier fictif)";
 
