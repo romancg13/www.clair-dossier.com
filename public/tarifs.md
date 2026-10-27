@@ -22,13 +22,13 @@ Facturation annuelle : 205,20 € HT/an, soit 17,10 € HT/mois (−10 %).
 
 Fonctionnalités incluses :
 - Transmission décidée et effectuée par vous : ✓
-- Échéances affichées sur le dossier : limité
-- Récapitulatif du dossier : limité
-- Suivi par étapes métier : ✗
-- Dépôt de pièces sécurisé : ✗
-- Espace privé multi-dossiers : ✗
-- Pièces téléchargeables : ✗
-- Plusieurs dossiers en parallèle : ✗
+- Échéances affichées sur le dossier : ✓
+- Récapitulatif du dossier : ✓
+- Suivi par étapes métier : ✓
+- Dépôt de pièces sécurisé : ✓
+- Espace privé multi-dossiers : ✓
+- Pièces téléchargeables : ✓
+- Plusieurs dossiers en parallèle : ✓
 
 ### Entrepreneur — 39 € HT/mois
 
@@ -44,11 +44,11 @@ Fonctionnalités incluses :
 - Transmission décidée et effectuée par vous : ✓
 - Échéances affichées sur le dossier : ✓
 - Récapitulatif du dossier : ✓
-- Suivi par étapes métier : limité
-- Dépôt de pièces sécurisé : ✗
-- Espace privé multi-dossiers : ✗
+- Suivi par étapes métier : ✓
+- Dépôt de pièces sécurisé : ✓
+- Espace privé multi-dossiers : ✓
 - Pièces téléchargeables : ✓
-- Plusieurs dossiers en parallèle : ✗
+- Plusieurs dossiers en parallèle : ✓
 
 ### Business PME 20 (mis en avant) — 49 € HT/mois
 
@@ -65,8 +65,8 @@ Fonctionnalités incluses :
 - Échéances affichées sur le dossier : ✓
 - Récapitulatif du dossier : ✓
 - Suivi par étapes métier : ✓
-- Dépôt de pièces sécurisé : limité
-- Espace privé multi-dossiers : ✗
+- Dépôt de pièces sécurisé : ✓
+- Espace privé multi-dossiers : ✓
 - Pièces téléchargeables : ✓
 - Plusieurs dossiers en parallèle : ✓
 
@@ -86,7 +86,7 @@ Fonctionnalités incluses :
 - Récapitulatif du dossier : ✓
 - Suivi par étapes métier : ✓
 - Dépôt de pièces sécurisé : ✓
-- Espace privé multi-dossiers : ✗
+- Espace privé multi-dossiers : ✓
 - Pièces téléchargeables : ✓
 - Plusieurs dossiers en parallèle : ✓
 
