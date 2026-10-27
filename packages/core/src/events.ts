@@ -18,7 +18,10 @@ export type EventType =
   | 'echeance_modifiee'
   | 'echeance_terminee'
   | 'echeance_supprimee'
-  | 'telechargement_groupe';
+  | 'telechargement_groupe'
+  | 'ia_activee'
+  | 'ia_desactivee'
+  | 'livrables_generes';
 
 export const EVENT_LABELS: Record<EventType, string> = {
   document_ajoute: 'Document ajouté',
@@ -36,6 +39,10 @@ export const EVENT_LABELS: Record<EventType, string> = {
   echeance_terminee: 'Échéance terminée',
   echeance_supprimee: 'Échéance supprimée',
   telechargement_groupe: 'Téléchargement groupé des pièces',
+  // Moteur documentaire IA (2026-10-23) : activation explicite, livrables générés.
+  ia_activee: 'Traitement automatique activé',
+  ia_desactivee: 'Traitement automatique désactivé',
+  livrables_generes: 'Documents générés',
 };
 
 /** Libellé exact enregistré dans `dossier_events.label` (même règle que le web). */

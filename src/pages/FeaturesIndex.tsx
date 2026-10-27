@@ -5,6 +5,11 @@ import { features, featuresByGroup } from "../data/features";
 import { ENTERPRISE_NOTE, planned } from "../data/product-status";
 import { FEATURE_ICONS, ArrowRightIcon } from "../components/icons";
 import { SortingFlow } from "../components/features/SortingFlow";
+// Sections déplacées depuis l'accueil (2026-10-24) — leurs animations vivent ici.
+import { FeaturesBento } from "../components/landing/FeaturesBento";
+import { BeforeAfter } from "../components/landing/BeforeAfter";
+import { AudienceSwitcher } from "../components/landing/AudienceSwitcher";
+import { WorkspacesTabs } from "../components/sections/WorkspacesTabs";
 
 const groups = featuresByGroup();
 
@@ -22,7 +27,7 @@ export function FeaturesIndex() {
     <>
       <Seo
         title="Tout pour organiser et suivre vos dossiers"
-        description="Créer et nommer un dossier en 5 étapes, déposer et retrouver vos pièces dans un espace privé, suivre étapes et échéances, valider puis transmettre vous-même : les fonctionnalités ClairDossier disponibles aujourd'hui."
+        description="Créer un dossier en 5 étapes, déposer vos pièces dans un espace privé, suivre étapes et échéances, valider puis transmettre vous-même."
         path="/fonctionnalites"
         jsonLd={[
           breadcrumbSchema([
@@ -254,6 +259,12 @@ export function FeaturesIndex() {
           </div>
         </div>
       </Reveal>
+      {/* Depuis l'accueil (2026-10-24) : le détail en mouvement — quatre temps,
+          avant/avec, pour qui, espaces dédiés. */}
+      <FeaturesBento />
+      <BeforeAfter />
+      <AudienceSwitcher />
+      <WorkspacesTabs />
     </>
   );
 }

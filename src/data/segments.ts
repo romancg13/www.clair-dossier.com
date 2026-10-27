@@ -75,7 +75,7 @@ export const segmentPages: SegmentPageData[] = [
     title: 'Des dossiers clients qui arrivent déjà structurés.',
     metaTitle: "Cabinets d'avocats",
     metaDescription:
-      "ClairDossier pour les cabinets d'avocats : des dossiers clients constitués, datés et ordonnés avant le premier rendez-vous. Cloisonnement par compte, validation humaine, aucune lecture automatique des pièces.",
+      "Pour les cabinets d'avocats : dossiers clients constitués, datés et ordonnés avant le premier rendez-vous. Cloisonnement par compte, validation humaine.",
     promesse:
       "Le temps passé à réclamer des pièces, reconstituer une chronologie ou trier une boîte mail n'est pas du temps de droit. ClairDossier fait arriver le dossier constitué : pièces déposées, dates renseignées, récapitulatif relu — par le client, avant vous.",
     frictions: [
@@ -105,7 +105,7 @@ export const segmentPages: SegmentPageData[] = [
     title: 'Les justificatifs de vos clients, réunis et datés.',
     metaTitle: 'Experts-comptables',
     metaDescription:
-      'ClairDossier pour les experts-comptables : chaque client constitue son dossier — justificatifs déposés dans un espace privé, échéances visibles, transmission quand le dossier est complet. Cloisonnement par compte.',
+      'Pour les experts-comptables : chaque client constitue son dossier — justificatifs déposés, échéances visibles, transmission quand le dossier est complet.',
     promesse:
       "La relance de justificatifs est le travail le plus répétitif du cabinet. ClairDossier donne à chaque client un espace structuré où déposer ses pièces et renseigner ses échéances — et le dossier vous est transmis quand il est complet, pas pièce par pièce.",
     frictions: [
@@ -135,7 +135,7 @@ export const segmentPages: SegmentPageData[] = [
     title: 'Un cadre unique pour vos dossiers à fort volume.',
     metaTitle: 'Grands comptes',
     metaDescription:
-      "ClairDossier pour les structures à fort volume documentaire : dossiers structurés par compte, cloisonnement appliqué en base, validation humaine systématique, état du produit public. Démonstration sur rendez-vous.",
+      "Pour les structures à fort volume : dossiers structurés par compte, cloisonnement appliqué en base, validation humaine. Démonstration sur rendez-vous.",
     promesse:
       "À partir d'un certain volume, le sujet n'est plus l'outil mais le cadre : qui accède à quoi, ce qui est appliqué techniquement plutôt que promis, et ce que le produit fait réellement aujourd'hui. C'est exactement ce que nous montrons en démonstration — preuves à l'appui.",
     frictions: [

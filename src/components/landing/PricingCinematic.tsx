@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { PlanCta } from '../pricing/PlanCta';
 import { motion, useReducedMotion } from 'motion/react';
 import { Reveal, Stagger, StaggerItem } from '../primitives/Reveal';
 import { formatEuro, plans, yearlyMonthlyEquivalent, yearlyTotal, type Plan } from '../../data/pricing';
@@ -96,7 +97,6 @@ function PlanCard({ plan, billing }: { plan: Plan; billing: Billing }) {
   const isYearly = billing === 'yearly';
   const price = plan.priceMonthly;
   const href = isYearly && plan.ctaHrefYearly ? plan.ctaHrefYearly : plan.ctaHref;
-  const external = href.startsWith('http');
 
   const skin = recommended
     ? 'premium-recommended-plan border-navy-900 bg-navy-900 text-cream-50'
@@ -164,15 +164,9 @@ function PlanCard({ plan, billing }: { plan: Plan; billing: Billing }) {
         </li>
       </ul>
 
-      {external ? (
-        <a href={href} className={ctaClass}>
-          {ctaInner}
-        </a>
-      ) : (
-        <Link to={href} className={ctaClass}>
-          {ctaInner}
-        </Link>
-      )}
+      <PlanCta href={href} planId={plan.id} monthly={!isYearly} className={ctaClass}>
+        {ctaInner}
+      </PlanCta>
     </article>
   );
 }

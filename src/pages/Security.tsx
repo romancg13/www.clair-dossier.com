@@ -316,7 +316,7 @@ export function Security() {
     <>
       <Seo
         title="Sécurité : vos données, leur protection et vos droits"
-        description="Accès, protection des documents, traitement des données, exercice de vos droits : ce que ClairDossier fait réellement, avec des indicateurs datés et des engagements documentés."
+        description="Accès, protection des documents, traitement des données, exercice de vos droits : ce que ClairDossier fait réellement, indicateurs datés à l'appui."
         path="/securite"
         jsonLd={breadcrumbSchema([
           { name: "Accueil", path: "/" },

@@ -4,12 +4,12 @@ import { AnimatePresence, motion, useMotionValueEvent, useScroll } from 'motion/
 import { Logo } from './Logo';
 import { useAuth } from '../lib/auth';
 
+// Menu principal volontairement court (2026-10-24) : Produit, Tarifs, Sécurité.
+// Journal, Contact, parcours métiers et ressources restent au pied de page.
 const NAV_ITEMS = [
-  { to: '/fonctionnalites', label: 'Fonctionnalités' },
+  { to: '/fonctionnalites', label: 'Produit' },
   { to: '/tarifs', label: 'Tarifs' },
   { to: '/securite', label: 'Sécurité' },
-  { to: '/blog', label: 'Journal' },
-  { to: '/contact', label: 'Contact' },
 ];
 
 export function Nav() {

@@ -1,21 +1,20 @@
 import { useRef } from 'react';
 import { motion, useTransform, type MotionValue } from 'motion/react';
-import { statuses } from '../../data/statuses';
 import { ChapterFrame } from './ChapterFrame';
-import { DEMO_TIMELINE } from './demo-dossier';
+import { BUSINESS_STEPS, DEMO, DEMO_TIMELINE } from './demo-dossier';
 import { DemoBadge, Stage } from './Stage';
 import { useSectionProgress } from './useCinematic';
 
 /**
- * Chapitre 03 — la chronologie. Les six statuts réels (src/data/statuses.ts)
- * se révèlent en suivant le scroll ; le trait se dessine. Contenu de la
- * section « Six statuts. Aucun entre-deux » conservé (VI.4 : MERGE).
+ * Chapitre 03 — le suivi. Les quatre étapes réelles du dossier
+ * (packages/core, mêmes libellés que la page « Suivi du dossier »)
+ * se révèlent en suivant le scroll ; le trait se dessine.
  */
 export function ChapterTimeline() {
   const ref = useRef<HTMLDivElement>(null);
   const { p, reduce } = useSectionProgress(ref, ['start 80%', 'end 85%']);
   const draw = useTransform(p, [0.08, 0.92], [0, 1]);
-  const current = statuses.findIndex((s) => s.id === 'validation');
+  const current = DEMO.step - 1;
 
   return (
     <div ref={ref}>
@@ -27,9 +26,8 @@ export function ChapterTimeline() {
         title="Vous savez toujours où en est le dossier."
         body={
           <p>
-            Six statuts, aucun « entre-deux » : {statuses.map((s) => s.label).join(', ')}. Chaque
-            dossier traverse les mêmes états, et sa page d’avancement vous dit ce qu’il reste à
-            faire — sans avoir à demander, sans avoir à chercher.
+            Quatre étapes, aucun « entre-deux » : {BUSINESS_STEPS.join(' → ').toLowerCase()}. La
+            page du dossier vous dit où il en est et ce qu’il reste à faire.
           </p>
         }
       >
@@ -41,7 +39,7 @@ export function ChapterTimeline() {
             <DemoBadge />
           </div>
 
-          <ol className="relative mt-6 pl-9" aria-label="Six statuts, dans l’ordre">
+          <ol className="relative mt-6 pl-9" aria-label="Les quatre étapes du suivi, dans l’ordre">
             {/* Trait de fond + trait qui se dessine */}
             <div aria-hidden="true" className="absolute bottom-3 left-[13px] top-3 w-px bg-cream-50/10" />
             <motion.div
@@ -49,14 +47,14 @@ export function ChapterTimeline() {
               style={reduce ? undefined : { scaleY: draw }}
               className="cd-draw absolute bottom-3 left-[13px] top-3 w-px bg-gradient-to-b from-gold-400 via-gold-500 to-gold-500/40"
             />
-            {statuses.map((s, i) => (
+            {BUSINESS_STEPS.map((label, i) => (
               <TimelineItem
-                key={s.id}
+                key={label}
                 p={p}
                 i={i}
                 reduce={reduce}
-                label={s.label}
-                event={DEMO_TIMELINE[i]?.event ?? s.description}
+                label={label}
+                event={DEMO_TIMELINE[i]?.event ?? ''}
                 when={DEMO_TIMELINE[i]?.when ?? ''}
                 state={i < current ? 'done' : i === current ? 'active' : 'todo'}
               />

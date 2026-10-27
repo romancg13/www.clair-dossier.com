@@ -30,10 +30,8 @@ export function ChapterTransmission() {
         title="Rien ne part sans vous."
         body={
           <p>
-            Le dossier est prêt ? Vous relisez le récapitulatif, vous validez : il est enregistré
-            dans votre compte, pièces téléchargeables à tout moment. Vous le transmettez ensuite
-            vous-même, au destinataire et par le canal de votre choix. Aucun envoi automatique :
-            c’est un engagement contractuel, pas un réglage.
+            Vous relisez, vous validez, vous transmettez vous-même — au destinataire et par le
+            canal de votre choix. Aucun envoi automatique : c’est un engagement contractuel.
           </p>
         }
       >

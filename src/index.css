@@ -17,6 +17,40 @@
 /* Phase 4 — couche landing cinématique (tokens @theme + styles préfixés cd-). */
 @import "./styles/landing.css";
 
+/* Polices de secours aux métriques des polices web (CLS) : pendant le
+   chargement (font-display: swap), le texte occupe déjà la place finale et
+   ne se recompose plus à l'arrivée de la police. Le rendu final est inchangé.
+   unicode-range = sous-ensemble latin Fontsource : un caractère absent des
+   polices web (ex. « → ») garde la police système d'origine.
+   Valeurs : @capsizecss/metrics (xWidthAvg, ascent, descent, unitsPerEm). */
+@font-face {
+  font-family: "Cormorant Garamond Fallback";
+  src: local("Georgia");
+  size-adjust: 88.38%;
+  ascent-override: 104.55%;
+  descent-override: 32.47%;
+  line-gap-override: 0%;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Inter Fallback";
+  src: local("Arial");
+  size-adjust: 107.12%;
+  ascent-override: 90.44%;
+  descent-override: 22.52%;
+  line-gap-override: 0%;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "JetBrains Mono Fallback";
+  src: local("Courier New");
+  size-adjust: 99.98%;
+  ascent-override: 102.02%;
+  descent-override: 30%;
+  line-gap-override: 0%;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 @theme {
   /* ─── Palette signature ──────────────────────────────────── */
   --color-navy-900: #0d1b3d;
@@ -43,9 +77,9 @@
   --color-sky-marker-deep: rgba(150, 190, 230, 0.8);
 
   /* ─── Typo ───────────────────────────────────────────────── */
-  --font-display: "Cormorant Garamond", "Iowan Old Style", Georgia, serif;
-  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --font-display: "Cormorant Garamond", "Cormorant Garamond Fallback", "Iowan Old Style", Georgia, serif;
+  --font-sans: "Inter", "Inter Fallback", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", "JetBrains Mono Fallback", ui-monospace, "SF Mono", Menlo, monospace;
 
   /* ─── Radii ──────────────────────────────────────────────── */
   --radius-xs: 0.25rem;
