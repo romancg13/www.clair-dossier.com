@@ -55,7 +55,7 @@ function footer(path: string): string {
   ].join('\n');
 }
 
-// ─── Home ──────────────────────────────────────────────────────────
+// ─── Home ───────────────────────────────────────────────────────────────
 function generateHome(): void {
   const lines: string[] = [
     '---',
@@ -68,13 +68,13 @@ function generateHome(): void {
     '',
     '**Votre dossier administratif et juridique, clair, structuré et suivi.**',
     '',
-    "Créez des dossiers administratifs et juridiques structurés : calendrier, relances à échéance et projets de réponse aux e-mails. Pour les PME, artisans, entreprises individuelles et professions libérales. Option : un préavis juridique et un résumé de la situation à valider par un professionnel du droit.",
+    "ClairDossier réunit vos pièces dans un espace privé, structure votre dossier administratif ou juridique en cinq étapes, affiche vos échéances et ne transmet rien sans votre validation. Pour PME, artisans, indépendants et professions libérales.",
     '',
     '## Promesse',
     '',
     '- 6 statuts dossier standardisés et traçables',
-    '- Calendrier et relances automatiques à échéance',
-    '- 100 % conforme RGPD — hébergement OVH France',
+    '- Échéances renseignées et affichées sur le dossier (aucun rappel envoyé à votre place à ce jour)',
+    '- Aucune lecture, extraction ou analyse automatique de vos pièces ; espace privé, accès par liens signés',
     '',
     '## Trois espaces, un dossier',
     '',
@@ -144,7 +144,7 @@ function generateHome(): void {
   write('page.md', lines.join('\n'));
 }
 
-// ─── Blog ──────────────────────────────────────────────────────────
+// ─── Blog ───────────────────────────────────────────────────────────────
 function renderBlogContent(blocks: BlogContentBlock[]): string {
   return blocks
     .map((b) => {
@@ -265,7 +265,7 @@ function generateBlogIndex(): void {
   write('blog/index.md', lines.join('\n'));
 }
 
-// ─── Features ──────────────────────────────────────────────────────
+// ─── Features ────────────────────────────────────────────────────────────
 function generateFeature(f: Feature): void {
   const path = `/fonctionnalites/${f.slug}`;
   const lines: string[] = [
@@ -315,7 +315,7 @@ function generateFeaturesIndex(): void {
   write('fonctionnalites/index.md', lines.join('\n'));
 }
 
-// ─── Pricing ───────────────────────────────────────────────────────
+// ─── Pricing ─────────────────────────────────────────────────────────────
 function generatePricing(): void {
   const lines: string[] = [
     '---',
@@ -384,7 +384,7 @@ function generatePricing(): void {
   write('tarifs.md', lines.join('\n'));
 }
 
-// ─── Sécurité — centre de confiance ────────────────────────────────
+// ─── Sécurité — centre de confiance ────────────────────────────────────────
 // Généré depuis src/data/trust.ts : mêmes données que la page /securite.
 // Règle : rien d'invérifiable — les éléments en attente sont marqués
 // « À CONFIRMER », jamais comblés par une formulation vague.
@@ -410,7 +410,7 @@ function generateSecurity(): void {
     '- Isolation des données par utilisateur appliquée en base (Row Level Security) — y compris pour le stockage des pièces (bucket privé, liens signés temporaires).',
     "- Accès à l'espace par authentification (compte confirmé par e-mail) ; consultation support limitée à un administrateur unique.",
     "- Aucune lecture, extraction ou analyse automatique des documents déposés — engagement contractuel (CGV).",
-    "- Transmission d'un dossier uniquement sur action explicite de l'utilisateur (e-mail ou WhatsApp).",
+    "- Transmission d'un dossier effectuée par l'utilisateur lui-même, hors du Service, par le canal de son choix.",
     '',
     '## Sous-traitants',
     '',
@@ -473,7 +473,7 @@ function generateSecurity(): void {
   write('securite.md', lines.join('\n'));
 }
 
-// ─── Contact ───────────────────────────────────────────────────────
+// ─── Contact ─────────────────────────────────────────────────────────────
 function generateContact(): void {
   const path = '/contact';
   const lines: string[] = [
@@ -505,7 +505,7 @@ function generateContact(): void {
   write('contact.md', lines.join('\n'));
 }
 
-// ─── Legal ─────────────────────────────────────────────────────────
+// ─── Legal ───────────────────────────────────────────────────────────────
 function generateLegal(p: LegalPage): void {
   const path = `/${p.slug}`;
   const lines: string[] = [
@@ -543,7 +543,7 @@ function generateLegal(p: LegalPage): void {
   write(`${p.slug}.md`, lines.join('\n'));
 }
 
-// ─── Run ───────────────────────────────────────────────────────────
+// ─── Run ────────────────────────────────────────────────────────────────
 function main(): void {
   console.log('Generating markdown for AI crawlers...');
 
