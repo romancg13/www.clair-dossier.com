@@ -1,6 +1,6 @@
 {
   "mission": "ClairDossier Private AI — complete and deploy",
-  "updated": "2026-11-02T10:55:00Z",
+  "updated": "2026-11-03T08:10:00Z",
   "branch": "claude/clairdossier-autonomous-deploy-959cad",
   "tasks": [
     {
@@ -71,7 +71,8 @@
     {
       "id": "14-production",
       "status": "blocked",
-      "note": "branche locale validée ; push refusé par le bac à sable ; fusion = accord explicite"
+      "note": "branche locale validée ; push refusé par le bac à sable ; fusion = accord explicite",
+      "detail": "PR #44 ouverte le 2026-11-03, CI en attente ; fusion sur accord explicite uniquement"
     },
     {
       "id": "15-report",
@@ -96,5 +97,6 @@
       "id": "git-push",
       "detail": "push de la branche refusé par le bac à sable : git push -u origin claude/clairdossier-autonomous-deploy-959cad à exécuter par le propriétaire"
     }
-  ]
+  ],
+  "pull_request": "https://github.com/romancg13/www.clair-dossier.com/pull/44"
 }
