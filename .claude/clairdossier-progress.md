@@ -24,3 +24,8 @@ Branche de travail : `claude/clairdossier-autonomous-deploy-959cad` (worktree). 
 
 - Reprise du moteur IA de la PR #41 (orchestration Supabase : `ai_jobs` + pg_cron → Edge Function) plutôt que PGMQ ou un worker Vercel : déjà construit, testé (PGlite 79/79), persistant côté Supabase, aucun hébergeur supplémentaire.
 - Déploiement en production (fusion sur `main`) : préparé et vérifié, mais déclenché seulement sur accord explicite (CLAUDE.md du dépôt + garde `settings.json`).
+
+3. 09:30–10:40 — Validation baseline : typecheck OK, 159 tests, PGlite 85/85, deno check (2 fonctions corrigées : stripe-webhook, delete-account), build 36 routes. Inventaire Stripe LIVE en lecture (MCP) : 6 produits, 13 liens, 0 webhook, 1 abonné actif.
+4. 10:40 — Console IA privée livrée (commit 9036c16) : migration 20261102120000, worker (modes manuel/auto, publish, jeton), `AdminPrivateAi.tsx`, `src/lib/ai-admin.ts`, tests (PGlite 92/92, unitaires 164/164).
+5. 10:40 — Workflow d'audit (12 agents, 4 axes + contre-vérification) : constats confirmés corrigés (commit 7b64346) ; décisions propriétaire dans `docs/DECISIONS_PROPRIETAIRE_2026-11-02.md`.
+6. 10:45 — Branche poussée sur origin ; PR vers `main` à ouvrir ; fusion = production, sur accord explicite seulement.
