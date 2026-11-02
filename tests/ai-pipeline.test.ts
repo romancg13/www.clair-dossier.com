@@ -61,6 +61,19 @@ test('CSV : séparateur « ; », BOM, guillemets doublés', () => {
   assert.ok(csv.endsWith('1;\r\n'));
 });
 
+test('CSV : une cellule commençant par = + - @ ou tabulation ne peut jamais devenir une formule', () => {
+  const csv = toCsv(['libellé'], [['=1+1'], ['+HYPERLINK("x")'], ['-2'], ['@SUM(A1)'], ['\tcmd'], ['normal'], [-5]]);
+  const lines = csv.split('\r\n');
+  assert.equal(lines[1], `"'=1+1"`);
+  assert.equal(lines[2], `"'+HYPERLINK(""x"")"`);
+  assert.equal(lines[3], `"'-2"`);
+  assert.equal(lines[4], `"'@SUM(A1)"`);
+  assert.equal(lines[5], `"'\tcmd"`);
+  assert.equal(lines[6], 'normal');
+  assert.equal(lines[7], '-5', 'un nombre négatif réel reste un nombre');
+  assert.ok(!/^[=+@]/m.test(csv.replace(/^﻿/, '')), 'aucune ligne ne commence par un caractère de formule');
+});
+
 test('ICS : date sans heure = VALUE=DATE (aucun fuseau), échappement RFC 5545', () => {
   const ics = buildIcs(
     [

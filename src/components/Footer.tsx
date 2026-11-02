@@ -67,6 +67,28 @@ export function Footer() {
           <FooterCol title="Légal" items={LEGAL} />
         </div>
 
+        <aside
+          className="mt-12 max-w-xl border-t hairline pt-6"
+          aria-labelledby="footer-decouvrir"
+        >
+          <h3
+            id="footer-decouvrir"
+            className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-navy-900"
+          >
+            Découvrir aussi
+          </h3>
+          <p className="mt-3 text-sm leading-relaxed text-slate-500">
+            <a
+              href="https://roman-gomes.fr"
+              rel="noopener"
+              className="border-b hairline-gold text-navy-900 transition-colors hover:text-slate-500"
+            >
+              Roman Gomes
+            </a>{" "}
+            — Création de sites web, logiciels et automatisations sur mesure.
+          </p>
+        </aside>
+
         <div className="mt-12 flex flex-col gap-3 border-t hairline pt-6 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
           <span className="font-mono">
             © 2026 ClairDossier · Édité par Roman Gomes · SIREN 105 490 734

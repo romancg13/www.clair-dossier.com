@@ -1,0 +1,100 @@
+{
+  "mission": "ClairDossier Private AI — complete and deploy",
+  "updated": "2026-11-02T10:55:00Z",
+  "branch": "claude/clairdossier-autonomous-deploy-959cad",
+  "tasks": [
+    {
+      "id": "01-discover",
+      "status": "done",
+      "note": "état prod, PR ouvertes, accès vérifiés"
+    },
+    {
+      "id": "02-classify",
+      "status": "done",
+      "note": "WORKING/PARTIAL/BROKEN/MISSING par module"
+    },
+    {
+      "id": "03-checkpoint",
+      "status": "done",
+      "note": "journal + tasks écrits ; commit à faire"
+    },
+    {
+      "id": "04-integrate-pr41-pr42",
+      "status": "done",
+      "note": "fusionnées ba40f0d/090d9fc ; validation en cours"
+    },
+    {
+      "id": "05-validate-baseline",
+      "status": "done",
+      "note": "typecheck, tests, PGlite, deno check, build"
+    },
+    {
+      "id": "06-private-ai-admin",
+      "status": "done",
+      "note": "section IA de la console : file, analyses, coûts, approbation/publication"
+    },
+    {
+      "id": "07-approval-flow",
+      "status": "done",
+      "note": "statuts RECEIVED…PUBLISHED, publication contrôlée des livrables"
+    },
+    {
+      "id": "08-stripe-webhooks",
+      "status": "done",
+      "note": "fonction corrigée (deno), traces ; inventaire Stripe LIVE lu ; déploiement/endpoint = propriétaire"
+    },
+    {
+      "id": "09-website-fixes",
+      "status": "done",
+      "note": "routes prod 200 ; FAQ tarifs sans IA ; securite.md aligné ; 404 routes privées = fallback Pages normal"
+    },
+    {
+      "id": "10-seo-perf",
+      "status": "done",
+      "note": "audit dist/ 36 pages OK ; stubs+spa-shell noindex ; llms.txt 9 articles ; liens internes sans slash = suivi (hors périmètre)"
+    },
+    {
+      "id": "11-security-rls",
+      "status": "done",
+      "note": "audit 4 agents + contre-vérification ; CSV, worker token, e-mail, consentement admin corrigés ; PGlite 92/92"
+    },
+    {
+      "id": "12-tests",
+      "status": "done",
+      "note": "164 unitaires, 92 SQL, 21 partenariat, deno check 6 fonctions, build 36 routes"
+    },
+    {
+      "id": "13-staging-deploy",
+      "status": "blocked",
+      "note": "Vercel CLI inutilisable en sandbox (DNS) ; démo du 26/10 toujours en ligne ; commande propriétaire documentée"
+    },
+    {
+      "id": "14-production",
+      "status": "blocked",
+      "note": "branche locale validée ; push refusé par le bac à sable ; fusion = accord explicite"
+    },
+    {
+      "id": "15-report",
+      "status": "done",
+      "note": "docs/RAPPORT_FINAL_2026-11-02.md"
+    }
+  ],
+  "blockers": [
+    {
+      "id": "supabase-access",
+      "detail": "projet buzgokfmxpmyceppvjpp inaccessible : migrations 20261012/20261023 et fonctions à déployer par le propriétaire (scripts/mise-en-service-supabase.mjs)"
+    },
+    {
+      "id": "anthropic-key",
+      "detail": "secret ANTHROPIC_API_KEY à poser côté Supabase"
+    },
+    {
+      "id": "cgv-art6",
+      "detail": "CGV excluent l'analyse automatique : décision écrite du propriétaire avant activation client"
+    },
+    {
+      "id": "git-push",
+      "detail": "push de la branche refusé par le bac à sable : git push -u origin claude/clairdossier-autonomous-deploy-959cad à exécuter par le propriétaire"
+    }
+  ]
+}
