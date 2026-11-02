@@ -114,3 +114,36 @@ aujourd'hui qu'aucune lecture, extraction ni analyse automatique n'est faite. Av
    région d'hébergement Supabase « en cours de confirmation » ; encadrement des transferts hors UE de Resend et GitHub
    « en cours de confirmation » ; référence du DPA Supabase à publier (page Sécurité). Ajouter Anthropic à ces mêmes
    rubriques (localisation, garanties de transfert, conservation) — `À CONFIRMER` sur contrat.
+
+## Console IA privée et publication contrôlée (2026-11-02, migration 20261102120000)
+
+Objectif : le moteur reste **privé** (piloté depuis la console d'administration, onglet « IA privée ») et le
+client ne voit **que ce qui a été validé**.
+
+| Brique | Rôle |
+|---|---|
+| `dossier_ai_settings.review_mode` | `manual` (défaut) : livrables rendus mais invisibles du client jusqu'à approbation ; `auto` : publication immédiate (dossiers à faible enjeu, sur décision) |
+| `ai_analyses.review_status` | `pending` → `approved` → `published`, ou `rejected` ; policy **restrictive** : le titulaire ne voit qu'une analyse `published` |
+| `dossier_documents.ai_revision` / `review_status` | livrable `pending`/`rejected` invisible du titulaire (policy restrictive) ; fichier sous `ai-review/<user>/<dossier>/` (hors des policies de stockage du titulaire) ; déplacé sous `<user>/<dossier>/` à la publication |
+| travail `publish` | exécuté par `ai-worker` après approbation : déplacement des fichiers, bascule des statuts, corbeille des anciennes versions, échéances, événement, e-mail client |
+| `dossier_ai_settings.consent_reference` | activation par l'administration **uniquement** via `ai_admin_enable` avec la référence de l'accord écrit du titulaire (10 caractères min.), journalisée ; `enable_ai_processing` est désormais réservée au titulaire |
+| RPC admin (`is_admin()` contrôlé côté base, `audit_logs`) | `ai_set_review_mode`, `ai_approve_revision`, `ai_reject_revision` (motif obligatoire), `ai_retry_job`, `ai_admin_enable`, `ai_admin_overview`, `ai_admin_month_cost` |
+| `AI_WORKER_TOKEN` (secret de fonction) + Vault `clairdossier_ai_worker_token` | s'il est posé, `ai-worker` exige l'en-tête `x-worker-token` ; pg_cron le lit dans Vault à chaque exécution |
+
+Flux d'états affiché dans la console (`src/lib/ai-admin.ts`, testé) : Non activé · Reçu · En file · Lecture
+des pièces · Analyse et vérification · **À valider** · Approuvé (publication en cours) · Publié · Rejeté ·
+En pause (budget) · Échec. Taux d'automatisation = dossiers publiés / dossiers terminés.
+
+Interface : `src/components/admin/AdminPrivateAi.tsx` (section « IA privée » de `/admin`). Si la migration
+n'est pas appliquée, la section l'indique et rien d'autre ne change.
+
+Sécurité (audit du 2026-11-02, corrigé) : cellules CSV commençant par `= + - @` ou tabulation préfixées d'une
+apostrophe (`toCsv`) ; e-mail client sans titre de dossier ; réponse HTTP du worker réduite à `{processed}`
+(détail dans les journaux de la fonction) ; rattachements Stripe impossibles tracés dans les journaux.
+
+Tests : `node tests/sql/migrations.pglite.mjs` (92 vérifications, dont 7 pour la console privée : RPC refusées aux
+non-admins, livrables en attente invisibles du titulaire, approbation → travail `publish` → visibilité, rejet
+motivé, relance, activation sur accord écrit) ; `tests/ai-admin.test.ts` (états, tri, compteurs, taux).
+
+Retour arrière : `supabase/rollback/20261102120000_ia_console_privee.down.sql`.
+Décisions et actions propriétaire : `docs/DECISIONS_PROPRIETAIRE_2026-11-02.md`.
