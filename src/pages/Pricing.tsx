@@ -72,7 +72,7 @@ const PRICING_FAQ = [
     id: "essai",
     question: "Faut-il payer pour créer un compte ?",
     answer:
-      "Non. La création de compte est gratuite et vous pouvez constituer vos dossiers immédiatement. Un abonnement n'est nécessaire que pour débloquer plus de dossiers, d'utilisateurs et les fonctions IA avancées. Sans engagement, résiliable à tout moment.",
+      "Non. La création de compte est gratuite et vous pouvez constituer vos dossiers immédiatement. Un abonnement n'est nécessaire que pour débloquer plus de dossiers et d'utilisateurs. Sans engagement, résiliable à tout moment.",
   },
   {
     id: "annuel",

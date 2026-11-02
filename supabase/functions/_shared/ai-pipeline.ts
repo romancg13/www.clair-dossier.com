@@ -88,11 +88,17 @@ export function estimateCostCents(model: string, inputTokens: number, outputToke
 
 /* ── Exports texte ──────────────────────────────────────────────────────── */
 
-/** CSV RFC 4180 (séparateur « ; » attendu par Excel en français), BOM UTF-8. */
+/**
+ * CSV RFC 4180 (séparateur « ; » attendu par Excel en français), BOM UTF-8.
+ * Le contenu vient des pièces (donnée non fiable) : toute cellule commençant par
+ * = + - @ ou une tabulation est préfixée d'une apostrophe pour qu'un tableur ne
+ * l'interprète jamais comme une formule (injection CSV).
+ */
 export function toCsv(headers: string[], rows: (string | number | null | undefined)[][]): string {
   const cell = (v: string | number | null | undefined) => {
-    const s = v === null || v === undefined ? '' : String(v);
-    return /[";\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    const raw = v === null || v === undefined ? '' : String(v);
+    const s = typeof v !== 'number' && /^[=+\-@\t\r]/.test(raw) ? `'${raw}` : raw;
+    return /[";\n\r']/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
   return '\uFEFF' + [headers, ...rows].map((r) => r.map(cell).join(';')).join('\r\n') + '\r\n';
 }

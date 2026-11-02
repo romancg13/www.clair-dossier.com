@@ -17,7 +17,7 @@ Ce centre de confiance expose ce que nous faisons concrètement : chiffrement, i
 - Isolation des données par utilisateur appliquée en base (Row Level Security) — y compris pour le stockage des pièces (bucket privé, liens signés temporaires).
 - Accès à l'espace par authentification (compte confirmé par e-mail) ; consultation support limitée à un administrateur unique.
 - Aucune lecture, extraction ou analyse automatique des documents déposés — engagement contractuel (CGV).
-- Transmission d'un dossier uniquement sur action explicite de l'utilisateur (e-mail ou WhatsApp).
+- Transmission d'un dossier effectuée par l'utilisateur lui-même, hors du Service, par le canal de son choix.
 
 ## Sous-traitants
 

@@ -18,7 +18,7 @@ ClairDossier ne se présente ni comme un cabinet d'avocats, ni comme un conseil 
 - /tarifs                        : 7 formules (Essentiel, Entrepreneur, Business PME 20, Business PME 50, Business/PME Pro, Business/PME Premium) + offre sur-mesure
 - /securite                      : Accès, protection des documents, traitement des données, sous-traitants, DPA
 - /blog                          : Journal éditorial
-- /blog/<slug>                   : 7 articles disponibles (voir Articles ci-dessous)
+- /blog/<slug>                   : 9 articles disponibles (voir Articles ci-dessous)
 - /inscription, /connexion, /compte : Création de compte et espace client (Supabase auth)
 - /dossier/nouveau               : Création de dossier en 5 étapes (profil, nature du dossier, informations, pièces, récapitulatif) — compte requis
 - /contact                       : WhatsApp + formulaire guidé
@@ -36,6 +36,10 @@ ClairDossier ne se présente ni comme un cabinet d'avocats, ni comme un conseil 
 - Préparer un dossier prud'homal : la chronologie qui fait la différence — https://www.clair-dossier.com/blog/chronologie-prud-homale — Pourquoi la chronologie compte plus que les arguments en prud'hommes ; méthode en trois temps ; pièges classiques ; exemple chiffré (article L. 1332-4 du Code du travail, délai de 2 mois entre connaissance des faits et convocation).
 
 - Mise en demeure : le courrier qui débloque (souvent) la situation — https://www.clair-dossier.com/blog/mise-en-demeure — Forme légale (LRAR, mentions obligatoires), 5 erreurs courantes, modèle commenté, base juridique (article 1344 du Code civil, article 1344-1 sur les intérêts moratoires).
+
+- Organiser un dossier : une méthode simple en quatre temps — https://www.clair-dossier.com/blog/organiser-un-dossier — Contrat dans un tiroir, factures dans une boîte mail, photos sur un téléphone : avant de chercher un argument, il faut retrouver ses pièces. Quatre temps suffisent pour obtenir un dossier lisible.
+
+- Kit documentaire : cinq listes de contrôle pour constituer un dossier complet — https://www.clair-dossier.com/blog/kit-documentaire-checklists — Cinq listes de contrôle, à imprimer ou à suivre dans ClairDossier, pour réunir les pièces courantes d'une situation. Aide-mémoire d'organisation, pas des conseils juridiques.
 
 - Médiation ou contentieux : trois critères pour choisir — https://www.clair-dossier.com/blog/mediation-contentieux — Critères : relation à préserver, asymétrie de pouvoir, besoin de jurisprudence. Processus de médiation. Coûts comparés. Base : décret de 2019 sur la tentative amiable obligatoire.
 
@@ -89,7 +93,7 @@ Chaque page importante du site est disponible en markdown brut au même chemin a
 - https://www.clair-dossier.com/fonctionnalites/index.md
 - https://www.clair-dossier.com/fonctionnalites/<slug>.md (9 fonctionnalités)
 - https://www.clair-dossier.com/blog/index.md
-- https://www.clair-dossier.com/blog/<slug>.md (7 articles)
+- https://www.clair-dossier.com/blog/<slug>.md (9 articles)
 - https://www.clair-dossier.com/mentions-legales.md
 - https://www.clair-dossier.com/cgv.md
 - https://www.clair-dossier.com/politique-confidentialite.md
@@ -97,7 +101,7 @@ Chaque page importante du site est disponible en markdown brut au même chemin a
 
 ## Crawling
 
-Les robots d'indexation et les crawlers d'IA générative (GPTBot, ChatGPT-User, PerplexityBot, Claude-Web, Google-Extended) sont autorisés sur l'ensemble du site sauf /dossier/ (zone applicative). Voir /robots.txt pour les directives exactes.
+Les robots d'indexation et les crawlers d'IA générative (GPTBot, OAI-SearchBot, ChatGPT-User, PerplexityBot, Claude-Web, ClaudeBot, Google-Extended) sont autorisés sur l'ensemble du site sauf les espaces privés et écrans d'authentification (/dossier/, /compte, /admin, /connexion, /inscription) et les documents investisseurs (/investisseurs/). Voir /robots.txt pour les directives exactes.
 
 ## Contact pour les rédacteurs et chercheurs
 
