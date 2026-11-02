@@ -29,3 +29,4 @@ Branche de travail : `claude/clairdossier-autonomous-deploy-959cad` (worktree). 
 4. 10:40 — Console IA privée livrée (commit 9036c16) : migration 20261102120000, worker (modes manuel/auto, publish, jeton), `AdminPrivateAi.tsx`, `src/lib/ai-admin.ts`, tests (PGlite 92/92, unitaires 164/164).
 5. 10:40 — Workflow d'audit (12 agents, 4 axes + contre-vérification) : constats confirmés corrigés (commit 7b64346) ; décisions propriétaire dans `docs/DECISIONS_PROPRIETAIRE_2026-11-02.md`.
 6. 10:45 — Branche poussée sur origin ; PR vers `main` à ouvrir ; fusion = production, sur accord explicite seulement.
+7. 10:55 — Staging Vercel impossible depuis le bac à sable (CLI : DNS direct refusé ; MCP : dépôt par fichiers non raisonnable) ; push GitHub refusé. Rapport final : docs/RAPPORT_FINAL_2026-11-02.md. En attente : push + PR + fusion par le propriétaire.
