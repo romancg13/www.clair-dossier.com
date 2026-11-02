@@ -164,6 +164,7 @@ export function buildRedirectPage(targetPath: string, label: string): string {
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Page déplacée — ClairDossier</title>
+    <meta name="robots" content="noindex, follow" />
     <link rel="canonical" href="${url}" />
     <meta http-equiv="refresh" content="0; url=${href}" />
   </head>
@@ -177,7 +178,7 @@ export function buildRedirectPage(targetPath: string, label: string): string {
 async function main(): Promise<void> {
   const { build } = await import('vite');
 
-  // ── 1. Bundle SSR ──────────────────────────────────────────────────────
+  // ── 1. Bundle SSR ────────────────────────────────────────────────────────────────────
   await build({
     configFile: join(root, 'vite.config.ts'),
     logLevel: 'warn',
@@ -209,7 +210,8 @@ async function main(): Promise<void> {
   template = template.replace(scriptTag[0], '').replace('</body>', `${scriptTag[0]}</body>`);
   template = template.replace(/\s*<link rel="modulepreload"[^>]*>/g, '');
 
-  writeFileSync(join(dist, 'spa-shell.html'), template);
+  // Coquille technique (fallback Netlify) : jamais une page à indexer.
+  writeFileSync(join(dist, 'spa-shell.html'), replaceOrFail(template, /(<meta name="robots" content=")[^"]*(")/, '$1noindex, follow$2', 'robots'));
 
   // ── 3. 404 réelle (remplace la copie brute faite par vite.config.ts) ──
   writeFileSync(join(dist, '404.html'), buildNotFoundPage(template));
@@ -269,7 +271,7 @@ async function main(): Promise<void> {
     writeFileSync(join(outDir, 'index.html'), buildRedirectPage(`/fonctionnalites/${newSlug}`, target.title));
   }
 
-  // ── 6. Nettoyage ───────────────────────────────────────────────────────
+  // ── 6. Nettoyage ─────────────────────────────────────────────────────────────────────
   rmSync(distSsr, { recursive: true, force: true });
   for (const w of warnings) console.warn(`prerender (SEO) : ${w}`);
   console.log(
