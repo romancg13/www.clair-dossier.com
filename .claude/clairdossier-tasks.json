@@ -1,0 +1,27 @@
+{
+  "mission": "ClairDossier Private AI — complete and deploy",
+  "updated": "2026-11-02T09:15:00Z",
+  "branch": "claude/clairdossier-autonomous-deploy-959cad",
+  "tasks": [
+    { "id": "01-discover", "status": "done", "note": "état prod, PR ouvertes, accès vérifiés" },
+    { "id": "02-classify", "status": "in_progress", "note": "WORKING/PARTIAL/BROKEN/MISSING par module" },
+    { "id": "03-checkpoint", "status": "in_progress", "note": "journal + tasks écrits ; commit à faire" },
+    { "id": "04-integrate-pr41-pr42", "status": "done", "note": "fusionnées ba40f0d/090d9fc ; validation en cours" },
+    { "id": "05-validate-baseline", "status": "pending", "note": "typecheck, tests, PGlite, deno check, build" },
+    { "id": "06-private-ai-admin", "status": "pending", "note": "section IA de la console : file, analyses, coûts, approbation/publication" },
+    { "id": "07-approval-flow", "status": "pending", "note": "statuts RECEIVED…PUBLISHED, publication contrôlée des livrables" },
+    { "id": "08-stripe-webhooks", "status": "pending", "note": "stripe-webhook existe, non déployé ; inventaire Stripe" },
+    { "id": "09-website-fixes", "status": "pending" },
+    { "id": "10-seo-perf", "status": "pending" },
+    { "id": "11-security-rls", "status": "pending" },
+    { "id": "12-tests", "status": "pending" },
+    { "id": "13-staging-deploy", "status": "pending", "note": "Vercel clairdossier-demo" },
+    { "id": "14-production", "status": "pending", "note": "PR vers main ; fusion sur accord explicite" },
+    { "id": "15-report", "status": "pending" }
+  ],
+  "blockers": [
+    { "id": "supabase-access", "detail": "projet buzgokfmxpmyceppvjpp inaccessible : migrations 20261012/20261023 et fonctions à déployer par le propriétaire (scripts/mise-en-service-supabase.mjs)" },
+    { "id": "anthropic-key", "detail": "secret ANTHROPIC_API_KEY à poser côté Supabase" },
+    { "id": "cgv-art6", "detail": "CGV excluent l'analyse automatique : décision écrite du propriétaire avant activation client" }
+  ]
+}
