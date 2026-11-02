@@ -1,7 +1,5 @@
 import { Seo, orgSchema, websiteSchema } from '../../lib/seo';
 import { homeFaq } from '../../data/faq';
-import { WorkspacesTabs } from '../sections/WorkspacesTabs';
-import { BlogPreview } from '../sections/BlogPreview';
 import { FaqBlock } from '../sections/FaqBlock';
 import { HeroCinematic } from './HeroCinematic';
 import { StoryScene } from './StoryScene';
@@ -10,26 +8,22 @@ import { ChapterTimeline } from './ChapterTimeline';
 import { ChapterDeadlines } from './ChapterDeadlines';
 import { ChapterTransmission } from './ChapterTransmission';
 import { ChapterOverview } from './ChapterOverview';
-import { MidCTA } from './MidCTA';
-import { FeaturesBento } from './FeaturesBento';
-import { BeforeAfter } from './BeforeAfter';
-import { AudienceSwitcher } from './AudienceSwitcher';
 import { TrustChapter } from './TrustChapter';
 import { PricingCinematic } from './PricingCinematic';
 import { FinalCinematic } from './FinalCinematic';
 
 /**
- * Home cinématique — Phase 4 « Homepage elevation » (MASTER_PROMPT VI.4).
+ * Home cinématique — Phase 4, simplifiée (2026-10-24, « hero 3 secondes »).
  *
  * Montée derrière le flag HOME_CINEMATIC (src/lib/flags.ts) depuis
  * src/pages/Home.tsx, dont la composition historique reste intacte.
- * Mapping SECTION CURRENT → KEEP / ENHANCE / MOVE / MERGE :
- * docs/HOMEPAGE_ELEVATION.md.
  *
- * Narration en huit temps (VI.4) : le problème (01) → ce que ClairDossier
- * transforme (02–05) → la vue d'ensemble (06) → les fonctionnalités →
- * avant / avec → pour qui → espaces dédiés → cycle de vie → confiance →
- * tarifs → journal → FAQ → commencer.
+ * Six temps : HERO (convergence 3D) → RÉCIT PRODUIT (01–06, fond cinéma) →
+ * CONFIANCE (+ FAQ dépliable) → OFFRES → CONCLUSION (maquette produit).
+ * Sections déplacées, PAS supprimées (2026-10-24) : FeaturesBento,
+ * BeforeAfter, AudienceSwitcher et WorkspacesTabs vivent désormais sur
+ * /fonctionnalites (FeaturesIndex) ; le Journal reste accessible au pied de
+ * page ; MidCTA (CTA dupliqué, aucun effet propre) a été retiré.
  */
 
 // Aligné sur src/pages/Home.tsx (composition historique) — ne pas diverger.
@@ -37,7 +31,7 @@ const softwareSchema = {
   '@context': 'https://schema.org',
   '@type': 'SoftwareApplication',
   name: 'ClairDossier',
-  applicationCategory: 'LegalService',
+  applicationCategory: 'BusinessApplication',
   operatingSystem: 'Web',
   offers: {
     '@type': 'Offer',
@@ -63,8 +57,8 @@ export function HomeCinematic() {
   return (
     <>
       <Seo
-        title="ClairDossier — Vos dossiers administratifs et juridiques, clairs et suivis"
-        description="ClairDossier réunit vos pièces dans un espace privé, structure votre dossier administratif ou juridique en cinq étapes, affiche vos échéances et ne transmet rien sans votre validation. Pour PME, artisans, indépendants et professions libérales."
+        title="ClairDossier — Dossiers administratifs et juridiques clairs et suivis"
+        description="ClairDossier réunit vos documents dans un espace privé, structure votre dossier, suit avancement et échéances. Pour entreprises, indépendants et cabinets."
         path="/"
         jsonLd={[orgSchema, websiteSchema, softwareSchema, faqSchema]}
       />
@@ -80,34 +74,18 @@ export function HomeCinematic() {
         <ChapterDeadlines />
         <ChapterTransmission />
         <ChapterOverview />
-        <MidCTA />
         <div aria-hidden="true" className="h-32 bg-gradient-to-t from-cream-50 to-transparent" />
       </div>
 
       {/* Sections claires : rendu différé hors écran (.cd-cv) — coût de mise en
-          page initial réduit sur mobile ; aucune de ces sections ne pilote une
-          animation par sa propre hauteur. */}
-      <div className="cd-cv" style={{ containIntrinsicSize: 'auto 1400px' }}>
-        <FeaturesBento />
-      </div>
-      <BeforeAfter />
+          page initial réduit sur mobile. La confiance porte l'ambiance 3D
+          « dossier suspendu » : pas de .cd-cv (la scène suit le défilement). */}
+      <TrustChapter />
       <div className="cd-cv" style={{ containIntrinsicSize: 'auto 900px' }}>
-        <AudienceSwitcher />
-      </div>
-      <div className="cd-cv" style={{ containIntrinsicSize: 'auto 800px' }}>
-        <WorkspacesTabs />
-      </div>
-      <div className="cd-cv" style={{ containIntrinsicSize: 'auto 900px' }}>
-        <TrustChapter />
+        <FaqBlock />
       </div>
       <div className="cd-cv" style={{ containIntrinsicSize: 'auto 1000px' }}>
         <PricingCinematic />
-      </div>
-      <div className="cd-cv" style={{ containIntrinsicSize: 'auto 900px' }}>
-        <BlogPreview limit={3} />
-      </div>
-      <div className="cd-cv" style={{ containIntrinsicSize: 'auto 900px' }}>
-        <FaqBlock />
       </div>
       <FinalCinematic />
     </>

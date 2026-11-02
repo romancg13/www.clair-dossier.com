@@ -130,6 +130,9 @@ const MARKERS = {
     "select exists (select 1 from information_schema.columns where table_schema='public' and table_name='prospects' and column_name='partner_type')",
   '20260919120000_corbeille_client.sql': "select to_regprocedure('public.client_trash_enabled()')",
   '20260920120000_admin_sans_mfa.sql': "select to_regprocedure('public.admin_delete_enabled()')",
+  '20261012120000_revenus_abonnements.sql':
+    "select exists (select 1 from information_schema.columns where table_schema='public' and table_name='subscriptions' and column_name='unit_amount')",
+  '20261023120000_moteur_documentaire_ia.sql': "select to_regclass('public.ai_jobs')",
 };
 // Socle qui DOIT déjà exister (sinon : mauvais projet → arrêt).
 const SOCLE = [
@@ -261,7 +264,7 @@ async function stepOverrideJgomes() {
   else ko(`Droit effectif inattendu : ${JSON.stringify(eff?.[0])}`);
 }
 
-const EDGE_FUNCTIONS = ['notify-lead', 'stripe-webhook', 'admin-users', 'delete-account', 'submit-prospect'];
+const EDGE_FUNCTIONS = ['notify-lead', 'stripe-webhook', 'admin-users', 'delete-account', 'submit-prospect', 'ai-worker'];
 
 async function stepFunctions() {
   console.log('\n── 4. Fonctions Edge ──');
@@ -299,6 +302,7 @@ const EXPECTED_SECRETS = [
   ['RESEND_API_KEY', 'e-mail admin (déjà utilisé par notify-lead historiquement)'],
   ['STRIPE_SECRET_KEY', 'clé restreinte lecture Subscriptions/Customers/Prices/Products'],
   ['STRIPE_WEBHOOK_SECRET', 'whsec_… de l’endpoint créé au dashboard Stripe'],
+  ['ANTHROPIC_API_KEY', 'moteur documentaire IA (ai-worker) — sans elle le worker répond 503 et ne réclame rien'],
   ['ADMIN_NOTIFICATION_EMAIL', 'facultatif — défaut : prestige.seller@icloud.com'],
   ['ADMIN_NOTIFICATION_PHONE', 'facultatif — SMS admin (+33…)'],
   ['TWILIO_ACCOUNT_SID', 'facultatif — SMS'],

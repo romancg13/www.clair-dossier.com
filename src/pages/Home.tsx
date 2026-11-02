@@ -20,7 +20,7 @@ const softwareSchema = {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
   name: "ClairDossier",
-  applicationCategory: "LegalService",
+  applicationCategory: "BusinessApplication",
   operatingSystem: "Web",
   offers: {
     "@type": "Offer",

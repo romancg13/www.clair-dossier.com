@@ -6,13 +6,16 @@
 # la base de données, pas par ce fichier (qui est public).
 #
 # Un seul groupe : un robot n'applique que le groupe le plus spécifique qui
-# le nomme ; les robots IA cités (sources citées) reçoivent donc exactement
-# les mêmes règles que les autres.
+# le nomme ; les robots IA cités reçoivent donc exactement les mêmes règles
+# que les autres. OAI-SearchBot (recherche ChatGPT, avec citation) est
+# distinct de GPTBot (entraînement) : les deux sont nommés et autorisés.
 User-agent: *
 User-agent: GPTBot
+User-agent: OAI-SearchBot
 User-agent: ChatGPT-User
 User-agent: PerplexityBot
 User-agent: Claude-Web
+User-agent: ClaudeBot
 User-agent: Google-Extended
 Allow: /
 # Espaces privés et écrans d'authentification (routes réelles du routeur src/App.tsx)

@@ -1,7 +1,12 @@
+import { useRef } from 'react';
 import { Link } from 'react-router-dom';
+import { useScroll } from 'motion/react';
 import { Reveal, Stagger, StaggerItem } from '../primitives/Reveal';
 import { TRUST } from '../sections/SecurityBlock';
 import { ArrowRightIcon } from '../icons';
+// Ambiance 3D « dossier suspendu » (ex-scène du Hero), réaffectée ici (2026-10-24).
+import { CinematicGate } from './cinematics/CinematicGate';
+import { CINEMATIC_SCENES } from './cinematics/scenes';
 
 /**
  * Confiance — ENHANCE de SecurityBlock : mêmes six affirmations vérifiables
@@ -10,8 +15,14 @@ import { ArrowRightIcon } from '../icons';
  * vérifie dans le code, les migrations ou les documents publiés.
  */
 export function TrustChapter() {
+  const ref = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start 90%', 'end 20%'], layoutEffect: false });
   return (
-    <Reveal as="section" id="confiance" className="border-y hairline bg-cream-100/40">
+    <div ref={ref} className="relative isolate">
+      {CINEMATIC_SCENES.trust.enabled && (
+        <CinematicGate load={CINEMATIC_SCENES.trust.load} progress={scrollYProgress} className="-z-10" />
+      )}
+      <Reveal as="section" id="confiance" className="border-y hairline bg-cream-100/40">
       <div className="mx-auto max-w-7xl px-5 py-20 sm:px-8 sm:py-24 lg:px-12 lg:py-32">
         <div className="grid gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:gap-20">
           <div className="lg:sticky lg:top-28 lg:self-start">
@@ -58,6 +69,7 @@ export function TrustChapter() {
           </Stagger>
         </div>
       </div>
-    </Reveal>
+      </Reveal>
+    </div>
   );
 }

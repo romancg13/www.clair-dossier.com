@@ -71,7 +71,7 @@ export function ProductStatus() {
     <>
       <Seo
         title="État du produit"
-        description={`Ce que ClairDossier fait aujourd'hui, ce qui est partiel et ce qui est prévu — établi depuis le code, mis à jour le ${formatDate(PRODUCT_STATUS_UPDATED)}. Pas de fonctionnalité fictive.`}
+        description={`Ce que ClairDossier fait aujourd'hui, partiel ou prévu — établi depuis le code, mis à jour le ${formatDate(PRODUCT_STATUS_UPDATED)}. Aucune fonctionnalité fictive.`}
         path="/etat-du-produit"
         jsonLd={breadcrumbSchema([
           { name: 'Accueil', path: '/' },

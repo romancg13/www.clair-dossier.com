@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { motion } from "motion/react";
-import { useAuth } from "../lib/auth";
-import { useCheckoutEmail } from "../lib/profile";
+import { PlanCta } from "../components/pricing/PlanCta";
 import { Seo, breadcrumbSchema } from "../lib/seo";
 import { Reveal, Stagger, StaggerItem } from "../components/primitives/Reveal";
 import { Accordion } from "../components/ui/Accordion";
@@ -113,7 +112,7 @@ export function Pricing() {
     <>
       <Seo
         title="Tarifs"
-        description="Sept formules ClairDossier, de l'indépendant à l'entreprise : Essentiel, Entrepreneur, Business PME 20/50, Pro, Premium et offre sur-mesure. Compte gratuit, sans engagement. −10 % en annuel."
+        description="Sept formules, de l'indépendant à l'entreprise : Essentiel, Entrepreneur, Business PME, Pro, Premium et sur-mesure. Compte gratuit, −10 % en annuel."
         path="/tarifs"
         jsonLd={[
           breadcrumbSchema([
@@ -214,8 +213,9 @@ export function Pricing() {
       </section>
 
       {/* 6 plans en grille 2 colonnes (desktop) */}
-      <section className="bg-cream-50">
+      <section className="bg-cream-50" aria-labelledby="formules-titre">
         <div className="mx-auto max-w-7xl px-5 pb-20 sm:px-8 lg:px-12">
+          <h2 id="formules-titre" className="sr-only">Les formules</h2>
           <Stagger
             inView
             className="grid items-stretch gap-6 sm:gap-7 lg:grid-cols-2"
@@ -618,76 +618,11 @@ function PlanCard({
         href={isYearly && plan.ctaHrefYearly ? plan.ctaHrefYearly : plan.ctaHref}
         planId={plan.id}
         monthly={!isYearly}
-        label={plan.ctaLabel}
         className={`mt-7 inline-flex items-center justify-center gap-1.5 rounded-xl px-5 py-3.5 text-sm font-medium transition-colors ${ctaClass}`}
-      />
-    </article>
-  );
-}
-
-/**
- * CTA d'abonnement : le paiement Stripe n'est proposé qu'à un utilisateur
- * authentifié. Un visiteur passe d'abord par la connexion / création de
- * compte, puis revient sur les tarifs (?next). Les liens internes (devis,
- * contact) restent inchangés.
- */
-function PlanCta({
-  href,
-  planId,
-  monthly,
-  label,
-  className,
-}: {
-  href: string;
-  planId: string;
-  monthly: boolean;
-  label: string;
-  className: string;
-}) {
-  const { user } = useAuth();
-  const isCheckout = href.startsWith("https://buy.stripe.com/");
-  const checkoutEmail = useCheckoutEmail(isCheckout ? user?.id : undefined, user?.email ?? null);
-  const back = new URLSearchParams({ formule: planId });
-  const next = encodeURIComponent(`/tarifs?${back.toString()}`);
-  if (isCheckout && !user) {
-    return (
-      <Link to={`/connexion?next=${next}`} className={className}>
-        {label}
-      </Link>
-    );
-  }
-  if (isCheckout && user && !user.email_confirmed_at) {
-    return (
-      <Link to={`/inscription?next=${next}`} state={{ verifier: user.email }} className={className}>
-        {label}
-      </Link>
-    );
-  }
-  if (isCheckout && user) {
-    // Rattachement serveur du paiement au compte (webhook Stripe) : identifiant
-    // du compte + e-mail de facturation (facultatif, repli sur le compte).
-    const url = new URL(href);
-    url.searchParams.set("client_reference_id", user.id);
-    if (checkoutEmail) url.searchParams.set("prefilled_email", checkoutEmail);
-    return (
-      <a
-        href={url.toString()}
-        className={className}
-        onClick={() =>
-          trackEvent("debut_checkout", {
-            formule: planId,
-            facturation: monthly ? "mensuelle" : "annuelle",
-          })
-        }
       >
-        {label}
-      </a>
-    );
-  }
-  return (
-    <Link to={href} className={className}>
-      {label}
-    </Link>
+        {plan.ctaLabel}
+      </PlanCta>
+    </article>
   );
 }
 

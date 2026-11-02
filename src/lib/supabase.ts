@@ -14,7 +14,7 @@ if (!isSupabaseConfigured && import.meta.env.DEV) {
 
 // Client unique partagé. Les pages marketing fonctionnent même sans config
 // (isSupabaseConfigured permet de dégrader proprement les écrans de compte).
-export const supabase = createClient(url ?? 'https://placeholder.supabase.co', anonKey ?? 'placeholder', {
+export const supabase = createClient(url || 'https://placeholder.supabase.co', anonKey || 'placeholder', {
   auth: {
     persistSession: true,
     autoRefreshToken: true,

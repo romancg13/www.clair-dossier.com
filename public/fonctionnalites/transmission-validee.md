@@ -1,6 +1,6 @@
 ---
 title: "Transmission validée par vous"
-description: "Votre dossier validé est enregistré dans votre compte, jamais envoyé automatiquement. Vous le transmettez vous-même, au destinataire et au moment de votre choix."
+description: "Votre dossier validé est enregistré dans votre compte, jamais envoyé automatiquement. Vous le transmettez vous-même, au destinataire, au moment de votre choix."
 url: https://www.clair-dossier.com/fonctionnalites/transmission-validee
 ---
 

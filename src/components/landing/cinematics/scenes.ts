@@ -11,7 +11,7 @@
 import type { ComponentType } from 'react';
 import type { SceneProps } from './CinematicGate';
 
-export type SceneId = 'hero' | 'story' | 'structure' | 'timeline' | 'deadlines' | 'final';
+export type SceneId = 'hero' | 'story' | 'structure' | 'timeline' | 'deadlines' | 'trust';
 
 export type SceneEntry = {
   enabled: boolean;
@@ -21,12 +21,14 @@ export type SceneEntry = {
 };
 
 export const CINEMATIC_SCENES: Record<SceneId, SceneEntry> = {
-  hero: { enabled: true, load: () => import('./scenes/HeroScene'), host: 'landing/HeroCinematic.tsx' },
+  // 2026-10-24 : échange hero ⇄ final — la convergence documentaire devient la scène du Hero,
+  // l'ambiance « dossier suspendu » (ex-hero) accompagne le chapitre Confiance.
+  hero: { enabled: true, load: () => import('./scenes/FinalConvergenceScene'), host: 'landing/HeroCinematic.tsx' },
   story: { enabled: true, load: () => import('./scenes/StoryConvergenceScene'), host: 'landing/StoryScene.tsx' },
   structure: { enabled: false, load: () => import('./scenes/DocumentLayersScene'), host: 'landing/ChapterStructure.tsx' },
   timeline: { enabled: false, load: () => import('./scenes/TimelineSpaceScene'), host: 'landing/ChapterTimeline.tsx' },
   deadlines: { enabled: false, load: () => import('./scenes/DeadlineArcScene'), host: 'landing/ChapterDeadlines.tsx' },
-  final: { enabled: true, load: () => import('./scenes/FinalConvergenceScene'), host: 'landing/FinalCinematic.tsx' },
+  trust: { enabled: true, load: () => import('./scenes/HeroScene'), host: 'landing/TrustChapter.tsx' },
 };
 
 export function sceneEnabled(id: SceneId): boolean {

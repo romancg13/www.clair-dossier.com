@@ -12,7 +12,7 @@ La première difficulté quand on suit plusieurs affaires, c'est de savoir lesqu
 
 Après création de votre compte, gratuite et confirmée par e-mail, vous accédez à votre espace. Chaque dossier que vous créez s'y ajoute, identifié par le nom que vous lui avez donné. Vous ouvrez celui que vous voulez d'un clic.
 
-Depuis la liste, vous entrez sur la page d'avancement de chaque dossier : ses cinq étapes, ses pièces, ses échéances. Vous passez d'un dossier à l'autre sans rien perdre de vue.
+Depuis la liste, vous entrez sur le suivi de chaque dossier : ses quatre étapes, ses pièces, ses échéances. Vous passez d'un dossier à l'autre sans rien perdre de vue.
 
 Vos dossiers restent isolés : votre espace ne contient que les vôtres. Cette séparation par utilisateur assure que vos informations ne se mélangent jamais avec celles d'un autre compte.
 

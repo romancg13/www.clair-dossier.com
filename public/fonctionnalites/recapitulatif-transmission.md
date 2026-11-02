@@ -1,6 +1,6 @@
 ---
 title: "Récapitulatif avant transmission"
-description: "Avant de valider, ClairDossier vous présente un récapitulatif complet du dossier. Vous relisez, vous corrigez si besoin, puis vous enregistrez le dossier dans votre compte."
+description: "Avant de valider, ClairDossier vous présente un récapitulatif complet. Vous relisez, corrigez si besoin, puis vous enregistrez le dossier dans votre compte."
 url: https://www.clair-dossier.com/fonctionnalites/recapitulatif-transmission
 ---
 

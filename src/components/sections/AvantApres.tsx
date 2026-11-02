@@ -11,7 +11,7 @@ export const AVANT = [
 
 export const AVEC = [
   "Pièces déposées une fois dans un espace privé sécurisé, consultables et téléchargeables.",
-  "Avancement suivi sur 5 étapes métier claires, avec les échéances réunies au même endroit.",
+  "Dossier suivi en 4 étapes claires, avec les échéances réunies au même endroit.",
   "Vous consultez l'avancement de votre dossier à tout moment, depuis votre espace.",
   "Tous vos dossiers réunis dans un espace privé, isolés et accessibles par vous seul.",
   "Rien ne part sans votre validation : vous transmettez le dossier vous-même, quand vous le décidez.",
