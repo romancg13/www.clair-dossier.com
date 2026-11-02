@@ -15,7 +15,7 @@
 // Secrets attendus (injectés par la plateforme, jamais dans le code) :
 // SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_ANON_KEY.
 
-import { createClient } from 'npm:@supabase/supabase-js@2';
+import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2';
 
 const SITE = 'https://www.clair-dossier.com';
 
@@ -44,7 +44,8 @@ function corsHeaders(origin: string | null): Record<string, string> {
 
 /** Liste récursivement les fichiers d'un préfixe du bucket privé. */
 async function listAll(
-  admin: ReturnType<typeof createClient>,
+  // deno-lint-ignore no-explicit-any
+  admin: SupabaseClient<any, any, any>,
   prefix: string,
   depth = 0,
 ): Promise<string[]> {

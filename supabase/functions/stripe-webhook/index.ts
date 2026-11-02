@@ -18,7 +18,7 @@
 // Secrets : STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET ; SUPABASE_URL et
 // SUPABASE_SERVICE_ROLE_KEY sont injectés par la plateforme.
 
-import Stripe from 'npm:stripe@17';
+import Stripe from 'npm:stripe@17.5.0'; // épinglé : 17.5 = API 2024-12-18.acacia (17.7 passe à 2025-02-24)
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import {
   HANDLED_EVENTS,
@@ -97,9 +97,16 @@ async function handle(event: Stripe.Event): Promise<string> {
       const session = event.data.object as Stripe.Checkout.Session;
       if (session.mode !== 'subscription' || !session.subscription) return 'ignoré (pas un abonnement)';
       const userId = session.client_reference_id;
-      if (!isUuid(userId)) return 'non rattaché (paiement hors compte) — rapprochement manuel';
+      const subRef = typeof session.subscription === 'string' ? session.subscription : session.subscription.id;
+      if (!isUuid(userId)) {
+        console.warn('stripe-webhook: non rattaché (paiement hors compte)', { subscription: subRef });
+        return 'non rattaché (paiement hors compte) — rapprochement manuel';
+      }
       const { data: user } = await admin.auth.admin.getUserById(userId);
-      if (!user?.user) return 'non rattaché (compte introuvable) — rapprochement manuel';
+      if (!user?.user) {
+        console.warn('stripe-webhook: non rattaché (compte introuvable)', { subscription: subRef });
+        return 'non rattaché (compte introuvable) — rapprochement manuel';
+      }
       // Le client_reference_id vient d'une URL modifiable : il n'est accepté
       // que si l'e-mail saisi au paiement correspond au compte référencé
       // (e-mail d'authentification ou e-mail de facturation déclaré).
@@ -107,6 +114,7 @@ async function handle(event: Stripe.Event): Promise<string> {
       const { data: prof } = await admin.from('profiles').select('billing_email').eq('id', userId).maybeSingle();
       const billingEmail = (prof as { billing_email: string | null } | null)?.billing_email ?? null;
       if (!paymentEmailMatchesAccount(paymentEmail, [user.user.email, billingEmail])) {
+        console.warn('stripe-webhook: non rattaché (e-mail du paiement différent du compte)', { subscription: subRef });
         return 'non rattaché (e-mail du paiement différent du compte) — rapprochement manuel';
       }
       const subId = typeof session.subscription === 'string' ? session.subscription : session.subscription.id;
