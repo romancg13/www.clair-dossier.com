@@ -8,13 +8,13 @@ url: https://www.clair-dossier.com/
 
 **Votre dossier administratif et juridique, clair, structuré et suivi.**
 
-Créez des dossiers administratifs et juridiques structurés : calendrier, relances à échéance et projets de réponse aux e-mails. Pour les PME, artisans, entreprises individuelles et professions libérales. Option : un préavis juridique et un résumé de la situation à valider par un professionnel du droit.
+ClairDossier réunit vos pièces dans un espace privé, structure votre dossier administratif ou juridique en cinq étapes, affiche vos échéances et ne transmet rien sans votre validation. Pour PME, artisans, indépendants et professions libérales.
 
 ## Promesse
 
 - 6 statuts dossier standardisés et traçables
-- Calendrier et relances automatiques à échéance
-- 100 % conforme RGPD — hébergement OVH France
+- Échéances renseignées et affichées sur le dossier (aucun rappel envoyé à votre place à ce jour)
+- Aucune lecture, extraction ou analyse automatique de vos pièces ; espace privé, accès par liens signés
 
 ## Trois espaces, un dossier
 
