@@ -1,10 +1,10 @@
 {
-  "reference": "main ed12601 (production 2026-11-04) — paiements gelés sur décision du propriétaire",
+  "reference": "main ed12601 (production 2026-11-04) — paiements gelés sur décision du propriétaire ; 2026-11-04 : teintes des 3 fichiers tarifs restaurées à l’identique d’avant la PR #46 sur instruction écrite (couleurs seules, liens inchangés)",
   "fichiers": {
     "src/data/pricing.ts": "977bfd717257d8588bf931565399f815c0deee7bfc5e86e37ff886cc408aa4e7",
-    "src/pages/Pricing.tsx": "5166f34d2801cedcb153c1537de1caf87a958a308d3fc9ea9219a8077a44d7f0",
-    "src/components/landing/PricingCinematic.tsx": "faef8ab07c0556d6cadd77f62347457c61534cb46369e322b699b15f06c531d1",
-    "src/components/sections/PricingPreview.tsx": "171331dc28c00eb4929f237c67d56d974f844b3baf3cefcba3e16f218a623bdb",
+    "src/pages/Pricing.tsx": "7c06c8f3fc2b4df421b48290a5ed4ebf8db1d751140886d226d13a22ed20e367",
+    "src/components/landing/PricingCinematic.tsx": "dd7a7b0aa4ceacb23b7509b7aaeef9c0f547d5a7517fec2f1cc3aae2100b87ae",
+    "src/components/sections/PricingPreview.tsx": "9b38de4fa8c6beca3bc855ed0802db3cd9a27fae66d52eafe4d87c15db439f73",
     "src/components/account/AccountPanels.tsx": "1f6b81ab44215dc333a8ed2026837fdf6893a386831ca138dbe660da3f87338c",
     "src/components/admin/AdminRevenue.tsx": "c65e6bb8a6d3e6fcd7fc05414f1ee07db885a8fb58336ac1f9ddcdfa022fe5b4",
     "src/lib/revenue.ts": "d3398abdfa375e5eaaea1d2e940a3ba00b2d0be322c596682308547507ff8d3f",

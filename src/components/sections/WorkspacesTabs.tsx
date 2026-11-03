@@ -11,7 +11,7 @@ export function WorkspacesTabs() {
         className="pointer-events-none absolute inset-0 -z-10"
         style={{
           backgroundImage:
-            'radial-gradient(40% 30% at 10% 0%, rgba(244,201,93,0.12), transparent 70%), radial-gradient(50% 40% at 90% 100%, rgba(244,201,93,0.06), transparent 70%)',
+            'radial-gradient(40% 30% at 10% 0%, rgba(196,164,86,0.10), transparent 70%), radial-gradient(50% 40% at 90% 100%, rgba(196,164,86,0.05), transparent 70%)',
         }}
       />
       <div className="mx-auto max-w-7xl px-5 py-14 sm:py-20 lg:py-24 sm:px-8 lg:px-12">

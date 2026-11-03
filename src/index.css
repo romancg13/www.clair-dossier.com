@@ -19,33 +19,28 @@
 
 @theme {
   /* ─── Palette signature ──────────────────────────────────── */
-  --color-navy-900: #01113d;
-  --color-navy-800: #0a2150;
-  --color-navy-700: #13306a;
-  --color-navy-600: #1e4183;
+  --color-navy-900: #0d1b3d;
+  --color-navy-800: #152348;
+  --color-navy-700: #1e2c52;
+  --color-navy-600: #2a3960;
 
-  --color-gold-500: #f4c95d;
+  --color-gold-500: #c4a456;
   --color-gold-400: #e6c97d;
-  --color-gold-300: #f6e1a4;
-  /* Texte uniquement sur fond clair — passe WCAG AA (contraste 5.4:1 sur cream-50) */
-  --color-gold-700: #876008;
+  --color-gold-300: #f0d99a;
+  /* Texte uniquement sur fond clair — passe WCAG AA (contrast 5.3:1 sur cream-50) */
+  --color-gold-700: #7a5f28;
 
   --color-cream-50: #fbf9f4;
   --color-cream-100: #f5f0e6;
   --color-cream-200: #ebe2cf;
 
-  --color-ink: #030b26;
-  --color-slate-500: #475574;
-  --color-slate-400: #5f6c88;
-  --color-slate-300: #a6b0c6;
+  --color-ink: #0a1228;
+  --color-slate-500: #5a6378;
+  --color-slate-400: #7c8497;
+  --color-slate-300: #a3aab9;
 
-  --color-sky-marker: rgba(57, 168, 255, 0.5);
-  --color-sky-marker-deep: rgba(57, 168, 255, 0.7);
-
-  /* Accents électriques de la carte de visite : azur-500 = détails lumineux
-     (fonds sombres, halos, focus) ; azur-700 = variante AA sur fond clair. */
-  --color-azur-500: #39a8ff;
-  --color-azur-700: #005cbf;
+  --color-sky-marker: rgba(179, 210, 239, 0.6);
+  --color-sky-marker-deep: rgba(150, 190, 230, 0.8);
 
   /* ─── Typo ───────────────────────────────────────────────── */
   --font-display: "Cormorant Garamond", "Iowan Old Style", Georgia, serif;
@@ -61,10 +56,10 @@
   --radius-full: 9999px;
 
   /* ─── Shadows hairline ────────────────────────────────────── */
-  --shadow-card: 0 2px 24px rgba(1, 17, 61, 0.08);
-  --shadow-card-hover: 0 12px 48px rgba(1, 17, 61, 0.14);
-  --shadow-gold: 0 8px 24px rgba(244, 201, 93, 0.35);
-  --shadow-gold-strong: 0 14px 36px rgba(244, 201, 93, 0.45);
+  --shadow-card: 0 2px 24px rgba(13, 27, 61, 0.06);
+  --shadow-card-hover: 0 12px 48px rgba(13, 27, 61, 0.1);
+  --shadow-gold: 0 8px 24px rgba(196, 164, 86, 0.22);
+  --shadow-gold-strong: 0 14px 36px rgba(196, 164, 86, 0.32);
 
   /* ─── Animation easing ────────────────────────────────────── */
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
@@ -135,14 +130,14 @@ h1, h2, h3, h4, h5, h6 {
 *:focus-visible {
   outline: 2px solid var(--color-navy-900);
   outline-offset: 2px;
-  box-shadow: 0 0 0 4px rgba(57, 168, 255, 0.85);
+  box-shadow: 0 0 0 4px rgba(230, 201, 125, 0.95);
   border-radius: 2px;
 }
 
 /* ─── Hairlines ────────────────────────────────────────────── */
-.hairline { border-color: rgba(1, 17, 61, 0.1); }
-.hairline-strong { border-color: rgba(1, 17, 61, 0.15); }
-.hairline-gold { border-color: rgba(222, 175, 60, 0.55); }
+.hairline { border-color: rgba(13, 27, 61, 0.08); }
+.hairline-strong { border-color: rgba(13, 27, 61, 0.12); }
+.hairline-gold { border-color: rgba(196, 164, 86, 0.35); }
 
 /* ─── Sheen for primary buttons ────────────────────────────── */
 .sheen {
@@ -196,9 +191,9 @@ h1, h2, h3, h4, h5, h6 {
   z-index: -10;
   pointer-events: none;
   background:
-    radial-gradient(circle at 16% 18%, rgba(244, 201, 93, 0.22), transparent 30%),
-    radial-gradient(circle at 82% 14%, rgba(57, 168, 255, 0.24), transparent 36%),
-    linear-gradient(120deg, transparent 20%, rgba(255, 255, 255, 0.4) 50%, transparent 80%);
+    radial-gradient(circle at 16% 18%, rgba(196, 164, 86, 0.13), transparent 28%),
+    radial-gradient(circle at 82% 14%, rgba(179, 210, 239, 0.22), transparent 33%),
+    linear-gradient(120deg, transparent 20%, rgba(255, 255, 255, 0.30) 50%, transparent 80%);
   background-size: 100% 100%, 100% 100%, 220% 220%;
   animation: premium-ambient-sweep 18s var(--ease-out-soft) infinite alternate;
 }
@@ -217,10 +212,10 @@ h1, h2, h3, h4, h5, h6 {
   pointer-events: none;
   opacity: 0.24;
   background-image:
-    linear-gradient(rgba(244, 201, 93, 0.18) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(244, 201, 93, 0.12) 1px, transparent 1px),
-    radial-gradient(circle at 28% 30%, rgba(244, 201, 93, 0.2), transparent 34%),
-    radial-gradient(circle at 74% 18%, rgba(57, 168, 255, 0.1), transparent 30%);
+    linear-gradient(rgba(230, 201, 125, 0.16) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(230, 201, 125, 0.11) 1px, transparent 1px),
+    radial-gradient(circle at 28% 30%, rgba(196, 164, 86, 0.18), transparent 34%),
+    radial-gradient(circle at 74% 18%, rgba(179, 210, 239, 0.12), transparent 30%);
   background-position: 0 0, 0 0, center, center;
   background-size: 56px 56px, 56px 56px, 100% 100%, 100% 100%;
   animation: premium-grid-drift 28s linear infinite;
@@ -245,7 +240,7 @@ h1, h2, h3, h4, h5, h6 {
   z-index: -1;
   pointer-events: none;
   border-radius: inherit;
-  background: linear-gradient(135deg, rgba(244, 201, 93, 0.26), transparent 32%, rgba(57, 168, 255, 0.12));
+  background: linear-gradient(135deg, rgba(196, 164, 86, 0.22), transparent 32%, rgba(179, 210, 239, 0.15));
   opacity: 0;
   transition: opacity 360ms var(--ease-out-soft);
 }
@@ -259,7 +254,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .premium-recommended-plan {
   box-shadow:
-    0 18px 60px rgba(1, 17, 61, 0.22),
+    0 18px 60px rgba(13, 27, 61, 0.18),
     inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
@@ -279,7 +274,7 @@ header nav a::after {
   left: 0.85rem;
   height: 1px;
   border-radius: 999px;
-  background: linear-gradient(90deg, transparent, rgba(244, 201, 93, 0.95), transparent);
+  background: linear-gradient(90deg, transparent, rgba(196, 164, 86, 0.82), transparent);
   opacity: 0;
   transform: scaleX(0.42);
   transform-origin: center;
@@ -312,8 +307,8 @@ form input:focus,
 form textarea:focus,
 form select:focus {
   box-shadow:
-    0 0 0 3px rgba(57, 168, 255, 0.22),
-    0 12px 30px rgba(1, 17, 61, 0.06);
+    0 0 0 3px rgba(196, 164, 86, 0.16),
+    0 12px 30px rgba(13, 27, 61, 0.06);
 }
 
 @media (hover: hover) and (pointer: fine) {
