@@ -12,7 +12,9 @@
     "build": "npm run gen:md && npm run gen:sitemap && tsc -p tsconfig.json && vite build && npm run prerender",
     "preview": "vite preview --port 4173",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "tsx --test tests/*.test.ts"
+    "test": "tsx --test tests/*.test.ts",
+    "ia:commission": "node scripts/mise-en-service-supabase.mjs --ia-seulement",
+    "ia:corpus": "node --import tsx scripts/ia-corpus-test.ts"
   },
   "dependencies": {
     "@fontsource/cormorant-garamond": "^5.2.5",

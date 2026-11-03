@@ -68,6 +68,18 @@ function Stat({ label, value, warn = false }: { label: string; value: string | n
 
 type Props = { emails: Record<string, string>; onError: (message: string | null) => void };
 
+type HealthReport = {
+  day: string;
+  jobs_done: number;
+  jobs_failed: number;
+  jobs_open: number;
+  jobs_stuck: number;
+  budget_paused: number;
+  cost_cents: number;
+  last_job_at: string | null;
+  needs_action: boolean;
+};
+
 export function AdminPrivateAi({ emails, onError }: Props) {
   const [available, setAvailable] = useState<boolean | null>(null);
   const [rows, setRows] = useState<AiOverviewRow[]>([]);
@@ -76,6 +88,7 @@ export function AdminPrivateAi({ emails, onError }: Props) {
   const [busy, setBusy] = useState<string | null>(null);
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [filter, setFilter] = useState<"attention" | "tous">("attention");
+  const [health, setHealth] = useState<HealthReport | null>(null);
 
   const load = useCallback(async () => {
     const probe = await supabase.rpc("ai_private_console_enabled");
@@ -84,11 +97,14 @@ export function AdminPrivateAi({ emails, onError }: Props) {
       return;
     }
     setAvailable(true);
-    const [ov, fj, mc] = await Promise.all([
+    const [ov, fj, mc, hr] = await Promise.all([
       supabase.rpc("ai_admin_overview"),
       supabase.from("ai_jobs").select("id,dossier_id,kind,last_error,attempts,updated_at").eq("status", "failed").order("updated_at", { ascending: false }).limit(50),
       supabase.rpc("ai_admin_month_cost"),
+      // Bilan quotidien (migration 20261104) ; absent tant qu'elle n'est pas appliquée.
+      supabase.from("ai_health_reports").select("*").order("day", { ascending: false }).limit(1).maybeSingle(),
     ]);
+    setHealth(hr.error ? null : ((hr.data as HealthReport | null) ?? null));
     if (ov.error) onError(adminErrorMessage(ov.error.message));
     setRows(((ov.data as AiOverviewRow[] | null) ?? []).map((r) => ({ ...r, review_mode: r.review_mode === "auto" ? "auto" : "manual" })));
     setFailed((fj.data as FailedJob[] | null) ?? []);
@@ -129,8 +145,13 @@ export function AdminPrivateAi({ emails, onError }: Props) {
         <p className="font-display text-lg text-navy-900">ClairDossier Private AI</p>
         <p className="mt-2 text-sm leading-relaxed text-slate-600">
           La console du moteur documentaire n'est pas disponible : la migration <code className="font-mono text-xs">20261102120000_ia_console_privee.sql</code>{" "}
-          (et la 20261023120000 qui la précède) n'est pas appliquée au projet Supabase. Procédure : <code className="font-mono text-xs">docs/MOTEUR_IA.md</code>.
+          (et la 20261023120000 qui la précède) n'est pas appliquée au projet Supabase.
           Rien n'est traité et rien n'est montré aux clients tant que ce n'est pas fait.
+        </p>
+        <p className="mt-3 text-sm leading-relaxed text-slate-600">
+          Mise en service reprenable, depuis le poste connecté au compte propriétaire Supabase :{" "}
+          <code className="font-mono text-xs">npm run ia:commission</code> (simulation, état et actions restantes), puis les options
+          indiquées. Checklist unique : <code className="font-mono text-xs">docs/ia/CHECKLIST_PROPRIETAIRE.md</code>.
         </p>
       </div>
     );
@@ -138,6 +159,18 @@ export function AdminPrivateAi({ emails, onError }: Props) {
 
   return (
     <div className="mt-8 space-y-6">
+      {health && (
+        <div className={`rounded-2xl border px-5 py-4 text-sm ${health.needs_action ? "border-red-200 bg-red-50 text-red-800" : "hairline bg-white text-slate-600"}`}>
+          <p className="font-mono text-[0.68rem] uppercase tracking-[0.16em]">
+            Bilan du {new Date(health.day).toLocaleDateString("fr-FR")} · {health.needs_action ? "action requise" : "aucune action requise"}
+          </p>
+          <p className="mt-1">
+            {health.jobs_done} travaux terminés (24 h) · {health.jobs_failed} en échec · {health.jobs_stuck} bloqué(s) · {health.jobs_open} en file
+            · {health.budget_paused} pause(s) budget · {(Number(health.cost_cents) / 100).toFixed(2)} € ce mois
+            {health.last_job_at ? ` · dernier passage ${new Date(health.last_job_at).toLocaleString("fr-FR")}` : ""}
+          </p>
+        </div>
+      )}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">ClairDossier Private AI</p>

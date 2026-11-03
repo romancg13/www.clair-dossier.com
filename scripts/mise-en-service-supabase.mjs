@@ -39,6 +39,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
+import { approbationsManquantes, charger, empreinte, enregistrer, marquer, valide } from './lib/ia-etat.mjs';
 import readline from 'node:readline';
 
 const REF = 'buzgokfmxpmyceppvjpp';
@@ -54,11 +55,12 @@ const DEPLOY_FUNCTIONS = process.argv.includes('--deploy-functions');
 const SECRETS = process.argv.includes('--secrets');
 // Périmètre strict du moteur IA : jamais Stripe, abonnements, auth ni autre fonction.
 const IA_ONLY = process.argv.includes('--ia-seulement');
-const IA_MIGRATIONS = ['20261023120000_moteur_documentaire_ia.sql', '20261102120000_ia_console_privee.sql'];
-const IA_SECRETS = ['ANTHROPIC_API_KEY', 'AI_WORKER_TOKEN', 'RESEND_API_KEY'];
+const IA_MIGRATIONS = ['20261023120000_moteur_documentaire_ia.sql', '20261102120000_ia_console_privee.sql', '20261104120000_ia_budget_global.sql'];
+const IA_SECRETS = ['ANTHROPIC_API_KEY', 'AI_WORKER_TOKEN', 'AI_BUDGET_CENTS_PER_USER_MONTH', 'AI_BUDGET_CENTS_GLOBAL_MONTH', 'AI_MODEL_EXTRACT', 'AI_MODEL_CONSOLIDATE', 'RESEND_API_KEY'];
+const APPROUVER = process.argv.includes('--approuver');
 
 const TOKEN = supabaseToken()?.token ?? '';
-if (!TOKEN) {
+if (!TOKEN && !IA_ONLY) {
   console.error(
     'SUPABASE_ACCESS_TOKEN absent.\n' +
       '  0. le plus simple : `supabase login` (session réutilisée automatiquement), sinon :\n' +
@@ -144,6 +146,7 @@ const MARKERS = {
   '20261023120000_moteur_documentaire_ia.sql': "select to_regclass('public.ai_jobs')",
   '20261102120000_ia_console_privee.sql': "select to_regprocedure('public.ai_admin_overview()')",
   '20261103120000_campagne_clics.sql': "select to_regclass('public.campaign_clicks')",
+  '20261104120000_ia_budget_global.sql': "select to_regprocedure('public.ai_global_month_cost_cents()')",
 };
 // Socle qui DOIT déjà exister (sinon : mauvais projet → arrêt).
 const SOCLE = [
@@ -300,8 +303,9 @@ async function stepFunctions() {
   }
   for (const slug of new Set([...(IA_ONLY ? [] : ['notify-lead']), ...toDeploy])) {
     // --use-api : empaquetage côté Supabase, sans Docker local.
-    const cli = process.env.SUPABASE_BIN ? [process.env.SUPABASE_BIN, []] : ['npx', ['-y', 'supabase@latest']];
-    const args = [...cli[1], 'functions', 'deploy', slug, '--project-ref', REF, '--use-api'];
+    const cli = process.env.SUPABASE_BIN ? [process.env.SUPABASE_BIN, []] : ['npx', ['-y', 'supabase@3.0.0']];
+    // CLI v3 (version épinglée et vérifiée) : la cible se passe par --remote=<ref>.
+    const args = [...cli[1], 'functions', 'deploy', slug, `--remote=${REF}`, '--use-api'];
     if (slug === 'stripe-webhook') args.push('--no-verify-jwt'); // signature Stripe vérifiée DANS la fonction
     console.log(`  → supabase functions deploy ${slug} --use-api${slug === 'stripe-webhook' ? ' --no-verify-jwt' : ''}`);
     const r = spawnSync(cli[0], args, {
@@ -319,7 +323,11 @@ const EXPECTED_SECRETS = [
   ['STRIPE_SECRET_KEY', 'clé restreinte lecture Subscriptions/Customers/Prices/Products'],
   ['STRIPE_WEBHOOK_SECRET', 'whsec_… de l’endpoint créé au dashboard Stripe'],
   ['ANTHROPIC_API_KEY', 'moteur documentaire IA (ai-worker) — sans elle le worker répond 503 et ne réclame rien'],
-  ['AI_WORKER_TOKEN', 'jeton d’appel du worker par pg_cron (même valeur dans Vault : clairdossier_ai_worker_token)'],
+  ['AI_WORKER_TOKEN', 'jeton d’appel du worker — GÉNÉRÉ automatiquement (jamais affiché) et copié dans Vault'],
+  ['AI_BUDGET_CENTS_PER_USER_MONTH', 'plafond mensuel par compte, en centimes (décision du propriétaire, aucun défaut)'],
+  ['AI_BUDGET_CENTS_GLOBAL_MONTH', 'plafond mensuel tous comptes, en centimes (décision du propriétaire, aucun défaut)'],
+  ['AI_MODEL_EXTRACT', 'modèle d’extraction retenu (ex. claude-sonnet-5-5) — à défaut claude-opus-5-5'],
+  ['AI_MODEL_CONSOLIDATE', 'modèle de consolidation retenu — à défaut claude-opus-5-5'],
   ['ADMIN_NOTIFICATION_EMAIL', 'facultatif — défaut : prestige.seller@icloud.com'],
   ['ADMIN_NOTIFICATION_PHONE', 'facultatif — SMS admin (+33…)'],
   ['TWILIO_ACCOUNT_SID', 'facultatif — SMS'],
@@ -366,7 +374,19 @@ async function stepSecrets() {
     return;
   }
   const toSet = [];
-  for (const name of missing) {
+  if (IA_ONLY && missing.includes('AI_WORKER_TOKEN')) {
+    // Généré DANS Postgres (jamais dans le texte d'une requête ni à l'écran),
+    // puis relu pour le poser à l'identique en secret de la fonction.
+    await sqlWrite(`do $$ begin
+      if not exists (select 1 from vault.secrets where name = 'clairdossier_ai_worker_token') then
+        perform vault.create_secret(encode(extensions.gen_random_bytes(32), 'hex'), 'clairdossier_ai_worker_token', 'Appel pg_cron -> ai-worker (ClairDossier)');
+      end if; end $$`);
+    const lu = await sqlRead(`select decrypted_secret as v from vault.decrypted_secrets where name = 'clairdossier_ai_worker_token' limit 1`);
+    if (!lu?.[0]?.v) throw new Error('Vault : jeton du worker introuvable après création.');
+    toSet.push({ name: 'AI_WORKER_TOKEN', value: lu[0].v });
+    ok('AI_WORKER_TOKEN créé dans Vault et posé en secret de fonction (valeur jamais affichée).');
+  }
+  for (const name of missing.filter((n) => !(IA_ONLY && n === 'AI_WORKER_TOKEN'))) {
     const v = await promptHidden(`  ${name} (entrée = ignorer) : `);
     if (v) toSet.push({ name, value: v });
   }
@@ -402,6 +422,156 @@ Reste à faire À LA MAIN (non pilotable par l'API) :
 }
 
 console.log(`Mise en service Supabase — projet ${REF} ${APPLY ? '— MODE APPLICATION' : '— SIMULATION (aucune modification)'}${IA_ONLY ? ' — PÉRIMÈTRE MOTEUR IA SEUL' : ''}`);
+/* ── Moteur IA : mise en service reprenable (npm run ia:commission) ─────────── */
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+async function probeSafe(sql) {
+  try {
+    return await probe(sql);
+  } catch {
+    return false;
+  }
+}
+
+async function runIa() {
+  const root = join(here, '..');
+  const emp = empreinte(root);
+  let etat = charger(root);
+  const besoins = [];
+  console.log(`\nPlan : contrôles → migrations IA (${IA_MIGRATIONS.length}) → fonction ai-worker → secrets IA → planificateur → recette → approbations.`);
+  console.log('Hors périmètre, jamais touchés : Stripe, abonnements, tarifs, authentification, autres fonctions et migrations.\n');
+
+  console.log('── 0. Contrôles préalables ──');
+  const gel = spawnSync(process.execPath, ['--import', 'tsx', '--test', 'tests/paiements-geles.test.ts'], { cwd: root, encoding: 'utf8' });
+  if (gel.status !== 0) {
+    ko('Gel des paiements rompu (fichier ou lien de paiement modifié) — ARRÊT, rien n’est installé.');
+    enregistrer(root, { ...etat, statut: 'INCIDENT', empreinte: emp });
+    return;
+  }
+  ok('Paiements : fichiers et liens Stripe identiques à la référence gelée.');
+  const head = spawnSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: root, encoding: 'utf8' }).stdout.trim();
+  console.log(`  · code ${head}, empreinte IA ${emp}`);
+  if (etat.empreinte && etat.empreinte !== emp) warn('Code IA modifié depuis le dernier passage : infrastructure et recette seront revérifiées.');
+  etat = { ...etat, empreinte: emp, commit: head };
+
+  console.log('\n── 1. Accès au projet de production ──');
+  let acces = false;
+  if (!TOKEN) besoins.push('acces');
+  else {
+    const res = await fetch(API, { headers: { Authorization: `Bearer ${TOKEN}` } });
+    acces = res.ok;
+    if (acces) ok(`Projet ${REF} accessible avec la session courante.`);
+    else {
+      ko(`Projet ${REF} inaccessible (HTTP ${res.status}) : la session Supabase de cette machine n’est pas celle du propriétaire.`);
+      besoins.push('acces');
+    }
+  }
+
+  if (acces) {
+    console.log('\n── 2. Migrations IA ──');
+    await stepMigrations();
+    const migOk = (await Promise.all(IA_MIGRATIONS.map((f) => probeSafe(MARKERS[f])))).every(Boolean);
+    etat = marquer(etat, 'migrations', migOk, emp, migOk ? 'sondes des 3 migrations IA présentes' : 'migration(s) IA manquante(s)');
+    if (!migOk) besoins.push('migrations');
+
+    await stepFunctions();
+    const fn = ((await api('/functions')) ?? []).find((f) => f.slug === 'ai-worker');
+    etat = marquer(etat, 'worker', Boolean(fn), emp, fn ? `ai-worker version ${fn.version}` : 'ai-worker absent');
+    if (!fn) besoins.push('worker');
+
+    await stepSecrets();
+    const presents = new Set(((await api('/secrets')) ?? []).map((x) => x.name));
+    const manquants = ['ANTHROPIC_API_KEY', 'AI_WORKER_TOKEN', 'AI_BUDGET_CENTS_PER_USER_MONTH', 'AI_BUDGET_CENTS_GLOBAL_MONTH'].filter((n) => !presents.has(n));
+    etat = marquer(etat, 'secrets', !manquants.length, emp, manquants.length ? `manquants : ${manquants.join(', ')}` : 'secrets IA présents');
+    if (manquants.length) besoins.push(`secrets:${manquants.join(',')}`);
+    if (presents.has('AI_ENGINE_PAUSED')) etat = { ...etat, pause: true };
+    else etat = { ...etat, pause: false };
+
+    console.log('\n── 3. Planificateur (pg_cron → ai-worker) ──');
+    let cron = await probeSafe("select exists (select 1 from cron.job where jobname = 'clairdossier-ai-worker')");
+    if (!cron && APPLY && migOk) {
+      await sqlWrite('create extension if not exists pg_cron');
+      const sql = readFileSync(join(MIGRATIONS_DIR, '20261102120000_ia_console_privee.sql'), 'utf8');
+      await sqlWrite(sql.slice(sql.indexOf('-- ── 7. Horloge')));
+      cron = await probeSafe("select exists (select 1 from cron.job where jobname = 'clairdossier-ai-worker')");
+    }
+    const vault = await probeSafe("select exists (select 1 from vault.secrets where name = 'clairdossier_ai_worker_token')");
+    const sched = cron && vault;
+    if (sched) ok('Tâche clairdossier-ai-worker planifiée (chaque minute) avec jeton Vault.');
+    else warn(`Planificateur incomplet (cron ${cron ? 'ok' : 'absent'}, jeton Vault ${vault ? 'ok' : 'absent'}) — relancer avec --apply.`);
+    etat = marquer(etat, 'planificateur', sched, emp, `cron=${cron} vault=${vault}`);
+    if (!sched) besoins.push('planificateur');
+
+    console.log('\n── 4. Recette réelle (dossier pilote fictif) ──');
+    const pilote = process.env.IA_DOSSIER_PILOTE ?? etat.pilote ?? '';
+    if (!UUID.test(pilote)) {
+      warn('Aucun dossier pilote : IA_DOSSIER_PILOTE=<uuid> npm run ia:commission (dossier de TEST, pièces fictives).');
+      if (!valide(etat, 'recette', emp)) besoins.push('recette');
+    } else {
+      etat = { ...etat, pilote };
+      const pub = await probeSafe(`select exists (select 1 from public.ai_analyses where dossier_id = '${pilote}' and review_status = 'published' and (coverage->>'complete')::boolean)`);
+      const docs = await sqlRead(`select count(*)::int as n from public.dossier_documents where dossier_id = '${pilote}' and generated_by = 'ai' and deleted_at is null`).catch(() => [{ n: 0 }]);
+      const n = docs?.[0]?.n ?? 0;
+      const recette = pub && n >= 13;
+      etat = marquer(etat, 'recette', recette, emp, `analyse publiée=${pub}, livrables IA=${n}/13`);
+      if (recette) ok(`Recette réussie sur ${pilote} : analyse complète publiée, ${n} fichiers livrés.`);
+      else {
+        warn(`Recette incomplète (analyse publiée=${pub}, ${n}/13 fichiers) — déposer les pièces de test et attendre le traitement.`);
+        besoins.push('recette');
+      }
+    }
+  }
+
+  if (APPROUVER) {
+    console.log('\n── 5. Approbations du propriétaire ──');
+    const qui = spawnSync('git', ['config', 'user.name'], { cwd: root, encoding: 'utf8' }).stdout.trim() || 'inconnu';
+    for (const [id, libelle] of approbationsManquantes(etat)) {
+      const rep = await promptHidden(`  ${libelle}\n  Tapez « J'APPROUVE ${id} » pour l'enregistrer (entrée = passer) : `);
+      if (rep === `J'APPROUVE ${id}`) {
+        etat = { ...etat, approbations: [...(etat.approbations ?? []), { id, par: qui, le: new Date().toISOString(), commit: head }] };
+        ok(`${id} approuvé par ${qui}.`);
+      }
+    }
+  }
+
+  const infra = ['migrations', 'worker', 'secrets', 'planificateur'].every((id) => valide(etat, id, emp));
+  const recette = valide(etat, 'recette', emp);
+  const manquantes = approbationsManquantes(etat);
+  const panneau = readFileSync(join(root, '.github', 'workflows', 'deploy.yml'), 'utf8').includes("VITE_AI_ENGINE: '1'");
+  const statut = etat.pause ? 'SUSPENDU'
+    : !infra ? 'CONFIGURATION_REQUISE'
+    : !recette ? 'INFRA_PRETE'
+    : manquantes.length || !panneau ? 'VALIDATION_REQUISE'
+    : 'ACTIF';
+  etat = { ...etat, statut, besoins };
+  enregistrer(root, etat);
+
+  console.log(`\n══ STATUT : ${statut} ══`);
+  if (statut !== 'ACTIF') {
+    console.log('Actions restantes (détail : docs/ia/CHECKLIST_PROPRIETAIRE.md) :');
+    const libelles = {
+      acces: 'Se connecter avec le compte PROPRIÉTAIRE du projet Supabase : npx -y supabase login',
+      migrations: 'Appliquer les migrations IA : npm run ia:commission -- --apply',
+      worker: 'Déployer ai-worker : npm run ia:commission -- --apply --deploy-functions',
+      planificateur: 'Planifier le worker : npm run ia:commission -- --apply',
+      recette: 'Recette réelle sur un dossier de test : IA_DOSSIER_PILOTE=<uuid> npm run ia:commission',
+    };
+    for (const b of besoins) {
+      if (b.startsWith('secrets:')) console.log(`  • Poser les secrets (saisie masquée) : npm run ia:commission -- --apply --secrets  [${b.slice(8)}]`);
+      else console.log(`  • ${libelles[b] ?? b}`);
+    }
+    for (const [id, l] of manquantes) console.log(`  • Approbation « ${id} » : ${l} → npm run ia:commission -- --approuver`);
+    if (!manquantes.length && !panneau) console.log("  • Publier les textes approuvés puis activer le panneau : VITE_AI_ENGINE: '1' dans .github/workflows/deploy.yml (PR).");
+    if (etat.pause) console.log('  • Moteur en arrêt d’urgence (secret AI_ENGINE_PAUSED présent) : le retirer pour reprendre.');
+  }
+  console.log(`État enregistré : .ia-commission/etat.json — relancer la même commande pour reprendre.`);
+  if (statut !== 'ACTIF' && exitCode === 0) exitCode = 3;
+}
+
+if (IA_ONLY) {
+  await runIa().catch((e) => ko(e instanceof Error ? e.message : String(e)));
+  process.exit(exitCode);
+}
 try {
   if (!IA_ONLY) await stepAuthConfig();
   await stepMigrations();

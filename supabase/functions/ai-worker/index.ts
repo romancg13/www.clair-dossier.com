@@ -29,9 +29,11 @@
 // Configuration serveur (jamais côté client) :
 //   ANTHROPIC_API_KEY                — obligatoire (sans elle : 503, rien n'est réclamé)
 //   AI_MODEL_EXTRACT / AI_MODEL_CONSOLIDATE — défaut claude-opus-5-5
-//   AI_BUDGET_CENTS_PER_USER_MONTH   — défaut 2000 (20 €) ; dépassé ⇒ travaux en pause (BUDGET)
+//   AI_BUDGET_CENTS_PER_USER_MONTH   — OBLIGATOIRE, fixé par le propriétaire (aucune valeur par défaut :
+//   AI_BUDGET_CENTS_GLOBAL_MONTH       un plafond codé n'est pas une autorisation de dépense) ; atteint ⇒ pause (BUDGET)
+//   AI_ENGINE_PAUSED                 — « 1 » : arrêt d'urgence serveur (rien n'est réclamé ni envoyé)
 //   RESEND_API_KEY                   — e-mail client (facultatif : sinon pas d'e-mail)
-//   AI_WORKER_TOKEN                  — facultatif ; s'il est posé, l'en-tête x-worker-token est exigé
+//   AI_WORKER_TOKEN                  — OBLIGATOIRE : l'en-tête x-worker-token est exigé (pg_cron le lit dans Vault)
 //   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY — injectés par la plateforme
 // Dépendances épinglées (deno.json + deno.lock).
 import { createClient } from 'npm:@supabase/supabase-js@2';
@@ -48,11 +50,19 @@ const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY') ?? '';
 const MODEL_EXTRACT = Deno.env.get('AI_MODEL_EXTRACT') || 'claude-opus-5-5';
 const MODEL_CONSOLIDATE = Deno.env.get('AI_MODEL_CONSOLIDATE') || 'claude-opus-5-5';
-const BUDGET_CENTS = Number(Deno.env.get('AI_BUDGET_CENTS_PER_USER_MONTH') || 2000);
+// Budgets : entiers > 0 exigés, sinon le moteur reste à l'arrêt (aucune dépense implicite).
+const positiveInt = (v: string | undefined): number => (v && /^\d+$/.test(v) && Number(v) > 0 ? Number(v) : 0);
+const BUDGET_CENTS = positiveInt(Deno.env.get('AI_BUDGET_CENTS_PER_USER_MONTH'));
+const GLOBAL_BUDGET_CENTS = positiveInt(Deno.env.get('AI_BUDGET_CENTS_GLOBAL_MONTH'));
+// Réserve avant chaque appel : plusieurs invocations peuvent se chevaucher (cron
+// chaque minute, 90 s de travail) ; on s'arrête avant le plafond, pas après.
+const reserve = (budget: number): number => Math.max(1, Math.ceil(budget * 0.05));
+const PAUSED = Deno.env.get('AI_ENGINE_PAUSED') === '1';
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') ?? '';
-// Jeton partagé facultatif : s'il est posé, chaque appel doit le présenter dans
-// l'en-tête x-worker-token (pg_cron le lit dans Vault, voir migration 20261102).
-// Sans lui, seule la passerelle Supabase filtre (clé anon publique acceptée).
+// Jeton partagé OBLIGATOIRE : chaque appel le présente dans l'en-tête
+// x-worker-token (pg_cron le lit dans Vault, voir migration 20261102). Sans lui
+// le worker refuse tout : la clé anon publique ne suffit jamais à déclencher
+// un traitement payant.
 const WORKER_TOKEN = Deno.env.get('AI_WORKER_TOKEN') ?? '';
 const SITE = 'https://www.clair-dossier.com';
 const BUCKET = 'documents';
@@ -125,8 +135,14 @@ function b64(bytes: Uint8Array): string {
 }
 
 async function overBudget(userId: string): Promise<boolean> {
-  const { data } = await db.rpc('ai_month_cost_cents', { p_user: userId });
-  return Number(data ?? 0) >= BUDGET_CENTS;
+  const [u, g] = await Promise.all([
+    db.rpc('ai_month_cost_cents', { p_user: userId }),
+    db.rpc('ai_global_month_cost_cents'),
+  ]);
+  // Lecture impossible = prudence : on considère le plafond atteint.
+  if (u.error || g.error) return true;
+  return Number(u.data ?? 0) + reserve(BUDGET_CENTS) > BUDGET_CENTS
+    || Number(g.data ?? 0) + reserve(GLOBAL_BUDGET_CENTS) > GLOBAL_BUDGET_CENTS;
 }
 
 async function finish(job: Job, ok: boolean, error?: string): Promise<void> {
@@ -437,8 +453,11 @@ async function notifyClient(userId: string, dossierId: string, _title: string, r
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204 });
   if (req.method !== 'POST') return new Response(JSON.stringify({ error: 'POST uniquement' }), { status: 405 });
-  if (WORKER_TOKEN && req.headers.get('x-worker-token') !== WORKER_TOKEN) return new Response(JSON.stringify({ error: 'appelant non autorisé' }), { status: 401 });
+  if (!WORKER_TOKEN) return new Response(JSON.stringify({ error: "AI_WORKER_TOKEN absent : moteur inactif, rien n'est réclamé" }), { status: 503 });
+  if (req.headers.get('x-worker-token') !== WORKER_TOKEN) return new Response(JSON.stringify({ error: 'appelant non autorisé' }), { status: 401 });
+  if (PAUSED) return new Response(JSON.stringify({ error: "arrêt d'urgence (AI_ENGINE_PAUSED=1) : rien n'est réclamé" }), { status: 503 });
   if (!ANTHROPIC_API_KEY) return new Response(JSON.stringify({ error: "ANTHROPIC_API_KEY absent : moteur inactif, rien n'est réclamé" }), { status: 503 });
+  if (!BUDGET_CENTS || !GLOBAL_BUDGET_CENTS) return new Response(JSON.stringify({ error: "budget non fixé (AI_BUDGET_CENTS_PER_USER_MONTH / AI_BUDGET_CENTS_GLOBAL_MONTH) : rien n'est réclamé" }), { status: 503 });
   const started = Date.now();
   const worker = `edge-${crypto.randomUUID().slice(0, 8)}`;
   const results: Record<string, string> = {};
@@ -458,7 +477,7 @@ Deno.serve(async (req) => {
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       await finish(job, false, msg);
-      results[job.id] = `${job.kind}: ${msg.slice(0, 200)}`;
+      results[job.id] = `${job.kind}: échec`; // détail en base (last_error), jamais dans les journaux
     }
     if (job.kind === 'consolidate') break;
   }

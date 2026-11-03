@@ -1,0 +1,28 @@
+# Surveillance quotidienne hébergée : site public, paiements gelés, état du
+# moteur IA. Lecture seule — ne déploie rien, ne modifie rien, aucun secret.
+# Un échec (= action requise) déclenche la notification GitHub habituelle.
+name: Surveillance
+
+on:
+  schedule:
+    - cron: '20 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  surveiller:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Paiements gelés (fichiers et liens)
+        run: node --import tsx --test tests/paiements-geles.test.ts
+      - name: Site public et moteur IA
+        run: node scripts/surveillance-site.mjs
