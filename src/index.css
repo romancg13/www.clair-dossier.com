@@ -39,8 +39,8 @@
   --color-slate-400: #5f6c88;
   --color-slate-300: #a6b0c6;
 
-  --color-sky-marker: rgba(57, 168, 255, 0.32);
-  --color-sky-marker-deep: rgba(57, 168, 255, 0.55);
+  --color-sky-marker: rgba(57, 168, 255, 0.5);
+  --color-sky-marker-deep: rgba(57, 168, 255, 0.7);
 
   /* Accents électriques de la carte de visite : azur-500 = détails lumineux
      (fonds sombres, halos, focus) ; azur-700 = variante AA sur fond clair. */
@@ -196,9 +196,9 @@ h1, h2, h3, h4, h5, h6 {
   z-index: -10;
   pointer-events: none;
   background:
-    radial-gradient(circle at 16% 18%, rgba(244, 201, 93, 0.16), transparent 28%),
-    radial-gradient(circle at 82% 14%, rgba(57, 168, 255, 0.14), transparent 33%),
-    linear-gradient(120deg, transparent 20%, rgba(255, 255, 255, 0.30) 50%, transparent 80%);
+    radial-gradient(circle at 16% 18%, rgba(244, 201, 93, 0.22), transparent 30%),
+    radial-gradient(circle at 82% 14%, rgba(57, 168, 255, 0.24), transparent 36%),
+    linear-gradient(120deg, transparent 20%, rgba(255, 255, 255, 0.4) 50%, transparent 80%);
   background-size: 100% 100%, 100% 100%, 220% 220%;
   animation: premium-ambient-sweep 18s var(--ease-out-soft) infinite alternate;
 }

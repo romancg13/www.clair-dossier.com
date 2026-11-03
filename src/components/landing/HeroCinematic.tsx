@@ -89,7 +89,7 @@ export function HeroCinematic() {
         className="pointer-events-none absolute inset-0 -z-10"
         style={{
           backgroundImage:
-            'radial-gradient(55% 45% at 78% 12%, rgba(57,168,255,0.13), transparent 60%), radial-gradient(45% 40% at 8% 88%, rgba(244,201,93,0.15), transparent 65%)',
+            'radial-gradient(55% 45% at 78% 12%, rgba(57,168,255,0.24), transparent 60%), radial-gradient(45% 40% at 8% 88%, rgba(244,201,93,0.2), transparent 65%)',
         }}
       />
       {CINEMATIC_SCENES.hero.enabled && (
@@ -254,7 +254,7 @@ export function HeroCinematic() {
 
           <div
             aria-hidden="true"
-            className="absolute -inset-6 -z-10 rounded-[2rem] bg-gradient-to-br from-gold-500/14 via-transparent to-sky-marker/40 blur-3xl"
+            className="absolute -inset-6 -z-10 rounded-[2rem] bg-gradient-to-br from-gold-500/25 via-transparent to-sky-marker/60 blur-3xl"
           />
         </div>
       </div>

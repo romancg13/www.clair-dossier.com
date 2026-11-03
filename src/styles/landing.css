@@ -75,8 +75,8 @@
 /* Grille presque invisible sur crème (hero, bento). */
 .cd-grid-light {
   background-image:
-    linear-gradient(rgba(1, 17, 61, 0.055) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(1, 17, 61, 0.055) 1px, transparent 1px);
+    linear-gradient(rgba(1, 17, 61, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(1, 17, 61, 0.07) 1px, transparent 1px);
   background-size: 64px 64px;
   mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 30%, transparent 100%);
   -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 30%, transparent 100%);
@@ -84,11 +84,11 @@
 
 /* Chapitres cinéma : profondeur continue, halos diffus, aucune forme décorative. */
 .cd-cinema {
-  background-color: var(--color-navy-950);
+  background-color: var(--color-navy-925);
   background-image:
-    radial-gradient(60% 40% at 12% 8%, rgba(57, 168, 255, 0.12), transparent 70%),
-    radial-gradient(50% 35% at 88% 92%, rgba(244, 201, 93, 0.1), transparent 70%),
-    radial-gradient(40% 30% at 50% 50%, rgba(10, 33, 80, 0.65), transparent 80%);
+    radial-gradient(60% 40% at 12% 8%, rgba(57, 168, 255, 0.17), transparent 70%),
+    radial-gradient(50% 35% at 88% 92%, rgba(244, 201, 93, 0.13), transparent 70%),
+    radial-gradient(85% 70% at 50% 42%, rgba(10, 36, 92, 0.85), transparent 100%);
 }
 
 /* Grain imperceptible (matière) — opacité très faible, aucun coût JS. */
