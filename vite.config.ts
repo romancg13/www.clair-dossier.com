@@ -1,7 +1,7 @@
 import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
-import { copyFileSync } from 'node:fs';
+import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { readFlag } from './src/lib/flag-parse';
 
@@ -13,6 +13,30 @@ function spaFallback(): Plugin {
     closeBundle() {
       const dist = resolve(__dirname, 'dist');
       copyFileSync(resolve(dist, 'index.html'), resolve(dist, '404.html'));
+    },
+  };
+}
+
+// Lien court /v (campagne Village de la Justice) : GitHub Pages sert dist/v.html
+// sur /v. Seules les clés Supabase PUBLIQUES (anon) y sont injectées ; sans elles,
+// la page redirige sans compter.
+function shortlinkPage(): Plugin {
+  let env: Record<string, string> = {};
+  return {
+    name: 'shortlink-page',
+    apply: 'build',
+    configResolved(config) {
+      env = config.env;
+    },
+    closeBundle() {
+      const safe = (v: string | undefined) => (v && /^[\w.:/-]+$/.test(v) ? v : '');
+      const html = readFileSync(resolve(__dirname, 'src/shortlink/v.html'), 'utf-8')
+        .replaceAll('__SUPABASE_URL__', safe(env.VITE_SUPABASE_URL))
+        .replaceAll('__SUPABASE_ANON_KEY__', safe(env.VITE_SUPABASE_ANON_KEY));
+      const dist = resolve(__dirname, 'dist');
+      writeFileSync(resolve(dist, 'v.html'), html);
+      mkdirSync(resolve(dist, 'v'), { recursive: true });
+      writeFileSync(resolve(dist, 'v', 'index.html'), html); // /v/ (barre finale)
     },
   };
 }
@@ -31,7 +55,7 @@ export default defineConfig({
     __HOME_CINEMATIC__: JSON.stringify(readFlag(process.env.VITE_HOME_CINEMATIC, true)),
     __CINEMATICS__: JSON.stringify(readFlag(process.env.VITE_CINEMATICS, true)),
   },
-  plugins: [react(), tailwindcss(), spaFallback()],
+  plugins: [react(), tailwindcss(), spaFallback(), shortlinkPage()],
   build: {
     target: 'es2022',
     sourcemap: false,

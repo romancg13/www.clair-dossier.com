@@ -1,0 +1,77 @@
+<!doctype html>
+<!--
+  Lien court de campagne https://clair-dossier.com/v — Village de la Justice (LEGI TEAM).
+  Gabarit : vite.config.ts (plugin shortlinkPage) l'écrit en dist/v.html, servi par
+  GitHub Pages sur /v (et dist/v/index.html sur /v/). Pages ne permet ni 302 ni
+  en-tête Cache-Control : la redirection est faite ici, immédiatement, par le navigateur.
+  Comptage : un appel agrégé à record_campaign_click (aucun cookie ; ni IP ni
+  identifiant en base). Robots et prévisualisations connus ne sont pas comptés ; HEAD et
+  clients sans JavaScript n'exécutent pas ce script. Le comptage ne retarde jamais
+  la redirection de plus de BEACON_TIMEOUT_MS.
+-->
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <title>ClairDossier</title>
+    <noscript><meta http-equiv="refresh" content="0;url=https://www.clair-dossier.com/?utm_source=village-justice&amp;utm_medium=publiredactionnel&amp;utm_campaign=2026" /></noscript>
+    <link rel="preconnect" href="__SUPABASE_URL__" crossorigin />
+    <script>
+      (function () {
+        var SOURCE = 'village-justice';
+        var SUPABASE_URL = '__SUPABASE_URL__';
+        var SUPABASE_ANON_KEY = '__SUPABASE_ANON_KEY__';
+        var BEACON_TIMEOUT_MS = 1500;
+        var BOT = /bot\/|bot-|\bbot\b|telegrambot|crawl|spider|slurp|preview|facebookexternalhit|meta-externalagent|whatsapp|embedly|headless|lighthouse|pagespeed|inspectiontool|validator|python-|curl\/|wget|go-http|okhttp|axios|node-fetch/i;
+
+        var dest = new URL('https://www.clair-dossier.com/');
+        dest.searchParams.set('utm_source', SOURCE);
+        dest.searchParams.set('utm_medium', 'publiredactionnel');
+        dest.searchParams.set('utm_campaign', '2026');
+        // Paramètres UTM reçus sur /v conservés (utm_content, utm_term…), sans écraser la campagne.
+        new URLSearchParams(location.search).forEach(function (value, key) {
+          if (/^utm_/.test(key) && !dest.searchParams.has(key)) dest.searchParams.set(key, value);
+        });
+
+        var done = false;
+        function go() {
+          if (done) return;
+          done = true;
+          location.replace(dest.href);
+        }
+
+        function count() {
+          var isBot = navigator.webdriver || BOT.test(navigator.userAgent || '');
+          if (isBot || !/^https:\/\//.test(SUPABASE_URL)) return go();
+          setTimeout(go, BEACON_TIMEOUT_MS);
+          try {
+            fetch(SUPABASE_URL + '/rest/v1/rpc/record_campaign_click', {
+              method: 'POST',
+              keepalive: true,
+              headers: {
+                apikey: SUPABASE_ANON_KEY,
+                Authorization: 'Bearer ' + SUPABASE_ANON_KEY,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ p_source: SOURCE }),
+            }).then(go, go);
+          } catch (e) {
+            go();
+          }
+        }
+
+        // Préchargement spéculatif (prerender) : ne compter qu'à l'affichage réel.
+        if (document.prerendering) document.addEventListener('prerenderingchange', count, { once: true });
+        else count();
+      })();
+    </script>
+  </head>
+  <body style="font-family: system-ui, sans-serif; padding: 2rem; color: #0f1b33">
+    <p>
+      Redirection vers
+      <a href="https://www.clair-dossier.com/?utm_source=village-justice&amp;utm_medium=publiredactionnel&amp;utm_campaign=2026">ClairDossier</a>…
+    </p>
+  </body>
+</html>
