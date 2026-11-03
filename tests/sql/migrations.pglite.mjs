@@ -1449,6 +1449,37 @@ await test('Console IA : relance d’un travail en échec réservée à l’admi
   void ov;
 });
 
+await test('IA : plafond global mensuel — lisible par le worker seul, total exact tous comptes', async () => {
+  await asUser(IA_A);
+  await rejects(q('select public.ai_global_month_cost_cents()'), /permission denied/);
+  await asAnon();
+  await rejects(q('select public.ai_global_month_cost_cents()'), /permission denied/);
+  await asSuperuser();
+  const [attendu] = await q(`select coalesce((select sum(cost_cents) from public.ai_extractions where created_at >= date_trunc('month', now())), 0)
+    + coalesce((select sum(cost_cents) from public.ai_analyses where created_at >= date_trunc('month', now())), 0) as n`);
+  await asService();
+  const [r] = await q('select public.ai_global_month_cost_cents() as n');
+  assert.equal(Number(r.n), Number(attendu.n));
+});
+
+await test('IA : bilan de santé quotidien — écrit par la tâche planifiée seule, lu par l’admin seul, chiffres exacts', async () => {
+  await asUser(IA_A);
+  await rejects(q('select public.ai_health_snapshot()'), /permission denied/);
+  await asService();
+  await q('select public.ai_health_snapshot()');
+  await q('select public.ai_health_snapshot()'); // rejouable : une ligne par jour
+  await asSuperuser();
+  const [attendu] = await q(`select count(*) filter (where status = 'failed' and updated_at >= now() - interval '1 day')::int as f,
+                                    count(*) filter (where status in ('queued','running'))::int as o from public.ai_jobs`);
+  await asUser(ADMIN);
+  const rows = await q('select jobs_failed, jobs_open, needs_action from public.ai_health_reports where day = current_date');
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].jobs_failed, attendu.f);
+  assert.equal(rows[0].jobs_open, attendu.o);
+  await asUser(IA_A);
+  assert.equal((await q('select * from public.ai_health_reports')).length, 0, 'client : aucune lecture');
+});
+
 // Dernier test : le retour arrière modifie le schéma pour la suite.
 await test('IA : retour arrière niveau 1 — moteur neutralisé, données conservées', async () => {
   const D = await insertDossier(IA_C, { title: 'Avant retour arrière' });
@@ -1467,6 +1498,15 @@ await test('IA : retour arrière niveau 1 — moteur neutralisé, données conse
   assert.equal(await openJobs(D, 'extract'), 0, 'nouvelle pièce : aucune mise en file');
   await asUser(IA_C);
   await rejects(q('select public.enable_ai_processing($1, $2)', [D, 'ia-2026-10']), /permission denied/);
+});
+
+await test('IA : retour arrière 20261104 — fonctions retirées, bilans conservés', async () => {
+  await asSuperuser();
+  await db.exec(readFileSync(join(root, 'supabase', 'rollback', '20261104120000_ia_budget_global.down.sql'), 'utf8'));
+  const [r] = await q(`select to_regprocedure('public.ai_global_month_cost_cents()') as g, to_regprocedure('public.ai_health_snapshot()') as h, to_regclass('public.ai_health_reports') as t`);
+  assert.equal(r.g, null);
+  assert.equal(r.h, null);
+  assert.ok(r.t, 'table des bilans conservée');
 });
 
 console.log(`\n${passed} réussis, ${failed} échoués`);

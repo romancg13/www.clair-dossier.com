@@ -1,5 +1,10 @@
 # Moteur documentaire IA — exploitation (2026-10-23)
 
+> **Mise à jour 2026-11-04 :** pour le moteur IA, utiliser uniquement `npm run ia:commission` (voir
+> `docs/ia/CHECKLIST_PROPRIETAIRE.md`). Ne pas lancer le script sans `--ia-seulement` : il appliquerait aussi
+> d'autres migrations en attente, dont celle des abonnements (paiements gelés).
+
+
 Traitement automatique des pièces d'un dossier : dépôt → lecture → extraction sourcée →
 consolidation → livrables publiés dans l'espace client → e-mail de disponibilité.
 Fonctionne sans navigateur ni poste de travail : tout l'état vit dans Supabase.

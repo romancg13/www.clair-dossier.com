@@ -1,5 +1,10 @@
 # Décisions et actions réservées au propriétaire — 2026-11-02
 
+> **Mise à jour 2026-11-04 :** pour le moteur IA, utiliser uniquement `npm run ia:commission` (voir
+> `docs/ia/CHECKLIST_PROPRIETAIRE.md`). Ne pas lancer le script sans `--ia-seulement` : il appliquerait aussi
+> d'autres migrations en attente, dont celle des abonnements (paiements gelés).
+
+
 Généré par la session autonome « Private AI, finalisation, déploiement ». Rien de ce qui suit n'a été
 fait à votre place : chaque point exige soit un accès que cette machine n'a pas, soit une décision
 contractuelle, financière ou juridique. Statuts : **VÉRIFIÉ** (lu/sondé), **HYPOTHÈSE** (non vérifiable d'ici),
