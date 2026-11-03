@@ -20,9 +20,9 @@ Déposez vos pièces — contrats, courriers, factures — dans un espace privé
 
 Détail : https://www.clair-dossier.com/fonctionnalites/depot-de-pieces · Markdown : https://www.clair-dossier.com/fonctionnalites/depot-de-pieces.md
 
-## Avancement du dossier en 5 étapes
+## Suivi du dossier en 4 étapes
 
-Une page d'avancement claire qui suit votre dossier à travers 5 étapes métier, avec pièces et échéances réunies au même endroit.
+Un suivi clair en 4 étapes — dossier créé, traitement en cours, documents disponibles, dossier clôturé — avec pièces et échéances au même endroit.
 
 Détail : https://www.clair-dossier.com/fonctionnalites/chronologie · Markdown : https://www.clair-dossier.com/fonctionnalites/chronologie.md
 

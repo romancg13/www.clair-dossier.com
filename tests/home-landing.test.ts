@@ -8,6 +8,7 @@ import { strict as assert } from 'node:assert';
 import { test } from 'node:test';
 
 import { readFlag } from '../src/lib/flag-parse.ts';
+import { TIMELINE_STEPS } from '../packages/core/src/dossiers.ts';
 import {
   BUSINESS_STEPS,
   DEMO,
@@ -36,13 +37,9 @@ test('la démonstration est étiquetée comme telle', () => {
 });
 
 test('les étapes mises en scène sont celles du produit (DossierDetail / DossierFlow)', () => {
-  assert.deepEqual([...BUSINESS_STEPS], [
-    'Création du dossier',
-    'Devis, contrat ou accord',
-    'Suivi du dossier',
-    'Facture et paiement',
-    'Option impayé / pré-contentieux',
-  ]);
+  // La démo de l'accueil affiche le suivi réel de la page dossier : même référence.
+  assert.equal(BUSINESS_STEPS, TIMELINE_STEPS);
+  assert.deepEqual([...BUSINESS_STEPS], ['Dossier créé', 'Traitement en cours', 'Documents disponibles', 'Dossier clôturé']);
   assert.deepEqual([...TUNNEL_STEPS], ['Profil', 'Nature', 'Informations', 'Pièces', 'Récapitulatif']);
   assert.ok(DEMO.step >= 1 && DEMO.step <= BUSINESS_STEPS.length);
 });

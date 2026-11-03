@@ -36,8 +36,8 @@ function Copy() {
         sur un seul écran.
       </h2>
       <p className="mt-5 max-w-lg text-[1.02rem] leading-[1.65] text-silver-200/78">
-        Les cinq étapes, les pièces, les échéances et la prochaine action à mener : la page
-        « Avancement du dossier » réunit ce que vous avez construit. Vous comprenez le dossier
+        Les quatre étapes, les pièces, les échéances et la prochaine action à mener : le
+        « Suivi du dossier » réunit ce que vous avez construit. Vous comprenez le dossier
         avant même de l’ouvrir.
       </p>
     </div>
@@ -164,7 +164,7 @@ function Dashboard({ children }: { children: (region: ReactNode, i: number) => R
           </span>
         ))}
       </div>
-      <ol className="mt-4 grid grid-cols-5 gap-1.5" aria-label="Avancement sur cinq étapes métier">
+      <ol className="mt-4 grid grid-cols-4 gap-1.5" aria-label="Suivi du dossier en quatre étapes">
         {BUSINESS_STEPS.map((label, i) => {
           const n = i + 1;
           const state = n < DEMO.step ? 'done' : n === DEMO.step ? 'active' : 'todo';
