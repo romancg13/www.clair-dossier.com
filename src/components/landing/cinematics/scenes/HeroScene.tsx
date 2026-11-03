@@ -193,8 +193,8 @@ function HeroContent({
   return (
     <>
       <CameraRig pose={pose} progressRef={introRef} pointerRef={pointerRef} pointerDegrees={pointerDegrees} lambda={4} />
-      <Halo position={haloPos} size={22} color={PALETTE.sky} opacity={0.07} soft={2.4} />
-      <Halo position={[-3.5, -2.6, -9]} size={16} color={PALETTE.gold} opacity={0.035} soft={2.8} />
+      <Halo position={haloPos} size={22} color={PALETTE.sky} opacity={0.11} soft={2.4} />
+      <Halo position={[-3.5, -2.6, -9]} size={16} color={PALETTE.gold} opacity={0.05} soft={2.8} />
       <SheetField
         sheets={sheets}
         progressRef={introRef}
