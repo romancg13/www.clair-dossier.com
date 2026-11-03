@@ -89,7 +89,7 @@ export function HeroCinematic() {
         className="pointer-events-none absolute inset-0 -z-10"
         style={{
           backgroundImage:
-            'radial-gradient(55% 45% at 78% 12%, rgba(179,210,239,0.22), transparent 60%), radial-gradient(45% 40% at 8% 88%, rgba(196,164,86,0.12), transparent 65%)',
+            'radial-gradient(55% 45% at 78% 12%, rgba(57,168,255,0.13), transparent 60%), radial-gradient(45% 40% at 8% 88%, rgba(244,201,93,0.15), transparent 65%)',
         }}
       />
       {CINEMATIC_SCENES.hero.enabled && (

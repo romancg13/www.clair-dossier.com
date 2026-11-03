@@ -116,7 +116,7 @@ const NOT_FOUND_DESCRIPTION =
   "Page introuvable ou réservée à l'espace client ClairDossier.";
 
 const NOT_FOUND_NOSCRIPT = `<noscript>
-      <div style="padding: 2rem; font-family: system-ui, sans-serif; color: #0d1b3d; max-width: 640px; margin: 2rem auto; line-height: 1.6;">
+      <div style="padding: 2rem; font-family: system-ui, sans-serif; color: #01113d; max-width: 640px; margin: 2rem auto; line-height: 1.6;">
         <p style="font-family: serif; font-size: 1.8rem; font-weight: 600; margin: 0 0 1rem;">Page introuvable</p>
         <p>
           Cette adresse ne correspond à aucune page publique de ClairDossier, ou
@@ -167,7 +167,7 @@ export function buildRedirectPage(targetPath: string, label: string): string {
     <link rel="canonical" href="${url}" />
     <meta http-equiv="refresh" content="0; url=${href}" />
   </head>
-  <body style="font-family: system-ui, sans-serif; color: #0d1b3d; background: #fbf8f1; padding: 2rem; line-height: 1.6;">
+  <body style="font-family: system-ui, sans-serif; color: #01113d; background: #fbf9f4; padding: 2rem; line-height: 1.6;">
     <p>Cette page a été déplacée : <a href="${href}">${esc(label)}</a>.</p>
   </body>
 </html>

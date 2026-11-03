@@ -42,7 +42,7 @@ export function BlogPreview({ limit }: { limit?: number } = {}) {
                     className="absolute inset-0"
                     style={{
                       backgroundImage:
-                        'linear-gradient(135deg, #152348 0%, #1e2c52 50%, #2a3960 100%)',
+                        'linear-gradient(135deg, #0a2150 0%, #13306a 50%, #1e4183 100%)',
                     }}
                   />
                   <div
@@ -50,7 +50,7 @@ export function BlogPreview({ limit }: { limit?: number } = {}) {
                     className="absolute inset-0 opacity-40"
                     style={{
                       backgroundImage:
-                        'radial-gradient(circle at 30% 30%, rgba(196,164,86,0.3), transparent 60%), radial-gradient(circle at 80% 70%, rgba(196,164,86,0.15), transparent 50%)',
+                        'radial-gradient(circle at 30% 30%, rgba(244,201,93,0.32), transparent 60%), radial-gradient(circle at 80% 70%, rgba(244,201,93,0.17), transparent 50%)',
                     }}
                   />
                   <span className="absolute left-4 top-4 inline-flex items-center rounded-full bg-cream-50/95 px-2.5 py-1 font-mono text-[0.65rem] font-medium uppercase tracking-[0.16em] text-navy-900">
