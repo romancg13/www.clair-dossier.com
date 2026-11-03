@@ -75,7 +75,7 @@ export function JournalIllustration({
       className={`relative overflow-hidden bg-navy-900 ${className}`}
       style={{
         backgroundImage:
-          'radial-gradient(circle at 80% 20%, rgba(196,164,86,0.22), transparent 55%)',
+          'radial-gradient(circle at 80% 20%, rgba(244,201,93,0.26), transparent 55%)',
       }}
     >
       <svg

@@ -94,7 +94,7 @@ function TimelineItem({
         style={reduce ? undefined : { scale: dotScale }}
         className={`absolute -left-9 top-[1.05rem] grid h-[26px] w-[26px] place-items-center rounded-full border ${
           state === 'active'
-            ? 'border-gold-400 bg-navy-950 shadow-[0_0_0_6px_rgba(196,164,86,0.14)]'
+            ? 'border-gold-400 bg-navy-950 shadow-[0_0_0_6px_rgba(244,201,93,0.18)]'
             : state === 'done'
               ? 'border-cream-50/30 bg-cream-50'
               : 'cd-hairline-strong bg-navy-950'

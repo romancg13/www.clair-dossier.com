@@ -77,7 +77,7 @@ export function ChapterDeadlines() {
                           {isDeadline && (
                             <motion.span
                               style={reduce ? undefined : { opacity: ring, scale: ringScale }}
-                              className="absolute inset-0 rounded-md border border-gold-400 bg-gold-500/18 shadow-[0_0_0_4px_rgba(196,164,86,0.12)]"
+                              className="absolute inset-0 rounded-md border border-gold-400 bg-gold-500/18 shadow-[0_0_0_4px_rgba(244,201,93,0.16)]"
                             />
                           )}
                           <span className={`relative ${isDeadline ? 'font-semibold text-gold-400' : day < 14 ? 'text-silver-400/70' : 'text-silver-200/85'}`}>

@@ -6,7 +6,7 @@
    existant (MASTER_PROMPT II.7.3 : style isolé, jamais une feuille partagée).
 
    Design system 2.0 — logique des valeurs :
-   · Couleurs : la palette signature (navy-900 #0d1b3d, or, crème, Cormorant)
+   · Couleurs : la palette signature (navy-900 #01113d — bleu de la carte de visite —, or, crème, Cormorant)
      reste la base. On lui ajoute UNE profondeur (navy-950/925) pour les
      chapitres cinéma et UN argent froid (silver) pour les textes sur fond
      sombre. Aucun violet, aucun cyan, aucun néon.
@@ -16,17 +16,17 @@
    ──────────────────────────────────────────────────────────────────────── */
 
 @theme {
-  --color-navy-950: #060d22;
-  --color-navy-925: #0a1530;
-  --color-silver-200: #d6dbe6;
-  --color-silver-400: #9aa3b8;
-  --color-sky-glow: #b3d2ef;
+  --color-navy-950: #00081f;
+  --color-navy-925: #010e33;
+  --color-silver-200: #dce3f2;
+  --color-silver-400: #aab2c5;
+  --color-sky-glow: #39a8ff;
 
   --shadow-stage:
-    0 40px 120px -24px rgba(2, 8, 28, 0.75),
-    0 0 0 1px rgba(214, 219, 230, 0.06);
-  --shadow-float: 0 18px 50px -18px rgba(13, 27, 61, 0.35);
-  --shadow-paper: 0 10px 30px -12px rgba(2, 8, 28, 0.6);
+    0 40px 120px -24px rgba(0, 6, 24, 0.8),
+    0 0 0 1px rgba(220, 227, 242, 0.07);
+  --shadow-float: 0 18px 50px -18px rgba(1, 17, 61, 0.4);
+  --shadow-paper: 0 10px 30px -12px rgba(0, 6, 24, 0.65);
 
   --ease-cinema: cubic-bezier(0.19, 1, 0.22, 1);
 }
@@ -75,8 +75,8 @@
 /* Grille presque invisible sur crème (hero, bento). */
 .cd-grid-light {
   background-image:
-    linear-gradient(rgba(13, 27, 61, 0.045) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(13, 27, 61, 0.045) 1px, transparent 1px);
+    linear-gradient(rgba(1, 17, 61, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(1, 17, 61, 0.07) 1px, transparent 1px);
   background-size: 64px 64px;
   mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 30%, transparent 100%);
   -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 30%, transparent 100%);
@@ -84,11 +84,11 @@
 
 /* Chapitres cinéma : profondeur continue, halos diffus, aucune forme décorative. */
 .cd-cinema {
-  background-color: var(--color-navy-950);
+  background-color: var(--color-navy-925);
   background-image:
-    radial-gradient(60% 40% at 12% 8%, rgba(179, 210, 239, 0.10), transparent 70%),
-    radial-gradient(50% 35% at 88% 92%, rgba(196, 164, 86, 0.08), transparent 70%),
-    radial-gradient(40% 30% at 50% 50%, rgba(21, 35, 72, 0.6), transparent 80%);
+    radial-gradient(60% 40% at 12% 8%, rgba(57, 168, 255, 0.17), transparent 70%),
+    radial-gradient(50% 35% at 88% 92%, rgba(244, 201, 93, 0.13), transparent 70%),
+    radial-gradient(85% 70% at 50% 42%, rgba(10, 36, 92, 0.85), transparent 100%);
 }
 
 /* Grain imperceptible (matière) — opacité très faible, aucun coût JS. */
@@ -122,9 +122,9 @@
   position: relative;
   isolation: isolate;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent 38%),
-    rgba(10, 21, 48, 0.72);
-  border: 1px solid rgba(214, 219, 230, 0.10);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 38%),
+    rgba(1, 14, 51, 0.76);
+  border: 1px solid rgba(220, 227, 242, 0.12);
   box-shadow: var(--shadow-stage);
 }
 
@@ -132,13 +132,13 @@
 .cd-paper {
   background: var(--color-cream-50);
   color: var(--color-navy-900);
-  border: 1px solid rgba(13, 27, 61, 0.08);
+  border: 1px solid rgba(1, 17, 61, 0.09);
   box-shadow: var(--shadow-paper);
 }
 
 /* Hairlines sur fond sombre. */
-.cd-hairline { border-color: rgba(214, 219, 230, 0.12); }
-.cd-hairline-strong { border-color: rgba(214, 219, 230, 0.2); }
+.cd-hairline { border-color: rgba(220, 227, 242, 0.14); }
+.cd-hairline-strong { border-color: rgba(220, 227, 242, 0.24); }
 
 /* ─── Tuiles bento : lumière suivant le pointeur (desktop, souris) ────── */
 .cd-tile {
@@ -159,7 +159,7 @@
   opacity: 0;
   background: radial-gradient(
     260px circle at var(--mx, 50%) var(--my, 50%),
-    rgba(196, 164, 86, 0.16),
+    rgba(244, 201, 93, 0.2),
     transparent 62%
   );
   transition: opacity 320ms var(--ease-out-soft);
@@ -169,7 +169,7 @@
 @media (hover: hover) and (pointer: fine) {
   .cd-tile:hover {
     transform: translate3d(0, -3px, 0);
-    border-color: rgba(196, 164, 86, 0.55);
+    border-color: rgba(244, 201, 93, 0.65);
     box-shadow: var(--shadow-card-hover);
   }
   .cd-tile:hover::before { opacity: 1; }

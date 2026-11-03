@@ -71,7 +71,7 @@ export function HeroCinematic() {
         className="pointer-events-none absolute inset-0 -z-10"
         style={{
           backgroundImage:
-            'radial-gradient(55% 45% at 78% 12%, rgba(179,210,239,0.22), transparent 60%), radial-gradient(45% 40% at 8% 88%, rgba(196,164,86,0.12), transparent 65%)',
+            'radial-gradient(55% 45% at 78% 12%, rgba(57,168,255,0.24), transparent 60%), radial-gradient(45% 40% at 8% 88%, rgba(244,201,93,0.2), transparent 65%)',
         }}
       />
 
@@ -165,7 +165,7 @@ export function HeroCinematic() {
             className="relative h-[340px] w-full overflow-hidden rounded-[1.75rem] border border-navy-900/15 shadow-card sm:h-[440px] lg:h-[560px]"
             style={{
               background:
-                'radial-gradient(90% 70% at 50% 30%, #152348 0%, #0d1b3d 55%, #0a1430 100%)',
+                'radial-gradient(90% 70% at 50% 30%, #0a2150 0%, #01113d 55%, #00081f 100%)',
             }}
           >
             {CINEMATIC_SCENES.hero.enabled ? (
@@ -215,7 +215,7 @@ export function HeroCinematic() {
           </div>
           <div
             aria-hidden="true"
-            className="absolute -inset-6 -z-10 rounded-[2.25rem] bg-gradient-to-br from-navy-900/12 via-transparent to-gold-500/14 blur-3xl"
+            className="absolute -inset-6 -z-10 rounded-[2.25rem] bg-gradient-to-br from-gold-500/25 via-transparent to-sky-marker/60 blur-3xl"
           />
         </div>
       </div>
@@ -237,7 +237,7 @@ function HeroPoster() {
     <div aria-hidden="true" className="absolute inset-0">
       <div
         className="absolute inset-0"
-        style={{ background: 'radial-gradient(60% 45% at 50% 38%, rgba(179,210,239,0.10), transparent 70%)' }}
+        style={{ background: 'radial-gradient(60% 45% at 50% 38%, rgba(57,168,255,0.12), transparent 70%)' }}
       />
       {sheets.map((s, i) => (
         <div
