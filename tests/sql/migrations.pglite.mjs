@@ -1013,5 +1013,28 @@ await test('admin (sans MFA) : suppression définitive des dossiers de A et de B
   assert.equal((await q('select id from public.dossier_submissions where dossier_id = any($1)', [cibles])).length, 0, 'registre détaché du dossier supprimé');
 });
 
+console.log('Lien court /v — clics agrégés');
+await test('anon incrémente via la RPC seulement ; seul l’admin lit', async () => {
+  await asAnon();
+  await q(`select public.record_campaign_click('village-justice')`);
+  await q(`select public.record_campaign_click('village-justice')`);
+  await q(`select public.record_campaign_click('inconnue')`);
+  await rejects(q('select * from public.campaign_clicks'), /permission denied/);
+  await rejects(q(`insert into public.campaign_clicks (source, day, clicks) values ('village-justice', current_date, 999)`), /permission denied/);
+  const A = await newUser('lecteur.clics@exemple.fr');
+  await asUser(A);
+  assert.equal((await q('select * from public.campaign_clicks')).length, 0, 'non-admin : aucune ligne');
+  await rejects(q(`update public.campaign_clicks set clicks = 0`), /permission denied/);
+  await asUser(ADMIN);
+  const rows = await q('select source, clicks from public.campaign_clicks');
+  assert.deepEqual(rows, [{ source: 'village-justice', clicks: 2 }], 'une ligne/jour, source inconnue ignorée');
+  await asSuperuser();
+  await q(`update public.campaign_clicks set clicks = 5000`);
+  await asAnon();
+  await q(`select public.record_campaign_click('village-justice')`);
+  await asSuperuser();
+  assert.equal((await q('select clicks from public.campaign_clicks'))[0].clicks, 5000, 'plafond journalier');
+});
+
 console.log(`\n${passed} réussis, ${failed} échoués`);
 process.exit(failed ? 1 : 0);

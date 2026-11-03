@@ -23,6 +23,7 @@ import {
 } from "../components/admin/AdminAutomation";
 import { AdminRequests } from "../components/admin/AdminRequests";
 import { AdminRevenue } from "../components/admin/AdminRevenue";
+import { AdminCampaign } from "../components/admin/AdminCampaign";
 import { CATEGORY_LABELS, effectiveCategory, formatBytes, hasDocExtras, isGenericTitle } from "../lib/dossier-workspace";
 
 /**
@@ -640,6 +641,7 @@ export function AdminConsole() {
                     />
                     <Stat label="Actions admin (100 dern.)" value={caps.audit ? audit.length : "—"} />
                   </div>
+                  <AdminCampaign />
                   <Card>
                     <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">
                       Derniers dossiers
