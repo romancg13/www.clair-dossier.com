@@ -26,13 +26,13 @@ export const workspaces: Workspace[] = [
       "Vous construisez votre dossier à votre rythme. Vous voyez en permanence où il en est, qui agit, ce qui est attendu de vous.",
     capabilities: [
       "Création guidée en 5 étapes (profil, nature, informations, pièces, récapitulatif)",
-      "Suivi de l'avancement sur les 5 étapes métier de votre dossier",
+      "Suivi du dossier en 4 étapes, du dépôt à la clôture",
       "Transmission décidée et effectuée par vous, jamais automatique",
       "Récupération de vos pièces et données sur demande",
     ],
     mockup: {
       kicker: "Aperçu dossier",
-      title: "Avancement du dossier",
+      title: "Suivi du dossier",
       rows: [
         { label: "Étape", value: "Dépôt des pièces", tone: "gold" },
         { label: "Pièces déposées", value: "7 / 9" },
@@ -76,7 +76,7 @@ export const workspaces: Workspace[] = [
       "Artisan, indépendant, profession libérale ou PME : retrouvez la liste de vos dossiers et l'avancement de chacun depuis un seul espace. Chaque compte ne voit que ses propres dossiers.",
     capabilities: [
       "Liste de tous vos dossiers avec leur étape en cours",
-      "Page détail « Avancement du dossier » pour chaque dossier",
+      "Page détail « Suivi du dossier » pour chaque dossier",
       "Données isolées par compte : vous ne voyez que les vôtres",
       "Pièces téléchargeables et transmission à votre main, dossier par dossier",
     ],

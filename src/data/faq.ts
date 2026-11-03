@@ -27,13 +27,13 @@ export const homeFaq: FaqEntry[] = [
     id: "compatible-cabinet",
     question: "Comment je récupère ou partage mes dossiers ?",
     answer:
-      "Depuis la liste de vos dossiers, ouvrez la page détail « Avancement du dossier » : vous y consultez les 5 étapes, téléchargez chaque pièce et voyez les échéances. Quand vous le souhaitez, vous téléchargez vos pièces et transmettez le dossier vous-même au destinataire de votre choix — rien ne part automatiquement.",
+      "Depuis la liste de vos dossiers, ouvrez la page détail « Suivi du dossier » : vous y consultez les 4 étapes, téléchargez chaque pièce et voyez les échéances. Quand vous le souhaitez, vous téléchargez vos pièces et transmettez le dossier vous-même au destinataire de votre choix — rien ne part automatiquement.",
   },
   {
     id: "refus-avocat",
     question: "Comment je suis l'avancement de mon dossier ?",
     answer:
-      "La page détail « Avancement du dossier » affiche 5 étapes métier cliquables. Vous y voyez où en est votre dossier, les pièces déjà déposées (téléchargeables) et les échéances à venir. Si une pièce manque, vous complétez le dossier directement depuis l'app, puis vous le transmettez quand il est prêt.",
+      "La page détail « Suivi du dossier » affiche 4 étapes cliquables : dossier créé, traitement en cours, documents disponibles, dossier clôturé. Vous y voyez où en est votre dossier, les pièces déjà déposées (téléchargeables) et les échéances à venir. Si une pièce manque, vous complétez le dossier directement depuis l'app, puis vous le transmettez quand il est prêt.",
   },
   {
     id: "tarification-cabinet",

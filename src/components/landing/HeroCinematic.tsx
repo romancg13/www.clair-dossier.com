@@ -285,7 +285,7 @@ function MainCard() {
       </div>
 
       <p className="mt-4 font-mono text-[0.66rem] uppercase tracking-[0.18em] text-slate-500">
-        Avancement du dossier · {DEMO.reference}
+        Suivi du dossier · {DEMO.reference}
       </p>
       <p className="mt-1.5 font-display text-[1.6rem] font-semibold leading-tight text-navy-900 sm:text-[1.8rem]">
         {DEMO.title}
@@ -294,8 +294,8 @@ function MainCard() {
         {DEMO.category} · profil {DEMO.profile}
       </p>
 
-      {/* 5 étapes métier — libellés réels de la page dossier */}
-      <ol className="mt-6 grid grid-cols-5 gap-1.5" aria-label="Cinq étapes métier">
+      {/* 4 étapes du suivi — libellés réels de la page dossier */}
+      <ol className="mt-6 grid grid-cols-4 gap-1.5" aria-label="Suivi du dossier en quatre étapes">
         {BUSINESS_STEPS.map((label, i) => {
           const n = i + 1;
           const state = n < DEMO.step ? 'done' : n === DEMO.step ? 'active' : 'todo';

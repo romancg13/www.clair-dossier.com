@@ -10,16 +10,12 @@
  *    automatique des pièces, pas de rappel envoyé — voir /etat-du-produit).
  */
 
+import { TIMELINE_STEPS } from '../../../packages/core/src/dossiers';
+
 export const DEMO_LABEL = 'Dossier de démonstration';
 
-/** Les 5 étapes métier de la page « Avancement du dossier » (DossierDetail.tsx). */
-export const BUSINESS_STEPS = [
-  'Création du dossier',
-  'Devis, contrat ou accord',
-  'Suivi du dossier',
-  'Facture et paiement',
-  'Option impayé / pré-contentieux',
-] as const;
+/** Les 4 étapes du « Suivi du dossier » — même source que la page dossier (packages/core). */
+export const BUSINESS_STEPS = TIMELINE_STEPS;
 
 /** Les 5 étapes du tunnel de création (DossierFlow.tsx). */
 export const TUNNEL_STEPS = ['Profil', 'Nature', 'Informations', 'Pièces', 'Récapitulatif'] as const;
@@ -63,7 +59,7 @@ export const DEMO = {
     status: 'À venir',
   },
   /** Étape métier atteinte (1-indexée) et statut réel (statuses.ts). */
-  step: 3,
+  step: 2,
   status: 'En cours',
   /** Texte réel STEP_NEXT_ACTIONS[3] (DossierDetail.tsx). */
   nextAction: 'Mettez à jour le suivi : nouveaux courriers, relances, pièces reçues.',

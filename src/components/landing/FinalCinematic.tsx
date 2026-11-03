@@ -62,7 +62,7 @@ export function FinalCinematic() {
             <div className="mt-4 grid gap-3 sm:grid-cols-3">
               <motion.div {...enter(0.25)} className="rounded-lg border cd-hairline bg-navy-950/40 p-3">
                 <p className="font-mono text-[0.56rem] uppercase tracking-[0.14em] text-silver-400">Étapes</p>
-                <div className="mt-2 grid grid-cols-5 gap-1">
+                <div className="mt-2 grid grid-cols-4 gap-1">
                   {BUSINESS_STEPS.map((s, i) => (
                     <span
                       key={s}

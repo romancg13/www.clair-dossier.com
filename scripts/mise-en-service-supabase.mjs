@@ -12,6 +12,11 @@
  *   5. Fonctions Edge (via CLI officielle) :  … --apply --deploy-functions
  *   6. Secrets manquants (saisie masquée) :   … --apply --secrets
  *
+ *   Moteur IA SEUL (aucune autre migration, aucune autre fonction, aucun
+ *   réglage d'authentification — jamais d'objet de paiement) :
+ *     node scripts/mise-en-service-supabase.mjs --ia-seulement            (simulation)
+ *     … --ia-seulement --apply --deploy-functions --secrets
+ *
  * Garanties :
  *   - AUCUNE valeur secrète affichée ni journalisée (jeton lu de l'environnement,
  *     secrets saisis sans écho, seules les *présences* sont rapportées) ;
@@ -47,6 +52,10 @@ const SUPABASE_URL = `https://${REF}.supabase.co`;
 const APPLY = process.argv.includes('--apply');
 const DEPLOY_FUNCTIONS = process.argv.includes('--deploy-functions');
 const SECRETS = process.argv.includes('--secrets');
+// Périmètre strict du moteur IA : jamais Stripe, abonnements, auth ni autre fonction.
+const IA_ONLY = process.argv.includes('--ia-seulement');
+const IA_MIGRATIONS = ['20261023120000_moteur_documentaire_ia.sql', '20261102120000_ia_console_privee.sql'];
+const IA_SECRETS = ['ANTHROPIC_API_KEY', 'AI_WORKER_TOKEN', 'RESEND_API_KEY'];
 
 const TOKEN = supabaseToken()?.token ?? '';
 if (!TOKEN) {
@@ -130,6 +139,11 @@ const MARKERS = {
     "select exists (select 1 from information_schema.columns where table_schema='public' and table_name='prospects' and column_name='partner_type')",
   '20260919120000_corbeille_client.sql': "select to_regprocedure('public.client_trash_enabled()')",
   '20260920120000_admin_sans_mfa.sql': "select to_regprocedure('public.admin_delete_enabled()')",
+  '20261012120000_revenus_abonnements.sql':
+    "select exists (select 1 from information_schema.columns where table_schema='public' and table_name='subscriptions' and column_name='unit_amount')",
+  '20261023120000_moteur_documentaire_ia.sql': "select to_regclass('public.ai_jobs')",
+  '20261102120000_ia_console_privee.sql': "select to_regprocedure('public.ai_admin_overview()')",
+  '20261103120000_campagne_clics.sql': "select to_regclass('public.campaign_clicks')",
 };
 // Socle qui DOIT déjà exister (sinon : mauvais projet → arrêt).
 const SOCLE = [
@@ -195,7 +209,10 @@ async function stepAuthConfig() {
 
 async function stepMigrations() {
   console.log('\n── 2. Migrations (uniquement les manquantes, dans l’ordre) ──');
-  const files = readdirSync(MIGRATIONS_DIR).filter((f) => f.endsWith('.sql')).sort();
+  const files = readdirSync(MIGRATIONS_DIR)
+    .filter((f) => f.endsWith('.sql'))
+    .filter((f) => !IA_ONLY || IA_MIGRATIONS.includes(f))
+    .sort();
   for (const f of SOCLE) {
     if (!(await probe(MARKERS[f]))) {
       ko(`SOCLE ABSENT (${f}) — ce projet ne ressemble PAS à la production ClairDossier. ARRÊT.`);
@@ -261,7 +278,9 @@ async function stepOverrideJgomes() {
   else ko(`Droit effectif inattendu : ${JSON.stringify(eff?.[0])}`);
 }
 
-const EDGE_FUNCTIONS = ['notify-lead', 'stripe-webhook', 'admin-users', 'delete-account', 'submit-prospect'];
+const EDGE_FUNCTIONS = IA_ONLY
+  ? ['ai-worker']
+  : ['notify-lead', 'stripe-webhook', 'admin-users', 'delete-account', 'submit-prospect', 'ai-worker'];
 
 async function stepFunctions() {
   console.log('\n── 4. Fonctions Edge ──');
@@ -274,12 +293,12 @@ async function stepFunctions() {
   }
   const toDeploy = EDGE_FUNCTIONS.filter((s) => !bySlug.get(s));
   // notify-lead : redéployer aussi si déjà présente (version enrichie e-mail+SMS dans le dépôt).
-  if (bySlug.get('notify-lead')) warn('notify-lead : déjà déployée — le dépôt contient une version plus riche, redéploiement inclus.');
+  if (!IA_ONLY && bySlug.get('notify-lead')) warn('notify-lead : déjà déployée — le dépôt contient une version plus riche, redéploiement inclus.');
   if (!DEPLOY_FUNCTIONS) {
-    warn(`Déploiement non demandé (--deploy-functions). À déployer/mettre à jour : ${[...new Set(['notify-lead', ...toDeploy])].join(', ')}`);
+    warn(`Déploiement non demandé (--deploy-functions). À déployer/mettre à jour : ${[...new Set([...(IA_ONLY ? [] : ['notify-lead']), ...toDeploy])].join(', ')}`);
     return;
   }
-  for (const slug of new Set(['notify-lead', ...toDeploy])) {
+  for (const slug of new Set([...(IA_ONLY ? [] : ['notify-lead']), ...toDeploy])) {
     // --use-api : empaquetage côté Supabase, sans Docker local.
     const cli = process.env.SUPABASE_BIN ? [process.env.SUPABASE_BIN, []] : ['npx', ['-y', 'supabase@latest']];
     const args = [...cli[1], 'functions', 'deploy', slug, '--project-ref', REF, '--use-api'];
@@ -299,6 +318,8 @@ const EXPECTED_SECRETS = [
   ['RESEND_API_KEY', 'e-mail admin (déjà utilisé par notify-lead historiquement)'],
   ['STRIPE_SECRET_KEY', 'clé restreinte lecture Subscriptions/Customers/Prices/Products'],
   ['STRIPE_WEBHOOK_SECRET', 'whsec_… de l’endpoint créé au dashboard Stripe'],
+  ['ANTHROPIC_API_KEY', 'moteur documentaire IA (ai-worker) — sans elle le worker répond 503 et ne réclame rien'],
+  ['AI_WORKER_TOKEN', 'jeton d’appel du worker par pg_cron (même valeur dans Vault : clairdossier_ai_worker_token)'],
   ['ADMIN_NOTIFICATION_EMAIL', 'facultatif — défaut : prestige.seller@icloud.com'],
   ['ADMIN_NOTIFICATION_PHONE', 'facultatif — SMS admin (+33…)'],
   ['TWILIO_ACCOUNT_SID', 'facultatif — SMS'],
@@ -329,7 +350,7 @@ async function stepSecrets() {
   console.log('\n── 5. Secrets serveur (présence seulement, jamais les valeurs) ──');
   const existing = new Set(((await api('/secrets')) ?? []).map((s) => s.name));
   const missing = [];
-  for (const [name, why] of EXPECTED_SECRETS) {
+  for (const [name, why] of EXPECTED_SECRETS.filter(([n]) => !IA_ONLY || IA_SECRETS.includes(n))) {
     if (existing.has(name)) ok(`${name} : présent.`);
     else {
       console.log(`  · absent   ${name} — ${why}`);
@@ -380,14 +401,14 @@ Reste à faire À LA MAIN (non pilotable par l'API) :
   5. Test réel : valider un dossier de test → notification visible dans /admin → e-mail reçu.`);
 }
 
-console.log(`Mise en service Supabase — projet ${REF} ${APPLY ? '— MODE APPLICATION' : '— SIMULATION (aucune modification)'}`);
+console.log(`Mise en service Supabase — projet ${REF} ${APPLY ? '— MODE APPLICATION' : '— SIMULATION (aucune modification)'}${IA_ONLY ? ' — PÉRIMÈTRE MOTEUR IA SEUL' : ''}`);
 try {
-  await stepAuthConfig();
+  if (!IA_ONLY) await stepAuthConfig();
   await stepMigrations();
-  await stepOverrideJgomes();
+  if (!IA_ONLY) await stepOverrideJgomes();
   await stepFunctions();
   await stepSecrets();
-  await stepPostChecks();
+  if (!IA_ONLY) await stepPostChecks();
 } catch (e) {
   ko(e instanceof Error ? e.message : String(e));
 }
