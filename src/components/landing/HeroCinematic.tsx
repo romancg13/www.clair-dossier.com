@@ -197,7 +197,8 @@ export function HeroCinematic() {
                 style={reduce ? undefined : { x: satX, y: satY }}
                 className="pointer-events-none absolute inset-0 hidden sm:block"
               >
-                <Satellite className="cd-float-a -top-5 -left-2 lg:-left-16 lg:top-4" depth={70}>
+                {/* Au-dessus de la carte : ne masque pas le badge « Dossier de démonstration ». */}
+                <Satellite className="cd-float-a -top-10 -left-2 lg:-left-16" depth={70}>
                   <span className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-navy-900/6 text-navy-900">
                     <DocumentGlyph type="devis" />
                   </span>

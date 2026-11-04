@@ -165,7 +165,10 @@ export function Nav() {
             />
             <motion.nav
               ref={panelRef}
-              className="absolute inset-x-0 top-0 max-h-full overflow-y-auto overscroll-contain bg-cream-50 border-b hairline px-5 py-6 shadow-card"
+              className="absolute inset-x-0 top-0 overflow-y-auto overscroll-contain bg-cream-50 border-b hairline px-5 py-6 shadow-card"
+              // Le flou de la barre fait d'elle le bloc conteneur de ce panneau « fixed » :
+              // hauteur maximale calculée sur l'écran, pas sur le parent.
+              style={{ maxHeight: `calc(100dvh - ${panelTop}px)` }}
               initial={{ y: '-30%' }}
               animate={{ y: 0 }}
               exit={{ y: '-30%' }}
