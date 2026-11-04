@@ -70,11 +70,13 @@
           }
           if (!isBot && PLAUSIBLE_DOMAIN) {
             // text/plain : requête « simple », sans préflight CORS (comme le script officiel).
+            // L'URL porte les UTM : cet événement ouvre la session Plausible, qui n'est
+            // attribuée à la campagne que d'après son premier événement.
             beacons.push(send('https://plausible.io/api/event', {
               method: 'POST',
               keepalive: true,
               headers: { 'Content-Type': 'text/plain' },
-              body: JSON.stringify({ name: 'VillageJusticeClick', url: location.href, domain: PLAUSIBLE_DOMAIN, referrer: document.referrer || null }),
+              body: JSON.stringify({ name: 'VillageJusticeClick', url: location.origin + location.pathname + dest.search, domain: PLAUSIBLE_DOMAIN, referrer: document.referrer || null }),
             }));
           }
           if (!beacons.length) return go();

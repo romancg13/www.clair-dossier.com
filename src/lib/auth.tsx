@@ -7,6 +7,7 @@ import {
 } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase, isSupabaseConfigured } from './supabase';
+import { setDraftOwner } from './drafts';
 
 export type CompanyType =
   | 'pme'
@@ -62,8 +63,14 @@ function translateError(message: string): string {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<Session | null>(null);
+  const [session, setSessionState] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Les brouillons locaux suivent le compte connecté (aucun brouillon hors session).
+  function setSession(next: Session | null) {
+    setDraftOwner(next?.user.id);
+    setSessionState(next);
+  }
 
   useEffect(() => {
     if (!isSupabaseConfigured) {

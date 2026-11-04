@@ -21,7 +21,7 @@ async function visit({ search = '', ua = 'Mozilla/5.0 (iPhone) Safari/604.1', fe
     URLSearchParams,
     JSON,
     Promise,
-    location: { search, href: `https://www.clair-dossier.com/v${search}`, replace: (u: string) => redirects.push(u) },
+    location: { search, origin: 'https://www.clair-dossier.com', pathname: '/v', replace: (u: string) => redirects.push(u) },
     navigator: { userAgent: ua, webdriver: false },
     document: { prerendering: false, referrer: 'https://www.village-justice.com/' },
     setTimeout: (fn: () => void) => timers.push(fn),
@@ -46,7 +46,7 @@ test('un humain : un clic compté + un événement Plausible, puis une seule red
   assert.equal(calls[1].url, 'https://plausible.io/api/event');
   assert.deepEqual(JSON.parse(calls[1].body), {
     name: 'VillageJusticeClick',
-    url: 'https://www.clair-dossier.com/v',
+    url: 'https://www.clair-dossier.com/v?utm_source=village-justice&utm_medium=publiredactionnel&utm_campaign=2026',
     domain: 'clair-dossier.com',
     referrer: 'https://www.village-justice.com/',
   });
