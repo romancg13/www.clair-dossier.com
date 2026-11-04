@@ -56,7 +56,9 @@ jobs:
           # Lien PUBLIC du portail client Stripe (factures, abonnement) — variable de dépôt, facultative.
           VITE_STRIPE_PORTAL_URL: ${{ vars.VITE_STRIPE_PORTAL_URL }}
           # Mesure d'audience sans cookie (Plausible) — domaine PUBLIC du site, pas un secret.
-          VITE_PLAUSIBLE_DOMAIN: clair-dossier.com
+          # Étiquette "data-domain" : doit être IDENTIQUE au nom du site dans le
+          # compte Plausible. Aligné sur le domaine canonique servi (www).
+          VITE_PLAUSIBLE_DOMAIN: www.clair-dossier.com
 
       # Repère de version public (aucun secret) : prouve quel commit est servi
       # par le domaine — https://www.clair-dossier.com/version.json
