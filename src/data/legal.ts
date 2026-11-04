@@ -249,7 +249,7 @@ const politiqueConfidentialite: LegalPage = {
   title: "Politique de confidentialité",
   metaDescription:
     "Politique de confidentialité ClairDossier — données collectées, finalités, base légale, durées de conservation, vos droits RGPD.",
-  lastUpdate: "2026-09-18",
+  lastUpdate: "2026-11-04",
   intro:
     "ClairDossier traite des données personnelles dans le strict respect du Règlement général sur la protection des données (RGPD) et de la loi française Informatique et Libertés. Cette politique décrit les données collectées, leurs finalités, et les droits dont vous disposez.",
   sections: [
@@ -278,6 +278,7 @@ const politiqueConfidentialite: LegalPage = {
             "Données de dossier : informations renseignées par vous dans le cadre de la constitution d'un dossier juridique (typologie, contexte, dates, pièces jointes).",
             "Données de paiement : traitées par notre prestataire Stripe (les coordonnées bancaires ne transitent jamais par nos serveurs).",
             "Données techniques : adresse IP, type de navigateur, journaux de connexion, conservés à des fins de sécurité.",
+            "Mesure d'audience sans cookie (Plausible Analytics) : pages publiques consultées, provenance (site référent, paramètres de campagne UTM), type d'appareil, navigateur et pays, sous forme de statistiques agrégées et anonymes ; ni cookie, ni identifiant persistant, ni adresse IP conservée. Les espaces privés (compte, dossiers, administration) sont exclus de la mesure. Le lien court de campagne clair-dossier.com/v alimente en outre un compteur de clics journalier agrégé, sans aucune donnée personnelle en base.",
           ],
         },
       ],
@@ -324,6 +325,7 @@ const politiqueConfidentialite: LegalPage = {
             "Stripe Payments Europe Ltd. (gestion des paiements) — Irlande.",
             "Resend, pour l'envoi des e-mails (confirmation de compte, notifications internes à l'équipe).",
             "GitHub (GitHub Pages), pour la diffusion du site public : journaux techniques de connexion, dont l'adresse IP.",
+            "Plausible Insights OÜ (Estonie, Union européenne), pour la mesure d'audience sans cookie du site public.",
             "WhatsApp (Meta), uniquement si vous choisissez de contacter l'équipe par ce canal.",
             "Les destinataires auxquels vous choisissez de transmettre vous-même vos pièces, en dehors du Service.",
           ],
@@ -396,9 +398,9 @@ const cookies: LegalPage = {
   title: "Cookies",
   metaDescription:
     "Politique cookies ClairDossier — cookies techniques uniquement, aucun cookie de mesure d'audience ou marketing tiers.",
-  lastUpdate: "2026-09-20",
+  lastUpdate: "2026-11-04",
   intro:
-    "Le site clair-dossier.com utilise un nombre minimal de cookies, strictement nécessaires au fonctionnement du service. Aucun cookie marketing, publicitaire ou de mesure d'audience tierce n'est déposé sans votre consentement explicite.",
+    "Le site clair-dossier.com utilise un nombre minimal de cookies, strictement nécessaires au fonctionnement du service. Aucun cookie marketing, publicitaire ou de mesure d'audience n'est déposé ; la mesure d'audience du site public fonctionne sans cookie.",
   sections: [
     {
       id: "cest-quoi",
@@ -437,7 +439,7 @@ const cookies: LegalPage = {
         },
         {
           type: "p",
-          text: "Nous n'utilisons aucun outil d'analytics tiers (Google Analytics, Matomo Cloud, etc.). Si nous souhaitons activer un suivi de fréquentation à l'avenir, votre consentement sera demandé via une bannière dédiée.",
+          text: "Mesure d'audience : nous utilisons Plausible Analytics (Plausible Insights OÜ, Union européenne), qui ne dépose aucun cookie, ne lit aucun identifiant sur votre terminal, ne conserve pas votre adresse IP et ne suit pas votre navigation d'un site à l'autre. Il produit uniquement des statistiques agrégées et anonymes, pour notre seul compte (pages publiques vues, provenance, campagnes, appareils, pays) ; les espaces privés (compte, dossiers, administration) sont exclus. Conformément aux recommandations de la CNIL sur les outils de mesure d'audience exemptés de consentement, aucune bannière n'est donc affichée. Vous pouvez vous y opposer en bloquant le domaine plausible.io dans votre navigateur ou votre bloqueur de contenu, sans aucune conséquence sur le service.",
         },
       ],
     },
