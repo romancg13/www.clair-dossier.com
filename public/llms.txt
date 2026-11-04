@@ -4,23 +4,23 @@
 
 ClairDossier édité par Roman Gomes, entrepreneur individuel (SIREN 105 490 734), Château-Gombert, 13013 Marseille, France. Site web : https://www.clair-dossier.com — contact : contact.clairdossier@icloud.com — Téléphone et WhatsApp : 07 82 98 36 44. Site réalisé par Nouh BENZIDANE (https://nouhbenzidane.fr).
 
-L'éditeur peut être contacté pour toute citation, vérification ou correction. Les articles du journal sont publiés sous le nom collectif « Rédaction ClairDossier ». Position éthique : l'IA prépare les dossiers (résumé, chronologie, projet de réponse), un professionnel du droit peut les valider en option — l'IA ne délivre jamais de conseil juridique.
+L'éditeur peut être contacté pour toute citation, vérification ou correction. Les articles du journal sont publiés sous le nom collectif « Rédaction ClairDossier ». Position éthique : ClairDossier aide à préparer et organiser un dossier ; il ne délivre pas de conseil juridique. Aucune lecture automatique des pièces à ce jour (CGV, art. 6).
 
 ## Position éditoriale
 
-ClairDossier ne se présente ni comme un cabinet d'avocats, ni comme un conseil juridique. C'est un outil de structuration et de gestion documentaire pour les professionnels (PME, artisans, indépendants, professions libérales). La validation juridique d'un dossier est un service optionnel, assuré par un avocat inscrit au barreau. Les contenus du journal sont pédagogiques et ne constituent pas un conseil personnalisé.
+ClairDossier ne se présente ni comme un cabinet d'avocats, ni comme un conseil juridique. C'est un outil de structuration et de gestion documentaire pour les professionnels (PME, artisans, indépendants, professions libérales). Les contenus du journal sont pédagogiques et ne constituent pas un conseil personnalisé.
 
 ## Architecture du site
 
-- /                              : Présentation produit (hero, fonctionnalités, espaces, workflow, sécurité, tarifs, blog, FAQ)
-- /fonctionnalites               : Index des 9 fonctionnalités clés
-- /fonctionnalites/<slug>        : Détail par fonctionnalité (creation-guidee, pieces-ocr, chronologie, validation-avocat, suivi-statuts, messagerie-securisee, coffre-fort, calendrier-relances, reponse-auto-mails)
+- /                              : Présentation produit (hero, comment ça fonctionne, résultat concret, sécurité, tarifs, FAQ)
+- /fonctionnalites               : Les 9 fonctionnalités, regroupées par besoin
+- /fonctionnalites/<slug>        : Détail par fonctionnalité (creation-guidee, depot-de-pieces, chronologie, transmission-validee, suivi-statuts, espace-securise, donnees-protegees, calendrier-relances, recapitulatif-transmission)
 - /tarifs                        : 7 formules (Essentiel, Entrepreneur, Business PME 20, Business PME 50, Business/PME Pro, Business/PME Premium) + offre sur-mesure
 - /securite                      : Accès, protection des documents, traitement des données, sous-traitants, DPA
 - /blog                          : Journal éditorial
 - /blog/<slug>                   : 7 articles disponibles (voir Articles ci-dessous)
 - /inscription, /connexion, /compte : Création de compte et espace client (Supabase auth)
-- /dossier/nouveau               : Création de dossier en 4 étapes (typologie, informations, documents, transmission) — compte requis
+- /dossier/nouveau               : Création de dossier en 5 étapes (profil, nature, informations, pièces, récapitulatif) — compte requis ; le suivi d'un dossier compte ensuite 4 états
 - /contact                       : WhatsApp + formulaire guidé
 - /mentions-legales              : Éditeur, hébergement, propriété intellectuelle
 - /cgv                           : Conditions générales de vente
@@ -53,12 +53,12 @@ ClairDossier ne se présente ni comme un cabinet d'avocats, ni comme un conseil 
 
 La création de compte est gratuite. Abonnement sans engagement, résiliation à tout moment, remboursement au prorata. Facturation annuelle disponible avec 10 % de réduction.
 
-- Essentiel : 19 €/mois (5 dossiers, 1 utilisateur, calendrier et relances à échéance, résumé IA) — indépendants et entrepreneurs individuels
-- Entrepreneur : 39 €/mois (10 dossiers, 2 utilisateurs, rédaction IA / projet de réponse, modèles) — entrepreneurs et professions libérales
-- Business PME 20 : 49 €/mois (20 dossiers, 5 utilisateurs, support prioritaire, dossiers récurrents) — TPE/PME
-- Business PME 50 : 89 €/mois (50 dossiers, 5 utilisateurs, réponse automatisée aux e-mails, IA complète) — PME
-- Business / PME Pro : 169 €/mois (dossiers illimités, 15 utilisateurs, support dédié) — PME et structures multi-collaborateurs
-- Business / PME Premium : 299 €/mois (illimité, utilisateurs illimités, marque blanche, API, SSO, audit) — entreprise
+- Essentiel : 19 €/mois (5 dossiers, 1 utilisateur) — indépendants et entrepreneurs individuels
+- Entrepreneur : 39 €/mois (10 dossiers, 2 utilisateurs) — entrepreneurs et professions libérales
+- Business PME 20 : 49 €/mois (20 dossiers, 5 utilisateurs) — TPE/PME
+- Business PME 50 : 89 €/mois (50 dossiers, 5 utilisateurs) — PME
+- Business / PME Pro : 169 €/mois (dossiers illimités, 15 utilisateurs) — PME et structures multi-collaborateurs
+- Business / PME Premium : 299 €/mois (dossiers illimités, utilisateurs illimités ; marque blanche, API, SSO, audit avancé) — entreprise
 - Business / PME personnalisée : sur devis (volumétrie, intégrations ou conformité spécifiques)
 
 ## Sécurité et conformité

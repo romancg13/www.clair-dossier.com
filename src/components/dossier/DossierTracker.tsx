@@ -1,8 +1,5 @@
 import { useState } from "react";
-import { STEP_MESSAGES, STEP_PANELS, TIMELINE_STEPS } from "../../../packages/core/src/dossiers";
-
-/** Mention sous l'étape courante — cohérente avec son sens (« Documents disponibles » n'est pas « en cours »). */
-const CURRENT_BADGE: Record<number, string> = { 1: "En cours", 2: "En cours", 3: "Disponibles", 4: "Clôturé" };
+import { STEP_PANELS, TIMELINE_STEPS } from "../../../packages/core/src/dossiers";
 import { CheckIcon } from "../icons";
 
 type Props = {
@@ -24,10 +21,11 @@ export function DossierTracker({ step, detail, updating }: Props) {
         <h2 id="tracker-title" className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">
           Suivi du dossier
         </h2>
-        <p className="text-xs text-slate-500">
-          Étape {step} sur {TIMELINE_STEPS.length}
-          {updating && <span className="ml-2 rounded-full bg-gold-500/15 px-2 py-0.5 font-semibold text-gold-700">actualisation — vos documents restent disponibles</span>}
-        </p>
+        {updating && (
+          <p className="rounded-full bg-gold-500/15 px-2 py-0.5 text-xs font-semibold text-gold-700">
+            actualisation — vos documents restent disponibles
+          </p>
+        )}
       </div>
 
       <ol className="mt-6 grid gap-2 sm:grid-cols-4 sm:gap-0">
@@ -61,7 +59,7 @@ export function DossierTracker({ step, detail, updating }: Props) {
                   {label}
                   {active && (
                     <span className="block font-mono text-[0.6rem] uppercase tracking-[0.14em] text-gold-700">
-                      {CURRENT_BADGE[n] ?? "En cours"}
+                      Étape actuelle
                     </span>
                   )}
                 </span>
@@ -75,7 +73,6 @@ export function DossierTracker({ step, detail, updating }: Props) {
         <p className="text-sm leading-relaxed text-navy-900">{STEP_PANELS[shown - 1]}</p>
         {shown === step && detail && <p className="mt-2 font-mono text-xs text-gold-700">{detail}</p>}
       </div>
-      <p className="mt-4 text-sm leading-relaxed text-slate-500">{STEP_MESSAGES[step]}</p>
     </section>
   );
 }

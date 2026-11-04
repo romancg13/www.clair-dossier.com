@@ -238,7 +238,7 @@ export function Account() {
                 Espace administrateur
               </p>
               <p className="mt-2 text-sm text-cream-50/85">
-                Vous voyez l'intégralité des dossiers de la plateforme. Cliquez un dossier pour le détail (5 étapes) et le téléchargement des pièces.
+                Vous voyez l'intégralité des dossiers de la plateforme. Cliquez un dossier pour son suivi et ses pièces.
               </p>
               <Link
                 to="/admin"
@@ -348,7 +348,7 @@ export function Account() {
               <p className="text-sm leading-relaxed text-slate-500">
                 {isAdmin
                   ? "Aucun dossier sur la plateforme pour le moment."
-                  : "Vous n'avez pas encore de dossier. Créez votre premier dossier — typologie, informations, documents, puis transmission."}
+                  : "Vous n'avez pas encore de dossier."}
               </p>
               <Link
                 to="/dossier/nouveau"

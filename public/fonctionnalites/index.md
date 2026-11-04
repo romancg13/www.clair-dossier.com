@@ -1,66 +1,84 @@
 ---
 title: "Fonctionnalités ClairDossier"
-description: "Neuf fonctionnalités pour structurer, suivre et traiter vos dossiers administratifs et juridiques."
+description: "Les fonctionnalités ClairDossier disponibles aujourd'hui, par besoin."
 url: https://www.clair-dossier.com/fonctionnalites
 ---
 
 # Fonctionnalités ClairDossier
 
-Neuf briques conçues à partir de points de friction identifiés dans des dossiers réels.
+Créez un dossier en 5 étapes, rangez-y vos pièces, suivez son état, puis transmettez-le vous-même. Seul ce qui est disponible aujourd'hui est présenté ici.
 
-## Création guidée par typologie
+## Monter un dossier complet
+
+Cinq étapes guidées, du profil au récapitulatif : un dossier nommé, complet et relu avant d'être enregistré.
+
+### Création guidée par typologie
 
 Un tunnel de création en 5 étapes qui s'adapte à votre profil — artisan, indépendant, profession libérale, PME — et structure votre dossier dès le départ.
 
 Détail : https://www.clair-dossier.com/fonctionnalites/creation-guidee · Markdown : https://www.clair-dossier.com/fonctionnalites/creation-guidee.md
 
-## Dépôt de pièces dans un espace privé
+### Récapitulatif avant transmission
+
+Avant de valider, ClairDossier vous présente un récapitulatif complet du dossier. Vous relisez, vous corrigez si besoin, puis vous enregistrez le dossier dans votre compte.
+
+Détail : https://www.clair-dossier.com/fonctionnalites/recapitulatif-transmission · Markdown : https://www.clair-dossier.com/fonctionnalites/recapitulatif-transmission.md
+
+## Retrouver vos pièces et vos dossiers
+
+Vos pièces sont rangées par catégorie d'après leur nom de fichier ; tous vos dossiers sont réunis dans « Mon compte ».
+
+### Dépôt de pièces dans un espace privé
 
 Déposez vos pièces — contrats, courriers, factures — dans un espace privé et sécurisé, rattaché au dossier.
 
 Détail : https://www.clair-dossier.com/fonctionnalites/depot-de-pieces · Markdown : https://www.clair-dossier.com/fonctionnalites/depot-de-pieces.md
 
-## Suivi du dossier en 4 étapes
-
-Un suivi clair en 4 étapes — dossier créé, traitement en cours, documents disponibles, dossier clôturé — avec pièces et échéances au même endroit.
-
-Détail : https://www.clair-dossier.com/fonctionnalites/chronologie · Markdown : https://www.clair-dossier.com/fonctionnalites/chronologie.md
-
-## Transmission validée par vous
-
-Votre dossier validé est enregistré dans votre compte, jamais envoyé automatiquement. Vous le transmettez vous-même, au destinataire et au moment de votre choix.
-
-Détail : https://www.clair-dossier.com/fonctionnalites/transmission-validee · Markdown : https://www.clair-dossier.com/fonctionnalites/transmission-validee.md
-
-## Liste de vos dossiers en un espace
+### Liste de vos dossiers en un espace
 
 Tous vos dossiers réunis dans votre espace de compte. D'un coup d'œil, vous voyez lesquels ouvrir et où chacun en est.
 
 Détail : https://www.clair-dossier.com/fonctionnalites/suivi-statuts · Markdown : https://www.clair-dossier.com/fonctionnalites/suivi-statuts.md
 
-## Espace privé et sécurisé
+## Savoir où en est chaque dossier
+
+Une page par dossier : son état parmi quatre, ses pièces et ses dates, sur un même écran.
+
+### Suivi du dossier en 4 états
+
+Un suivi clair en 4 états — dossier créé, traitement en cours, documents disponibles, dossier clôturé — avec pièces et échéances au même endroit.
+
+Détail : https://www.clair-dossier.com/fonctionnalites/chronologie · Markdown : https://www.clair-dossier.com/fonctionnalites/chronologie.md
+
+### Échéances renseignées et affichées
+
+Chaque dossier a ses dates clés. ClairDossier les conserve et les affiche sur la page d'avancement, sous vos yeux à chaque consultation.
+
+Pas encore disponible : Aucun rappel n'est envoyé à votre place aujourd'hui : cette possibilité est à l'étude.
+
+Détail : https://www.clair-dossier.com/fonctionnalites/calendrier-relances · Markdown : https://www.clair-dossier.com/fonctionnalites/calendrier-relances.md
+
+## Transmettre en gardant la main
+
+Rien ne part automatiquement : vos pièces restent dans un espace privé et vous les transmettez vous-même.
+
+### Transmission validée par vous
+
+Votre dossier validé est enregistré dans votre compte, jamais envoyé automatiquement. Vous le transmettez vous-même, au destinataire et au moment de votre choix.
+
+Détail : https://www.clair-dossier.com/fonctionnalites/transmission-validee · Markdown : https://www.clair-dossier.com/fonctionnalites/transmission-validee.md
+
+### Espace privé et sécurisé
 
 Vos pièces et informations quittent les SMS et les e-mails dispersés pour un espace privé : accès par authentification, chiffrement en transit et au repos.
 
 Détail : https://www.clair-dossier.com/fonctionnalites/espace-securise · Markdown : https://www.clair-dossier.com/fonctionnalites/espace-securise.md
 
-## Vos données protégées et maîtrisées
+### Vos données protégées et maîtrisées
 
 Vos données sont isolées par utilisateur, chiffrées au repos côté hébergeur, accessibles par authentification. Accès, export et suppression sur demande.
 
 Détail : https://www.clair-dossier.com/fonctionnalites/donnees-protegees · Markdown : https://www.clair-dossier.com/fonctionnalites/donnees-protegees.md
-
-## Échéances renseignées et affichées
-
-Chaque dossier a ses dates clés. ClairDossier les conserve et les affiche sur la page d'avancement, sous vos yeux à chaque consultation.
-
-Détail : https://www.clair-dossier.com/fonctionnalites/calendrier-relances · Markdown : https://www.clair-dossier.com/fonctionnalites/calendrier-relances.md
-
-## Récapitulatif avant transmission
-
-Avant de valider, ClairDossier vous présente un récapitulatif complet du dossier. Vous relisez, vous corrigez si besoin, puis vous enregistrez le dossier dans votre compte.
-
-Détail : https://www.clair-dossier.com/fonctionnalites/recapitulatif-transmission · Markdown : https://www.clair-dossier.com/fonctionnalites/recapitulatif-transmission.md
 
 
 ---

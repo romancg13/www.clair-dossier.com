@@ -1,22 +1,27 @@
-import { useEffect, useState } from 'react';
-import { Link, NavLink } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion, useMotionValueEvent, useScroll } from 'motion/react';
 import { Logo } from './Logo';
 import { useAuth } from '../lib/auth';
+import { newDossierHref } from '../lib/cta';
 
+// Journal, Contact, État du produit et parcours dédiés : pied de page.
 const NAV_ITEMS = [
   { to: '/fonctionnalites', label: 'Fonctionnalités' },
   { to: '/tarifs', label: 'Tarifs' },
   { to: '/securite', label: 'Sécurité' },
-  { to: '/blog', label: 'Journal' },
-  { to: '/contact', label: 'Contact' },
 ];
 
 export function Nav() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const [panelTop, setPanelTop] = useState(64);
+  const headerRef = useRef<HTMLElement>(null);
+  const burgerRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLElement>(null);
   const { scrollY } = useScroll();
   const { session } = useAuth();
+  const { pathname } = useLocation();
 
   useMotionValueEvent(scrollY, 'change', (latest) => setScrolled(latest > 24));
 
@@ -27,18 +32,28 @@ export function Nav() {
     };
   }, [open]);
 
-  // Fermeture du menu mobile au clavier (Escape).
+  // Toute navigation (logo, retour arrière…) referme le menu.
+  useEffect(() => setOpen(false), [pathname]);
+
+  // Ouverture : focus sur le premier lien. Escape : fermeture, focus rendu au bouton du menu.
   useEffect(() => {
     if (!open) return;
+    const frame = requestAnimationFrame(() => panelRef.current?.querySelector<HTMLElement>('a')?.focus());
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false);
+      if (e.key !== 'Escape') return;
+      setOpen(false);
+      burgerRef.current?.focus();
     };
     document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
+    return () => {
+      cancelAnimationFrame(frame);
+      document.removeEventListener('keydown', onKey);
+    };
   }, [open]);
 
   return (
     <header
+      ref={headerRef}
       className={`cd-nav-enter sticky top-0 z-40 transition-[background,border-color,box-shadow] duration-300 ${
         scrolled
           ? 'border-b hairline bg-cream-50/92 backdrop-blur-xl shadow-[0_4px_24px_rgba(13,27,61,0.05)]'
@@ -95,22 +110,27 @@ export function Nav() {
                 Se connecter
               </Link>
               <Link
-                to="/inscription"
+                to={newDossierHref(false)}
                 className="sheen rounded-full bg-gold-500 px-4 py-2.5 text-sm font-semibold text-navy-900 shadow-gold transition-transform hover:-translate-y-0.5"
               >
-                Créer un compte
+                Créer un dossier
               </Link>
             </>
           )}
         </div>
 
         <button
+          ref={burgerRef}
           type="button"
           className="ml-auto grid h-11 w-11 place-items-center rounded-md border hairline lg:hidden"
           aria-expanded={open}
           aria-controls="mobile-menu"
           aria-label={open ? 'Fermer le menu' : 'Ouvrir le menu'}
-          onClick={() => setOpen(!open)}
+          onClick={() => {
+            // Panneau ancré sous la barre réelle (le slogan du logo peut passer sur deux lignes).
+            setPanelTop(headerRef.current?.getBoundingClientRect().bottom ?? 64);
+            setOpen(!open);
+          }}
         >
           <svg width="18" height="14" viewBox="0 0 18 14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="text-navy-900">
             {open ? (
@@ -132,7 +152,8 @@ export function Nav() {
       <AnimatePresence>
         {open && (
           <motion.div
-            className="fixed inset-x-0 top-[64px] z-50 bottom-0 lg:hidden"
+            className="fixed inset-x-0 z-50 bottom-0 lg:hidden"
+            style={{ top: panelTop }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -143,7 +164,8 @@ export function Nav() {
               onClick={() => setOpen(false)}
             />
             <motion.nav
-              className="absolute inset-x-0 top-0 bg-cream-50 border-b hairline px-5 py-6 shadow-card"
+              ref={panelRef}
+              className="absolute inset-x-0 top-0 max-h-full overflow-y-auto overscroll-contain bg-cream-50 border-b hairline px-5 py-6 shadow-card"
               initial={{ y: '-30%' }}
               animate={{ y: 0 }}
               exit={{ y: '-30%' }}
@@ -195,11 +217,11 @@ export function Nav() {
                       Se connecter
                     </Link>
                     <Link
-                      to="/inscription"
+                      to={newDossierHref(false)}
                       onClick={() => setOpen(false)}
                       className="sheen w-full rounded-full bg-gold-500 px-4 py-3 text-center text-sm font-semibold text-navy-900"
                     >
-                      Créer un compte
+                      Créer un dossier
                     </Link>
                   </>
                 )}

@@ -39,27 +39,27 @@ export type FeatureGroup = {
 export const FEATURE_GROUPS: FeatureGroup[] = [
   {
     id: "creer",
-    title: "Créer et nommer",
+    title: "Monter un dossier complet",
     intro:
-      "Un parcours en cinq étapes pour ouvrir un dossier propre dès le départ, avec un nom qui permet de le retrouver.",
+      "Cinq étapes guidées, du profil au récapitulatif : un dossier nommé, complet et relu avant d'être enregistré.",
   },
   {
     id: "deposer",
-    title: "Déposer, classer, retrouver",
+    title: "Retrouver vos pièces et vos dossiers",
     intro:
-      "Vos pièces rejoignent un espace privé, rangées par catégorie d'après leur nom de fichier, et vos dossiers restent à portée de recherche.",
+      "Vos pièces sont rangées par catégorie d'après leur nom de fichier ; tous vos dossiers sont réunis dans « Mon compte ».",
   },
   {
     id: "suivre",
-    title: "Suivre étapes et échéances",
+    title: "Savoir où en est chaque dossier",
     intro:
-      "Chaque dossier a sa page d'avancement : l'étape en cours, les pièces et les dates renseignées, réunies sur un même écran.",
+      "Une page par dossier : son état parmi quatre, ses pièces et ses dates, sur un même écran.",
   },
   {
     id: "valider",
-    title: "Valider, consulter, partager",
+    title: "Transmettre en gardant la main",
     intro:
-      "Vous relisez avant d'enregistrer, vous consultez vos pièces quand vous le souhaitez, et vous transmettez vous-même : rien ne part automatiquement.",
+      "Rien ne part automatiquement : vos pièces restent dans un espace privé et vous les transmettez vous-même.",
   },
 ];
 
@@ -112,35 +112,35 @@ export const features: Feature[] = [
     ],
     group: "deposer",
     benefit:
-      "Toutes les pièces d'un dossier au même endroit, rangées par catégorie d'après leur nom de fichier — leur contenu n'est jamais lu.",
+      "Toutes les pièces d'un dossier au même endroit, rangées par catégorie d'après leur nom de fichier — leur contenu n'est pas lu.",
     example:
       "Vous déposez « devis-signe.pdf » et « facture-0142.pdf » : ils se rangent sous « Devis & commandes » et « Factures & avoirs ». Plus tard, vous ajoutez un courrier avec « Ajouter des pièces », retrouvez un fichier par la recherche et récupérez l'ensemble avec « Tout télécharger (.zip) ».",
   },
   {
     slug: "chronologie",
-    title: "Suivi du dossier en 4 étapes",
+    title: "Suivi du dossier en 4 états",
     shortTitle: "Avancement",
     icon: "timeline",
     blurb:
-      "Un suivi clair en 4 étapes — dossier créé, traitement en cours, documents disponibles, dossier clôturé — avec pièces et échéances au même endroit.",
-    hero: "Où en est mon dossier ? Vous l'ouvrez, vous voyez les 4 étapes, vous savez.",
+      "Un suivi clair en 4 états — dossier créé, traitement en cours, documents disponibles, dossier clôturé — avec pièces et échéances au même endroit.",
+    hero: "Où en est mon dossier ? Vous l'ouvrez, vous voyez son état parmi les 4, vous savez.",
     body: [
-      "La première chose à faire face à un dossier, c'est de savoir où il en est. ClairDossier répond à cette question avec un suivi dédié, organisé en quatre étapes cliquables.",
+      "La première chose à faire face à un dossier, c'est de savoir où il en est. ClairDossier répond à cette question avec un suivi dédié, organisé en quatre états cliquables.",
       "Chaque dossier ouvre sur son « Suivi du dossier » : dossier créé, traitement en cours, documents disponibles, dossier clôturé. Chaque étape se déplie pour montrer ce qu'elle recouvre.",
       "Sur cette même page, vos pièces déposées sont listées et téléchargeables, et vos échéances renseignées sont affichées. Tout ce qui concerne le dossier est réuni en un seul écran, sans avoir à chercher ailleurs.",
       "La vue reste fidèle à ce que vous avez saisi : les informations, les documents et les dates que vous avez fournis. Vous gardez une image nette de l'état du dossier à tout moment.",
     ],
     bullets: [
-      "Suivi du dossier en 4 étapes cliquables",
+      "Suivi du dossier en 4 états cliquables",
       "Pièces du dossier consultables et téléchargeables",
       "Échéances renseignées affichées sur la page",
       "Une vue unique et fidèle aux informations saisies",
     ],
     group: "suivre",
     benefit:
-      "En ouvrant le dossier, vous savez où il en est : étape en cours, pièces et dates sur un même écran.",
+      "En ouvrant le dossier, vous savez où il en est : état du suivi, pièces et dates sur un même écran.",
     example:
-      "Le dossier « Chantier rue des Lilas » affiche ses quatre étapes, de « Dossier créé » à « Dossier clôturé ». L'étape en cours est mise en évidence, et chaque étape se déplie d'un clic pour montrer ce qu'elle recouvre.",
+      "Le dossier « Chantier rue des Lilas » affiche ses quatre états, de « Dossier créé » à « Dossier clôturé ». L'état en cours est mis en évidence, et chacun se déplie d'un clic pour montrer ce qu'il recouvre.",
   },
   {
     slug: "transmission-validee",
@@ -179,7 +179,7 @@ export const features: Feature[] = [
     body: [
       "La première difficulté quand on suit plusieurs affaires, c'est de savoir lesquelles sont en cours et où chacune en est. ClairDossier répond à ce besoin avec une liste claire de vos dossiers, dans votre espace de compte.",
       "Après création de votre compte, gratuite et confirmée par e-mail, vous accédez à votre espace. Chaque dossier que vous créez s'y ajoute, identifié par le nom que vous lui avez donné. Vous ouvrez celui que vous voulez d'un clic.",
-      "Depuis la liste, vous entrez sur le suivi de chaque dossier : ses quatre étapes, ses pièces, ses échéances. Vous passez d'un dossier à l'autre sans rien perdre de vue.",
+      "Depuis la liste, vous entrez sur le suivi de chaque dossier : ses quatre états, ses pièces, ses échéances. Vous passez d'un dossier à l'autre sans rien perdre de vue.",
       "Vos dossiers restent isolés : votre espace ne contient que les vôtres. Cette séparation par utilisateur assure que vos informations ne se mélangent jamais avec celles d'un autre compte.",
     ],
     bullets: [
@@ -214,7 +214,7 @@ export const features: Feature[] = [
       "Stockage privé des pièces, liens temporaires signés",
       "Partage uniquement sur transmission validée par vous",
     ],
-    group: "deposer",
+    group: "valider",
     benefit:
       "Vos pièces quittent les SMS et les e-mails dispersés pour un espace que vous seul ouvrez.",
     example:
@@ -230,12 +230,12 @@ export const features: Feature[] = [
     hero: "Vos données n'appartiennent qu'à vous. Vous pouvez en demander l'accès, l'export ou la suppression.",
     body: [
       "Le RGPD n'est pas une case à cocher. ClairDossier traite vos informations avec le souci de la protection des données, et vous conservez vos droits sur ce qui vous concerne.",
-      "Vos données sont hébergées chez un sous-traitant conforme RGPD, chiffrées au repos côté hébergeur et transmises en HTTPS. L'isolation par utilisateur assure que vos dossiers restent séparés de ceux des autres comptes ; l'accès se fait par authentification.",
+      "Vos données sont hébergées chez notre sous-traitant technique, chiffrées au repos côté hébergeur et transmises en HTTPS. L'isolation par utilisateur assure que vos dossiers restent séparés de ceux des autres comptes ; l'accès se fait par authentification.",
       "Vous gardez la main sur vos droits : accès, export et suppression de vos données. Ces demandes se font par e-mail, à l'adresse de contact, et sont traitées dans un délai raisonnable (jusqu'à 30 jours), sauf obligation légale de conservation.",
       "Tant que vous ne demandez pas de modification, vos données restent là où vous les avez placées, dans votre espace privé. Vous décidez de ce que vous transmettez, et à qui.",
     ],
     bullets: [
-      "Hébergeur sous-traitant conforme RGPD, chiffrement au repos",
+      "Chiffrement au repos côté hébergeur, sous-traitants nommés",
       "Isolation des données par utilisateur, accès par authentification",
       "Accès, export et suppression sur demande",
       "Demandes traitées sous 30 jours (sauf obligation légale)",
@@ -256,13 +256,13 @@ export const features: Feature[] = [
     hero: "Une échéance se garde en vue. ClairDossier l'affiche sur le dossier, là où vous la consultez.",
     body: [
       "Les délais sont au cœur des dossiers : délai de contestation, date d'échéance, paiement, rendez-vous. Les garder en vue, c'est déjà éviter de les laisser passer. ClairDossier conserve ces dates avec le dossier auquel elles se rattachent.",
-      "Vous renseignez les échéances connues lors de la création du dossier. Elles sont enregistrées et affichées sur la page d'avancement, à côté des pièces et des étapes. Vous les retrouvez à chaque fois que vous ouvrez le dossier.",
+      "Vous renseignez les échéances connues lors de la création du dossier. Elles sont enregistrées et affichées sur la page d'avancement, à côté des pièces et de l'état du suivi. Vous les retrouvez à chaque fois que vous ouvrez le dossier.",
       "Vous gardez ainsi vos dates importantes réunies au même endroit que le reste du dossier, plutôt que dispersées dans des notes ou des agendas séparés. Vous décidez ensuite quand et comment transmettre le dossier.",
     ],
     bullets: [
       "Échéances renseignées à la création du dossier",
       "Dates affichées sur la page d'avancement",
-      "Échéances réunies avec les pièces et les étapes",
+      "Échéances réunies avec les pièces et l'état du suivi",
       "Transmission du dossier décidée et déclenchée par vous",
     ],
     group: "suivre",
@@ -292,7 +292,7 @@ export const features: Feature[] = [
       "Retour en arrière possible pour corriger avant de valider",
       "Transmission décidée et effectuée par vous, jamais automatique",
     ],
-    group: "valider",
+    group: "creer",
     benefit:
       "Vous relisez tout avant d'enregistrer : rien n'est validé à votre place.",
     example:

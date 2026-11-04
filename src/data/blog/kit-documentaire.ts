@@ -13,7 +13,7 @@ export const kitDocumentaire: BlogPostInput = {
   metaDescription:
     "Facture impayée, dossier administratif, pièces comptables, dossier client, échéances : cinq listes de contrôle pour réunir les bonnes pièces sans rien oublier.",
   summary:
-    "Un dossier incomplet coûte des allers-retours. Ces cinq listes de contrôle, à imprimer ou à suivre dans ClairDossier, aident à réunir les pièces courantes d'une situation. Ce sont des aide-mémoire d'organisation, pas des conseils juridiques.",
+    "Un dossier incomplet coûte des allers-retours. Ces cinq listes de contrôle, à imprimer ou à garder sous la main en déposant vos pièces dans un dossier ClairDossier, aident à réunir les pièces courantes d'une situation. Ce sont des aide-mémoire d'organisation, pas des conseils juridiques.",
   author: 'redaction',
   date: '2026-10-12',
   reviewBy: '2027-04-12',
