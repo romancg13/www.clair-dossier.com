@@ -24,7 +24,7 @@
  *
  * Usage :  npm run prerender   (inclus dans npm run build)
  */
-import { mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, readdirSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -199,6 +199,13 @@ async function main(): Promise<void> {
   const cssText = readFileSync(join(dist, cssLink[1].slice(1)), 'utf-8');
   if (cssText.includes('</style>')) throw new Error('prerender: le CSS contient « </style> », inline refusé.');
   template = template.replace(cssLink[0], `<style>${cssText}</style>`);
+
+  // Police des titres (Cormorant 600) préchargée : sans elle, le H1 de l'accueil
+  // s'affiche d'abord en police de secours sur une ligne de plus, puis se
+  // resserre au chargement (décalage de mise en page mesuré).
+  const titleFont = readdirSync(join(dist, 'assets')).find((f) => /^cormorant-garamond-latin-600-normal-.+\.woff2$/.test(f));
+  if (!titleFont) throw new Error('prerender: police Cormorant 600 introuvable dans dist/assets.');
+  template = template.replace('</head>', `<link rel="preload" href="/assets/${titleFont}" as="font" type="font/woff2" crossorigin></head>`);
 
   // Chemin critique mobile : le script module (différé par nature) part en fin
   // de <body> et les modulepreload sont retirés — la page étant entièrement

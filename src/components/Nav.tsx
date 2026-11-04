@@ -21,7 +21,7 @@ export function Nav() {
   const panelRef = useRef<HTMLElement>(null);
   const { scrollY } = useScroll();
   const { session } = useAuth();
-  const { pathname } = useLocation();
+  const { key: locationKey } = useLocation();
 
   useMotionValueEvent(scrollY, 'change', (latest) => setScrolled(latest > 24));
 
@@ -32,8 +32,8 @@ export function Nav() {
     };
   }, [open]);
 
-  // Toute navigation (logo, retour arrière…) referme le menu.
-  useEffect(() => setOpen(false), [pathname]);
+  // Toute navigation (logo, même vers la page courante, retour arrière…) referme le menu.
+  useEffect(() => setOpen(false), [locationKey]);
 
   // Ouverture : focus sur le premier lien. Escape : fermeture, focus rendu au bouton du menu.
   useEffect(() => {

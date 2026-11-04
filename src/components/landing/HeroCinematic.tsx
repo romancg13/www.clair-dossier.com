@@ -101,7 +101,9 @@ export function HeroCinematic() {
         </motion.div>
       )}
 
-      <div className="mx-auto max-w-7xl px-5 pb-16 pt-14 sm:px-8 sm:pt-20 lg:grid lg:grid-cols-[1.08fr_0.92fr] lg:items-center lg:gap-14 lg:px-12 lg:pb-28 lg:pt-24">
+      {/* items-start : colonnes de hauteurs voisines ; un centrage déplacerait tout le texte
+          quand la police du H1 se charge (4 lignes en police de secours, 3 ensuite → CLS). */}
+      <div className="mx-auto max-w-7xl px-5 pb-16 pt-14 sm:px-8 sm:pt-20 lg:grid lg:grid-cols-[1.08fr_0.92fr] lg:items-start lg:gap-14 lg:px-12 lg:pb-28 lg:pt-24">
         {/* ── Texte ── */}
         <div className="relative z-10">
           <p
