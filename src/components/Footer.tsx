@@ -42,7 +42,7 @@ export function Footer() {
       <div className="mx-auto max-w-7xl px-5 py-14 sm:px-8 lg:px-12">
         <div className="grid gap-12 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr_1fr]">
           <div className="sm:col-span-2 lg:col-span-1">
-            <Logo />
+            <Logo variant="complet" />
             <p className="mt-5 max-w-xs text-sm leading-relaxed text-slate-500">
               ClairDossier structure vos dossiers administratifs et juridiques —
               du brouillon à la transmission, avec dépôt de pièces sécurisé,
