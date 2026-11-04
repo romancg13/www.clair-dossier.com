@@ -50,9 +50,8 @@ export function BlogIndex() {
               Des conseils simples pour mieux gérer vos dossiers
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-relaxed text-slate-500 sm:text-lg">
-              Organiser, conserver, protéger : des repères pratiques rédigés par l'équipe
-              ClairDossier à partir des textes officiels cités en sources. Contenus
-              pédagogiques, qui ne remplacent pas un conseil personnalisé.
+              Des repères pratiques, sources officielles citées. Contenus pédagogiques,
+              qui ne remplacent pas un conseil personnalisé.
             </p>
           </div>
         </div>
@@ -63,7 +62,6 @@ export function BlogIndex() {
         <div className="mx-auto max-w-7xl px-5 pb-14 sm:pb-20 lg:pb-24 sm:px-8 lg:px-12">
           <Stagger inView className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
             {blogPosts.map((post) => {
-              const author = authors[post.author];
               return (
                 <StaggerItem key={post.slug}>
                   <article className="flex h-full flex-col overflow-hidden rounded-2xl border hairline bg-white">
@@ -86,15 +84,7 @@ export function BlogIndex() {
                       <p className="mt-3 flex-1 text-sm leading-relaxed text-slate-500">
                         {post.summary}
                       </p>
-                      <div className="mt-5 flex items-center justify-between border-t hairline pt-4">
-                        {author && (
-                          <span className="inline-flex items-center gap-2 text-xs text-slate-500">
-                            <span className="grid h-7 w-7 place-items-center rounded-full bg-navy-900 font-mono text-[0.65rem] font-semibold text-gold-700">
-                              {author.initials}
-                            </span>
-                            {author.name}
-                          </span>
-                        )}
+                      <div className="mt-5 flex items-center justify-end border-t hairline pt-4">
                         <Link
                           to={`/blog/${post.slug}`}
                           className="inline-flex items-center gap-1.5 text-sm font-medium text-navy-900 hover:text-gold-700"

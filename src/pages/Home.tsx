@@ -30,7 +30,7 @@ const softwareSchema = {
       "Création de compte gratuite, abonnement à partir de 19 €/mois HT.",
   },
   description:
-    "Plateforme legaltech française. Transforme les demandes juridiques en dossiers structurés, suivis et transmis sur validation de l'utilisateur.",
+    "Plateforme legaltech française. Transforme les demandes juridiques en dossiers structurés, suivis et transmis par l'utilisateur.",
 };
 
 const faqSchema = {

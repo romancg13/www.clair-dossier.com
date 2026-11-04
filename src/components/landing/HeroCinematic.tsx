@@ -10,6 +10,8 @@ import { motion, useMotionValue, useReducedMotion, useScroll, useSpring, useTran
 import { Magnetic } from '../primitives/Magnetic';
 import { MarkerHighlight } from '../primitives/MarkerHighlight';
 import { ArrowRightIcon, LockIcon } from '../icons';
+import { useAuth } from '../../lib/auth';
+import { newDossierHref } from '../../lib/cta';
 import { BUSINESS_STEPS, DEMO } from './demo-dossier';
 import { DocumentGlyph } from './DocumentGlyph';
 import { DemoBadge } from './Stage';
@@ -42,6 +44,7 @@ const TITLE: Word[] = [
 
 export function HeroCinematic() {
   const reduce = useReducedMotion();
+  const { session } = useAuth();
 
   // Parallaxe pointeur : valeurs normalisées [-0.5, 0.5] → rotations ±5°.
   const mx = useMotionValue(0);
@@ -98,7 +101,9 @@ export function HeroCinematic() {
         </motion.div>
       )}
 
-      <div className="mx-auto max-w-7xl px-5 pb-16 pt-14 sm:px-8 sm:pt-20 lg:grid lg:grid-cols-[1.08fr_0.92fr] lg:items-center lg:gap-14 lg:px-12 lg:pb-28 lg:pt-24">
+      {/* items-start : colonnes de hauteurs voisines ; un centrage déplacerait tout le texte
+          quand la police du H1 se charge (4 lignes en police de secours, 3 ensuite → CLS). */}
+      <div className="mx-auto max-w-7xl px-5 pb-16 pt-14 sm:px-8 sm:pt-20 lg:grid lg:grid-cols-[1.08fr_0.92fr] lg:items-start lg:gap-14 lg:px-12 lg:pb-28 lg:pt-24">
         {/* ── Texte ── */}
         <div className="relative z-10">
           <p
@@ -106,7 +111,7 @@ export function HeroCinematic() {
             style={{ '--rise-delay': '0.25s' } as CSSProperties}
           >
             <span className="h-1 w-1 rounded-full bg-gold-500" aria-hidden="true" />
-            Dossiers administratifs &amp; juridiques, clairs.
+            Entreprises, indépendants et cabinets
           </p>
 
           <h1 className="mt-6 font-display text-[clamp(2.75rem,6.2vw,5.75rem)] font-semibold leading-[0.94] tracking-[-0.02em] text-navy-900">
@@ -129,9 +134,8 @@ export function HeroCinematic() {
             className="rise-in mt-7 max-w-xl text-[1.05rem] leading-[1.65] text-slate-500 sm:text-lg"
             style={{ '--rise-delay': '0.9s' } as CSSProperties}
           >
-            ClairDossier réunit vos pièces dans un espace privé, structure votre dossier en cinq
-            étapes, affiche vos échéances — et ne transmet rien sans votre validation. Pour les
-            PME, artisans, indépendants et professions libérales.
+            Centralisez vos documents, retrouvez vos dossiers et suivez vos échéances au même
+            endroit.
           </p>
 
           <div
@@ -140,10 +144,10 @@ export function HeroCinematic() {
           >
             <Magnetic strength={0.12}>
               <Link
-                to="/inscription"
+                to={newDossierHref(Boolean(session))}
                 className="sheen cd-btn-primary group inline-flex items-center gap-2 rounded-full bg-gold-500 px-6 py-3.5 text-sm font-semibold text-navy-900 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-gold-strong"
               >
-                Commencer
+                Créer un dossier
                 <ArrowRightIcon
                   width={14}
                   height={14}
@@ -168,21 +172,7 @@ export function HeroCinematic() {
             className="rise-in mt-5 text-[0.8rem] text-slate-500"
             style={{ '--rise-delay': '1.25s' } as CSSProperties}
           >
-            Compte gratuit, confirmé par e-mail · Sans engagement · Aucune lecture automatique de vos
-            pièces.
-          </p>
-
-          <p
-            className="rise-in mt-8 text-sm text-slate-500"
-            style={{ '--rise-delay': '1.35s' } as CSSProperties}
-          >
-            Cabinet ou structure à fort volume documentaire ?{' '}
-            <Link
-              to="/grands-comptes"
-              className="border-b hairline-gold font-medium text-navy-900 transition-colors hover:text-gold-700"
-            >
-              Découvrir le parcours dédié
-            </Link>
+            Compte gratuit · Sans engagement
           </p>
         </div>
 
@@ -207,7 +197,8 @@ export function HeroCinematic() {
                 style={reduce ? undefined : { x: satX, y: satY }}
                 className="pointer-events-none absolute inset-0 hidden sm:block"
               >
-                <Satellite className="cd-float-a -top-5 -left-2 lg:-left-16 lg:top-4" depth={70}>
+                {/* Au-dessus de la carte : ne masque pas le badge « Dossier de démonstration ». */}
+                <Satellite className="cd-float-a -top-10 -left-2 lg:-left-16" depth={70}>
                   <span className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-navy-900/6 text-navy-900">
                     <DocumentGlyph type="devis" />
                   </span>
@@ -244,7 +235,7 @@ export function HeroCinematic() {
                       Transmission
                     </span>
                     <span className="block text-[0.78rem] font-medium text-navy-900">
-                      À votre validation · jamais automatique
+                      Par vous · jamais automatique
                     </span>
                   </span>
                 </Satellite>
@@ -294,8 +285,8 @@ function MainCard() {
         {DEMO.category} · profil {DEMO.profile}
       </p>
 
-      {/* 4 étapes du suivi — libellés réels de la page dossier */}
-      <ol className="mt-6 grid grid-cols-4 gap-1.5" aria-label="Suivi du dossier en quatre étapes">
+      {/* 4 états du suivi — libellés réels de la page dossier */}
+      <ol className="mt-6 grid grid-cols-4 gap-1.5" aria-label="Suivi du dossier en quatre états">
         {BUSINESS_STEPS.map((label, i) => {
           const n = i + 1;
           const state = n < DEMO.step ? 'done' : n === DEMO.step ? 'active' : 'todo';
@@ -312,7 +303,7 @@ function MainCard() {
                   state === 'active' ? 'text-gold-700' : 'text-slate-500'
                 }`}
                 title={label}
-                aria-label={`Étape ${n} : ${label}`}
+                aria-label={`État ${n} : ${label}`}
               >
                 {String(n).padStart(2, '0')}
               </span>
@@ -324,8 +315,8 @@ function MainCard() {
       <dl className="mt-6 divide-y hairline border-y hairline">
         <Row label="Pièces déposées" value={`${DEMO.pieces.length} pièces · téléchargeables`} />
         <Row label={DEMO.deadline.label} value={DEMO.deadline.dateShort} gold />
-        <Row label="Étape en cours" value={`${DEMO.step} / ${BUSINESS_STEPS.length} · ${BUSINESS_STEPS[DEMO.step - 1]}`} />
-        <Row label="Transmission" value="à votre validation" />
+        <Row label="Suivi" value={`${DEMO.step} / ${BUSINESS_STEPS.length} · ${BUSINESS_STEPS[DEMO.step - 1]}`} />
+        <Row label="Transmission" value="par vous" />
       </dl>
 
       <div className="mt-5 rounded-lg bg-cream-100 px-4 py-3">

@@ -13,6 +13,7 @@ export function ChapterFrame({
   body,
   footnote,
   align = 'left',
+  heading: Heading = 'h2',
   children,
 }: {
   id: string;
@@ -22,6 +23,8 @@ export function ChapterFrame({
   body: ReactNode;
   footnote?: ReactNode;
   align?: 'left' | 'right';
+  /** h3 quand le chapitre est un geste d'une section titrée (accueil). */
+  heading?: 'h2' | 'h3';
   children: ReactNode;
 }) {
   return (
@@ -36,9 +39,9 @@ export function ChapterFrame({
               </span>
               {kicker}
             </p>
-            <h2 className="mt-4 font-display text-[clamp(2.1rem,4.4vw,4rem)] font-semibold leading-[1.02] tracking-[-0.015em] text-cream-50">
+            <Heading className="mt-4 font-display text-[clamp(2.1rem,4.4vw,4rem)] font-semibold leading-[1.02] tracking-[-0.015em] text-cream-50">
               {title}
-            </h2>
+            </Heading>
             <div className="mt-5 max-w-lg text-[1.02rem] leading-[1.65] text-silver-200/78">{body}</div>
             {footnote && <div className="mt-6 text-sm text-silver-400">{footnote}</div>}
           </div>

@@ -4,9 +4,12 @@ import { Reveal } from '../components/primitives/Reveal';
 import { LEGACY_FEATURE_SLUGS, features, getFeatureBySlug, getFeatureGroup } from '../data/features';
 import { FEATURE_ICONS, ArrowRightIcon, CheckIcon } from '../components/icons';
 import { NotFound } from './NotFound';
+import { useAuth } from '../lib/auth';
+import { newDossierHref } from '../lib/cta';
 
 export function FeatureDetail() {
   const { slug } = useParams();
+  const { session } = useAuth();
   const feature = getFeatureBySlug(slug);
 
   // Ancienne adresse → redirection client (le 301 serveur vit dans netlify.toml).
@@ -112,7 +115,7 @@ export function FeatureDetail() {
               ))}
             </ul>
             <Link
-              to="/dossier/nouveau"
+              to={newDossierHref(Boolean(session))}
               className="mt-7 inline-flex w-full items-center justify-center gap-1.5 rounded-full bg-navy-900 px-5 py-3 text-sm font-medium text-cream-50 hover:bg-navy-800"
             >
               Essayer maintenant

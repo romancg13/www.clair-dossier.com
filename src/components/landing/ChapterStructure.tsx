@@ -7,14 +7,14 @@ import { DemoBadge, Stage } from './Stage';
 import { useSectionProgress } from './useCinematic';
 
 /**
- * Chapitre 02 — la structure. Un document est ouvert ; les informations que
+ * Geste 02 — organiser. Un document est ouvert ; les informations que
  * VOUS renseignez (parties, dates, montants, échéance) composent le
  * récapitulatif. Aucune extraction automatique : ce sont les champs réels du
  * tunnel (DossierFlow.tsx) qui s'assemblent, au rythme du scroll.
  */
 export function ChapterStructure() {
   const ref = useRef<HTMLDivElement>(null);
-  const { p, reduce } = useSectionProgress(ref, ['start 80%', 'end 80%']);
+  const { p } = useSectionProgress(ref, ['start 80%', 'end 80%']);
   const fill = useTransform(p, [0.05, 0.9], ['0%', '100%']);
   const link = useTransform(p, [0.15, 0.35], [0, 1]);
 
@@ -23,21 +23,16 @@ export function ChapterStructure() {
       <ChapterFrame
         id="structure"
         number="02"
-        kicker="La structure"
+        kicker="Organisez votre dossier"
+        heading="h3"
         title={
           <>
-            Cinq étapes.
+            Cinq étapes guidées.
             <br />
-            Un dossier lisible.
+            Relues par vous.
           </>
         }
-        body={
-          <p>
-            Profil, nature du dossier, informations, pièces, récapitulatif : le tunnel guide la
-            saisie et ne demande que l’utile. Ce que vous renseignez devient un dossier structuré,
-            relu avant validation — sans lecture automatique de vos pièces.
-          </p>
-        }
+        body={<p>Profil, nature, informations, pièces, récapitulatif : vous validez quand tout est juste.</p>}
       >
         <Stage>
           {/* Tunnel — 5 étapes réelles */}
@@ -45,7 +40,7 @@ export function ChapterStructure() {
             {TUNNEL_STEPS.map((label, i) => (
               <li key={label} className="min-w-0">
                 <div className="h-1 overflow-hidden rounded-full bg-cream-50/10">
-                  <StepFill p={p} i={i} reduce={reduce} />
+                  <StepFill p={p} i={i} />
                 </div>
                 <span className="mt-2 block font-mono text-[0.58rem] uppercase tracking-[0.12em] text-silver-400" title={label}>
                   <span className="md:hidden">{String(i + 1).padStart(2, '0')}</span>
@@ -69,19 +64,19 @@ export function ChapterStructure() {
               <div className="mt-4 space-y-2">
                 <Line w="72%" />
                 <Line w="54%" />
-                <Highlight p={p} at={0.3} reduce={reduce}>
+                <Highlight p={p} at={0.3}>
                   Exemple SARL
                 </Highlight>
                 <Line w="64%" />
-                <Highlight p={p} at={0.42} reduce={reduce}>
+                <Highlight p={p} at={0.42}>
                   12/09/2026
                 </Highlight>
                 <Line w="48%" />
-                <Highlight p={p} at={0.54} reduce={reduce}>
+                <Highlight p={p} at={0.54}>
                   4 800,00 € HT
                 </Highlight>
                 <Line w="60%" />
-                <Highlight p={p} at={0.66} reduce={reduce}>
+                <Highlight p={p} at={0.66}>
                   Échéance : 15/10/2026
                 </Highlight>
               </div>
@@ -90,7 +85,7 @@ export function ChapterStructure() {
             {/* Lien document → récapitulatif */}
             <div className="hidden h-px w-10 bg-cream-50/10 sm:block" aria-hidden="true">
               <motion.div
-                style={reduce ? undefined : { scaleX: link }}
+                style={{ scaleX: link }}
                 className="h-px w-full origin-left bg-gold-500"
               />
             </div>
@@ -105,17 +100,17 @@ export function ChapterStructure() {
               </div>
               <dl className="mt-3 divide-y cd-hairline">
                 {DEMO.fields.map((f, i) => (
-                  <FieldRow key={f.label} p={p} i={i} reduce={reduce} label={f.label} value={f.value} />
+                  <FieldRow key={f.label} p={p} i={i} label={f.label} value={f.value} />
                 ))}
               </dl>
               <div className="mt-4 h-px w-full overflow-hidden rounded-full bg-cream-50/10" aria-hidden="true">
                 <motion.div
-                  style={reduce ? undefined : { width: fill }}
+                  style={{ width: fill }}
                   className="h-full bg-gradient-to-r from-gold-500/60 to-gold-400"
                 />
               </div>
               <p className="mt-2 font-mono text-[0.58rem] uppercase tracking-[0.14em] text-silver-400">
-                Relu par vous avant validation
+                Saisi et relu par vous
               </p>
             </div>
           </div>
@@ -125,12 +120,12 @@ export function ChapterStructure() {
   );
 }
 
-function StepFill({ p, i, reduce }: { p: MotionValue<number>; i: number; reduce: boolean }) {
+function StepFill({ p, i }: { p: MotionValue<number>; i: number }) {
   const start = 0.05 + i * 0.16;
   const width = useTransform(p, [start, start + 0.16], ['0%', '100%']);
   return (
     <motion.div
-      style={reduce ? undefined : { width }}
+      style={{ width }}
       className={`h-full rounded-full ${i === TUNNEL_STEPS.length - 1 ? 'bg-gold-500' : 'bg-cream-50/70'}`}
     />
   );
@@ -143,18 +138,16 @@ function Line({ w }: { w: string }) {
 function Highlight({
   p,
   at,
-  reduce,
   children,
 }: {
   p: MotionValue<number>;
   at: number;
-  reduce: boolean;
   children: string;
 }) {
   const bg = useTransform(p, [at, at + 0.1], ['rgba(179,210,239,0)', 'rgba(179,210,239,0.75)']);
   return (
     <motion.span
-      style={reduce ? { backgroundColor: 'rgba(179,210,239,0.75)' } : { backgroundColor: bg }}
+      style={{ backgroundColor: bg }}
       className="inline-block rounded-[0.2em] px-1 text-[0.74rem] font-medium text-navy-900"
     >
       {children}
@@ -165,13 +158,11 @@ function Highlight({
 function FieldRow({
   p,
   i,
-  reduce,
   label,
   value,
 }: {
   p: MotionValue<number>;
   i: number;
-  reduce: boolean;
   label: string;
   value: string;
 }) {
@@ -180,7 +171,7 @@ function FieldRow({
   const x = useTransform(p, [start, start + 0.1], [10, 0]);
   return (
     <motion.div
-      style={reduce ? undefined : { opacity, x }}
+      style={{ opacity, x }}
       className="flex items-center justify-between gap-4 py-2.5 text-[0.8rem]"
     >
       <dt className="text-silver-400">{label}</dt>

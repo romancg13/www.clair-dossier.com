@@ -1,8 +1,9 @@
 import { Accordion } from '../ui/Accordion';
 import { Reveal } from '../primitives/Reveal';
-import { homeFaq } from '../../data/faq';
+import { homeFaq, type FaqEntry } from '../../data/faq';
 
-export function FaqBlock() {
+/** `entries` : sous-ensemble affiché (par défaut, toute la FAQ de l'accueil). */
+export function FaqBlock({ entries = homeFaq }: { entries?: FaqEntry[] }) {
   return (
     <Reveal as="section" className="bg-cream-50">
       <div className="mx-auto max-w-4xl px-5 py-14 sm:py-20 lg:py-24 sm:px-8 lg:px-12">
@@ -11,13 +12,13 @@ export function FaqBlock() {
             Foire aux questions
           </p>
           <h2 className="mt-3 font-display text-4xl font-semibold leading-tight text-navy-900 sm:text-5xl">
-            Huit questions qui reviennent.
+            {entries === homeFaq ? 'Huit questions qui reviennent.' : 'Questions fréquentes.'}
           </h2>
         </div>
 
         <div className="mt-12">
           <Accordion
-            items={homeFaq.map((entry) => ({
+            items={entries.map((entry) => ({
               id: entry.id,
               question: entry.question,
               answer: <p>{entry.answer}</p>,

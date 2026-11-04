@@ -1,14 +1,14 @@
 ---
-title: "Suivi du dossier en 4 étapes"
-description: "Un suivi clair en 4 étapes — dossier créé, traitement en cours, documents disponibles, dossier clôturé — avec pièces et échéances au même endroit."
+title: "Suivi du dossier en 4 états"
+description: "Un suivi clair en 4 états — dossier créé, traitement en cours, documents disponibles, dossier clôturé — avec pièces et échéances au même endroit."
 url: https://www.clair-dossier.com/fonctionnalites/chronologie
 ---
 
-# Suivi du dossier en 4 étapes
+# Suivi du dossier en 4 états
 
-**Où en est mon dossier ? Vous l'ouvrez, vous voyez les 4 étapes, vous savez.**
+**Où en est mon dossier ? Vous l'ouvrez, vous voyez son état parmi les 4, vous savez.**
 
-La première chose à faire face à un dossier, c'est de savoir où il en est. ClairDossier répond à cette question avec un suivi dédié, organisé en quatre étapes cliquables.
+La première chose à faire face à un dossier, c'est de savoir où il en est. ClairDossier répond à cette question avec un suivi dédié, organisé en quatre états cliquables.
 
 Chaque dossier ouvre sur son « Suivi du dossier » : dossier créé, traitement en cours, documents disponibles, dossier clôturé. Chaque étape se déplie pour montrer ce qu'elle recouvre.
 
@@ -18,7 +18,7 @@ La vue reste fidèle à ce que vous avez saisi : les informations, les documents
 
 ## Concrètement
 
-- Suivi du dossier en 4 étapes cliquables
+- Suivi du dossier en 4 états cliquables
 - Pièces du dossier consultables et téléchargeables
 - Échéances renseignées affichées sur la page
 - Une vue unique et fidèle aux informations saisies

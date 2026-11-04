@@ -1241,11 +1241,9 @@ export function DossierDetail() {
 
               {activeTab === "apercu" && (
                 <>
-                  {/* Résumé express : comprendre le dossier en 5 secondes. */}
-                  <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  {/* Résumé express (statut et étape : déjà dans l'en-tête). */}
+                  <div className="mt-8 grid gap-3 sm:grid-cols-2">
                     {[
-                      { k: "Statut", v: STATUS_LABELS[dossier.status] ?? dossier.status },
-                      { k: "Étape", v: `${step}/${TIMELINE.length} · ${TIMELINE[step - 1]}` },
                       { k: "Pièces", v: `${pieces.length} déposée${pieces.length > 1 ? "s" : ""}` },
                       {
                         k: "Prochaine échéance",
@@ -1292,11 +1290,9 @@ export function DossierDetail() {
                     />
                     {eventsOn && (isAdmin || dossier.user_id === user?.id) && (
                       <div className="mt-3 flex flex-wrap items-center justify-end gap-3">
-                        <p className="text-xs text-slate-500">
-                          {closed
-                            ? "Dossier clôturé : pièces et documents restent accessibles."
-                            : "La clôture est distincte de la livraison et peut être annulée."}
-                        </p>
+                        {!closed && (
+                          <p className="text-xs text-slate-500">Vous pourrez rouvrir le dossier à tout moment.</p>
+                        )}
                         <button
                           type="button"
                           disabled={lifecycleBusy}
@@ -1315,7 +1311,7 @@ export function DossierDetail() {
                 <div className="mt-6 rounded-2xl border hairline bg-white p-7 shadow-card sm:p-9">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">
-                      Pièces du dossier · {pieces.length}
+                      Pièces du dossier
                     </p>
                     <div className="flex flex-wrap items-center gap-2">
                       {pieces.length > 0 && (
@@ -1666,7 +1662,7 @@ export function DossierDetail() {
               {activeTab === "echeances" && (
                 <div className="mt-6 rounded-2xl border hairline bg-white p-7 shadow-card sm:p-9">
                   <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">
-                    Échéances & suivi
+                    Échéances
                   </p>
 
                   {deadlinesOn ? (

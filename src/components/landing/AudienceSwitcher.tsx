@@ -48,7 +48,7 @@ const AUDIENCES: Audience[] = [
     surtitre: 'TPE, PME, professions libérales',
     title: 'Plusieurs dossiers en parallèle, un seul espace.',
     promesse:
-      "Dossier client, facture / paiement, administratif, comptable, personnel / RH : chaque dossier a sa nature, ses pièces et ses échéances. L'équipe retrouve l'avancement de chacun dans « Mes dossiers », et transmet au comptable ou au professionnel du droit quand le dossier est complet.",
+      "Dossier client, facture / paiement, administratif, comptable, personnel / RH : chaque dossier a sa nature, ses pièces et ses échéances. Vous retrouvez l'avancement de chacun dans « Mon compte », et transmettez au comptable ou au professionnel du droit quand le dossier est complet.",
     frictions: [
       {
         title: 'L’avancement des dossiers vit dans la tête de deux personnes',
@@ -59,7 +59,7 @@ const AUDIENCES: Audience[] = [
         body: 'La même collecte, répétée à chaque demande, avec le risque d’oublier une pièce.',
       },
     ],
-    link: { to: '/fonctionnalites/suivi-statuts', label: 'Voir l’espace « Mes dossiers »' },
+    link: { to: '/fonctionnalites/suivi-statuts', label: 'Voir la liste de vos dossiers' },
   },
   ...segmentPages.filter((s) => s.slug === 'cabinets-avocats').map<Audience>((s) => ({
     id: s.slug,

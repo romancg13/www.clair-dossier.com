@@ -24,7 +24,7 @@
  *
  * Usage :  npm run prerender   (inclus dans npm run build)
  */
-import { mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, readdirSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -152,6 +152,18 @@ export function buildNotFoundPage(shell: string): string {
 }
 
 /**
+ * Routes de l'application (SPA) servies avec un statut 200 : même coquille
+ * que la 404 (noindex, sans canonique, #root vide), écrite à leur adresse ;
+ * les URL inconnues gardent leur vraie 404. /compte/dossier/:id (dynamique)
+ * reste servie par 404.html sur GitHub Pages. /demo n'existe que dans un
+ * build VITE_DEMO=1 (preview).
+ */
+export function appShellRoutes(env: Record<string, string | undefined> = process.env): string[] {
+  const routes = ['/inscription', '/connexion', '/compte', '/dossier/nouveau', '/admin'];
+  return env.VITE_DEMO === '1' ? [...routes, '/demo'] : routes;
+}
+
+/**
  * Ancienne URL → nouvelle : meta refresh immédiat (interprété par Google
  * comme une redirection permanente) + canonique vers la cible + lien lisible.
  */
@@ -200,6 +212,13 @@ async function main(): Promise<void> {
   if (cssText.includes('</style>')) throw new Error('prerender: le CSS contient « </style> », inline refusé.');
   template = template.replace(cssLink[0], `<style>${cssText}</style>`);
 
+  // Police des titres (Cormorant 600) préchargée : sans elle, le H1 de l'accueil
+  // s'affiche d'abord en police de secours sur une ligne de plus, puis se
+  // resserre au chargement (décalage de mise en page mesuré).
+  const titleFont = readdirSync(join(dist, 'assets')).find((f) => /^cormorant-garamond-latin-600-normal-.+\.woff2$/.test(f));
+  if (!titleFont) throw new Error('prerender: police Cormorant 600 introuvable dans dist/assets.');
+  template = template.replace('</head>', `<link rel="preload" href="/assets/${titleFont}" as="font" type="font/woff2" crossorigin></head>`);
+
   // Chemin critique mobile : le script module (différé par nature) part en fin
   // de <body> et les modulepreload sont retirés — la page étant entièrement
   // pré-rendue, le premier rendu n'a besoin d'aucun JavaScript ; les chunks se
@@ -212,7 +231,16 @@ async function main(): Promise<void> {
   writeFileSync(join(dist, 'spa-shell.html'), template);
 
   // ── 3. 404 réelle (remplace la copie brute faite par vite.config.ts) ──
-  writeFileSync(join(dist, '404.html'), buildNotFoundPage(template));
+  const notFound = buildNotFoundPage(template);
+  writeFileSync(join(dist, '404.html'), notFound);
+
+  // ── 3 bis. Routes de l'application : même coquille, statut 200 ────────
+  const shells = appShellRoutes();
+  for (const path of shells) {
+    const outDir = join(dist, path.slice(1));
+    mkdirSync(outDir, { recursive: true });
+    writeFileSync(join(outDir, 'index.html'), notFound);
+  }
 
   // ── 4. Rendu de chaque route publique ─────────────────────────────────
   const routes = publicRoutes();
@@ -267,7 +295,7 @@ async function main(): Promise<void> {
   rmSync(distSsr, { recursive: true, force: true });
   for (const w of warnings) console.warn(`prerender (SEO) : ${w}`);
   console.log(
-    `prerender : ${routes.length} routes écrites dans dist/ (+ spa-shell.html, 404.html, ${legacy.length} redirections d'anciens slugs).`
+    `prerender : ${routes.length} routes écrites dans dist/ (+ spa-shell.html, 404.html, ${shells.length} coquilles d'application, ${legacy.length} redirections d'anciens slugs).`
   );
 }
 

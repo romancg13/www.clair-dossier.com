@@ -4,15 +4,15 @@ description: "Facture impayée, dossier administratif, pièces comptables, dossi
 date: 2026-10-12
 author: Rédaction ClairDossier
 category: Méthode
-readMinutes: 3
+readMinutes: 4
 url: https://www.clair-dossier.com/blog/kit-documentaire-checklists
 ---
 
 # Kit documentaire : cinq listes de contrôle pour constituer un dossier complet
 
-*Publié le 12 octobre 2026 — 3 min de lecture — catégorie : Méthode*
+*Publié le 12 octobre 2026 — 4 min de lecture — catégorie : Méthode*
 
-**Résumé.** Un dossier incomplet coûte des allers-retours. Ces cinq listes de contrôle, à imprimer ou à suivre dans ClairDossier, aident à réunir les pièces courantes d'une situation. Ce sont des aide-mémoire d'organisation, pas des conseils juridiques.
+**Résumé.** Un dossier incomplet coûte des allers-retours. Ces cinq listes de contrôle, à imprimer ou à garder sous la main en déposant vos pièces dans un dossier ClairDossier, aident à réunir les pièces courantes d'une situation. Ce sont des aide-mémoire d'organisation, pas des conseils juridiques.
 
 La plupart des retards dans un dossier ne viennent pas de sa difficulté, mais d'une pièce qui manque : le devis signé introuvable, la relance dont on ne retrouve plus la date, l'attestation expirée. Une liste de contrôle ne résout pas le fond du problème — elle évite simplement de le découvrir trop tard.
 
