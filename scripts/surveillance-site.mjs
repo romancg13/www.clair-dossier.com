@@ -30,6 +30,28 @@ for (const r of ROUTES) {
   if (!res || res.status !== 200) ko(`${r} → ${res ? res.status : 'injoignable'}`);
 }
 if (!echecs) ok(`${ROUTES.length} routes publiques en HTTP 200`);
+// Routes de l'application : coquille noindex servie en 200 ; une URL inconnue reste un vrai 404.
+const avant = echecs;
+for (const r of ['/connexion/', '/inscription/', '/compte/', '/dossier/nouveau/']) {
+  const res = await get(SITE + r);
+  const html = res?.status === 200 ? await res.text() : '';
+  if (!res || res.status !== 200) ko(`${r} → ${res ? res.status : 'injoignable'} (route d'application attendue en 200)`);
+  else if (!/name="robots" content="noindex/.test(html)) ko(`${r} servie sans noindex (espace privé indexable)`);
+}
+const inconnue = await get(`${SITE}/page-inexistante-${Date.now()}`);
+if (inconnue?.status !== 404) ko(`URL inconnue → ${inconnue ? inconnue.status : 'injoignable'} (404 attendu)`);
+if (echecs === avant) ok('routes d’application en 200 + noindex, URL inconnue en 404');
+
+// Dernier déploiement de production : un échec = site figé sur une ancienne version.
+if (process.env.GITHUB_TOKEN && process.env.GITHUB_REPOSITORY) {
+  const runs = await get(`https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/actions/workflows/deploy.yml/runs?branch=main&per_page=1`, {
+    headers: { Authorization: `Bearer ${process.env.GITHUB_TOKEN}`, Accept: 'application/vnd.github+json' },
+  }).then((r) => r?.json()).catch(() => null);
+  const dernier = runs?.workflow_runs?.[0];
+  if (!dernier) info('dernier déploiement : non lisible');
+  else if (dernier.status === 'completed' && dernier.conclusion !== 'success') ko(`dernier déploiement en échec (${dernier.head_sha.slice(0, 7)}) : ${dernier.html_url}`);
+  else ok(`dernier déploiement ${dernier.conclusion ?? dernier.status} (${dernier.head_sha.slice(0, 7)})`);
+}
 const version = await get(`${SITE}/version.json?t=${Date.now()}`).then((r) => r?.json()).catch(() => null);
 if (version?.commit) {
   const attendu = process.env.GITHUB_SHA;

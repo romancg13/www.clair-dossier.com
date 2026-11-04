@@ -10,6 +10,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
   surveiller:
@@ -26,3 +27,5 @@ jobs:
         run: node --import tsx --test tests/paiements-geles.test.ts
       - name: Site public et moteur IA
         run: node scripts/surveillance-site.mjs
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
