@@ -6,11 +6,12 @@
  * Ce module est INACTIF tant que VITE_PLAUSIBLE_DOMAIN n'est pas défini —
  * aucun script tiers chargé, aucune requête, comportement du site inchangé.
  *
- * Activation (décision humaine — voir docs/GO-LIVE-NETLIFY.md) :
- *   1. créer le site dans Plausible (plausible.io ou instance auto-hébergée) ;
- *   2. définir VITE_PLAUSIBLE_DOMAIN = "www.clair-dossier.com" dans
- *      [build.environment] de netlify.toml (+ VITE_PLAUSIBLE_HOST si auto-hébergé) ;
- *   3. ajouter l'hôte Plausible à script-src et connect-src de la CSP (netlify.toml).
+ * Activation : site « clair-dossier.com » créé dans Plausible, puis
+ * VITE_PLAUSIBLE_DOMAIN défini dans .github/workflows/deploy.yml (GitHub Pages,
+ * sans CSP par en-tête). Netlify (inactif) : ajouter l'hôte Plausible à sa CSP.
+ *
+ * Espaces privés EXCLUS de la mesure (aucune URL de dossier n'est transmise) :
+ * PRIVATE_PATHS. Plausible n'enregistre ni la query string (sauf UTM) ni le hash.
  *
  * Événements nommés — ceux du cahier des charges, et eux seuls :
  *   - abonnement_actif ne peut PAS être émis côté client (l'activation réelle
@@ -34,6 +35,9 @@ const HOST = (import.meta.env.VITE_PLAUSIBLE_HOST as string | undefined) ?? 'htt
 
 export const analyticsEnabled = Boolean(DOMAIN);
 
+/** Routes privées jamais mesurées (syntaxe data-exclude de Plausible). */
+export const PRIVATE_PATHS = '/compte**, /admin**, /dossier/**';
+
 type PlausibleFn = ((event: string, opts?: { props?: Record<string, string | number> }) => void) & {
   q?: unknown[];
 };
@@ -46,7 +50,8 @@ export function initAnalytics(): void {
   s.defer = true;
   s.dataset.analytics = 'plausible';
   s.dataset.domain = DOMAIN;
-  s.src = `${HOST}/js/script.js`;
+  s.dataset.exclude = PRIVATE_PATHS;
+  s.src = `${HOST}/js/script.exclusions.js`;
   document.head.appendChild(s);
 }
 
