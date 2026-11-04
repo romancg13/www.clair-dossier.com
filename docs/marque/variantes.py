@@ -32,12 +32,16 @@ for ton in ('clair', 'sombre'):
         v.save(f'{KIT}/logo-{nom}-{ton}.png', optimize=True)
         print('kit', nom, ton, v.size, os.path.getsize(f'{KIT}/logo-{nom}-{ton}.png'))
 
-def web(nom, ton, h, mult=(1, 2, 3)):
+def web(nom, ton, h_css, mult=(1, 2, 3)):
+    """Asset de h_css px CSS de haut : logo sur h_css-2 px + 1 px CSS de marge transparente
+    (l'antialiasing extérieur n'est pas tronqué par le bord du fichier)."""
     for k in mult:
-        r = resize(kit[(nom, ton)], h * k)
-        f = f'{WEB}/logo-{nom}-{ton}-{r.width}.webp'
-        r.save(f, 'WEBP', lossless=True, quality=100, method=6, exact=False)
-        print('web', os.path.basename(f), r.size, os.path.getsize(f))
+        r = resize(kit[(nom, ton)], (h_css - 2) * k)
+        canvas = Image.new('RGBA', (r.width + 2 * k, h_css * k), (0, 0, 0, 0))
+        canvas.paste(r, (k, k))
+        f = f'{WEB}/logo-{nom}-{ton}-{canvas.width}.webp'
+        canvas.save(f, 'WEBP', lossless=True, quality=100, method=6, exact=False)
+        print('web', os.path.basename(f), canvas.size, os.path.getsize(f))
 
-web("horizontal", "clair", 44)
-web('symbole', 'clair', 34)
+web('horizontal', 'clair', 44)
+web('symbole', 'clair', 36)
