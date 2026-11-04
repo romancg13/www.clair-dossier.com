@@ -3,7 +3,7 @@
  * aide contextuelle, erreur annoncée, 16 pt minimum (pas de zoom iOS).
  */
 import { forwardRef } from 'react';
-import { StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
+import { StyleSheet, TextInput, View, type TextInputInstance, type TextInputProps } from 'react-native';
 import { Text } from './Text';
 import { colors, radius, spacing, MIN_TOUCH } from '../theme/tokens';
 
@@ -14,7 +14,7 @@ export type InputProps = TextInputProps & {
   required?: boolean;
 };
 
-export const Input = forwardRef<TextInput, InputProps>(function Input(
+export const Input = forwardRef<TextInputInstance, InputProps>(function Input(
   { label, help, error, required, style, multiline, ...rest },
   ref,
 ) {
