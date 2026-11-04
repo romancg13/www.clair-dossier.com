@@ -1,13 +1,13 @@
 ---
 title: "Politique de confidentialité"
 description: "Politique de confidentialité ClairDossier — données collectées, finalités, base légale, durées de conservation, vos droits RGPD."
-lastUpdate: 2026-09-18
+lastUpdate: 2026-11-04
 url: https://www.clair-dossier.com/politique-confidentialite
 ---
 
 # Politique de confidentialité
 
-*Dernière mise à jour : 18 septembre 2026*
+*Dernière mise à jour : 4 novembre 2026*
 
 ClairDossier traite des données personnelles dans le strict respect du Règlement général sur la protection des données (RGPD) et de la loi française Informatique et Libertés. Cette politique décrit les données collectées, leurs finalités, et les droits dont vous disposez.
 
@@ -23,6 +23,7 @@ Nous collectons les catégories de données suivantes :
 - Données de dossier : informations renseignées par vous dans le cadre de la constitution d'un dossier juridique (typologie, contexte, dates, pièces jointes).
 - Données de paiement : traitées par notre prestataire Stripe (les coordonnées bancaires ne transitent jamais par nos serveurs).
 - Données techniques : adresse IP, type de navigateur, journaux de connexion, conservés à des fins de sécurité.
+- Mesure d'audience sans cookie (Plausible Analytics) : pages publiques consultées, provenance (site référent, paramètres de campagne UTM), type d'appareil, navigateur et pays, sous forme de statistiques agrégées et anonymes ; ni cookie, ni identifiant persistant, ni adresse IP conservée. Les espaces privés (compte, dossiers, administration) sont exclus de la mesure. Le lien court de campagne clair-dossier.com/v alimente en outre un compteur de clics journalier agrégé, sans aucune donnée personnelle en base.
 
 ## Finalités du traitement
 
@@ -45,6 +46,7 @@ Vos données sont accessibles aux équipes ClairDossier strictement habilitées 
 - Stripe Payments Europe Ltd. (gestion des paiements) — Irlande.
 - Resend, pour l'envoi des e-mails (confirmation de compte, notifications internes à l'équipe).
 - GitHub (GitHub Pages), pour la diffusion du site public : journaux techniques de connexion, dont l'adresse IP.
+- Plausible Insights OÜ (Estonie, Union européenne), pour la mesure d'audience sans cookie du site public.
 - WhatsApp (Meta), uniquement si vous choisissez de contacter l'équipe par ce canal.
 - Les destinataires auxquels vous choisissez de transmettre vous-même vos pièces, en dehors du Service.
 

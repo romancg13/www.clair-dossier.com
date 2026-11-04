@@ -18,8 +18,8 @@ function spaFallback(): Plugin {
 }
 
 // Lien court /v (campagne Village de la Justice) : GitHub Pages sert dist/v.html
-// sur /v. Seules les clés Supabase PUBLIQUES (anon) y sont injectées ; sans elles,
-// la page redirige sans compter.
+// sur /v. Seules des valeurs PUBLIQUES y sont injectées (clé Supabase anon, domaine
+// Plausible) ; sans elles, la page redirige sans compter.
 function shortlinkPage(): Plugin {
   let env: Record<string, string> = {};
   return {
@@ -32,7 +32,8 @@ function shortlinkPage(): Plugin {
       const safe = (v: string | undefined) => (v && /^[\w.:/-]+$/.test(v) ? v : '');
       const html = readFileSync(resolve(__dirname, 'src/shortlink/v.html'), 'utf-8')
         .replaceAll('__SUPABASE_URL__', safe(env.VITE_SUPABASE_URL))
-        .replaceAll('__SUPABASE_ANON_KEY__', safe(env.VITE_SUPABASE_ANON_KEY));
+        .replaceAll('__SUPABASE_ANON_KEY__', safe(env.VITE_SUPABASE_ANON_KEY))
+        .replaceAll('__PLAUSIBLE_DOMAIN__', safe(env.VITE_PLAUSIBLE_DOMAIN));
       const dist = resolve(__dirname, 'dist');
       writeFileSync(resolve(dist, 'v.html'), html);
       mkdirSync(resolve(dist, 'v'), { recursive: true });

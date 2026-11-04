@@ -5,7 +5,8 @@
   GitHub Pages sur /v (et dist/v/index.html sur /v/). Pages ne permet ni 302 ni
   en-tête Cache-Control : la redirection est faite ici, immédiatement, par le navigateur.
   Comptage : un appel agrégé à record_campaign_click (aucun cookie ; ni IP ni
-  identifiant en base). Robots et prévisualisations connus ne sont pas comptés ; HEAD et
+  identifiant en base) et un événement Plausible « VillageJusticeClick » (sans cookie),
+  une seule fois par arrivée. Robots et prévisualisations connus ne sont pas comptés ; HEAD et
   clients sans JavaScript n'exécutent pas ce script. Le comptage ne retarde jamais
   la redirection de plus de BEACON_TIMEOUT_MS.
 -->
@@ -18,11 +19,13 @@
     <title>ClairDossier</title>
     <noscript><meta http-equiv="refresh" content="0;url=https://www.clair-dossier.com/?utm_source=village-justice&amp;utm_medium=publiredactionnel&amp;utm_campaign=2026" /></noscript>
     <link rel="preconnect" href="__SUPABASE_URL__" crossorigin />
+    <link rel="preconnect" href="https://plausible.io" />
     <script>
       (function () {
         var SOURCE = 'village-justice';
         var SUPABASE_URL = '__SUPABASE_URL__';
         var SUPABASE_ANON_KEY = '__SUPABASE_ANON_KEY__';
+        var PLAUSIBLE_DOMAIN = '__PLAUSIBLE_DOMAIN__';
         var BEACON_TIMEOUT_MS = 1500;
         var BOT = /bot\/|bot-|\bbot\b|telegrambot|crawl|spider|slurp|preview|facebookexternalhit|meta-externalagent|whatsapp|embedly|headless|lighthouse|pagespeed|inspectiontool|validator|python-|curl\/|wget|go-http|okhttp|axios|node-fetch/i;
 
@@ -42,12 +45,19 @@
           location.replace(dest.href);
         }
 
+        function send(url, init) {
+          try {
+            return fetch(url, init).catch(function () {});
+          } catch (e) {
+            return Promise.resolve();
+          }
+        }
+
         function count() {
           var isBot = navigator.webdriver || BOT.test(navigator.userAgent || '');
-          if (isBot || !/^https:\/\//.test(SUPABASE_URL)) return go();
-          setTimeout(go, BEACON_TIMEOUT_MS);
-          try {
-            fetch(SUPABASE_URL + '/rest/v1/rpc/record_campaign_click', {
+          var beacons = [];
+          if (!isBot && /^https:\/\//.test(SUPABASE_URL)) {
+            beacons.push(send(SUPABASE_URL + '/rest/v1/rpc/record_campaign_click', {
               method: 'POST',
               keepalive: true,
               headers: {
@@ -56,10 +66,22 @@
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify({ p_source: SOURCE }),
-            }).then(go, go);
-          } catch (e) {
-            go();
+            }));
           }
+          if (!isBot && PLAUSIBLE_DOMAIN) {
+            // text/plain : requête « simple », sans préflight CORS (comme le script officiel).
+            // L'URL porte les UTM : cet événement ouvre la session Plausible, qui n'est
+            // attribuée à la campagne que d'après son premier événement.
+            beacons.push(send('https://plausible.io/api/event', {
+              method: 'POST',
+              keepalive: true,
+              headers: { 'Content-Type': 'text/plain' },
+              body: JSON.stringify({ name: 'VillageJusticeClick', url: location.origin + location.pathname + dest.search, domain: PLAUSIBLE_DOMAIN, referrer: document.referrer || null }),
+            }));
+          }
+          if (!beacons.length) return go();
+          setTimeout(go, BEACON_TIMEOUT_MS);
+          Promise.all(beacons).then(go, go);
         }
 
         // Préchargement spéculatif (prerender) : ne compter qu'à l'affichage réel.
