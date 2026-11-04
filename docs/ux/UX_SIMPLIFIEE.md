@@ -17,6 +17,22 @@ Texte visible dans `<main>` hors `aria-hidden`, page entièrement parcourue, mou
 
 La FAQ de l'accueil (4 questions) est un accordéon : les réponses repliées ne sont pas comptées.
 
+### Lighthouse 13.5.0 (local, même serveur statique sans compression avant / après)
+
+Les valeurs absolues mobiles sont pénalisées par le serveur local (pas de gzip, modèle Lantern) ;
+seule la comparaison avant / après fait foi. Production mesurée auparavant : 98-100.
+
+| Page | Perf | A11y | BP | SEO | FCP | LCP | CLS |
+|---|---|---|---|---|---|---|---|
+| Accueil mobile, avant | 61 | 97 | 100 | 100 | 5,9 s | 7,5 s | 0,007 |
+| Accueil mobile, après | 63 | 100 | 100 | 100 | 5,2 s | 7,1 s | 0,000 |
+| Accueil desktop, avant | 93-94 | 100 | 100 | 100 | 1,07 s | 1,37 s | 0,044 |
+| Accueil desktop, après | 95 | 100 | 100 | 100 | 1,00 s | 1,32 s | 0,000 |
+| /fonctionnalites desktop, avant → après | 93 → 93 | 100 | 100 | 100 | 1,11 → 1,07 s | 1,41 → 1,45 s | 0,006 → 0,000 |
+
+Bundle principal : 241 → 178 ko (72 → 55 ko gzip). CLS : la police des titres (Cormorant 600,
+23 ko) est préchargée par le prérendu — sans elle, le H1 passe de 4 à 3 lignes au chargement.
+
 ## Accueil : 5 sections
 
 1. **Hero** — H1 inchangé ; « Centralisez vos documents, retrouvez vos dossiers et suivez vos
