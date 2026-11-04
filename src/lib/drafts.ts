@@ -6,8 +6,13 @@
  *    d'un dossier ou d'un brouillon précédent n'est jamais reprise ;
  *  - « Reprendre » restaure UNIQUEMENT le brouillon demandé ;
  *  - la validation supprime UNIQUEMENT le brouillon correspondant ;
- *  - l'ancienne clé globale (`clairdossier_draft`) est convertie une seule
- *    fois en brouillon nommé, jamais restaurée automatiquement (aucune perte).
+ *  - chaque brouillon appartient au compte connecté (clé préfixée par son
+ *    identifiant, positionné par AuthProvider via `setDraftOwner`) : sur un
+ *    navigateur partagé, B ne voit jamais les brouillons de A ; déconnecté,
+ *    rien n'est lu ni écrit ;
+ *  - les brouillons antérieurs, sans propriétaire (`clairdossier_draft`,
+ *    `clairdossier_draft_v2:*`), ne sont attribués à aucun compte : laissés
+ *    en place, jamais affichés.
  *
  * Le stockage est injectable pour les tests ; par défaut `localStorage`,
  * silencieusement indisponible en navigation privée stricte.
@@ -33,9 +38,18 @@ export type KeyValueStore = {
   removeItem(key: string): void;
 };
 
-const LEGACY_KEY = 'clairdossier_draft';
-const INDEX_KEY = 'clairdossier_drafts_v2';
-const PREFIX = 'clairdossier_draft_v2:';
+const INDEX_PREFIX = 'clairdossier_drafts_v3:';
+const PREFIX = 'clairdossier_draft_v3:';
+
+let owner: string | null = null;
+
+/** Compte connecté propriétaire des brouillons ; `null` à la déconnexion. */
+export function setDraftOwner(userId: string | null | undefined): void {
+  owner = userId || null;
+}
+
+const indexKey = (o: string) => INDEX_PREFIX + o;
+const draftKey = (o: string, id: string) => `${PREFIX}${o}:${id}`;
 
 function defaultStore(): KeyValueStore | null {
   try {
@@ -81,9 +95,9 @@ export function cleanAnswers(answers: Record<string, string>): Record<string, st
   return out;
 }
 
-function readIndex(store: KeyValueStore): DraftSummary[] {
+function readIndex(store: KeyValueStore, o: string): DraftSummary[] {
   try {
-    const raw = store.getItem(INDEX_KEY);
+    const raw = store.getItem(indexKey(o));
     const parsed = raw ? (JSON.parse(raw) as DraftSummary[]) : [];
     return Array.isArray(parsed) ? parsed.filter((d) => d && typeof d.id === 'string') : [];
   } catch {
@@ -91,9 +105,9 @@ function readIndex(store: KeyValueStore): DraftSummary[] {
   }
 }
 
-function writeIndex(store: KeyValueStore, index: DraftSummary[]): void {
+function writeIndex(store: KeyValueStore, o: string, index: DraftSummary[]): void {
   try {
-    store.setItem(INDEX_KEY, JSON.stringify(index));
+    store.setItem(indexKey(o), JSON.stringify(index));
   } catch {
     /* stockage plein ou indisponible */
   }
@@ -103,45 +117,24 @@ function summary(d: TunnelDraft): DraftSummary {
   return { id: d.id, title: d.title, typology: d.typology, step: d.step, updatedAt: d.updatedAt };
 }
 
-/** Convertit l'ancienne clé globale en brouillon nommé (une seule fois). */
-export function migrateLegacyDraft(store: KeyValueStore | null = defaultStore()): void {
-  if (!store) return;
-  try {
-    const raw = store.getItem(LEGACY_KEY);
-    if (!raw) return;
-    store.removeItem(LEGACY_KEY);
-    const legacy = JSON.parse(raw) as Partial<TunnelDraft>;
-    const draft: TunnelDraft = {
-      id: newDraftId(),
-      profil: legacy.profil,
-      typology: legacy.typology,
-      title: legacy.title,
-      answers: legacy.answers && typeof legacy.answers === 'object' ? legacy.answers : {},
-      step: ([1, 2, 3, 4, 5] as const).includes(legacy.step as DraftStep) ? (legacy.step as DraftStep) : 1,
-      updatedAt: legacy.updatedAt ?? new Date().toISOString(),
-    };
-    if (isMeaningful(draft)) saveDraft(draft, store);
-  } catch {
-    /* ancien brouillon illisible : ignoré */
-  }
-}
-
 export function saveDraft(draft: TunnelDraft, store: KeyValueStore | null = defaultStore()): void {
-  if (!store || !isMeaningful(draft)) return;
+  const o = owner;
+  if (!store || !o || !isMeaningful(draft)) return;
   try {
-    store.setItem(PREFIX + draft.id, JSON.stringify(draft));
+    store.setItem(draftKey(o, draft.id), JSON.stringify(draft));
   } catch {
     return;
   }
-  const index = readIndex(store).filter((d) => d.id !== draft.id);
+  const index = readIndex(store, o).filter((d) => d.id !== draft.id);
   index.unshift(summary(draft));
-  writeIndex(store, index.slice(0, 20));
+  writeIndex(store, o, index.slice(0, 20));
 }
 
 export function loadDraft(id: string, store: KeyValueStore | null = defaultStore()): TunnelDraft | null {
-  if (!store || !id) return null;
+  const o = owner;
+  if (!store || !o || !id) return null;
   try {
-    const raw = store.getItem(PREFIX + id);
+    const raw = store.getItem(draftKey(o, id));
     if (!raw) return null;
     const d = JSON.parse(raw) as TunnelDraft;
     if (!d || d.id !== id) return null;
@@ -152,17 +145,17 @@ export function loadDraft(id: string, store: KeyValueStore | null = defaultStore
 }
 
 export function removeDraft(id: string, store: KeyValueStore | null = defaultStore()): void {
-  if (!store) return;
+  const o = owner;
+  if (!store || !o) return;
   try {
-    store.removeItem(PREFIX + id);
+    store.removeItem(draftKey(o, id));
   } catch {
     /* noop */
   }
-  writeIndex(store, readIndex(store).filter((d) => d.id !== id));
+  writeIndex(store, o, readIndex(store, o).filter((d) => d.id !== id));
 }
 
 export function listDrafts(store: KeyValueStore | null = defaultStore()): DraftSummary[] {
-  if (!store) return [];
-  migrateLegacyDraft(store);
-  return readIndex(store);
+  const o = owner;
+  return store && o ? readIndex(store, o) : [];
 }
