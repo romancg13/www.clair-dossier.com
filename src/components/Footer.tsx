@@ -84,13 +84,13 @@ export function Footer() {
           </h3>
           <p className="mt-3 text-sm leading-relaxed text-slate-500">
             <a
-              href="https://rgnova.fr"
+              href="https://clairnova.fr"
               rel="noopener"
               className="border-b hairline-gold text-navy-900 transition-colors hover:text-slate-500"
             >
-              RG NOVA
+              ClairNova
             </a>{" "}
-            — Sites web, logiciels et IA sur mesure, à Marseille et partout en France.
+            — Sites web, logiciels et IA sur mesure.
           </p>
         </aside>
 
