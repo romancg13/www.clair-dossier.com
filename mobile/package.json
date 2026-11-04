@@ -58,5 +58,14 @@
     "babel-preset-expo": "~58.0.0",
     "tsx": "^4.19.0",
     "typescript": "~6.0.3"
+  },
+  "overrides": {
+    "@expo/cli": {
+      "glob": "^14.0.2"
+    },
+    "@expo/fingerprint": {
+      "glob": "^14.0.2",
+      "minimatch": "^11.0.1"
+    }
   }
 }
