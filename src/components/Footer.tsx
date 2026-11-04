@@ -84,13 +84,13 @@ export function Footer() {
           </h3>
           <p className="mt-3 text-sm leading-relaxed text-slate-500">
             <a
-              href="https://roman-gomes.fr"
+              href="https://rgnova.fr"
               rel="noopener"
               className="border-b hairline-gold text-navy-900 transition-colors hover:text-slate-500"
             >
-              Roman Gomes
+              RG NOVA
             </a>{" "}
-            — Création de sites web, logiciels et automatisations sur mesure.
+            — Sites web, logiciels et IA sur mesure, à Marseille et partout en France.
           </p>
         </aside>
 
