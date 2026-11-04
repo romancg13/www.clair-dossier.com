@@ -164,7 +164,7 @@ function StoryContent({
   return (
     <>
       <CameraRig pose={pose} progressRef={fieldRef} pointerRef={pointerRef} pointerDegrees={pointerDegrees} lambda={4.5} />
-      <Halo position={[0, 0.2, -9]} size={26} color={PALETTE.sky} opacity={0.11} soft={2.6} />
+      <Halo position={[0, 0.2, -9]} size={26} color={PALETTE.sky} opacity={0.075} soft={2.6} />
       <group ref={group}>
         <SheetField sheets={sheets} progressRef={fieldRef} drift={ambient * 0.8} settleAmount={1} fog={PALETTE.navy950} fogNear={12} fogFar={30} opacity={0.9} />
         <LineField lines={lines} progressRef={fieldRef} color={PALETTE.sky} opacity={0.28} />

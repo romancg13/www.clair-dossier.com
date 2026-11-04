@@ -25,9 +25,9 @@ import { useReducedMotion } from 'motion/react';
 type Category = 'a' | 'b' | 'c';
 
 const CATEGORY_COLORS: Record<Category, string> = {
-  a: '#f4c95d', // or
-  b: '#876008', // bronze (gold-700)
-  c: '#1e4183', // marine (navy-600)
+  a: '#c4a456', // or
+  b: '#7a5f28', // bronze (gold-700)
+  c: '#2a3960', // marine (navy-600)
 };
 
 /** Feuille : position dispersée (x, y, rotation), place dans sa rangée, place finale dans le dossier. */
@@ -106,10 +106,10 @@ function Sheet({ cat }: { cat: Category }) {
       />
       <path d="M30 0v10h10Z" fill="#ebe2cf" />
       <rect x="6" y="-3" width="13" height="6" rx="2" fill={CATEGORY_COLORS[cat]} />
-      <rect x="7" y="16" width="22" height="2.5" rx="1.25" fill="#01113d" opacity=".22" />
-      <rect x="7" y="23" width="26" height="2.5" rx="1.25" fill="#01113d" opacity=".16" />
-      <rect x="7" y="30" width="18" height="2.5" rx="1.25" fill="#01113d" opacity=".16" />
-      <rect x="7" y="37" width="24" height="2.5" rx="1.25" fill="#01113d" opacity=".12" />
+      <rect x="7" y="16" width="22" height="2.5" rx="1.25" fill="#0d1b3d" opacity=".22" />
+      <rect x="7" y="23" width="26" height="2.5" rx="1.25" fill="#0d1b3d" opacity=".16" />
+      <rect x="7" y="30" width="18" height="2.5" rx="1.25" fill="#0d1b3d" opacity=".16" />
+      <rect x="7" y="37" width="24" height="2.5" rx="1.25" fill="#0d1b3d" opacity=".12" />
     </>
   );
 }
@@ -187,9 +187,9 @@ export function SortingFlow({ className = '' }: { className?: string }) {
         >
           <defs>
             <radialGradient id="cd-sf-glow" cx="392" cy="196" r="190" gradientUnits="userSpaceOnUse">
-              <stop offset="0" stopColor="#f4c95d" stopOpacity=".42" />
-              <stop offset=".5" stopColor="#f4c95d" stopOpacity=".1" />
-              <stop offset="1" stopColor="#f4c95d" stopOpacity="0" />
+              <stop offset="0" stopColor="#c4a456" stopOpacity=".42" />
+              <stop offset=".5" stopColor="#c4a456" stopOpacity=".1" />
+              <stop offset="1" stopColor="#c4a456" stopOpacity="0" />
             </radialGradient>
             <radialGradient id="cd-sf-haze" cx="80" cy="60" r="200" gradientUnits="userSpaceOnUse">
               <stop offset="0" stopColor="#fbf9f4" stopOpacity=".08" />
@@ -197,7 +197,7 @@ export function SortingFlow({ className = '' }: { className?: string }) {
             </radialGradient>
           </defs>
 
-          <rect width="480" height="360" fill="#01113d" />
+          <rect width="480" height="360" fill="#0d1b3d" />
           <rect width="480" height="360" fill="url(#cd-sf-haze)" />
           <rect className="cd-sf-glow cd-sf-anim" width="480" height="360" fill="url(#cd-sf-glow)" />
 
@@ -233,8 +233,8 @@ export function SortingFlow({ className = '' }: { className?: string }) {
           {/* Dossier — dos */}
           <path
             d="M318 92A12 12 0 0 1 330 80H370L380 92H450A12 12 0 0 1 462 104V292A12 12 0 0 1 450 304H330A12 12 0 0 1 318 292Z"
-            fill="#0a2150"
-            stroke="#e6c97d"
+            fill="#152348"
+            stroke="#c4a456"
             strokeOpacity=".5"
           />
 
@@ -265,21 +265,21 @@ export function SortingFlow({ className = '' }: { className?: string }) {
             width="144"
             height="126"
             rx="12"
-            fill="#13306a"
-            stroke="#e6c97d"
+            fill="#1e2c52"
+            stroke="#c4a456"
             strokeOpacity=".45"
           />
-          <rect x="336" y="200" width="64" height="4" rx="2" fill="#e6c97d" opacity=".75" />
+          <rect x="336" y="200" width="64" height="4" rx="2" fill="#c4a456" opacity=".75" />
           <rect x="336" y="214" width="92" height="3" rx="1.5" fill="#fbf9f4" opacity=".18" />
           <rect x="336" y="225" width="72" height="3" rx="1.5" fill="#fbf9f4" opacity=".14" />
 
           {/* Dossier organisé */}
           <g className="cd-sf-check cd-sf-anim">
-            <circle cx="436" cy="278" r="14" fill="#f4c95d" />
+            <circle cx="436" cy="278" r="14" fill="#c4a456" />
             <path
               d="M429.5 278.5l4.5 4.5 8.5-9"
               fill="none"
-              stroke="#01113d"
+              stroke="#0d1b3d"
               strokeWidth="2.6"
               strokeLinecap="round"
               strokeLinejoin="round"

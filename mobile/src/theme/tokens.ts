@@ -5,25 +5,25 @@
  */
 
 export const palette = {
-  navy900: '#01113d',
-  navy800: '#0a2150',
-  navy700: '#13306a',
-  navy600: '#1e4183',
+  navy900: '#0d1b3d',
+  navy800: '#152348',
+  navy700: '#1e2c52',
+  navy600: '#2a3960',
 
-  gold500: '#f4c95d',
+  gold500: '#c4a456',
   gold400: '#e6c97d',
-  gold300: '#f6e1a4',
+  gold300: '#f0d99a',
   /** Or lisible sur fond clair (contraste AA sur crème). */
-  gold700: '#876008',
+  gold700: '#7a5f28',
 
   cream50: '#fbf9f4',
   cream100: '#f5f0e6',
   cream200: '#ebe2cf',
 
-  ink: '#030b26',
-  slate500: '#475574',
-  slate400: '#5f6c88',
-  slate300: '#a6b0c6',
+  ink: '#0a1228',
+  slate500: '#5a6378',
+  slate400: '#7c8497',
+  slate300: '#a3aab9',
 
   white: '#ffffff',
 
@@ -60,7 +60,7 @@ export const colors = {
   success: palette.green700,
   successSurface: palette.green50,
   successBorder: palette.green200,
-  overlay: 'rgba(3, 11, 38, 0.45)',
+  overlay: 'rgba(10, 18, 40, 0.45)',
 } as const;
 
 /** Échelle d'espacement 4 pt. */

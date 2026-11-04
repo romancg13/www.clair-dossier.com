@@ -70,7 +70,7 @@ function CompactPlanCard({ plan }: { plan: Plan }) {
   const description = isDark ? "text-cream-50/75" : "text-slate-500";
   const hairlineClass = isDark
     ? "border-cream-50/15"
-    : "border-[rgba(1,17,61,0.1)]";
+    : "border-[rgba(13,27,61,0.08)]";
   const specIconClass = isDark ? "text-cream-50/65" : "text-slate-300";
   const specLabel = isDark ? "text-cream-50/90" : "text-navy-900";
   const ctaClass = isDark

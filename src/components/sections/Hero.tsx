@@ -44,7 +44,7 @@ export function Hero() {
         className="pointer-events-none absolute inset-0 -z-10"
         style={{
           backgroundImage:
-            "radial-gradient(60% 50% at 80% 0%, rgba(244,201,93,0.12), transparent 60%), radial-gradient(50% 40% at 0% 100%, rgba(1,17,61,0.07), transparent 70%)",
+            "radial-gradient(60% 50% at 80% 0%, rgba(196,164,86,0.10), transparent 60%), radial-gradient(50% 40% at 0% 100%, rgba(13,27,61,0.06), transparent 70%)",
         }}
       />
       <div className="mx-auto max-w-7xl px-5 pb-14 pt-12 sm:px-8 sm:pb-20 sm:pt-16 lg:grid lg:grid-cols-[1.15fr_0.85fr] lg:gap-16 lg:px-12 lg:pb-32 lg:pt-24">

@@ -151,10 +151,10 @@ function Highlight({
   reduce: boolean;
   children: string;
 }) {
-  const bg = useTransform(p, [at, at + 0.1], ['rgba(57,168,255,0)', 'rgba(57,168,255,0.45)']);
+  const bg = useTransform(p, [at, at + 0.1], ['rgba(179,210,239,0)', 'rgba(179,210,239,0.75)']);
   return (
     <motion.span
-      style={reduce ? { backgroundColor: 'rgba(57,168,255,0.45)' } : { backgroundColor: bg }}
+      style={reduce ? { backgroundColor: 'rgba(179,210,239,0.75)' } : { backgroundColor: bg }}
       className="inline-block rounded-[0.2em] px-1 text-[0.74rem] font-medium text-navy-900"
     >
       {children}

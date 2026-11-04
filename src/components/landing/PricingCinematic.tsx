@@ -102,7 +102,7 @@ function PlanCard({ plan, billing }: { plan: Plan; billing: Billing }) {
     ? 'premium-recommended-plan border-navy-900 bg-navy-900 text-cream-50'
     : 'premium-card hairline bg-white text-navy-900 shadow-card';
   const muted = recommended ? 'text-cream-50/70' : 'text-slate-500';
-  const hairline = recommended ? 'border-cream-50/15' : 'border-[rgba(1,17,61,0.1)]';
+  const hairline = recommended ? 'border-cream-50/15' : 'border-[rgba(13,27,61,0.08)]';
   const cta = recommended
     ? 'sheen cd-btn-primary bg-gold-500 text-navy-900 hover:-translate-y-0.5'
     : 'border hairline bg-white text-navy-900 hover:border-navy-900 hover:bg-cream-100/60';

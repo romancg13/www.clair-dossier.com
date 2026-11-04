@@ -41,7 +41,7 @@ export function Nav() {
     <header
       className={`cd-nav-enter sticky top-0 z-40 transition-[background,border-color,box-shadow] duration-300 ${
         scrolled
-          ? 'border-b hairline bg-cream-50/92 backdrop-blur-xl shadow-[0_4px_24px_rgba(1,17,61,0.07)]'
+          ? 'border-b hairline bg-cream-50/92 backdrop-blur-xl shadow-[0_4px_24px_rgba(13,27,61,0.05)]'
           : 'border-b border-transparent bg-cream-50/70 backdrop-blur-md'
       }`}
     >

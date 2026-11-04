@@ -87,8 +87,8 @@ export default function FinalConvergenceScene({ progress, onReady }: SceneProps)
   return (
     <CinematicCanvas onReady={onReady} fov={31} cameraZ={9.5}>
       <CameraRig pose={pose} progressRef={scrollRef} pointerRef={pointerRef} pointerDegrees={1.2 * budget.pointer} lambda={3.5} />
-      <Halo position={[0, 0.4, -8]} size={24} color={PALETTE.sky} opacity={0.11} soft={2.6} />
-      <Halo position={[0, -3.6, -10]} size={18} color={PALETTE.gold} opacity={0.045} soft={3} />
+      <Halo position={[0, 0.4, -8]} size={24} color={PALETTE.sky} opacity={0.07} soft={2.6} />
+      <Halo position={[0, -3.6, -10]} size={18} color={PALETTE.gold} opacity={0.03} soft={3} />
       <SheetField sheets={sheets} progressRef={scrollRef} drift={budget.ambient * 0.4} settleAmount={1} fog={PALETTE.navy950} fogNear={11} fogFar={28} opacity={0.88} />
       {budget.points > 0 && <Dust count={Math.round(60 * budget.points)} color={PALETTE.silver} opacity={0.18} center={[0, 0, -7]} spread={[26, 14, 14]} />}
     </CinematicCanvas>

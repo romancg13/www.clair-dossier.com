@@ -184,7 +184,7 @@ function DocRow({
             checked={Boolean(selected)}
             onChange={onToggleSelect}
             aria-label={`Sélectionner ${doc.file_name}`}
-            className="h-5 w-5 shrink-0 accent-[#01113d]"
+            className="h-5 w-5 shrink-0 accent-[#0d1b3d]"
           />
         )}
         <div className="min-w-0 flex-1">
