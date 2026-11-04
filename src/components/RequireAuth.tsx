@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { Fragment, type ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 
@@ -27,5 +27,8 @@ export function RequireAuth({ children }: { children: ReactNode }) {
     return <Navigate to={`/connexion?next=${next}`} replace />;
   }
 
-  return <>{children}</>;
+  // Remonte la page à chaque changement de compte (autre onglet, sans
+  // déconnexion) : aucun état du compte précédent (brouillon en saisie,
+  // liste de brouillons) ne survit chez le nouveau compte.
+  return <Fragment key={session?.user.id ?? 'anonyme'}>{children}</Fragment>;
 }
