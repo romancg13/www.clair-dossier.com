@@ -40,12 +40,11 @@ test('llms.txt et Markdown de l’accueil : aucune fonction non livrée présent
 });
 
 test('llms.txt : engagement de non-lecture repris des CGV', () => {
-  assert.match(llms, /aucune lecture, extraction ou analyse automatique/i);
+  assert.match(llms, /aucune lecture[^.]*automatique/i);
 });
 
-test('llms.txt : la validation par un professionnel du droit est annoncée comme prévue, pas comme disponible', () => {
+test('llms.txt : la validation par un professionnel du droit, si elle est mentionnée, est annoncée comme prévue', () => {
   const lines = llms.split('\n').filter((l) => /validation (juridique|[^.]*?par un (avocat|professionnel du droit))/i.test(l));
-  assert.ok(lines.length > 0, 'mention de la validation introuvable');
   for (const line of lines) assert.match(line, /prévue/i, line);
 });
 

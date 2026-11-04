@@ -216,7 +216,7 @@ export function Contact() {
     // Silencieuse et non bloquante : en cas d'échec, WhatsApp s'ouvre
     // exactement comme avant.
     const surMesure = searchParams.get('plan') === 'sur-mesure';
-    await submitProspect(
+    const res = await submitProspect(
       {
         full_name: name,
         email,
@@ -236,8 +236,9 @@ export function Contact() {
     );
     requestId.current = newRequestId();
 
-    if (surMesure) trackEvent('devis_grand_compte', { canal: 'formulaire' });
-    else if (topic === 'demo') trackEvent('demande_demo', { canal: 'formulaire' });
+    // Conversion mesurée seulement si la demande a réellement été enregistrée.
+    if (res.ok && surMesure) trackEvent('devis_grand_compte', { canal: 'formulaire' });
+    else if (res.ok && topic === 'demo') trackEvent('demande_demo', { canal: 'formulaire' });
 
     openWhatsApp(text);
   }

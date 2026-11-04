@@ -16,7 +16,7 @@ import { fileURLToPath } from 'node:url';
 import { blogPosts } from '../src/data/blog/index';
 import type { BlogContentBlock, BlogPost } from '../src/data/blog/types';
 import { homeFaq } from '../src/data/faq';
-import { features, type Feature } from '../src/data/features';
+import { features, featuresByGroup, type Feature } from '../src/data/features';
 import { legalPages, type LegalPage } from '../src/data/legal';
 import {
   COMPARISON_FEATURES,
@@ -24,7 +24,8 @@ import {
   plans,
   type Plan,
 } from '../src/data/pricing';
-import { statuses } from '../src/data/statuses';
+import { TIMELINE_STEPS } from '../packages/core/src/dossiers';
+import { TUNNEL_STEPS } from '../src/components/landing/demo-dossier';
 import {
   TRUST_UPDATED,
   openTodos,
@@ -32,7 +33,6 @@ import {
   securityChangelog,
   subprocessors,
 } from '../src/data/trust';
-import { workspaces } from '../src/data/workspaces';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = join(__dirname, '..', 'public');
@@ -68,32 +68,26 @@ function generateHome(): void {
     '',
     '**Votre dossier administratif et juridique, clair, structuré et suivi.**',
     '',
-    "ClairDossier réunit vos pièces dans un espace privé, structure votre dossier administratif ou juridique en cinq étapes, affiche vos échéances et ne transmet rien sans votre validation. Pour PME, artisans, indépendants et professions libérales.",
+    'Centralisez vos documents, retrouvez vos dossiers et suivez vos échéances au même endroit. Pour les entreprises, indépendants et cabinets.',
     '',
-    '## Promesse',
+    '## Comment ça fonctionne',
     '',
-    '- 6 statuts dossier standardisés et traçables',
-    '- Échéances renseignées et affichées sur le dossier (aucun rappel envoyé à votre place à ce jour)',
-    '- Aucune lecture, extraction ou analyse automatique de vos pièces ; espace privé, accès par liens signés',
+    `1. **Déposez vos documents** — devis, factures, courriers, photos rejoignent votre dossier, dans un espace privé.`,
+    `2. **Organisez votre dossier** — création guidée en ${TUNNEL_STEPS.length} étapes (${TUNNEL_STEPS.join(', ').toLowerCase()}), relue par vous avant validation.`,
+    '3. **Suivez l\'essentiel** — état du suivi, échéances et prochaine action sur la page du dossier. Rappels automatiques : à l\'étude.',
     '',
-    '## Trois espaces, un dossier',
+    '## Garanties',
+    '',
+    '- Chaque compte ne voit que ses propres dossiers (isolation appliquée par la base de données)',
+    '- Pièces en stockage privé, ouvertes par des liens signés temporaires',
+    '- Aucun envoi automatique à un tiers : vous transmettez le dossier vous-même (CGV, art. 6)',
+    `- Sous-traitants techniques nommés sur ${SITE}/securite`,
     '',
   ];
 
-  for (const w of workspaces) {
-    lines.push(`### ${w.label} — ${w.title}`);
-    lines.push('');
-    lines.push(w.description);
-    lines.push('');
-    for (const cap of w.capabilities) lines.push(`- ${cap}`);
-    lines.push('');
-  }
-
-  lines.push('## Workflow — 6 statuts');
+  lines.push(`## Suivi du dossier — ${TIMELINE_STEPS.length} états`);
   lines.push('');
-  statuses.forEach((s, i) => {
-    lines.push(`${i + 1}. **${s.label}** — ${s.description}`);
-  });
+  TIMELINE_STEPS.forEach((step, i) => lines.push(`${i + 1}. **${step}**`));
   lines.push('');
 
   lines.push('## Fonctionnalités');
@@ -294,22 +288,29 @@ function generateFeaturesIndex(): void {
   const lines: string[] = [
     '---',
     'title: "Fonctionnalités ClairDossier"',
-    'description: "Neuf fonctionnalités pour structurer, suivre et traiter vos dossiers administratifs et juridiques."',
+    'description: "Les fonctionnalités ClairDossier disponibles aujourd\'hui, par besoin."',
     `url: ${SITE}/fonctionnalites`,
     '---',
     '',
     '# Fonctionnalités ClairDossier',
     '',
-    "Neuf briques conçues à partir de points de friction identifiés dans des dossiers réels.",
+    "Créez un dossier en 5 étapes, rangez-y vos pièces, suivez son état, puis transmettez-le vous-même. Seul ce qui est disponible aujourd'hui est présenté ici.",
     '',
   ];
-  for (const f of features) {
-    lines.push(`## ${f.title}`);
+  for (const g of featuresByGroup()) {
+    lines.push(`## ${g.title}`);
     lines.push('');
-    lines.push(f.blurb);
+    lines.push(g.intro);
     lines.push('');
-    lines.push(`Détail : ${SITE}/fonctionnalites/${f.slug} · Markdown : ${SITE}/fonctionnalites/${f.slug}.md`);
-    lines.push('');
+    for (const f of g.features) {
+      lines.push(`### ${f.title}`);
+      lines.push('');
+      lines.push(f.blurb);
+      if (f.limit) lines.push('', `Pas encore disponible : ${f.limit}`);
+      lines.push('');
+      lines.push(`Détail : ${SITE}/fonctionnalites/${f.slug} · Markdown : ${SITE}/fonctionnalites/${f.slug}.md`);
+      lines.push('');
+    }
   }
   lines.push(footer('/fonctionnalites'));
   write('fonctionnalites/index.md', lines.join('\n'));

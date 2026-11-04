@@ -1,13 +1,14 @@
 import { Link } from "react-router-dom";
 import { Logo } from "./Logo";
 import { PHONE_DISPLAY, PHONE_HREF } from "../data/contact";
+import { useAuth } from "../lib/auth";
+import { newDossierHref } from "../lib/cta";
 
 const PRODUIT = [
   { to: "/fonctionnalites", label: "Fonctionnalités" },
   { to: "/tarifs", label: "Tarifs" },
   { to: "/securite", label: "Sécurité" },
   { to: "/etat-du-produit", label: "État du produit" },
-  { to: "/dossier/nouveau", label: "Créer un dossier" },
 ];
 
 const PARCOURS = [
@@ -35,6 +36,7 @@ const LEGAL = [
 ];
 
 export function Footer() {
+  const { session } = useAuth();
   return (
     <footer className="border-t hairline bg-cream-100/60">
       <div className="mx-auto max-w-7xl px-5 py-14 sm:px-8 lg:px-12">
@@ -61,11 +63,36 @@ export function Footer() {
             </address>
           </div>
 
-          <FooterCol title="Produit" items={PRODUIT} />
+          <FooterCol
+            title="Produit"
+            items={[...PRODUIT, { to: newDossierHref(Boolean(session)), label: "Créer un dossier" }]}
+          />
           <FooterCol title="Parcours dédiés" items={PARCOURS} />
           <FooterCol title="Ressources" items={RESSOURCES} />
           <FooterCol title="Légal" items={LEGAL} />
         </div>
+
+        <aside
+          className="mt-12 max-w-xl border-t hairline pt-6"
+          aria-labelledby="footer-decouvrir"
+        >
+          <h3
+            id="footer-decouvrir"
+            className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-navy-900"
+          >
+            Découvrir aussi
+          </h3>
+          <p className="mt-3 text-sm leading-relaxed text-slate-500">
+            <a
+              href="https://rgnova.fr"
+              rel="noopener"
+              className="border-b hairline-gold text-navy-900 transition-colors hover:text-slate-500"
+            >
+              RG NOVA
+            </a>{" "}
+            — Sites web, logiciels et IA sur mesure, à Marseille et partout en France.
+          </p>
+        </aside>
 
         <div className="mt-12 flex flex-col gap-3 border-t hairline pt-6 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
           <span className="font-mono">

@@ -7,7 +7,7 @@ import { DemoBadge, Stage } from './Stage';
 import { useSectionProgress } from './useCinematic';
 
 /**
- * Chapitre 05 — la transmission. Le différenciateur contractuel de
+ * La transmission (/fonctionnalites). Le différenciateur contractuel de
  * ClairDossier : rien ne part sans une action explicite de l'utilisateur.
  * Micro-récit en trois temps fidèle au produit réel : récapitulatif relu →
  * validation (dossier enregistré dans le compte, pièces téléchargeables) →
@@ -15,7 +15,7 @@ import { useSectionProgress } from './useCinematic';
  */
 export function ChapterTransmission() {
   const ref = useRef<HTMLDivElement>(null);
-  const { p, reduce } = useSectionProgress(ref, ['start 80%', 'end 85%']);
+  const { p } = useSectionProgress(ref, ['start 80%', 'end 85%']);
   const btn = useTransform(p, [0.66, 0.78], [1, 0]);
   const sent = useTransform(p, [0.7, 0.84], [0, 1]);
   const sentY = useTransform(p, [0.7, 0.84], [8, 0]);
@@ -24,16 +24,13 @@ export function ChapterTransmission() {
     <div ref={ref}>
       <ChapterFrame
         id="transmission"
-        number="05"
+        number="02"
         kicker="La transmission"
-        align="right"
         title="Rien ne part sans vous."
         body={
           <p>
-            Le dossier est prêt ? Vous relisez le récapitulatif, vous validez : il est enregistré
-            dans votre compte, pièces téléchargeables à tout moment. Vous le transmettez ensuite
-            vous-même, au destinataire et par le canal de votre choix. Aucun envoi automatique :
-            c’est un engagement contractuel, pas un réglage.
+            Vous validez : le dossier est enregistré dans votre compte. Vous le transmettez ensuite
+            vous-même, au destinataire et par le canal de votre choix.
           </p>
         }
       >
@@ -46,13 +43,13 @@ export function ChapterTransmission() {
           </div>
 
           <ol className="mt-5 space-y-3" aria-label="Trois temps avant l’envoi">
-            <FlowStep p={p} at={0.12} reduce={reduce} n={1} title="Récapitulatif relu">
+            <FlowStep p={p} at={0.12} n={1} title="Récapitulatif relu">
               <span className="text-[0.78rem] text-silver-200/75">
                 {DEMO.title} · {DEMO.pieces.length} pièces · échéance {DEMO.deadline.dateShort}
               </span>
             </FlowStep>
 
-            <FlowStep p={p} at={0.34} reduce={reduce} n={2} title="Valider et enregistrer">
+            <FlowStep p={p} at={0.34} n={2} title="Valider et enregistrer">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-gold-400/60 bg-gold-500/12 px-2.5 py-1 text-[0.74rem] text-gold-400">
                   <span className="h-1.5 w-1.5 rounded-full bg-gold-400" aria-hidden="true" />
@@ -64,10 +61,10 @@ export function ChapterTransmission() {
               </div>
             </FlowStep>
 
-            <FlowStep p={p} at={0.54} reduce={reduce} n={3} title="Transmission, par vous">
+            <FlowStep p={p} at={0.54} n={3} title="Transmission, par vous">
               <div className="relative h-11">
                 <motion.div
-                  style={reduce ? { opacity: 0 } : { opacity: btn }}
+                  style={{ opacity: btn }}
                   className="absolute inset-0 flex items-center"
                   aria-hidden="true"
                 >
@@ -77,7 +74,7 @@ export function ChapterTransmission() {
                   </span>
                 </motion.div>
                 <motion.div
-                  style={reduce ? undefined : { opacity: sent, y: sentY }}
+                  style={{ opacity: sent, y: sentY }}
                   className="absolute inset-0 flex items-center"
                 >
                   <span className="inline-flex items-center gap-2 rounded-full border border-gold-400/60 bg-navy-950 px-4 py-2 text-[0.8rem] font-medium text-cream-50">
@@ -92,7 +89,7 @@ export function ChapterTransmission() {
           </ol>
 
           <p className="mt-5 border-t cd-hairline pt-4 font-mono text-[0.58rem] uppercase tracking-[0.14em] text-silver-400">
-            Aucune lecture ni exploitation automatique des pièces · engagement CGV
+            Aucun envoi automatique à un tiers · CGV, article 6
           </p>
         </Stage>
       </ChapterFrame>
@@ -103,14 +100,12 @@ export function ChapterTransmission() {
 function FlowStep({
   p,
   at,
-  reduce,
   n,
   title,
   children,
 }: {
   p: MotionValue<number>;
   at: number;
-  reduce: boolean;
   n: number;
   title: string;
   children: ReactNode;
@@ -120,14 +115,14 @@ function FlowStep({
   const check = useTransform(p, [at + 0.06, at + 0.14], [0, 1]);
   return (
     <motion.li
-      style={reduce ? undefined : { opacity, x }}
+      style={{ opacity, x }}
       className="flex gap-3 rounded-xl border cd-hairline bg-navy-950/40 p-3.5"
     >
       <span className="relative grid h-7 w-7 shrink-0 place-items-center rounded-full border cd-hairline-strong font-mono text-[0.62rem] text-silver-200">
         {n}
         <motion.span
           aria-hidden="true"
-          style={reduce ? undefined : { opacity: check }}
+          style={{ opacity: check }}
           className="absolute inset-0 grid place-items-center rounded-full bg-gold-500 text-navy-900"
         >
           <CheckIcon width={11} height={11} strokeWidth={2.4} />

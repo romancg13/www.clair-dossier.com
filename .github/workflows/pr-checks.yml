@@ -1,0 +1,38 @@
+name: Vérifications PR (site)
+
+# Mêmes garde-fous que le déploiement (deploy.yml), exécutés AVANT la fusion :
+# la validation d'une PR se fait sur des voyants verts, pas au moment de la
+# mise en production. Aucun secret, aucun déploiement.
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  verifier:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      # Inclut le gel des paiements (tests/paiements-geles.test.ts).
+      - name: Tests
+        run: node --import tsx --test tests/*.test.ts
+
+      - name: Build (prérendu de toutes les routes publiques)
+        run: npm run build
+        env:
+          VITE_BASE_PATH: /

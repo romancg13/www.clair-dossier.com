@@ -1,19 +1,18 @@
 import { useRef, type ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 import { motion, useReducedMotion, useScroll, useTransform, type MotionValue } from 'motion/react';
+import { ArrowRightIcon } from '../icons';
 import { BUSINESS_STEPS, DEMO } from './demo-dossier';
 import { DocumentGlyph } from './DocumentGlyph';
 import { DemoBadge } from './Stage';
 import { useCinematic } from './useCinematic';
 
 /**
- * Chapitre 06 — la vue d'ensemble. Les modules vus dans les chapitres
- * précédents (étapes, pièces, échéance, prochaine action) viennent composer
- * la page réelle « Avancement du dossier » (DossierDetail.tsx : mêmes onglets,
- * mêmes étapes, même bloc « Ce que vous devez faire maintenant »).
+ * Le résultat concret — la page réelle « Suivi du dossier »
+ * (DossierDetail.tsx), réduite à trois informations : l'état du suivi,
+ * l'échéance et la prochaine action (texte réel STEP_NEXT_ACTIONS).
  * Desktop : scène épinglée, assemblage piloté par le scroll. Sinon : reveal.
  */
-
-const TABS = ['Vue d’ensemble', 'Pièces', 'Échéances', 'DashBoard ClairDossier'];
 
 export function ChapterOverview() {
   const cinematic = useCinematic();
@@ -23,23 +22,22 @@ export function ChapterOverview() {
 function Copy() {
   return (
     <div>
-      <p className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-400">
-        <span className="text-silver-400">06</span>
-        <span className="mx-2 text-silver-400/50" aria-hidden="true">
-          —
-        </span>
-        La vue d’ensemble
-      </p>
+      <p className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-400">Le résultat concret</p>
       <h2 className="mt-4 font-display text-[clamp(2.1rem,4.4vw,4rem)] font-semibold leading-[1.02] tracking-[-0.015em] text-cream-50">
         Tout le dossier,
         <br />
         sur un seul écran.
       </h2>
       <p className="mt-5 max-w-lg text-[1.02rem] leading-[1.65] text-silver-200/78">
-        Les cinq étapes, les pièces, les échéances et la prochaine action à mener : la page
-        « Avancement du dossier » réunit ce que vous avez construit. Vous comprenez le dossier
-        avant même de l’ouvrir.
+        Où en est le dossier, la prochaine échéance, ce qu’il reste à faire.
       </p>
+      <Link
+        to="/fonctionnalites"
+        className="group mt-6 inline-flex items-center gap-1.5 border-b cd-hairline-strong pb-0.5 text-sm font-medium text-silver-200 transition-colors hover:text-gold-400"
+      >
+        Voir toutes les fonctionnalités
+        <ArrowRightIcon width={14} height={14} strokeWidth={2} className="transition-transform group-hover:translate-x-0.5" />
+      </Link>
     </div>
   );
 }
@@ -126,7 +124,7 @@ function StaticOverview() {
   );
 }
 
-/* ─── Le tableau de bord, en cinq régions ───────────────────────────── */
+/* ─── Le tableau de bord : en-tête + trois informations ─────────────── */
 
 function Dashboard({ children }: { children: (region: ReactNode, i: number) => ReactNode }) {
   const regions: ReactNode[] = [
@@ -150,21 +148,10 @@ function Dashboard({ children }: { children: (region: ReactNode, i: number) => R
       </span>
     </div>,
 
-    // 1 — onglets réels + 5 étapes métier
-    <div key="steps" className="mt-5">
-      <div className="flex flex-wrap gap-1 border-b cd-hairline pb-2" aria-hidden="true">
-        {TABS.map((t, i) => (
-          <span
-            key={t}
-            className={`rounded-full px-3 py-1 text-[0.72rem] ${
-              i === 0 ? 'bg-cream-50/10 font-medium text-cream-50' : 'text-silver-400'
-            }`}
-          >
-            {t}
-          </span>
-        ))}
-      </div>
-      <ol className="mt-4 grid grid-cols-5 gap-1.5" aria-label="Avancement sur cinq étapes métier">
+    // 1 — où en est le dossier : les 4 états du suivi
+    <div key="steps" className="mt-6">
+      <p className="font-mono text-[0.62rem] uppercase tracking-[0.16em] text-silver-200/80">Suivi du dossier</p>
+      <ol className="mt-3 grid grid-cols-4 gap-1.5" aria-label="Suivi du dossier en quatre états">
         {BUSINESS_STEPS.map((label, i) => {
           const n = i + 1;
           const state = n < DEMO.step ? 'done' : n === DEMO.step ? 'active' : 'todo';
@@ -190,57 +177,19 @@ function Dashboard({ children }: { children: (region: ReactNode, i: number) => R
       </ol>
     </div>,
 
-    // 2 — pièces
-    <div key="pieces" className="mt-4 rounded-xl border cd-hairline bg-navy-950/40 p-4">
-      <div className="flex items-center justify-between">
-        <span className="font-mono text-[0.62rem] uppercase tracking-[0.16em] text-silver-200/80">
-          Pièces · {DEMO.pieces.length}
-        </span>
-        <span className="font-mono text-[0.58rem] uppercase tracking-[0.14em] text-silver-400">
-          Visualiser · Télécharger
-        </span>
-      </div>
-      <ul className="mt-2 divide-y cd-hairline">
-        {DEMO.pieces.map((piece) => (
-          <li key={piece.name} className="flex items-center gap-3 py-2">
-            <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-cream-50/8 text-cream-50">
-              <DocumentGlyph type={piece.type} width={15} height={15} />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-[0.8rem] text-cream-50">{piece.name}</span>
-              <span className="block font-mono text-[0.56rem] uppercase tracking-[0.12em] text-silver-400">
-                {piece.tag} · {piece.meta}
-              </span>
-            </span>
-          </li>
-        ))}
-      </ul>
+    // 2 — la prochaine échéance
+    <div key="deadline" className="mt-5 rounded-xl border cd-hairline bg-navy-950/40 p-4">
+      <span className="inline-flex items-center gap-2 font-mono text-[0.62rem] uppercase tracking-[0.16em] text-silver-200/80">
+        <DocumentGlyph type="echeance" width={14} height={14} className="text-gold-400" />
+        Échéance
+      </span>
+      <p className="mt-2 font-display text-xl font-semibold text-cream-50">{DEMO.deadline.dateLong}</p>
+      <p className="mt-0.5 text-[0.78rem] text-silver-400">
+        {DEMO.deadline.label} · {DEMO.deadline.status}
+      </p>
     </div>,
 
-    // 3 — échéance
-    <div key="deadline" className="mt-4 grid gap-4 sm:grid-cols-2">
-      <div className="rounded-xl border cd-hairline bg-navy-950/40 p-4">
-        <span className="inline-flex items-center gap-2 font-mono text-[0.62rem] uppercase tracking-[0.16em] text-silver-200/80">
-          <DocumentGlyph type="echeance" width={14} height={14} className="text-gold-400" />
-          Échéance
-        </span>
-        <p className="mt-2 font-display text-xl font-semibold text-cream-50">{DEMO.deadline.dateLong}</p>
-        <p className="mt-0.5 text-[0.78rem] text-silver-400">
-          {DEMO.deadline.label} · {DEMO.deadline.status}
-        </p>
-      </div>
-      <div className="rounded-xl border cd-hairline bg-navy-950/40 p-4">
-        <span className="font-mono text-[0.62rem] uppercase tracking-[0.16em] text-silver-200/80">
-          Transmission
-        </span>
-        <p className="mt-2 font-display text-xl font-semibold text-cream-50">Par vous, jamais automatique</p>
-        <p className="mt-0.5 text-[0.78rem] text-silver-400">
-          Dernier envoi : {DEMO.transmission.date} · {DEMO.transmission.channel.toLowerCase()}
-        </p>
-      </div>
-    </div>,
-
-    // 4 — prochaine action (bloc réel)
+    // 3 — ce qu'il reste à faire (texte réel de la page dossier)
     <div key="next" className="mt-4 rounded-xl bg-gold-500/10 px-4 py-3.5 ring-1 ring-gold-400/30">
       <p className="font-mono text-[0.62rem] uppercase tracking-[0.16em] text-gold-400">
         Ce que vous devez faire maintenant

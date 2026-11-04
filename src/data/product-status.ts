@@ -44,7 +44,7 @@ export const operational: ProductStatusEntry[] = [
     verification: '/fonctionnalites/depot-de-pieces',
   },
   {
-    label: 'Espace « Mes dossiers » et page d’avancement',
+    label: 'Liste « Vos dossiers » et page d’avancement',
     detail:
       'Liste des dossiers du compte ; chaque dossier a sa page d’avancement : statuts, pièces consultables et téléchargeables, échéances renseignées affichées.',
     verification: '/fonctionnalites/suivi-statuts · /fonctionnalites/chronologie',
@@ -80,7 +80,7 @@ export const operational: ProductStatusEntry[] = [
   {
     label: 'Pages publiques lisibles par les moteurs et les IA',
     detail:
-      'Chaque page publique est servie en HTML complet (pré-rendu) et doublée d’une version .md pour les crawlers IA (llms.txt).',
+      'Chaque page publique est servie en HTML complet (pré-rendu) ; les pages principales sont doublées d’une version .md pour les crawlers IA (llms.txt).',
     verification: '/llms.txt',
   },
 ];

@@ -8,57 +8,33 @@ url: https://www.clair-dossier.com/
 
 **Votre dossier administratif et juridique, clair, structuré et suivi.**
 
-ClairDossier réunit vos pièces dans un espace privé, structure votre dossier administratif ou juridique en cinq étapes, affiche vos échéances et ne transmet rien sans votre validation. Pour PME, artisans, indépendants et professions libérales.
+Centralisez vos documents, retrouvez vos dossiers et suivez vos échéances au même endroit. Pour les entreprises, indépendants et cabinets.
 
-## Promesse
+## Comment ça fonctionne
 
-- 6 statuts dossier standardisés et traçables
-- Échéances renseignées et affichées sur le dossier (aucun rappel envoyé à votre place à ce jour)
-- Aucune lecture, extraction ou analyse automatique de vos pièces ; espace privé, accès par liens signés
+1. **Déposez vos documents** — devis, factures, courriers, photos rejoignent votre dossier, dans un espace privé.
+2. **Organisez votre dossier** — création guidée en 5 étapes (profil, nature, informations, pièces, récapitulatif), relue par vous avant validation.
+3. **Suivez l'essentiel** — état du suivi, échéances et prochaine action sur la page du dossier. Rappels automatiques : à l'étude.
 
-## Trois espaces, un dossier
+## Garanties
 
-### Vous — Votre dossier, vos décisions.
+- Chaque compte ne voit que ses propres dossiers (isolation appliquée par la base de données)
+- Pièces en stockage privé, ouvertes par des liens signés temporaires
+- Aucun envoi automatique à un tiers : vous transmettez le dossier vous-même (CGV, art. 6)
+- Sous-traitants techniques nommés sur https://www.clair-dossier.com/securite
 
-Vous construisez votre dossier à votre rythme. Vous voyez en permanence où il en est, qui agit, ce qui est attendu de vous.
+## Suivi du dossier — 4 états
 
-- Création guidée en 5 étapes (profil, nature, informations, pièces, récapitulatif)
-- Suivi de l'avancement sur les 5 étapes métier de votre dossier
-- Transmission décidée et effectuée par vous, jamais automatique
-- Récupération de vos pièces et données sur demande
-
-### Validation — Une relecture côté support, quand c'est utile.
-
-Un administrateur unique peut, côté support, consulter votre dossier et les pièces déposées pour vous accompagner. Vous gardez la main : rien n'est transmis hors de votre espace sans votre accord.
-
-- Consultation du dossier et des pièces par l'administrateur support
-- Vue d'ensemble des 5 étapes et des échéances du dossier
-- Accès limité à l'administrateur unique, isolé des autres comptes
-- Pièces accessibles via des liens privés à durée limitée
-
-### Entreprise — Tous vos dossiers, au même endroit.
-
-Artisan, indépendant, profession libérale ou PME : retrouvez la liste de vos dossiers et l'avancement de chacun depuis un seul espace. Chaque compte ne voit que ses propres dossiers.
-
-- Liste de tous vos dossiers avec leur étape en cours
-- Page détail « Avancement du dossier » pour chaque dossier
-- Données isolées par compte : vous ne voyez que les vôtres
-- Pièces téléchargeables et transmission à votre main, dossier par dossier
-
-## Workflow — 6 statuts
-
-1. **Brouillon** — Vous construisez votre dossier dans le tunnel en 5 étapes : profil, nature, informations, dépôt des pièces, récapitulatif. Le nom du dossier est obligatoire. Rien n'est transmis tant que vous ne l'avez pas décidé.
-2. **Complété** — Vous avez renseigné les informations et déposé vos pièces dans l'espace privé sécurisé. Le récapitulatif vous montre le dossier avant toute transmission.
-3. **Transmis** — Vous avez validé le dossier : il est enregistré dans votre compte et visible dans votre espace. Sa transmission à un tiers reste à votre main — aucun envoi automatique.
-4. **En cours** — Le dossier suit son avancement sur les 5 étapes métier, cliquables depuis la page détail. Les pièces restent téléchargeables et les échéances affichées.
-5. **Validé** — Le dossier est complet et structuré, prêt à être partagé ou suivi dans la durée. Les pièces sont réunies dans un espace privé, accessibles via des liens signés temporaires.
-6. **Archivé** — L'affaire est close. Vos données restent isolées par compte et conservées selon les délais légaux. Vous pouvez en demander l'accès ou l'export via le contact.
+1. **Dossier créé**
+2. **Traitement en cours**
+3. **Documents disponibles**
+4. **Dossier clôturé**
 
 ## Fonctionnalités
 
 - [**Création guidée**](https://www.clair-dossier.com/fonctionnalites/creation-guidee) — Un tunnel de création en 5 étapes qui s'adapte à votre profil — artisan, indépendant, profession libérale, PME — et structure votre dossier dès le départ.
 - [**Dépôt de pièces**](https://www.clair-dossier.com/fonctionnalites/depot-de-pieces) — Déposez vos pièces — contrats, courriers, factures — dans un espace privé et sécurisé, rattaché au dossier.
-- [**Avancement**](https://www.clair-dossier.com/fonctionnalites/chronologie) — Une page d'avancement claire qui suit votre dossier à travers 5 étapes métier, avec pièces et échéances réunies au même endroit.
+- [**Avancement**](https://www.clair-dossier.com/fonctionnalites/chronologie) — Un suivi clair en 4 états — dossier créé, traitement en cours, documents disponibles, dossier clôturé — avec pièces et échéances au même endroit.
 - [**Transmission**](https://www.clair-dossier.com/fonctionnalites/transmission-validee) — Votre dossier validé est enregistré dans votre compte, jamais envoyé automatiquement. Vous le transmettez vous-même, au destinataire et au moment de votre choix.
 - [**Mes dossiers**](https://www.clair-dossier.com/fonctionnalites/suivi-statuts) — Tous vos dossiers réunis dans votre espace de compte. D'un coup d'œil, vous voyez lesquels ouvrir et où chacun en est.
 - [**Espace sécurisé**](https://www.clair-dossier.com/fonctionnalites/espace-securise) — Vos pièces et informations quittent les SMS et les e-mails dispersés pour un espace privé : accès par authentification, chiffrement en transit et au repos.
@@ -88,7 +64,7 @@ C'est vous. ClairDossier vous guide pour constituer votre dossier en 5 étapes (
 
 ### Mes données sont-elles vraiment sécurisées ?
 
-Vos échanges passent en HTTPS (chiffrement en transit) et vos données sont chiffrées au repos côté hébergeur. Vos pièces sont déposées dans un stockage privé, accessible uniquement après authentification, via des liens temporaires. Chaque compte est isolé des autres, et nos hébergeurs sous-traitants sont conformes au RGPD.
+Vos échanges passent en HTTPS (chiffrement en transit) et vos données sont chiffrées au repos côté hébergeur. Vos pièces sont déposées dans un stockage privé, accessible uniquement après authentification, via des liens temporaires. Chaque compte est isolé des autres, et nos sous-traitants techniques sont nommés sur la page Sécurité.
 
 ### Suis-je obligé de passer par un tiers via ClairDossier ?
 
@@ -96,11 +72,11 @@ Non. ClairDossier vous sert à constituer et organiser votre dossier, enregistr�
 
 ### Comment je récupère ou partage mes dossiers ?
 
-Depuis la liste de vos dossiers, ouvrez la page détail « Avancement du dossier » : vous y consultez les 5 étapes, téléchargez chaque pièce et voyez les échéances. Quand vous le souhaitez, vous téléchargez vos pièces et transmettez le dossier vous-même au destinataire de votre choix — rien ne part automatiquement.
+Depuis la liste de vos dossiers, ouvrez la page détail « Suivi du dossier » : vous y consultez les 4 états du suivi, téléchargez chaque pièce et voyez les échéances. Quand vous le souhaitez, vous téléchargez vos pièces et transmettez le dossier vous-même au destinataire de votre choix — rien ne part automatiquement.
 
 ### Comment je suis l'avancement de mon dossier ?
 
-La page détail « Avancement du dossier » affiche 5 étapes métier cliquables. Vous y voyez où en est votre dossier, les pièces déjà déposées (téléchargeables) et les échéances à venir. Si une pièce manque, vous complétez le dossier directement depuis l'app, puis vous le transmettez quand il est prêt.
+La page détail « Suivi du dossier » affiche 4 états cliquables : dossier créé, traitement en cours, documents disponibles, dossier clôturé. Vous y voyez où en est votre dossier, les pièces déjà déposées (téléchargeables) et les échéances à venir. Si une pièce manque, vous complétez le dossier directement depuis l'app, puis vous le transmettez quand il est prêt.
 
 ### La facturation est par utilisateur ou par dossier ?
 
@@ -112,7 +88,7 @@ Oui. Depuis la page détail du dossier, chaque pièce déposée est télécharge
 
 ### Conformité RGPD : comment exercer mes droits sur mes données ?
 
-Vos données sont chiffrées au repos chez notre hébergeur, conforme au RGPD, et chaque compte est isolé des autres. Vous gardez vos droits d'accès, d'export et de suppression : il suffit d'en faire la demande via le contact ou votre espace. Une demande est traitée dans un délai raisonnable, sous 30 jours.
+Vos données sont chiffrées au repos chez notre hébergeur, et chaque compte est isolé des autres. Vous gardez vos droits d'accès, d'export et de suppression : il suffit d'en faire la demande via le contact. Une demande est traitée dans un délai raisonnable, sous 30 jours.
 
 ## Contact
 

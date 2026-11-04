@@ -1,18 +1,17 @@
 import type { PointerEvent as ReactPointerEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { Reveal, Stagger, StaggerItem } from '../primitives/Reveal';
+import { Stagger, StaggerItem } from '../primitives/Reveal';
 import { featuresByGroup } from '../../data/features';
 import { FEATURE_ICONS, ArrowRightIcon, CheckIcon } from '../icons';
 import { TUNNEL_STEPS } from './demo-dossier';
 
 /**
- * Fonctionnalités — bento spécifique ClairDossier (ELEVATE de FeaturesGrid).
- * Chantier 12 : présentation en QUATRE groupes d'usage, même
- * vocabulaire que /fonctionnalites (src/data/features.ts → FEATURE_GROUPS).
- * Les neuf fiches réelles restent toutes présentes, avec leur lien vers
- * /fonctionnalites/{slug} ; le groupe « Créer et nommer » occupe le bloc
- * principal (étapes réelles du tunnel). Lumière suivant le pointeur :
- * desktop, souris uniquement (CSS .cd-tile, variables --mx/--my).
+ * Fonctionnalités — bento par besoin (/fonctionnalites). Les neuf fiches
+ * réelles restent toutes présentes, avec leur lien vers
+ * /fonctionnalites/{slug} ; le groupe « creer » occupe le bloc principal
+ * (étapes réelles du tunnel). Ancres `#groupe-{id}` : navigation du hero.
+ * Lumière suivant le pointeur : desktop, souris uniquement (CSS .cd-tile,
+ * variables --mx/--my).
  */
 
 // Placement sur 12 colonnes — la grille reste lisible à chaque rupture.
@@ -35,21 +34,10 @@ function onPointerMove(e: ReactPointerEvent<HTMLDivElement>) {
 export function FeaturesBento() {
   const groups = featuresByGroup();
   return (
-    <Reveal as="section" id="fonctionnalites" className="relative bg-cream-50">
+    <section aria-label="Fonctionnalités par besoin" className="relative bg-cream-50">
       <div aria-hidden="true" className="cd-grid-light pointer-events-none absolute inset-0" />
-      <div className="relative mx-auto max-w-7xl px-5 py-20 sm:px-8 sm:py-24 lg:px-12 lg:py-32">
-        <div className="max-w-3xl">
-          <p className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-700">Fonctionnalités</p>
-          <h2 className="mt-3 font-display text-[clamp(2.1rem,4.4vw,3.75rem)] font-semibold leading-[1.04] tracking-[-0.015em] text-navy-900">
-            Tout pour organiser et suivre vos dossiers.
-          </h2>
-          <p className="mt-4 max-w-2xl text-base leading-relaxed text-slate-500">
-            Quatre temps, du premier document à la transmission — chaque fonctionnalité est détaillée
-            sur sa propre page.
-          </p>
-        </div>
-
-        <Stagger inView className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-12">
+      <div className="relative mx-auto max-w-7xl px-5 pb-16 pt-4 sm:px-8 sm:pb-20 lg:px-12 lg:pb-24">
+        <Stagger inView className="grid gap-4 sm:grid-cols-2 lg:grid-cols-12">
           <div className="contents" onPointerMove={onPointerMove}>
             {groups.map((g, i) => {
               const main = g.id === 'creer';
@@ -57,28 +45,29 @@ export function FeaturesBento() {
               return (
                 <StaggerItem key={g.id} className={SPANS[g.id] ?? 'lg:col-span-6'}>
                   <article
-                    aria-labelledby={`bento-${g.id}`}
-                    className={`cd-tile flex h-full flex-col rounded-[1.125rem] border hairline bg-white ${
+                    id={`groupe-${g.id}`}
+                    aria-labelledby={`groupe-${g.id}-titre`}
+                    className={`cd-tile flex h-full scroll-mt-28 flex-col rounded-[1.125rem] border hairline bg-white ${
                       main ? 'p-7 sm:p-8' : 'p-6 sm:p-7'
                     }`}
                   >
                     <p className="font-mono text-[0.68rem] uppercase tracking-[0.18em] text-gold-700">
                       {String(i + 1).padStart(2, '0')}
                     </p>
-                    <h3
-                      id={`bento-${g.id}`}
+                    <h2
+                      id={`groupe-${g.id}-titre`}
                       className={`mt-2 font-display font-semibold leading-snug text-navy-900 ${
                         main ? 'text-2xl sm:text-3xl' : 'text-xl sm:text-2xl'
                       }`}
                     >
                       {g.title}
-                    </h3>
+                    </h2>
                     <p className="mt-2 max-w-xl text-sm leading-relaxed text-slate-500 sm:text-[0.95rem]">
                       {g.intro}
                     </p>
 
                     {main && (
-                      <ol className="mt-7 space-y-2.5" aria-label="Les cinq étapes du tunnel">
+                      <ol className="mt-7 space-y-2.5" aria-label="Les cinq étapes du tunnel de création">
                         {TUNNEL_STEPS.map((step, j) => {
                           const last = j === TUNNEL_STEPS.length - 1;
                           return (
@@ -126,6 +115,14 @@ export function FeaturesBento() {
                                 />
                               </Link>
                               <p className="mt-1 text-sm leading-relaxed text-slate-500">{f.benefit}</p>
+                              {f.limit && (
+                                <p className="mt-2 text-xs leading-relaxed text-slate-500">
+                                  <span className="mr-1.5 inline-flex items-center rounded-full border hairline bg-cream-100 px-2 py-0.5 font-mono text-[0.6rem] uppercase tracking-[0.14em] text-slate-500">
+                                    Pas encore disponible
+                                  </span>
+                                  {f.limit}
+                                </p>
+                              )}
                             </div>
                           </li>
                         );
@@ -138,6 +135,6 @@ export function FeaturesBento() {
           </div>
         </Stagger>
       </div>
-    </Reveal>
+    </section>
   );
 }

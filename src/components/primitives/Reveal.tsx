@@ -1,5 +1,6 @@
 import { createElement, useEffect, useRef, useState, type ReactNode } from 'react';
-import { motion, useReducedMotion, type Variants } from 'motion/react';
+import { motion, type Variants } from 'motion/react';
+import { useReducedMotionSafe } from './useMediaQuery';
 
 const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
 
@@ -31,7 +32,7 @@ export function Reveal({
   as?: Tag;
   id?: string;
 }) {
-  const reduce = useReducedMotion();
+  const reduce = useReducedMotionSafe();
   const [forceShown, setForceShown] = useState(false);
 
   useEffect(() => {
@@ -95,7 +96,7 @@ export function Stagger({
   inView?: boolean;
   delay?: number;
 }) {
-  const reduce = useReducedMotion();
+  const reduce = useReducedMotionSafe();
   const [forceShown, setForceShown] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -139,7 +140,7 @@ export function Stagger({
 }
 
 export function StaggerItem({ children, className }: { children: ReactNode; className?: string }) {
-  const reduce = useReducedMotion();
+  const reduce = useReducedMotionSafe();
   if (reduce) return <div className={className}>{children}</div>;
   return (
     <motion.div className={className} variants={staggerChild}>
