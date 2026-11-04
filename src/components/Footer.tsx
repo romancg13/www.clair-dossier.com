@@ -1,13 +1,14 @@
 import { Link } from "react-router-dom";
 import { Logo } from "./Logo";
 import { PHONE_DISPLAY, PHONE_HREF } from "../data/contact";
+import { useAuth } from "../lib/auth";
+import { newDossierHref } from "../lib/cta";
 
 const PRODUIT = [
   { to: "/fonctionnalites", label: "Fonctionnalités" },
   { to: "/tarifs", label: "Tarifs" },
   { to: "/securite", label: "Sécurité" },
   { to: "/etat-du-produit", label: "État du produit" },
-  { to: "/dossier/nouveau", label: "Créer un dossier" },
 ];
 
 const PARCOURS = [
@@ -35,6 +36,7 @@ const LEGAL = [
 ];
 
 export function Footer() {
+  const { session } = useAuth();
   return (
     <footer className="border-t hairline bg-cream-100/60">
       <div className="mx-auto max-w-7xl px-5 py-14 sm:px-8 lg:px-12">
@@ -61,7 +63,10 @@ export function Footer() {
             </address>
           </div>
 
-          <FooterCol title="Produit" items={PRODUIT} />
+          <FooterCol
+            title="Produit"
+            items={[...PRODUIT, { to: newDossierHref(Boolean(session)), label: "Créer un dossier" }]}
+          />
           <FooterCol title="Parcours dédiés" items={PARCOURS} />
           <FooterCol title="Ressources" items={RESSOURCES} />
           <FooterCol title="Légal" items={LEGAL} />

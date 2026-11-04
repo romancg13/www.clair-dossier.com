@@ -4,6 +4,7 @@ import { AnimatePresence, motion, useMotionValueEvent, useScroll } from 'motion/
 import { Logo } from './Logo';
 import { useAuth } from '../lib/auth';
 import { newDossierHref } from '../lib/cta';
+import { useMediaQuery } from './primitives/useMediaQuery';
 
 // Journal, Contact, État du produit et parcours dédiés : pied de page.
 const NAV_ITEMS = [
@@ -22,6 +23,7 @@ export function Nav() {
   const { scrollY } = useScroll();
   const { session } = useAuth();
   const { key: locationKey } = useLocation();
+  const desktop = useMediaQuery('(min-width: 1024px)');
 
   useMotionValueEvent(scrollY, 'change', (latest) => setScrolled(latest > 24));
 
@@ -34,6 +36,11 @@ export function Nav() {
 
   // Toute navigation (logo, même vers la page courante, retour arrière…) referme le menu.
   useEffect(() => setOpen(false), [locationKey]);
+
+  // Passage en grand écran (rotation) : le panneau disparaît, il ne doit pas laisser la page bloquée.
+  useEffect(() => {
+    if (desktop) setOpen(false);
+  }, [desktop]);
 
   // Ouverture : focus sur le premier lien. Escape : fermeture, focus rendu au bouton du menu.
   useEffect(() => {
