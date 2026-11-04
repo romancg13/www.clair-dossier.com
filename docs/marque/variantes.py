@@ -1,4 +1,9 @@
-"""Variantes recadrées (kit pleine résolution) + assets web. Usage : python3 variantes.py out kit web"""
+"""Variantes recadrées (kit pleine résolution) + assets web. Usage : python3 variantes.py out kit web
+
+Image de partage (public/og-default.svg/.jpg) : logo-complet-sombre.png redimensionné à
+840 px de large (alpha prémultiplié, LANCZOS), embarqué en WebP base64 dans l'élément
+<image> du SVG (420×100 à x=92, y=84), puis SVG rendu en JPEG 1200×630 qualité 92
+dans Chrome (capture d'écran de la page contenant le SVG)."""
 import sys, os
 import numpy as np
 from PIL import Image
@@ -8,7 +13,7 @@ PAD = 2
 
 def crop(im, keep):
     a = np.asarray(im).copy()
-    a[..., 3] = np.where(keep, a[..., 3], 0)
+    a[~keep] = 0  # les 4 canaux : rien de la partie retirée ne subsiste sous l'alpha
     out = Image.fromarray(a, 'RGBA')
     x0, y0, x1, y1 = out.getbbox()
     return out.crop((x0 - PAD, y0 - PAD, x1 + PAD, y1 + PAD))

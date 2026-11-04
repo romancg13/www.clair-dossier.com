@@ -66,15 +66,38 @@ Fc = F.copy()
 inner = ndi.binary_erosion(a_raw >= 0.5, iterations=1) & keep[lab]
 a = np.where(inner, 1.0, a)
 Fc = np.where(inner[..., None], C, Fc)
-# Micro-fentes internes (trait d'ombrage du relief entre deux parties d'une lettre,
-# ouverture ≤ 4 px, qui n'est pas du fond dans la source) : comblées. Les contre-formes
-# et encoches réelles (fond visible dans la source) restent intactes.
-solid = a >= 0.999
-slit = ndi.binary_closing(solid, structure=np.ones((5, 5), bool)) & ~solid & (a_raw > 0.15)
-a = np.where(slit, 1.0, a)
-Fc = np.where(slit[..., None], C, Fc)
-# Reste de biseau à très faible alpha, détaché des tracés : supprimé.
-a = np.where((a < 0.12) & (ndi.distance_transform_edt(a < 0.5) > 2), 0.0, a)
+# Micro-fentes internes : canal de 1 à 2 px pris entre deux bords opposés d'un même tracé
+# (trait d'ombrage du relief, ou creux d'ombre plus sombre que le fond, ex. l'angle des « r »).
+# Une simple fermeture morphologique écraserait l'antialiasing des angles rentrants : on ne
+# comble que les canaux, puis les trous fermés de quelques pixels.
+lumC, lumB = C.mean(2), B.mean(2)
+def shift(m, dy, dx):
+    return np.roll(np.roll(m, dy, 0), dx, 1)
+for _ in range(4):  # jusqu'à stabilité : une fente comblée peut en border une autre
+    solid = a >= 0.999
+    ch1 = np.zeros_like(solid)  # canal de 1 px
+    ch2 = np.zeros_like(solid)  # canal de 2 px
+    for dy, dx in ((0, 1), (1, 0), (1, 1), (1, -1)):
+        ch1 |= shift(solid, dy, dx) & shift(solid, -dy, -dx)
+        for g1, g2 in ((1, 2), (2, 1)):
+            ch2 |= shift(solid, g1 * dy, g1 * dx) & shift(solid, -g2 * dy, -g2 * dx)
+    crease = ch1 & ~solid & (a_raw > 0.15)                       # trait d'ombrage gris
+    shadow = (ch1 | ch2) & ~solid & (lumC < lumB - 6)             # creux d'ombre
+    if not (crease | shadow).any():
+        break
+    a = np.where(crease | shadow, 1.0, a)
+    Fc = np.where(crease[..., None], C, np.where(shadow[..., None], F, Fc))
+hl, nh = ndi.label(ndi.binary_fill_holes(a >= 0.5) & (a < 0.5))
+small = np.concatenate([[False], ndi.sum(np.ones_like(a), hl, np.arange(1, nh + 1)) <= 4])[hl]
+a = np.where(small, 1.0, a)
+Fc = np.where(small[..., None], F, Fc)
+# Voiles détachés (reste de biseau à très faible alpha) : supprimés.
+lab2, n2 = ndi.label(a > 0, structure=np.ones((3, 3), bool))
+has_core = np.zeros(n2 + 1, bool)
+has_core[np.unique(lab2[a >= 0.999])] = True
+has_core[0] = False
+a = np.where(has_core[lab2], a, 0.0)
+a = np.where((a < 0.1) & ~ndi.binary_dilation(a >= 0.25, structure=np.ones((3, 3), bool)), 0.0, a)
 Fc = np.clip(Fc, 0, 255)
 
 # 4. Variante fond clair : chaque élément neutre prend UNE couleur — bleu nuit (éléments
@@ -84,6 +107,8 @@ h, s, v = hsv[..., 0], hsv[..., 1], hsv[..., 2]
 opaque = a >= 0.999
 # Cœurs francs : or saturé (teinte chaude) et neutres (blancs, gris bleutés).
 gold_core = opaque & (s >= 0.55) & (np.abs(h - 0.12) < 0.08)
+# Reflets pâles attenants à l'or (teinte chaude, s ≥ 0,22) : rattachés à l'or.
+gold_core = ndi.binary_dilation(gold_core, iterations=3, mask=(np.abs(h - 0.12) < 0.08) & (s >= 0.22) & (a > 0))
 neutral_core = opaque & ((s < 0.12) | (np.abs(h - 0.12) >= 0.08))  # blancs, gris bleutés
 # Chaque pixel prend la classe du cœur le plus proche (reflets pâles de l'or compris),
 # avec une rampe d'un pixel à la jonction or/neutre.
@@ -99,8 +124,9 @@ neutral_lut = np.array([NAVY] + [NAVY if (nv == 0 or nv >= 0.93) else SLATE for 
 light = g[..., None] * G + (1 - g[..., None]) * neutral_lut[elem]
 
 def save(rgb, name):
-    rgb = np.where((a > 0)[..., None], np.clip(rgb, 0, 255), 0)  # pixels transparents : RGB nul
-    rgba = np.dstack([rgb, a * 255]).round().astype(np.uint8)
+    a8 = (a * 255).round()
+    rgb = np.where((a8 > 0)[..., None], np.clip(rgb, 0, 255), 0)  # pixels transparents : RGB nul
+    rgba = np.dstack([rgb, a8]).round().astype(np.uint8)
     Image.fromarray(rgba, 'RGBA').save(f'{OUT}/{name}.png')
 
 save(Fc, 'master-sombre')   # blanc + or, pour fonds bleu nuit
