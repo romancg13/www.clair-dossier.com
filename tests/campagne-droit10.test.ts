@@ -14,10 +14,14 @@ const START = Date.parse(DROIT10.startsAt);
 const END = Date.parse(DROIT10.endsAt);
 const paris = (t: number) => new Date(t).toLocaleString('fr-FR', { timeZone: 'Europe/Paris', dateStyle: 'short', timeStyle: 'short' });
 
-test('la campagne va du 09/11/2026 13 h au 09/11/2027 13 h, heure de Paris, soit un an', () => {
-  assert.equal(paris(START), '09/11/2026 13:00');
+test('lancement anticipé le 06/11/2026 13 h (Paris), déjà passé ; fin FIXE au 09/11/2027 13 h', () => {
+  assert.equal(DROIT10.startsAt, '2026-11-06T12:00:00Z');
+  assert.equal(paris(START), '06/11/2026 13:00');
+  assert.ok(START <= Date.now(), 'la date de lancement ne doit pas être dans le futur');
+  assert.equal(DROIT10.endsAt, '2027-11-09T12:00:00Z', 'la date de fin ne change jamais');
   assert.equal(paris(END), '09/11/2027 13:00');
-  assert.equal(END - START, 365 * 86_400_000);
+  // L'ancien début (09/11/2026 13 h) est désormais dans la période.
+  assert.equal(campagneActive(DROIT10, Date.parse('2026-11-09T12:00:00Z')), true);
 });
 
 test('affichage : masqué avant, visible pendant, masqué dès la fin', () => {

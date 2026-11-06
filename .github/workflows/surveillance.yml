@@ -10,7 +10,8 @@ on:
 
 permissions:
   contents: read
-  actions: read
+  # actions: write — relance de deploy.yml si le HTML prérendu annonce encore DROIT10_2026 après sa fin.
+  actions: write
 
 jobs:
   surveiller:
@@ -29,3 +30,15 @@ jobs:
         run: node scripts/surveillance-site.mjs
         env:
           GITHUB_TOKEN: ${{ github.token }}
+      # Campagne DROIT10_2026 (src/data/campagnes.ts) : après le 09/11/2027 12:00 UTC, si l'accueil servi
+      # contient encore l'encart (cron de deploy.yml retardé ou désactivé), relancer le déploiement.
+      - name: Expiration DROIT10_2026 (filet de sécurité du cron de deploy.yml)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "$(date -u +%s)" -ge "$(date -u -d 2027-11-09T12:00:00Z +%s)" ] && curl -fsS https://www.clair-dossier.com/ | grep -q 'offre-clairnova-titre'; then
+            echo 'Encart DROIT10_2026 encore servi après la fin : reconstruction demandée.'
+            gh workflow run deploy.yml --ref main
+          else
+            echo 'DROIT10_2026 : rien à faire.'
+          fi

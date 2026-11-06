@@ -9,9 +9,10 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
-  # Campagne DROIT10_2026 (src/data/campagnes.ts) : reconstruction du HTML prérendu juste après
-  # chaque borne — 9 novembre 12:05 UTC = 13:05 Paris, en 2026 (début) comme en 2027 (fin).
-  # Le navigateur applique déjà la bonne borne à la seconde ; ce cron met le HTML statique à jour.
+  # Campagne DROIT10_2026 (src/data/campagnes.ts), lancée le 06/11/2026 : reconstruction du HTML
+  # prérendu juste après la FIN — 9 novembre 2027, 12:05 UTC = 13:05 Paris. (Un cron n'a pas d'année :
+  # l'exécution du 09/11/2026 ne fait qu'un rebuild identique, sans effet.) Le navigateur applique déjà
+  # la fin à la seconde ; surveillance.yml relance ce déploiement si ce cron n'a pas tourné.
   schedule:
     - cron: '5 12 9 11 *'
 

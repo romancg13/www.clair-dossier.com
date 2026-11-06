@@ -14,7 +14,15 @@ import { trackEvent } from '../../lib/analytics';
 declare const __BUILD_TIME__: string | undefined;
 
 const BUILT_AT = typeof __BUILD_TIME__ === 'string' ? Date.parse(__BUILD_TIME__) : Number.NaN;
-const subscribe = () => () => {};
+const DAY_MS = 86_400_000;
+
+/** Onglet resté ouvert au franchissement de la fin : re-rendu à la seconde (programmé seulement dans la journée). */
+const subscribe = (notify: () => void) => {
+  const untilEnd = Date.parse(DROIT10.endsAt) - Date.now();
+  if (untilEnd <= 0 || untilEnd > DAY_MS) return () => {};
+  const timer = window.setTimeout(notify, untilEnd + 50);
+  return () => window.clearTimeout(timer);
+};
 const clientSnapshot = () => campagneActive(DROIT10);
 const serverSnapshot = () => (Number.isNaN(BUILT_AT) ? false : campagneActive(DROIT10, BUILT_AT));
 
