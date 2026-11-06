@@ -32,7 +32,7 @@ function Copy() {
         Où en est le dossier, la prochaine échéance, ce qu’il reste à faire.
       </p>
       <Link
-        to="/fonctionnalites"
+        to="/fonctionnalites/"
         className="group mt-6 inline-flex items-center gap-1.5 border-b cd-hairline-strong pb-0.5 text-sm font-medium text-silver-200 transition-colors hover:text-gold-400"
       >
         Voir toutes les fonctionnalités

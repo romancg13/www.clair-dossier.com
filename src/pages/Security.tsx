@@ -118,7 +118,7 @@ const CARDS: Card[] = [
             "Liens de téléchargement signés et temporaires.",
             <>
               Aucune lecture, extraction ou analyse automatique des documents déposés — engagement
-              contractuel (<Link to="/cgv" className={linkClass}>CGV</Link>, article 6).
+              contractuel (<Link to="/cgv/" className={linkClass}>CGV</Link>, article 6).
             </>,
             "Valider un dossier l'enregistre dans votre compte : rien n'est envoyé à un tiers par e-mail ou WhatsApp. Vous transmettez vous-même vos pièces, au destinataire de votre choix.",
           ]}
@@ -191,7 +191,7 @@ const CARDS: Card[] = [
           <SubHeading>Durées de conservation</SubHeading>
           <p className="mt-2">
             Reprises de la{" "}
-            <Link to="/politique-confidentialite" className={linkClass}>
+            <Link to="/politique-confidentialite/" className={linkClass}>
               politique de confidentialité
             </Link>
             , le document qui fait foi.
@@ -250,7 +250,7 @@ const CARDS: Card[] = [
             Exercer un droit par e-mail
             <ArrowRightIcon width={14} height={14} strokeWidth={2} />
           </a>
-          <Link to="/contact" className={`text-sm font-medium ${linkClass}`}>
+          <Link to="/contact/" className={`text-sm font-medium ${linkClass}`}>
             Autres moyens de contact
           </Link>
         </div>
@@ -262,32 +262,32 @@ const CARDS: Card[] = [
 const ENGAGEMENTS: { text: string; source: ReactNode }[] = [
   {
     text: "Aucune lecture, extraction ou analyse automatique de vos pièces.",
-    source: <><Link to="/cgv" className={linkClass}>CGV</Link>, article 6</>,
+    source: <><Link to="/cgv/" className={linkClass}>CGV</Link>, article 6</>,
   },
   {
     text: "Aucune transmission de vos dossiers à des tiers par le service : c'est vous qui transmettez.",
-    source: <><Link to="/cgv" className={linkClass}>CGV</Link>, article 6</>,
+    source: <><Link to="/cgv/" className={linkClass}>CGV</Link>, article 6</>,
   },
   {
     text: "Aucune cession de vos données à des fins commerciales.",
-    source: <Link to="/politique-confidentialite" className={linkClass}>Politique de confidentialité</Link>,
+    source: <Link to="/politique-confidentialite/" className={linkClass}>Politique de confidentialité</Link>,
   },
   {
     text: "Réponse aux demandes d'exercice de vos droits sous 30 jours.",
-    source: <Link to="/politique-confidentialite" className={linkClass}>Politique de confidentialité</Link>,
+    source: <Link to="/politique-confidentialite/" className={linkClass}>Politique de confidentialité</Link>,
   },
   {
     text: "Accord de traitement des données (DPA) fourni sur demande aux clients professionnels.",
-    source: <><Link to="/cgv" className={linkClass}>CGV</Link>, article 7</>,
+    source: <><Link to="/cgv/" className={linkClass}>CGV</Link>, article 7</>,
   },
 ];
 
 const DOCUMENTS = [
-  { to: "/politique-confidentialite", label: "Politique de confidentialité" },
-  { to: "/cgv", label: "Conditions générales de vente" },
-  { to: "/cookies", label: "Cookies" },
-  { to: "/mentions-legales", label: "Mentions légales" },
-  { to: "/etat-du-produit", label: "État du produit" },
+  { to: "/politique-confidentialite/", label: "Politique de confidentialité" },
+  { to: "/cgv/", label: "Conditions générales de vente" },
+  { to: "/cookies/", label: "Cookies" },
+  { to: "/mentions-legales/", label: "Mentions légales" },
+  { to: "/etat-du-produit/", label: "État du produit" },
 ];
 
 // Synthèse en tête : le détail de chaque point reste plus bas (ancres).

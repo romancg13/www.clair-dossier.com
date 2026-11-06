@@ -93,7 +93,7 @@ export function Hero() {
               />
             </Link>
             <Link
-              to="/contact"
+              to="/contact/"
               className="rounded-full bg-navy-900 px-6 py-3.5 text-sm font-medium text-cream-50 transition-colors hover:bg-navy-800"
             >
               Demander une démo
@@ -106,7 +106,7 @@ export function Hero() {
           >
             Vous êtes un cabinet ou une structure à fort volume documentaire ?{" "}
             <Link
-              to="/grands-comptes"
+              to="/grands-comptes/"
               className="border-b hairline-gold font-medium text-navy-900 transition-colors hover:text-gold-700"
             >
               Découvrir le parcours dédié

@@ -32,6 +32,14 @@ jobs:
         run: node scripts/surveillance-site.mjs
         env:
           GITHUB_TOKEN: ${{ github.token }}
+      # Standard web-seo-local-google-ia : domaine canonique, robots, sitemap (chaque URL), canonical,
+      # noindex, JSON-LD, espaces privés, accès des robots. Échec = régression bloquante.
+      - name: SEO (production)
+        if: always()
+        run: |
+          node scripts/seo-check.mjs check --config seo/site.config.json --json seo-check.json --quiet || code=$?
+          node scripts/seo-check.mjs report --in seo-check.json >> "$GITHUB_STEP_SUMMARY"
+          exit ${code:-0}
       # Campagne DROIT10_2026 (src/data/campagnes.ts) : après le 09/11/2027 12:00 UTC, si l'accueil servi
       # contient encore l'encart (cron de deploy.yml retardé ou désactivé), relancer le déploiement.
       - name: Expiration DROIT10_2026 (filet de sécurité du cron de deploy.yml)

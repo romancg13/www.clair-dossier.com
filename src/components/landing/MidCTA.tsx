@@ -28,7 +28,7 @@ export function MidCTA() {
               <ArrowRightIcon width={14} height={14} strokeWidth={2} className="transition-transform group-hover:translate-x-0.5" />
             </Link>
             <Link
-              to="/rendez-vous"
+              to="/rendez-vous/"
               className="inline-flex items-center gap-2 rounded-full border cd-hairline-strong px-5 py-3 text-sm font-medium text-cream-50 transition-colors hover:border-cream-50/60"
             >
               Demander une démonstration

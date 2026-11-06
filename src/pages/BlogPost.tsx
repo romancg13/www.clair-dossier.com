@@ -1,5 +1,5 @@
 import { Link, useParams } from 'react-router-dom';
-import { Seo, breadcrumbSchema } from '../lib/seo';
+import { Seo, breadcrumbSchema, canonicalUrl, ORGANIZATION_ID } from '../lib/seo';
 import { Reveal } from '../components/primitives/Reveal';
 import { getPostBySlug, getRelatedPosts, type BlogContentBlock } from '../data/blog';
 import { authors } from '../data/authors';
@@ -52,11 +52,12 @@ export function BlogPost() {
       : { '@type': 'Organization', name: 'ClairDossier' },
     publisher: {
       '@type': 'Organization',
+      '@id': ORGANIZATION_ID,
       name: 'ClairDossier',
       url: 'https://www.clair-dossier.com/',
       logo: { '@type': 'ImageObject', url: 'https://www.clair-dossier.com/icon-512.png' },
     },
-    mainEntityOfPage: `https://www.clair-dossier.com/blog/${post.slug}`,
+    mainEntityOfPage: canonicalUrl(`/blog/${post.slug}`),
     keywords: post.tags.join(', '),
   };
 
@@ -99,7 +100,7 @@ export function BlogPost() {
         <div className="mx-auto flex max-w-7xl items-center gap-2 px-5 py-3 text-xs text-slate-500 sm:px-8 lg:px-12">
           <Link to="/" className="hover:text-navy-900">Accueil</Link>
           <span className="text-slate-300">/</span>
-          <Link to="/blog" className="hover:text-navy-900">Journal</Link>
+          <Link to="/blog/" className="hover:text-navy-900">Journal</Link>
           <span className="text-slate-300">/</span>
           <span className="line-clamp-1 text-navy-900">{post.title}</span>
         </div>
@@ -227,7 +228,7 @@ export function BlogPost() {
               {related.map((p) => (
                 <Link
                   key={p.slug}
-                  to={`/blog/${p.slug}`}
+                  to={`/blog/${p.slug}/`}
                   className="group flex flex-col rounded-2xl border hairline bg-white p-6 transition-colors duration-300 hover:border-gold-500"
                 >
                   <p className="font-mono text-[0.7rem] uppercase tracking-[0.14em] text-gold-700">

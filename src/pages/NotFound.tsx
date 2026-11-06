@@ -26,24 +26,24 @@ export function NotFound() {
           >
             Retour à l'accueil
           </Link>
-          <Link to="/blog" className="rounded-full bg-cream-100 px-5 py-3 text-sm font-medium text-navy-900 hover:bg-cream-200">
+          <Link to="/blog/" className="rounded-full bg-cream-100 px-5 py-3 text-sm font-medium text-navy-900 hover:bg-cream-200">
             Lire le journal
           </Link>
         </div>
         <nav aria-label="Pages utiles" className="mt-8">
           <ul className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-slate-500">
             <li>
-              <Link to="/fonctionnalites" className="underline decoration-gold-500/60 underline-offset-2 hover:text-navy-900">
+              <Link to="/fonctionnalites/" className="underline decoration-gold-500/60 underline-offset-2 hover:text-navy-900">
                 Voir les fonctionnalités
               </Link>
             </li>
             <li>
-              <Link to="/tarifs" className="underline decoration-gold-500/60 underline-offset-2 hover:text-navy-900">
+              <Link to="/tarifs/" className="underline decoration-gold-500/60 underline-offset-2 hover:text-navy-900">
                 Consulter les tarifs
               </Link>
             </li>
             <li>
-              <Link to="/contact" className="underline decoration-gold-500/60 underline-offset-2 hover:text-navy-900">
+              <Link to="/contact/" className="underline decoration-gold-500/60 underline-offset-2 hover:text-navy-900">
                 Contacter l'équipe
               </Link>
             </li>

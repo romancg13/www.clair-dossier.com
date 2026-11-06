@@ -475,7 +475,7 @@ export function Contact() {
                     />
                     <span className="text-slate-500 leading-relaxed">
                       J'accepte que ClairDossier traite ma demande selon la{' '}
-                      <a href="/politique-confidentialite" className="border-b hairline-gold text-navy-900 hover:text-gold-700">
+                      <a href="/politique-confidentialite/" className="border-b hairline-gold text-navy-900 hover:text-gold-700">
                         politique de confidentialité
                       </a>
                       .{' '}

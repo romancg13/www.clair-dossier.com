@@ -1,0 +1,40 @@
+{
+  "$comment": "Standard web-seo-local-google-ia — faits vérifiés uniquement (sources : src/data/contact.ts, src/data/legal.ts, src/lib/seo.tsx). Contrôle : npm run seo:check.",
+  "version": 1,
+  "site": "clairdossier",
+  "canonicalOrigin": "https://www.clair-dossier.com",
+  "trailingSlash": "always",
+  "alternateHosts": ["https://clair-dossier.com"],
+  "legacyRedirects": [
+    { "from": "https://www.clair-dossier.com/tarifs", "to": "/tarifs/" },
+    { "from": "https://www.clair-dossier.com/fonctionnalites/pieces-ocr/", "to": "/fonctionnalites/pieces-ocr/", "comment": "ancien slug : page de redirection meta refresh en 200 (prerender.ts)" }
+  ],
+  "sitemaps": ["/sitemap.xml"],
+  "publicRoutes": ["/", "/tarifs/", "/fonctionnalites/", "/securite/", "/contact/", "/marseille/", "/blog/", "/etat-du-produit/"],
+  "privatePaths": ["/compte", "/dossier", "/admin", "/corbeille", "/connexion", "/inscription", "/investisseurs/", "/v/"],
+  "privateProbe": ["/compte/", "/admin/", "/connexion/"],
+  "notFoundProbe": "/__seo-check-404__",
+  "notFoundPage": "404.html",
+  "forbiddenPatterns": [
+    { "pattern": "04\\s?91\\s?95\\s?90\\s?32", "reason": "ancien numéro retiré (décision propriétaire 2026-09-18)" },
+    { "pattern": "supervis[ée]+e? par (un )?avocat", "reason": "ClairDossier n'est pas un cabinet ; aucune supervision par avocat livrée" },
+    { "pattern": "\\bGPT-5", "reason": "aucun moteur IA activé (CGV art. 6)" },
+    { "pattern": "ISO 27001|\\bHDS\\b|pentest", "reason": "certification ou audit non prouvé" }
+  ],
+  "requiredText": [
+    { "path": "/cgv/", "pattern": "293 B", "reason": "mention TVA des CGV" }
+  ],
+  "forms": [],
+  "phone": { "e164": "+33782983644", "display": ["07 82 98 36 44"] },
+  "structuredData": {
+    "forbiddenTypes": ["AggregateRating", "Review", "LegalService", "LocalBusiness"],
+    "requireOn": { "/": ["Organization", "WebSite", "SoftwareApplication"] }
+  },
+  "bots": { "mustAllow": ["Googlebot", "Bingbot"], "shouldAllow": ["OAI-SearchBot", "PerplexityBot"] },
+  "limits": { "maxPages": 120, "concurrency": 4, "timeoutMs": 15000, "maxRedirectHops": 1, "deepLinkLimit": 300 },
+  "searchConsole": { "property": "https://www.clair-dossier.com/", "verification": "meta google-site-verification (index.html)", "access": "non vérifié (TODO_ADMIN.md)" },
+  "bing": { "site": null },
+  "indexnow": { "key": "2239748c217cc2cccf7051515eb82980", "keyLocation": "https://www.clair-dossier.com/2239748c217cc2cccf7051515eb82980.txt" },
+  "business": { "activity": "SaaS d'organisation de dossiers administratifs et juridiques (pas un cabinet d'avocats)", "zones": ["France"], "localBusinessEligible": false, "address": { "public": false, "locality": "Château-Gombert, 13013 Marseille" } },
+  "publication": { "requiresApproval": true, "notes": "push sur main = production (GitHub Pages) ; paiements gelés ; DROIT10_2026 à préserver" }
+}

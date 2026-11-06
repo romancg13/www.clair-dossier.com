@@ -1,0 +1,44 @@
+# IndexNow (Bing, Yandex, Seznam, Naver… — pas Google) : après chaque déploiement réussi,
+# soumet uniquement les URL du sitemap ajoutées, modifiées (lastmod) ou supprimées depuis
+# la soumission précédente. Registre conservé dans le cache Actions ; réponses consignées.
+# La clé est publique par conception (fichier public/<clé>.txt) : aucun secret.
+name: IndexNow
+
+on:
+  workflow_run:
+    workflows: ['Deploy to GitHub Pages']
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: indexnow
+  cancel-in-progress: false
+
+jobs:
+  soumettre:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/cache/restore@v4
+        with:
+          path: seo/state/indexnow.json
+          key: indexnow-${{ github.run_id }}
+          restore-keys: indexnow-
+      # Laisse le CDN de GitHub Pages publier le nouveau sitemap.
+      - run: sleep 60
+      - name: Soumission IndexNow (URL changées seulement)
+        shell: bash
+        run: node scripts/seo-check.mjs indexnow --config seo/site.config.json --ledger seo/state/indexnow.json | tee -a "$GITHUB_STEP_SUMMARY"
+      - uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: seo/state/indexnow.json
+          key: indexnow-${{ github.run_id }}

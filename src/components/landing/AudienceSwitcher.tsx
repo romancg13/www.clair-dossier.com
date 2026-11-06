@@ -40,7 +40,7 @@ const AUDIENCES: Audience[] = [
         body: 'Devis, facture, relances : le dossier se reconstitue après coup, sous pression.',
       },
     ],
-    link: { to: '/fonctionnalites/creation-guidee', label: 'Voir la création guidée' },
+    link: { to: '/fonctionnalites/creation-guidee/', label: 'Voir la création guidée' },
   },
   {
     id: 'pme',
@@ -59,7 +59,7 @@ const AUDIENCES: Audience[] = [
         body: 'La même collecte, répétée à chaque demande, avec le risque d’oublier une pièce.',
       },
     ],
-    link: { to: '/fonctionnalites/suivi-statuts', label: 'Voir la liste de vos dossiers' },
+    link: { to: '/fonctionnalites/suivi-statuts/', label: 'Voir la liste de vos dossiers' },
   },
   ...segmentPages.filter((s) => s.slug === 'cabinets-avocats').map<Audience>((s) => ({
     id: s.slug,
@@ -68,7 +68,7 @@ const AUDIENCES: Audience[] = [
     title: s.title,
     promesse: s.promesse,
     frictions: s.frictions.slice(0, 2),
-    link: { to: `/${s.slug}`, label: 'Voir le parcours dédié' },
+    link: { to: `/${s.slug}/`, label: 'Voir le parcours dédié' },
   })),
 ];
 
@@ -183,11 +183,11 @@ export function AudienceSwitcher() {
 
           <p className="mt-6 text-sm text-slate-500">
             Parcours dédiés :{' '}
-            <Link to="/experts-comptables" className="font-medium text-navy-900 underline decoration-gold-500/60 underline-offset-2 hover:text-gold-700">
+            <Link to="/experts-comptables/" className="font-medium text-navy-900 underline decoration-gold-500/60 underline-offset-2 hover:text-gold-700">
               experts-comptables
             </Link>
             {' '}·{' '}
-            <Link to="/grands-comptes" className="font-medium text-navy-900 underline decoration-gold-500/60 underline-offset-2 hover:text-gold-700">
+            <Link to="/grands-comptes/" className="font-medium text-navy-900 underline decoration-gold-500/60 underline-offset-2 hover:text-gold-700">
               grands comptes
             </Link>
           </p>

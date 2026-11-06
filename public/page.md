@@ -44,15 +44,15 @@ Centralisez vos documents, retrouvez vos dossiers et suivez vos échéances au m
 
 ## Tarifs
 
-- **Essentiel** (Indépendant / EI) — 19 €/mois HT. Pour les indépendants et entrepreneurs individuels qui structurent leurs premiers dossiers.
-- **Entrepreneur** (Entrepreneur / prof. libérale) — 39 €/mois HT. Pour les entrepreneurs et professions libérales avec un flux régulier de dossiers.
-- **Business PME 20** (TPE / PME) — 49 €/mois HT. Pour les TPE/PME avec plusieurs dossiers récurrents et une petite équipe.
-- **Business PME 50** (PME) — 89 €/mois HT. Pour les PME qui gèrent de nombreux dossiers en parallèle.
-- **Business / PME Pro** (PME / multi-sites) — 169 €/mois HT. Pour les structures multi-collaborateurs avec statistiques et workflows avancés.
-- **Business / PME Premium** (Entreprise) — 299 €/mois HT. Solution entreprise : marque blanche, API, SSO, audit avancé.
+- **Essentiel** (Indépendant / EI) — 19 €/mois. Pour les indépendants et entrepreneurs individuels qui structurent leurs premiers dossiers.
+- **Entrepreneur** (Entrepreneur / prof. libérale) — 39 €/mois. Pour les entrepreneurs et professions libérales avec un flux régulier de dossiers.
+- **Business PME 20** (TPE / PME) — 49 €/mois. Pour les TPE/PME avec plusieurs dossiers récurrents et une petite équipe.
+- **Business PME 50** (PME) — 89 €/mois. Pour les PME qui gèrent de nombreux dossiers en parallèle.
+- **Business / PME Pro** (PME / multi-sites) — 169 €/mois. Pour les structures multi-collaborateurs avec statistiques et workflows avancés.
+- **Business / PME Premium** (Entreprise) — 299 €/mois. Solution entreprise : marque blanche, API, SSO, audit avancé.
 - **Business / PME personnalisée** (Grand compte) — Sur devis. Volumétrie, intégrations ou conformité spécifiques ? On construit une offre sur-mesure.
 
-Facturation annuelle disponible sur tous les plans payants avec 10 % de réduction sur le cumul mensuel.
+Facturation annuelle disponible sur tous les plans payants avec 10 % de réduction sur le cumul mensuel. TVA non applicable, article 293 B du CGI : le prix affiché est le prix payé (CGV).
 
 Détail complet : https://www.clair-dossier.com/tarifs
 

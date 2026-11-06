@@ -36,3 +36,8 @@ jobs:
         run: npm run build
         env:
           VITE_BASE_PATH: /
+
+      # Standard web-seo-local-google-ia : régressions SEO critiques sur le HTML prérendu
+      # (canonical, noindex, sitemap, JSON-LD, mentions interdites). Hors ligne, aucun secret.
+      - name: Contrôle SEO du build (seo-check)
+        run: npm run seo:check:dist
