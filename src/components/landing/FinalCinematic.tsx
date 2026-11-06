@@ -114,7 +114,7 @@ export function FinalCinematic() {
             </Link>
           </Magnetic>
           <Link
-            to="/rendez-vous"
+            to="/rendez-vous/"
             className="inline-flex items-center gap-2 rounded-full border cd-hairline-strong px-6 py-3.5 text-sm font-medium text-cream-50 transition-colors hover:border-cream-50/60"
           >
             Demander une démonstration

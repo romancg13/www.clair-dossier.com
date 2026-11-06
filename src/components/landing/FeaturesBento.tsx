@@ -103,7 +103,7 @@ export function FeaturesBento() {
                             </span>
                             <div className="min-w-0">
                               <Link
-                                to={`/fonctionnalites/${f.slug}`}
+                                to={`/fonctionnalites/${f.slug}/`}
                                 className="group inline-flex items-center gap-1.5 text-sm font-semibold text-navy-900 transition-colors hover:text-gold-700"
                               >
                                 {f.shortTitle}

@@ -21,7 +21,7 @@ export function BlogPreview({ limit }: { limit?: number } = {}) {
             </h2>
           </div>
           <Link
-            to="/blog"
+            to="/blog/"
             className="inline-flex items-center gap-1.5 rounded-full bg-cream-100 px-5 py-3 text-sm font-medium text-navy-900 transition-colors hover:bg-cream-200"
           >
             Tout le journal
@@ -33,7 +33,7 @@ export function BlogPreview({ limit }: { limit?: number } = {}) {
           {(limit ? blogPosts.slice(0, limit) : blogPosts).map((post) => (
             <StaggerItem key={post.slug}>
               <Link
-                to={`/blog/${post.slug}`}
+                to={`/blog/${post.slug}/`}
                 className="premium-card group relative flex h-full flex-col overflow-hidden rounded-2xl border hairline bg-white transition-colors duration-300 hover:border-gold-500"
               >
                 <div className="relative aspect-[16/9] overflow-hidden bg-cream-100">

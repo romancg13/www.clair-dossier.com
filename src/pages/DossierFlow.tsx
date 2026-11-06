@@ -821,7 +821,7 @@ function StepRecap({
       {quotaMessage && !error && (
         <p className="mt-5 rounded-xl border hairline-gold bg-gold-500/10 px-4 py-3 text-sm text-navy-900" role="status">
           {quotaMessage}{" "}
-          <Link to="/tarifs" className="font-medium underline underline-offset-4">
+          <Link to="/tarifs/" className="font-medium underline underline-offset-4">
             Voir les offres
           </Link>
         </p>

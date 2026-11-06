@@ -43,7 +43,7 @@ export function FinalCTA() {
             <ArrowRightIcon width={14} height={14} strokeWidth={2} />
           </Link>
           <Link
-            to="/contact"
+            to="/contact/"
             className="inline-flex items-center gap-2 rounded-full border border-cream-50/20 bg-transparent px-6 py-3.5 text-sm font-medium text-cream-50 transition-colors hover:border-cream-50/50"
           >
             Réserver une démo

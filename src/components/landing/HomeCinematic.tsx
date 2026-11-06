@@ -1,4 +1,5 @@
-import { Seo, orgSchema, websiteSchema } from '../../lib/seo';
+import { Seo, orgSchema, websiteSchema, softwareApplicationSchema } from '../../lib/seo';
+import { plans } from '../../data/pricing';
 import { homeFaq } from '../../data/faq';
 import { FaqBlock } from '../sections/FaqBlock';
 import { HeroCinematic } from './HeroCinematic';
@@ -24,22 +25,9 @@ import { FinalCinematic } from './FinalCinematic';
  * (ChapterTimeline), transmission, bento, avant / avec, pour qui.
  */
 
-// Aligné sur src/pages/Home.tsx (composition historique) — ne pas diverger.
-const softwareSchema = {
-  '@context': 'https://schema.org',
-  '@type': 'SoftwareApplication',
-  name: 'ClairDossier',
-  applicationCategory: 'LegalService',
-  operatingSystem: 'Web',
-  offers: {
-    '@type': 'Offer',
-    price: '19',
-    priceCurrency: 'EUR',
-    description: 'Création de compte gratuite, abonnement à partir de 19 €/mois HT.',
-  },
-  description:
-    'Plateforme legaltech française. Transforme les demandes juridiques en dossiers structurés, suivis et transmis par l\'utilisateur.',
-};
+// Constructeur commun (src/lib/seo.tsx) : prix publics de src/data/pricing.ts, sans
+// « HT » (TVA non applicable, art. 293 B du CGI, CGV) ni catégorie LegalService.
+const softwareSchema = softwareApplicationSchema(plans.map((plan) => plan.priceMonthly));
 
 const HOME_FAQ_IDS = ['donnees-securisees', 'refus-avocat', 'obligation-avocat', 'export-possible'];
 const faqEntries = homeFaq.filter((entry) => HOME_FAQ_IDS.includes(entry.id));
@@ -58,8 +46,8 @@ export function HomeCinematic() {
   return (
     <>
       <Seo
-        title="ClairDossier — Vos dossiers administratifs et juridiques, clairs et suivis"
-        description="ClairDossier réunit vos pièces dans un espace privé, structure votre dossier administratif ou juridique en cinq étapes, affiche vos échéances et ne transmet rien sans votre validation. Pour PME, artisans, indépendants et professions libérales."
+        title="ClairDossier — Dossiers administratifs et juridiques, clairs et suivis"
+        description="Réunissez vos pièces dans un espace privé, structurez votre dossier administratif ou juridique et suivez vos échéances. Rien n'est transmis sans votre accord."
         path="/"
         jsonLd={[orgSchema, websiteSchema, softwareSchema, faqSchema]}
       />

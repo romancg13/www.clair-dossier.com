@@ -73,7 +73,7 @@ export function SegmentPage({ data }: { data: SegmentPageData }) {
                 <ArrowRightIcon width={14} height={14} strokeWidth={2} className="transition-transform group-hover:translate-x-0.5" />
               </Link>
               <Link
-                to="/etat-du-produit"
+                to="/etat-du-produit/"
                 className="text-sm font-medium text-navy-900 border-b hairline-gold hover:text-gold-700"
               >
                 Voir l'état réel du produit
@@ -163,7 +163,7 @@ export function SegmentPage({ data }: { data: SegmentPageData }) {
               {others.map((o) => (
                 <Link
                   key={o.slug}
-                  to={`/${o.slug}`}
+                  to={`/${o.slug}/`}
                   className="font-medium text-navy-900 border-b hairline-gold hover:text-gold-700"
                 >
                   {o.navLabel}
