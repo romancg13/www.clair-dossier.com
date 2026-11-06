@@ -65,3 +65,13 @@ test('surveillance.yml relance deploy.yml après la fin, même si un contrôle p
   assert.match(workflow, /grep -q 'offre-clairnova-titre'/);
   assert.match(workflow, /gh workflow run deploy\.yml --ref main/);
 });
+
+test('le bandeau est rendu une seule fois, sous la navigation et avant la Hero (pas de doublon en bas)', () => {
+  const home = read('../src/components/landing/HomeCinematic.tsx');
+  assert.ok(home.indexOf('<OffreClairNova />') < home.indexOf('<HeroCinematic />'), 'bandeau avant la Hero');
+  assert.equal(home.match(/<OffreClairNova \/>/g)?.length, 1);
+  assert.doesNotMatch(read('../src/components/landing/FinalCinematic.tsx'), /OffreClairNova/);
+  const bandeau = read('../src/components/landing/OffreClairNova.tsx');
+  assert.match(bandeau, /En profiter/);
+  assert.doesNotMatch(bandeau, /fixed|sticky/);
+});

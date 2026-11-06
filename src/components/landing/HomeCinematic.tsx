@@ -9,6 +9,7 @@ import { ChapterOverview } from './ChapterOverview';
 import { TrustChapter } from './TrustChapter';
 import { PricingCinematic } from './PricingCinematic';
 import { FinalCinematic } from './FinalCinematic';
+import { OffreClairNova } from './OffreClairNova';
 
 /**
  * Accueil — cinq sections (UX simplifiée, 2026-11-04) :
@@ -63,6 +64,9 @@ export function HomeCinematic() {
         path="/"
         jsonLd={[orgSchema, websiteSchema, softwareSchema, faqSchema]}
       />
+
+      {/* Bandeau partenaire ClairNova (DROIT10_2026) : dans le flux, sous la navigation, avant la Hero. */}
+      <OffreClairNova />
 
       <HeroCinematic />
 
