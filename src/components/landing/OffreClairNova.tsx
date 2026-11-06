@@ -7,8 +7,11 @@ import { trackEvent } from '../../lib/analytics';
  * Encart partenaire « Offre professionnels du droit » (src/data/campagnes.ts), en bas de l'accueil.
  *
  * Visible seulement pendant la période : le HTML prérendu suit l'horloge du build (__BUILD_TIME__,
- * vite.config.ts ; deploy.yml reconstruit le site aux deux bornes), puis le navigateur corrige avec
- * sa propre horloge après l'hydratation — useSyncExternalStore évite tout décalage d'hydratation.
+ * vite.config.ts), puis le navigateur corrige avec sa propre horloge après l'hydratation —
+ * useSyncExternalStore évite tout décalage d'hydratation. Fin de campagne sans dépendre d'un cron :
+ * index.html pose `html[data-droit10="fini"]` avant le premier rendu (CSS : src/index.css), un onglet
+ * resté ouvert se re-rend au franchissement (minuteur dans la journée, puis à chaque retour sur l'onglet),
+ * et deploy.yml / surveillance.yml reconstruisent le HTML statique.
  * ClairNova est le prestataire : ClairDossier n'accorde aucune remise sur ses propres abonnements.
  */
 declare const __BUILD_TIME__: string | undefined;
@@ -16,12 +19,26 @@ declare const __BUILD_TIME__: string | undefined;
 const BUILT_AT = typeof __BUILD_TIME__ === 'string' ? Date.parse(__BUILD_TIME__) : Number.NaN;
 const DAY_MS = 86_400_000;
 
-/** Onglet resté ouvert au franchissement de la fin : re-rendu à la seconde (programmé seulement dans la journée). */
+/** Re-rendu au franchissement de la fin : minuteur (armé seulement dans la journée) + retour sur l'onglet. */
 const subscribe = (notify: () => void) => {
-  const untilEnd = Date.parse(DROIT10.endsAt) - Date.now();
-  if (untilEnd <= 0 || untilEnd > DAY_MS) return () => {};
-  const timer = window.setTimeout(notify, untilEnd + 50);
-  return () => window.clearTimeout(timer);
+  let timer = 0;
+  const arm = () => {
+    window.clearTimeout(timer);
+    const untilEnd = Date.parse(DROIT10.endsAt) - Date.now();
+    if (untilEnd > 0 && untilEnd <= DAY_MS) timer = window.setTimeout(notify, untilEnd + 50);
+  };
+  const wake = () => {
+    notify();
+    arm();
+  };
+  arm();
+  window.addEventListener('focus', wake);
+  document.addEventListener('visibilitychange', wake);
+  return () => {
+    window.clearTimeout(timer);
+    window.removeEventListener('focus', wake);
+    document.removeEventListener('visibilitychange', wake);
+  };
 };
 const clientSnapshot = () => campagneActive(DROIT10);
 const serverSnapshot = () => (Number.isNaN(BUILT_AT) ? false : campagneActive(DROIT10, BUILT_AT));
@@ -32,6 +49,7 @@ export function OffreClairNova() {
   return (
     <aside
       aria-labelledby="offre-clairnova-titre"
+      data-campagne={DROIT10.id}
       className="mx-auto mt-14 max-w-2xl rounded-2xl border cd-hairline px-5 py-5 text-left sm:px-7"
     >
       <p id="offre-clairnova-titre" className="font-mono text-[0.68rem] uppercase tracking-[0.18em] text-gold-400">

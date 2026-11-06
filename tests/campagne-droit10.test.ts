@@ -1,8 +1,10 @@
 /**
  * Campagne partenaire DROIT10_2026 (src/data/campagnes.ts) :
- *  - bornes exactes, en heure de Paris, intervalle [début, fin) ;
+ *  - bornes exactes, en heure de Paris, intervalle [début, fin) — lancement anticipé le 06/11/2026, fin fixe ;
  *  - destination du CTA : formulaire ClairNova, HTTPS, sans donnée personnelle ;
- *  - reconstruction planifiée du HTML prérendu aux deux bornes (deploy.yml).
+ *  - fin de campagne : garde avant premier rendu (index.html + src/index.css), cron de reconstruction
+ *    (deploy.yml) et filet de sécurité quotidien (surveillance.yml) — toutes les copies de la date de fin
+ *    doivent être identiques à DROIT10.endsAt.
  */
 import { strict as assert } from 'node:assert';
 import { readFileSync } from 'node:fs';
@@ -13,6 +15,7 @@ import { DROIT10, campagneActive } from '../src/data/campagnes.ts';
 const START = Date.parse(DROIT10.startsAt);
 const END = Date.parse(DROIT10.endsAt);
 const paris = (t: number) => new Date(t).toLocaleString('fr-FR', { timeZone: 'Europe/Paris', dateStyle: 'short', timeStyle: 'short' });
+const read = (path: string) => readFileSync(new URL(path, import.meta.url), 'utf8');
 
 test('lancement anticipé le 06/11/2026 13 h (Paris), déjà passé ; fin FIXE au 09/11/2027 13 h', () => {
   assert.equal(DROIT10.startsAt, '2026-11-06T12:00:00Z');
@@ -43,7 +46,22 @@ test('le CTA renvoie directement au formulaire ClairNova, sans donnée personnel
   assert.equal(url.searchParams.get('utm_source'), 'clairdossier');
 });
 
-test('deploy.yml reconstruit le site aux deux bornes (9 novembre, 12:05 UTC)', () => {
-  const workflow = readFileSync(new URL('../.github/workflows/deploy.yml', import.meta.url), 'utf8');
-  assert.match(workflow, /schedule:\n\s+- cron: '5 12 9 11 \*'/);
+test('fin de campagne : garde avant premier rendu, indépendante de tout cron', () => {
+  const html = read('../index.html');
+  assert.ok(html.includes(`<script>if(Date.now()>=Date.parse("${DROIT10.endsAt}"))document.documentElement.setAttribute("data-droit10","fini")</script>`));
+  assert.match(read('../src/index.css'), /html\[data-droit10="fini"\] \[data-campagne="DROIT10_2026"\] \{\n\s+display: none !important;/);
+  assert.match(read('../src/components/landing/OffreClairNova.tsx'), /data-campagne=\{DROIT10\.id\}/);
+});
+
+test('deploy.yml reconstruit le site le 9 novembre à 12:05 UTC (fin : 2027)', () => {
+  assert.match(read('../.github/workflows/deploy.yml'), /schedule:\n\s+- cron: '5 12 9 11 \*'/);
+});
+
+test('surveillance.yml relance deploy.yml après la fin, même si un contrôle précédent échoue', () => {
+  const workflow = read('../.github/workflows/surveillance.yml');
+  assert.match(workflow, /actions: write/);
+  assert.ok(workflow.includes(`date -u -d ${DROIT10.endsAt} +%s`));
+  assert.match(workflow, /Expiration DROIT10_2026[^\n]*\n\s+if: always\(\)/);
+  assert.match(workflow, /grep -q 'offre-clairnova-titre'/);
+  assert.match(workflow, /gh workflow run deploy\.yml --ref main/);
 });

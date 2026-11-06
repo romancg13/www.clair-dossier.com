@@ -1,5 +1,7 @@
 # Surveillance quotidienne hébergée : site public, paiements gelés, état du
-# moteur IA. Lecture seule — ne déploie rien, ne modifie rien, aucun secret.
+# moteur IA. Lecture seule — ne modifie rien, aucun secret — à une exception près :
+# après la fin de la campagne DROIT10_2026 (09/11/2027 12:00 UTC), si l'accueil servi
+# annonce encore l'offre, ce job relance deploy.yml (reconstruction du HTML statique).
 # Un échec (= action requise) déclenche la notification GitHub habituelle.
 name: Surveillance
 
@@ -33,6 +35,7 @@ jobs:
       # Campagne DROIT10_2026 (src/data/campagnes.ts) : après le 09/11/2027 12:00 UTC, si l'accueil servi
       # contient encore l'encart (cron de deploy.yml retardé ou désactivé), relancer le déploiement.
       - name: Expiration DROIT10_2026 (filet de sécurité du cron de deploy.yml)
+        if: always()
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
