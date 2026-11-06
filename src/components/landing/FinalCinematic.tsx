@@ -13,6 +13,7 @@ import { newDossierHref } from '../../lib/cta';
 import { BUSINESS_STEPS, DEMO } from './demo-dossier';
 import { DocumentGlyph } from './DocumentGlyph';
 import { DemoBadge } from './Stage';
+import { OffreClairNova } from './OffreClairNova';
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
@@ -125,6 +126,9 @@ export function FinalCinematic() {
             Se connecter
           </Link>
         </motion.p>
+
+        {/* Offre partenaire ClairNova (professionnels du droit) : rendue seulement pendant sa période. */}
+        <OffreClairNova />
       </div>
     </section>
   );

@@ -28,7 +28,9 @@ export type AnalyticsEvent =
   | 'consultation_trust_center'
   | 'demo_produit_ouverte'
   | 'demo_produit_terminee'
-  | 'debut_checkout';
+  | 'debut_checkout'
+  /** Clic de l'encart partenaire vers le formulaire ClairNova (campagne DROIT10_2026, src/data/campagnes.ts). */
+  | 'clic_clairnova_droit10';
 
 const DOMAIN = import.meta.env.VITE_PLAUSIBLE_DOMAIN as string | undefined;
 const HOST = (import.meta.env.VITE_PLAUSIBLE_HOST as string | undefined) ?? 'https://plausible.io';
