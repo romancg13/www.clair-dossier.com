@@ -9,6 +9,11 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  # Campagne DROIT10_2026 (src/data/campagnes.ts) : reconstruction du HTML prérendu juste après
+  # chaque borne — 9 novembre 12:05 UTC = 13:05 Paris, en 2026 (début) comme en 2027 (fin).
+  # Le navigateur applique déjà la bonne borne à la seconde ; ce cron met le HTML statique à jour.
+  schedule:
+    - cron: '5 12 9 11 *'
 
 permissions:
   contents: read

@@ -55,6 +55,8 @@ export default defineConfig({
   define: {
     __HOME_CINEMATIC__: JSON.stringify(readFlag(process.env.VITE_HOME_CINEMATIC, true)),
     __CINEMATICS__: JSON.stringify(readFlag(process.env.VITE_CINEMATICS, true)),
+    // Horloge du build : le HTML prérendu affiche les campagnes (src/data/campagnes.ts) en cours à cet instant.
+    __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
   },
   plugins: [react(), tailwindcss(), spaFallback(), shortlinkPage()],
   build: {
