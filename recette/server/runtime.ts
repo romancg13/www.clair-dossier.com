@@ -15,7 +15,8 @@ let kv: Kv | null = null;
 let secrets: { secret: string; worker: string } | null = null;
 
 export function storage(): Kv {
-  kv ??= process.env.BLOB_STORE_ID || process.env.BLOB_READ_WRITE_TOKEN ? new BlobKv('recette/') : new MemoryKv();
+  // Un espace par environnement : une prévisualisation (essai IA) ne partage ni données, ni file de travaux, ni secrets avec la démo.
+  kv ??= process.env.BLOB_STORE_ID || process.env.BLOB_READ_WRITE_TOKEN ? new BlobKv(process.env.VERCEL_ENV === 'production' ? 'recette/' : `recette-${process.env.VERCEL_ENV || 'local'}/`) : new MemoryKv();
   return kv;
 }
 
