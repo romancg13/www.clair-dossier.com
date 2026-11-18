@@ -11,7 +11,7 @@ import {
   deliverableKeyOf,
   type DeadlineRow,
 } from '../supabase/functions/_shared/deliverables.ts';
-import { trackingStep, TIMELINE_STEPS } from '../packages/core/src/dossiers.ts';
+import { trackingStep, splitDeliverables, TIMELINE_STEPS } from '../packages/core/src/dossiers.ts';
 import { bulkPieces, demoAnalysis, DEMO_PIECES } from '../src/demo/fixture.ts';
 
 const cov = { total: 11, extracted: 11, unsupported: 0, failed: 0, pending: 0, complete: true };
@@ -74,6 +74,22 @@ test('suivi en 4 étapes fondé sur les événements réels', () => {
   assert.equal(trackingStep({ ...f, hasDeliverables: true, processing: true }), 3, 'mise à jour en cours : les documents restent disponibles');
   assert.equal(trackingStep({ ...f, hasDeliverables: true, closed: true }), 4);
   assert.equal(trackingStep({ ...f, forcedStep: 5 }), 2, 'ancienne étape forcée (1–5) bornée au traitement');
+});
+
+test('sélecteur unique : un document libre déposé à la main n\'annonce pas « Documents disponibles »', () => {
+  const docs = [
+    { file_name: 'Note-equipe.pdf' },
+    { file_name: 'compte-rendu final.docx' },
+  ];
+  const manual = splitDeliverables(docs, deliverableKeyOf);
+  assert.equal(manual.catalog.length, 0);
+  assert.equal(manual.others.length, 2);
+  const f = { status: 'transmis', processing: false, closed: false };
+  assert.equal(trackingStep({ ...f, hasDeliverables: manual.catalog.length > 0 }), 2, 'suivi et cartes comptent la même chose');
+  const auto = splitDeliverables([...docs, { file_name: 'Dashboard-r2.pdf' }, { file_name: 'Echeances-r2.ics' }], deliverableKeyOf);
+  assert.deepEqual(auto.catalog.map((d) => d.file_name), ['Dashboard-r2.pdf', 'Echeances-r2.ics']);
+  assert.equal(auto.others.length, 2);
+  assert.equal(trackingStep({ ...f, hasDeliverables: auto.catalog.length > 0 }), 3);
 });
 
 test('six livrables : 13 fichiers valides, noms reconnus, formats PDF/DOCX/XLSX/CSV/ICS', async () => {

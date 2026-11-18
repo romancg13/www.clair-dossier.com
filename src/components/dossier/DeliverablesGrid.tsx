@@ -45,8 +45,16 @@ export function DeliverablesGrid({ files, caption, emptyLabel, busy, onDownloadA
         )}
       </div>
 
+      {!ready ? (
+        // Aucun document encore publié : une seule ligne au lieu de six cartes vides identiques.
+        <p className="mt-5 rounded-2xl border border-dashed hairline bg-cream-50/60 p-5 text-sm leading-relaxed text-slate-500">
+          {emptyLabel} Six documents seront proposés ici : {DELIVERABLE_CATALOG.map((d) => d.label.toLowerCase()).join(", ")}.
+        </p>
+      ) : (
+      <>
       <ul className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        {DELIVERABLE_CATALOG.map((d, i) => {
+        {DELIVERABLE_CATALOG.filter((d) => files.some((f) => f.key === d.key)).map((d) => {
+          const i = DELIVERABLE_CATALOG.indexOf(d);
           const own = files.filter((f) => f.key === d.key).sort((a, b) => ext(a.name).localeCompare(ext(b.name)));
           const viewable = VIEW_ORDER.map((e) => own.find((f) => ext(f.name) === e)).find(Boolean);
           return (
@@ -89,6 +97,13 @@ export function DeliverablesGrid({ files, caption, emptyLabel, busy, onDownloadA
           );
         })}
       </ul>
+      {DELIVERABLE_CATALOG.some((d) => !files.some((f) => f.key === d.key)) && (
+        <p className="mt-3 text-xs leading-relaxed text-slate-500">
+          {emptyLabel.replace(/[.…]+$/, "")} : {DELIVERABLE_CATALOG.filter((d) => !files.some((f) => f.key === d.key)).map((d) => d.label).join(" · ")}.
+        </p>
+      )}
+      </>
+      )}
     </section>
   );
 }
