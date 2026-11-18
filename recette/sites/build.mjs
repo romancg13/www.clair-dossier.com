@@ -31,7 +31,10 @@ for (const [id,[file,type]] of Object.entries(files)) {
 }
 const fixtureList=[{id:'devis',name:'Devis CD-041.pdf',url:'/fixtures/devis.pdf'},
   {id:'scan',name:'Bon de réception.png',url:'/fixtures/scan.png'}];
-const page=await readFile(resolve(here,'page.html'),'utf8');
+const pageTemplate=await readFile(resolve(here,'page.html'),'utf8');
+const page=processor
+  ? pageTemplate.replace('data-preview-pricing hidden', `href="${new URL('/tarifs/',processor.origin).href}"`)
+  : pageTemplate;
 const declarations=Object.entries({page,assets,fixtureHashes,fixtureList,processor}).map(([name,value])=>'export const '+name+' = '+JSON.stringify(value)+';').join('\n');
 await mkdir(outDir,{recursive:true});
 await build({

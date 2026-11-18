@@ -29,7 +29,10 @@ fieldset{border:0;padding:0;margin:.5rem 0}label.choice{display:flex;gap:.7rem;a
 <section id="denied" class="paper" hidden>
   <h2>Un abonnement est nécessaire</h2>
   <p>Ce compte fictif ne peut pas déposer de pièces. Vous pouvez essayer le parcours avec un compte abonné de recette.</p>
-  <button class="primary spaced" data-session="a">Essayer le client A abonné</button>
+  <div class="row spaced">
+    <a class="primary" data-preview-pricing hidden>Comparer les formules</a>
+    <button data-session="a">Essayer le client A abonné</button>
+  </div>
 </section>
 <section id="progress" class="paper" hidden>
   <h2 id="progress-title">Dépôt reçu</h2>
