@@ -27,13 +27,29 @@ function shortlinkPage(): Plugin {
     apply: 'build',
     configResolved(config) {
       env = config.env;
+      if (env.VITE_DEMO === '1') {
+        // Vercel préfixe aussi ses propres métadonnées de build. Le client de
+        // recette n'en consomme aucune ; les retirer avant le remplacement Vite.
+        for (const key of Object.keys(env)) {
+          if (key.startsWith('VITE_VERCEL_')) delete env[key];
+        }
+        const allowed = new Set(['VITE_DEMO', 'VITE_RECETTE_PORTAIL', 'VITE_BASE_PATH', 'VITE_HOME_CINEMATIC', 'VITE_CINEMATICS']);
+        const inherited = Object.keys(env).filter(key => key.startsWith('VITE_') && env[key] && !allowed.has(key));
+        if (inherited.length) throw new Error('Configuration de recette non isolée : ' + inherited.join(', '));
+      }
     },
     closeBundle() {
       const safe = (v: string | undefined) => (v && /^[\w.:/-]+$/.test(v) ? v : '');
-      const html = readFileSync(resolve(__dirname, 'src/shortlink/v.html'), 'utf-8')
-        .replaceAll('__SUPABASE_URL__', safe(env.VITE_SUPABASE_URL))
-        .replaceAll('__SUPABASE_ANON_KEY__', safe(env.VITE_SUPABASE_ANON_KEY))
-        .replaceAll('__PLAUSIBLE_DOMAIN__', safe(env.VITE_PLAUSIBLE_DOMAIN));
+      const demo = env.VITE_DEMO === '1';
+      const template = readFileSync(resolve(__dirname, 'src/shortlink/v.html'), 'utf-8');
+      // Le lien de campagne reste sur le même hôte en recette, sans comptage externe.
+      const scopedTemplate = demo
+        ? template.replaceAll('https://www.clair-dossier.com/', '/').replace(/<link rel="preconnect"[^>]*>/g, '')
+        : template;
+      const html = scopedTemplate
+        .replaceAll('__SUPABASE_URL__', demo ? '' : safe(env.VITE_SUPABASE_URL))
+        .replaceAll('__SUPABASE_ANON_KEY__', demo ? '' : safe(env.VITE_SUPABASE_ANON_KEY))
+        .replaceAll('__PLAUSIBLE_DOMAIN__', demo ? '' : safe(env.VITE_PLAUSIBLE_DOMAIN));
       const dist = resolve(__dirname, 'dist');
       writeFileSync(resolve(dist, 'v.html'), html);
       mkdirSync(resolve(dist, 'v'), { recursive: true });
@@ -53,6 +69,7 @@ export default defineConfig({
   base,
   // Flags injectés comme littéraux (voir src/lib/flags.ts) — branche inactive éliminée du bundle.
   define: {
+    __RECETTE_COMMIT__: JSON.stringify(process.env.VERCEL_GIT_COMMIT_SHA || ''),
     __HOME_CINEMATIC__: JSON.stringify(readFlag(process.env.VITE_HOME_CINEMATIC, true)),
     __CINEMATICS__: JSON.stringify(readFlag(process.env.VITE_CINEMATICS, true)),
     // Horloge du build : le HTML prérendu affiche les campagnes (src/data/campagnes.ts) en cours à cet instant.

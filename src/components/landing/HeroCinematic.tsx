@@ -1,339 +1,67 @@
-import {
-  useRef,
-  type CSSProperties,
-  type MouseEvent as ReactMouseEvent,
-  type PointerEvent as ReactPointerEvent,
-  type ReactNode,
-} from 'react';
 import { Link } from 'react-router-dom';
-import { motion, useMotionValue, useReducedMotion, useScroll, useSpring, useTransform } from 'motion/react';
-import { Magnetic } from '../primitives/Magnetic';
-import { MarkerHighlight } from '../primitives/MarkerHighlight';
-import { ArrowRightIcon, LockIcon } from '../icons';
 import { useAuth } from '../../lib/auth';
-import { newDossierHref } from '../../lib/cta';
-import { BUSINESS_STEPS, DEMO } from './demo-dossier';
+import { ArrowRightIcon } from '../icons';
 import { DocumentGlyph } from './DocumentGlyph';
-import { DemoBadge } from './Stage';
-import { STORY_ANCHOR } from './StoryScene';
-// Phase 4b — couche 3D (progressive enhancement, client-only, hors chemin critique).
-import { CinematicGate } from './cinematics/CinematicGate';
-import { CINEMATIC_SCENES } from './cinematics/scenes';
-
-/**
- * Hero — moment « wow » sans surcharge.
- *
- * Entrée cinématique 100 % CSS pour tout ce qui est critique (lisible sans
- * JavaScript, pré-rendu) : nav 0–300 ms (Nav.tsx, .cd-nav-enter), H1 par mots
- * 300–900 ms (.cd-word-mask), sous-titre 900 ms, CTA 1 100 ms, produit
- * 1 300 → 2 000 ms (.rise-in + --rise-delay). Le seul JavaScript est la
- * parallaxe pointeur, desktop uniquement, désactivée en motion réduite.
- */
-
-type Word = string | { node: ReactNode } | { break: true };
-
-const TITLE: Word[] = [
-  'Des',
-  'documents',
-  'dispersés.',
-  { break: true },
-  'Un',
-  'dossier',
-  { node: <MarkerHighlight delay={1.05}>clair.</MarkerHighlight> },
-];
 
 export function HeroCinematic() {
-  const reduce = useReducedMotion();
   const { session } = useAuth();
 
-  // Parallaxe pointeur : valeurs normalisées [-0.5, 0.5] → rotations ±5°.
-  const mx = useMotionValue(0);
-  const my = useMotionValue(0);
-  const sx = useSpring(mx, { stiffness: 60, damping: 20, mass: 0.6 });
-  const sy = useSpring(my, { stiffness: 60, damping: 20, mass: 0.6 });
-  const rotateY = useTransform(sx, [-0.5, 0.5], [-5, 5]);
-  const rotateX = useTransform(sy, [-0.5, 0.5], [4, -4]);
-  const satX = useTransform(sx, (v) => v * -26);
-  const satY = useTransform(sy, (v) => v * -18);
-  const stageRef = useRef<HTMLDivElement>(null);
-
-  // Progression de sortie du hero (0 en haut de page → 1 quand le hero a quitté l'écran),
-  // lue par la scène 3D pour sa parallaxe ; le calque s'estompe en DOM (compositeur).
-  const sectionRef = useRef<HTMLElement>(null);
-  const { scrollYProgress: heroProgress } = useScroll({ target: sectionRef, offset: ['start start', 'end start'], layoutEffect: false });
-  const layerOpacity = useTransform(heroProgress, [0, 0.75], [1, 0]);
-
-  function onPointerMove(e: ReactPointerEvent<HTMLDivElement>) {
-    if (reduce || e.pointerType !== 'mouse' || !stageRef.current) return;
-    const r = stageRef.current.getBoundingClientRect();
-    mx.set((e.clientX - r.left) / r.width - 0.5);
-    my.set((e.clientY - r.top) / r.height - 0.5);
-  }
-  function onPointerLeave() {
-    mx.set(0);
-    my.set(0);
-  }
-
-  function scrollToStory(e: ReactMouseEvent<HTMLAnchorElement>) {
-    const target = document.getElementById(STORY_ANCHOR);
-    if (!target) return;
-    e.preventDefault();
-    target.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
-    target.focus({ preventScroll: true });
-  }
-
-  let wordIndex = 0;
-
   return (
-    <section ref={sectionRef} className="premium-hero-shell relative isolate overflow-hidden bg-cream-50">
-      <div aria-hidden="true" className="cd-grid-light pointer-events-none absolute inset-0 -z-10" />
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 -z-10"
-        style={{
-          backgroundImage:
-            'radial-gradient(55% 45% at 78% 12%, rgba(179,210,239,0.22), transparent 60%), radial-gradient(45% 40% at 8% 88%, rgba(196,164,86,0.12), transparent 65%)',
-        }}
-      />
-      {CINEMATIC_SCENES.hero.enabled && (
-        <motion.div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0" style={{ opacity: layerOpacity }}>
-          <CinematicGate load={CINEMATIC_SCENES.hero.load} progress={heroProgress} priority="hero" />
-        </motion.div>
-      )}
-
-      {/* items-start : colonnes de hauteurs voisines ; un centrage déplacerait tout le texte
-          quand la police du H1 se charge (4 lignes en police de secours, 3 ensuite → CLS). */}
-      <div className="mx-auto max-w-7xl px-5 pb-16 pt-14 sm:px-8 sm:pt-20 lg:grid lg:grid-cols-[1.08fr_0.92fr] lg:items-start lg:gap-14 lg:px-12 lg:pb-28 lg:pt-24">
-        {/* ── Texte ── */}
-        <div className="relative z-10">
-          <p
-            className="rise-in inline-flex items-center gap-2 rounded-full border hairline-gold bg-white/70 px-3 py-1.5 font-mono text-[0.68rem] uppercase tracking-[0.18em] text-gold-700"
-            style={{ '--rise-delay': '0.25s' } as CSSProperties}
-          >
-            <span className="h-1 w-1 rounded-full bg-gold-500" aria-hidden="true" />
-            Entreprises, indépendants et cabinets
-          </p>
-
-          <h1 className="mt-6 font-display text-[clamp(2.75rem,6.2vw,5.75rem)] font-semibold leading-[0.94] tracking-[-0.02em] text-navy-900">
-            {TITLE.map((w, i) => {
-              if (typeof w === 'object' && 'break' in w) {
-                return <br key={i} />;
-              }
-              const idx = wordIndex++;
-              return (
-                <span key={i}>
-                  <span className="cd-word-mask">
-                    <span style={{ '--w': idx } as CSSProperties}>{typeof w === 'string' ? w : w.node}</span>
-                  </span>{' '}
-                </span>
-              );
-            })}
+    <section className="bg-cream-50">
+      <div className="mx-auto grid max-w-7xl grid-cols-1 gap-10 px-5 py-10 sm:px-8 sm:py-16 lg:grid-cols-[1.02fr_1fr] lg:items-center lg:gap-14 lg:px-12 lg:py-20">
+        <div>
+          <h1 className="font-display text-[clamp(2.4rem,11vw,3.2rem)] sm:text-[clamp(3.3rem,5.8vw,5.6rem)] lg:max-w-[14ch] font-semibold leading-[0.99] tracking-[-0.035em] text-navy-900">
+            Déposez vos pièces. <span className="text-gold-700">Sachez quoi faire ensuite.</span>
           </h1>
-
-          <p
-            className="rise-in mt-7 max-w-xl text-[1.05rem] leading-[1.65] text-slate-500 sm:text-lg"
-            style={{ '--rise-delay': '0.9s' } as CSSProperties}
-          >
-            Centralisez vos documents, retrouvez vos dossiers et suivez vos échéances au même
-            endroit.
+          <p className="mt-5 max-w-md text-base leading-relaxed text-slate-500 sm:text-lg">
+            Un résumé, vos dates importantes et votre prochaine action, dans votre espace.
           </p>
-
-          <div
-            className="rise-in mt-9 flex flex-wrap items-center gap-3"
-            style={{ '--rise-delay': '1.1s' } as CSSProperties}
-          >
-            <Magnetic strength={0.12}>
-              <Link
-                to={newDossierHref(Boolean(session))}
-                className="sheen cd-btn-primary group inline-flex items-center gap-2 rounded-full bg-gold-500 px-6 py-3.5 text-sm font-semibold text-navy-900 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-gold-strong"
-              >
-                Créer un dossier
-                <ArrowRightIcon
-                  width={14}
-                  height={14}
-                  strokeWidth={2}
-                  className="transition-transform group-hover:translate-x-0.5"
-                />
-              </Link>
-            </Magnetic>
-            <a
-              href={`#${STORY_ANCHOR}`}
-              onClick={scrollToStory}
-              className="group inline-flex items-center gap-2 rounded-full border hairline-strong bg-white/60 px-6 py-3.5 text-sm font-medium text-navy-900 transition-colors hover:border-navy-900 hover:bg-white"
-            >
-              Voir comment ça fonctionne
-              <span aria-hidden="true" className="text-slate-400 transition-transform group-hover:translate-y-0.5">
-                ↓
-              </span>
+          <div className="mt-7 flex flex-wrap items-center gap-x-5 gap-y-2">
+            <Link to={session ? '/compte' : '/tarifs'} className="sheen inline-flex min-h-11 items-center gap-2 rounded-full bg-navy-900 px-4 py-3 text-sm font-semibold text-white hover:bg-navy-700">
+              {session ? 'Retrouver mes dossiers' : 'Choisir une formule'} <ArrowRightIcon width={15} height={15} />
+            </Link>
+            <a href="#comment-ca-fonctionne" className="inline-flex min-h-11 items-center text-sm font-medium text-navy-900 underline decoration-gold-500 underline-offset-4">
+              Voir un exemple
             </a>
           </div>
-
-          <p
-            className="rise-in mt-5 text-[0.8rem] text-slate-500"
-            style={{ '--rise-delay': '1.25s' } as CSSProperties}
-          >
-            Compte gratuit · Sans engagement
-          </p>
         </div>
 
-        {/* ── Mise en scène produit ── */}
-        <div
-          ref={stageRef}
-          onPointerMove={onPointerMove}
-          onPointerLeave={onPointerLeave}
-          className="rise-in relative z-10 mt-16 lg:mt-0"
-          style={{ '--rise-delay': '1.3s' } as CSSProperties}
-        >
-          <div className="relative mx-auto max-w-[560px] [perspective:1600px]">
-            <motion.div
-              style={reduce ? undefined : { rotateX, rotateY, transformStyle: 'preserve-3d' }}
-              className="relative"
-            >
-              <MainCard />
-
-              {/* Satellites — profondeur via translateZ, flottement CSS très lent */}
-              <motion.div
-                aria-hidden="true"
-                style={reduce ? undefined : { x: satX, y: satY }}
-                className="pointer-events-none absolute inset-0 hidden sm:block"
-              >
-                {/* Au-dessus de la carte : ne masque pas le badge « Dossier de démonstration ». */}
-                <Satellite className="cd-float-a -top-10 -left-2 lg:-left-16" depth={70}>
-                  <span className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-navy-900/6 text-navy-900">
-                    <DocumentGlyph type="devis" />
-                  </span>
-                  <span>
-                    <span className="block text-[0.78rem] font-medium text-navy-900">
-                      {DEMO.pieces[0].name}
-                    </span>
-                    <span className="block font-mono text-[0.62rem] uppercase tracking-[0.14em] text-slate-500">
-                      {DEMO.pieces[0].meta}
-                    </span>
-                  </span>
-                </Satellite>
-
-                <Satellite className="cd-float-b -right-3 top-[30%] lg:-right-14" depth={90}>
-                  <span className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-gold-500/15 text-gold-700">
-                    <DocumentGlyph type="echeance" />
-                  </span>
-                  <span>
-                    <span className="block font-mono text-[0.62rem] uppercase tracking-[0.14em] text-slate-500">
-                      Échéance
-                    </span>
-                    <span className="block text-[0.78rem] font-medium text-navy-900">
-                      {DEMO.deadline.dateLong}
-                    </span>
-                  </span>
-                </Satellite>
-
-                <Satellite className="cd-float-c -bottom-6 left-6 lg:-left-8" depth={60}>
-                  <span className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-navy-900 text-cream-50">
-                    <LockIcon width={14} height={14} />
-                  </span>
-                  <span>
-                    <span className="block font-mono text-[0.62rem] uppercase tracking-[0.14em] text-slate-500">
-                      Transmission
-                    </span>
-                    <span className="block text-[0.78rem] font-medium text-navy-900">
-                      Par vous · jamais automatique
-                    </span>
-                  </span>
-                </Satellite>
-              </motion.div>
-            </motion.div>
+        <article id="comment-ca-fonctionne" aria-labelledby="exemple-dossier" tabIndex={-1} className="scroll-mt-24 rounded-2xl bg-navy-900 p-4 shadow-card sm:p-7">
+          <p className="mb-4 text-xs font-medium tracking-wide text-cream-100">Exemple fictif · Dossier de facturation</p>
+          <div className="overflow-hidden rounded-lg border-t-2 border-gold-500 bg-white px-5 py-6 text-navy-900 sm:px-7">
+            <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
+              <DocumentGlyph type="facture" /> Avant · Une facture et un courrier à rapprocher
+            </div>
+            <div className="mt-5 border-t hairline pt-5">
+              <p className="font-mono text-xs text-gold-700">Après · Votre synthèse</p>
+              <h2 id="exemple-dossier" className="mt-2 font-display text-3xl font-semibold leading-tight sm:text-4xl">Le solde du chantier</h2>
+              <p className="mt-2 text-sm leading-relaxed">La facture indique un solde de 12 880 € TTC. Le client conteste la finition des travaux.</p>
+              <dl className="mt-5 space-y-4 border-l-2 border-gold-500 pl-4 text-sm">
+                <div>
+                  <dt className="text-xs text-slate-500">Échéance inscrite sur la facture</dt>
+                  <dd className="mt-0.5 font-semibold"><time dateTime="2026-09-30">30 septembre 2026</time></dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-slate-500">Votre prochaine action</dt>
+                  <dd className="mt-0.5 font-semibold">Joindre la preuve d’envoi de la facture.</dd>
+                </div>
+              </dl>
+              <details className="mt-4 border-t hairline pt-3 text-xs leading-relaxed text-slate-500">
+                <summary className="cursor-pointer py-1 font-medium text-navy-900">Consulter les pièces citées</summary>
+                <ul className="mt-2 list-disc space-y-1 pl-4">
+                  <li>Facture F-2026-077, p. 1. Solde et échéance de paiement.</li>
+                  <li>Courrier du client du 29 septembre, p. 1. Contestation des finitions.</li>
+                </ul>
+              </details>
+            </div>
           </div>
-
-          <div
-            aria-hidden="true"
-            className="absolute -inset-6 -z-10 rounded-[2rem] bg-gradient-to-br from-gold-500/14 via-transparent to-sky-marker/40 blur-3xl"
-          />
-        </div>
+          {import.meta.env.VITE_DEMO === '1' && (
+            <a href="/recette/" className="mt-3 inline-flex min-h-11 items-center gap-2 text-sm font-medium text-cream-50 underline decoration-gold-500 underline-offset-4">
+              Ouvrir le dossier de recette <ArrowRightIcon width={14} height={14} />
+            </a>
+          )}
+        </article>
       </div>
     </section>
-  );
-}
-
-function Satellite({ children, className, depth }: { children: ReactNode; className: string; depth: number }) {
-  return (
-    <div
-      className={`absolute ${className}`}
-      style={{ transform: `translateZ(${depth}px)` }}
-    >
-      <div className="cd-paper flex items-center gap-3 rounded-xl px-3.5 py-2.5 shadow-float">{children}</div>
-    </div>
-  );
-}
-
-function MainCard() {
-  return (
-    <div className="relative rounded-2xl border hairline bg-white p-6 shadow-card sm:p-7">
-      <div className="flex items-center justify-between gap-3">
-        <DemoBadge tone="light" />
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-navy-900 px-2.5 py-1 font-mono text-[0.62rem] uppercase tracking-[0.14em] text-cream-50">
-          <span className="h-1.5 w-1.5 rounded-full bg-gold-500" aria-hidden="true" />
-          {DEMO.status}
-        </span>
-      </div>
-
-      <p className="mt-4 font-mono text-[0.66rem] uppercase tracking-[0.18em] text-slate-500">
-        Suivi du dossier · {DEMO.reference}
-      </p>
-      <p className="mt-1.5 font-display text-[1.6rem] font-semibold leading-tight text-navy-900 sm:text-[1.8rem]">
-        {DEMO.title}
-      </p>
-      <p className="mt-1 text-[0.8rem] text-slate-500">
-        {DEMO.category} · profil {DEMO.profile}
-      </p>
-
-      {/* 4 états du suivi — libellés réels de la page dossier */}
-      <ol className="mt-6 grid grid-cols-4 gap-1.5" aria-label="Suivi du dossier en quatre états">
-        {BUSINESS_STEPS.map((label, i) => {
-          const n = i + 1;
-          const state = n < DEMO.step ? 'done' : n === DEMO.step ? 'active' : 'todo';
-          return (
-            <li key={label} className="min-w-0">
-              <span
-                className={`block h-1 rounded-full ${
-                  state === 'done' ? 'bg-navy-900' : state === 'active' ? 'bg-gold-500' : 'bg-navy-900/10'
-                }`}
-                aria-hidden="true"
-              />
-              <span
-                className={`mt-2 block font-mono text-[0.6rem] tracking-[0.12em] ${
-                  state === 'active' ? 'text-gold-700' : 'text-slate-500'
-                }`}
-                title={label}
-                aria-label={`État ${n} : ${label}`}
-              >
-                {String(n).padStart(2, '0')}
-              </span>
-            </li>
-          );
-        })}
-      </ol>
-
-      <dl className="mt-6 divide-y hairline border-y hairline">
-        <Row label="Pièces déposées" value={`${DEMO.pieces.length} pièces · téléchargeables`} />
-        <Row label={DEMO.deadline.label} value={DEMO.deadline.dateShort} gold />
-        <Row label="Suivi" value={`${DEMO.step} / ${BUSINESS_STEPS.length} · ${BUSINESS_STEPS[DEMO.step - 1]}`} />
-        <Row label="Transmission" value="par vous" />
-      </dl>
-
-      <div className="mt-5 rounded-lg bg-cream-100 px-4 py-3">
-        <p className="font-mono text-[0.62rem] uppercase tracking-[0.16em] text-gold-700">
-          Ce que vous devez faire maintenant
-        </p>
-        <p className="mt-1 text-[0.82rem] leading-relaxed text-navy-900">{DEMO.nextAction}</p>
-      </div>
-    </div>
-  );
-}
-
-function Row({ label, value, gold = false }: { label: string; value: string; gold?: boolean }) {
-  return (
-    <div className="flex items-center justify-between gap-4 py-2.5 text-[0.82rem]">
-      <dt className="text-slate-500">{label}</dt>
-      <dd className={`text-right font-medium ${gold ? 'text-gold-700' : 'text-navy-900'}`}>{value}</dd>
-    </div>
   );
 }

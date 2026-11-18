@@ -1,8 +1,8 @@
 import { DELIVERABLE_CATALOG, type DeliverableKey } from "../../../supabase/functions/_shared/analysis-model.ts";
 
-/** Fichier d'un livrable, quelle que soit sa source (stockage Supabase ou génération locale de démonstration). */
 export type DeliverableFile = {
-  key: DeliverableKey;
+  id?: string;
+  key: DeliverableKey | null;
   name: string;
   open: () => void | Promise<void>;
   download: () => void | Promise<void>;
@@ -10,85 +10,62 @@ export type DeliverableFile = {
 
 type Props = {
   files: DeliverableFile[];
-  /** Mention de version/couverture (« révision 3 — analyse complète »). */
   caption?: string | null;
-  /** Message quand aucun livrable n'est encore prêt. */
   emptyLabel: string;
   busy?: boolean;
   onDownloadAll?: () => void;
 };
 
-const VIEW_ORDER = ["pdf", "csv", "ics"];
-const ext = (n: string) => n.split(".").pop()?.toLowerCase() ?? "";
+const groups = [
+  ...DELIVERABLE_CATALOG.map(d => ({ key: d.key, label: d.key === 'dashboard' ? 'Tableau de bord' : d.label })),
+  { key: null, label: "Autres documents" },
+];
 
-/** Les six documents ClairDossier : Visualiser, Télécharger chaque format, Tout télécharger. */
 export function DeliverablesGrid({ files, caption, emptyLabel, busy, onDownloadAll }: Props) {
-  const ready = files.length > 0;
   return (
     <section aria-labelledby="livrables-title">
-      <div className="flex flex-wrap items-end justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 id="livrables-title" className="font-display text-xl text-navy-900">
-            Vos documents ClairDossier
-          </h3>
-          {caption && <p className="mt-1 text-xs text-slate-500">{caption}</p>}
+          <h3 id="livrables-title" className="font-display text-2xl font-semibold text-navy-900">Vos résultats</h3>
+          {caption && <p className="mt-1 text-xs text-slate-600">{caption}</p>}
         </div>
-        {ready && onDownloadAll && (
-          <button
-            type="button"
-            onClick={onDownloadAll}
-            disabled={busy}
-            className="rounded-full bg-navy-900 px-4 py-2 text-xs font-semibold text-cream-50 transition-colors hover:bg-navy-800 disabled:opacity-60"
-          >
+        {files.length > 0 && onDownloadAll && (
+          <button type="button" onClick={onDownloadAll} disabled={busy}
+            className="rounded-full border hairline-strong px-4 py-2 text-sm font-medium text-navy-900 hover:bg-cream-100 disabled:opacity-60">
             {busy ? "Préparation…" : "Tout télécharger (.zip)"}
           </button>
         )}
       </div>
-
-      <ul className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        {DELIVERABLE_CATALOG.map((d, i) => {
-          const own = files.filter((f) => f.key === d.key).sort((a, b) => ext(a.name).localeCompare(ext(b.name)));
-          const viewable = VIEW_ORDER.map((e) => own.find((f) => ext(f.name) === e)).find(Boolean);
-          return (
-            <li
-              key={d.key}
-              className={`group flex flex-col rounded-2xl border p-5 transition-shadow ${own.length ? "hairline bg-white shadow-card hover:shadow-card-hover" : "border-dashed hairline bg-cream-50/60"}`}
-            >
-              <div className="flex items-start gap-3">
-                <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl font-mono text-xs font-semibold ${own.length ? "bg-navy-900 text-gold-400" : "bg-cream-100 text-slate-400"}`}>
-                  {String(i + 1).padStart(2, "0")}
-                </span>
-                <div className="min-w-0">
-                  <p className="font-semibold text-navy-900">{d.label}</p>
-                  <p className="mt-1 text-xs leading-relaxed text-slate-500">{d.description}</p>
-                </div>
-              </div>
-              {own.length ? (
-                <div className="mt-4 flex flex-wrap items-center gap-2 border-t hairline pt-4">
-                  {viewable && (
-                    <button type="button" onClick={() => void viewable.open()} className="rounded-full bg-gold-500 px-3.5 py-1.5 text-xs font-semibold text-navy-900 transition-transform hover:-translate-y-0.5 motion-reduce:transform-none">
-                      Visualiser
-                    </button>
-                  )}
-                  {own.map((f) => (
-                    <button
-                      key={f.name}
-                      type="button"
-                      onClick={() => void f.download()}
-                      aria-label={`Télécharger ${d.label} au format ${ext(f.name).toUpperCase()}`}
-                      className="rounded-full border hairline-strong px-3 py-1.5 font-mono text-[0.68rem] font-semibold uppercase tracking-wide text-navy-900 transition-colors hover:bg-cream-100"
-                    >
-                      {ext(f.name)} ↓
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <p className="mt-4 border-t border-dashed hairline pt-4 text-xs text-slate-500">{emptyLabel}</p>
-              )}
-            </li>
-          );
-        })}
-      </ul>
+      {files.length === 0 && <p className="mt-4 text-sm text-slate-600">{emptyLabel}</p>}
+      {groups.map(group => {
+        const own = files.filter(f => f.key === group.key);
+        if (!own.length) return null;
+        // Les sources sont ordonnées par date de publication, de la plus ancienne à la plus récente.
+        const preferred = [...own].reverse().find(f => /\.pdf$/i.test(f.name)) ?? own[own.length - 1];
+        return (
+          <div key={group.key ?? 'autres'} className="mt-4 rounded-xl border hairline bg-white p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h4 className="font-semibold text-navy-900">{group.label}</h4>
+              <button type="button" onClick={() => void preferred.open()}
+                aria-label={`Ouvrir ${preferred.name}`} className="min-h-10 rounded-full bg-navy-900 px-4 text-sm font-medium text-white hover:bg-navy-800">
+                Ouvrir
+              </button>
+            </div>
+            <details className="mt-1">
+              <summary className="cursor-pointer py-2 text-sm text-slate-700">Fichiers et téléchargements ({own.length})</summary>
+              <ul className="divide-y divide-slate-200">
+              {own.map((f, index) => (
+                <li key={f.id ?? `${f.name}-${index}`} className="flex flex-wrap items-center justify-between gap-x-3 py-1 text-sm">
+                  <button type="button" onClick={() => void f.open()} className="min-h-10 min-w-0 break-all text-left text-slate-700 hover:underline">{f.name}</button>
+                  <button type="button" onClick={() => void f.download()} aria-label={`Télécharger ${f.name}`}
+                    className="min-h-10 font-medium text-navy-900 underline decoration-gold-500 underline-offset-4">Télécharger</button>
+                </li>
+              ))}
+              </ul>
+            </details>
+          </div>
+        );
+      })}
     </section>
   );
 }

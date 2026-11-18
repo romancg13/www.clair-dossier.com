@@ -44,7 +44,7 @@ const faqSchema = {
 };
 
 export function Home() {
-  if (HOME_CINEMATIC) return <HomeCinematic />;
+  if (HOME_CINEMATIC || import.meta.env.VITE_DEMO === '1') return <HomeCinematic />;
   return (
     <>
       <Seo

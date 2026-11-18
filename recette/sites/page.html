@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="referrer" content="no-referrer">
+  <title>Dossiers de démonstration · ClairDossier</title>
+  <!--STYLE_DEMO-->
+</head>
+<body>
+<header class="masthead">
+  <div class="wrap masthead-inner">
+    <img src="/assets/logo.webp" width="357" height="88" alt="ClairDossier">
+    <span class="demo-label">Démonstration · Données fictives</span>
+  </div>
+</header>
+<main class="wrap">
+  <header class="intro">
+    <div><p id="client-label" class="eyebrow" hidden></p><h1 id="page-title">Choisissez un dossier.</h1>
+      <p id="intro-copy">Déposez les pièces d’exemple, puis retrouvez la situation, vos dates et les documents préparés.</p></div>
+    <div class="profile-actions">
+    <button id="reset" class="text-button" type="button" hidden>Recommencer</button>
+  <details id="profiles" class="disclosure" hidden><summary>Changer de compte fictif</summary>
+    <div class="row"><button data-session="a">Atelier Témoin · Client A</button><button data-session="b">Atelier du Canal · Client B</button>
+      <button data-session="c">Banque Alimentaire des Bouches-du-Rhône</button><button data-session="sans">Sans abonnement</button></div>
+  </details>
+    </div>
+  </header>
+  <p id="message" class="meta" role="status" aria-live="polite">Ouverture de l’espace de recette…</p>
+  <p id="error" class="error" role="alert" hidden></p>
+  <p id="notice" class="notice" role="status" hidden></p>
+
+  <section id="entry" aria-label="Les trois dossiers de démonstration" hidden>
+    <div id="client-list" class="client-list">
+      <button data-session="a">
+        <span class="eyebrow">Artisan</span><strong>Atelier Témoin</strong>
+        <span class="card-copy">Vérifiez le devis et la réception des menuiseries.</span><span class="open-label">Ouvrir le dossier<span class="visually-hidden"> du client A</span> <span aria-hidden="true">→</span></span>
+      </button>
+      <button data-session="b">
+        <span class="eyebrow">Entreprise</span><strong>Atelier du Canal</strong>
+        <span class="card-copy">Préparez la levée de la réserve sur le volet côté cour.</span><span class="open-label">Ouvrir le dossier<span class="visually-hidden"> du client B</span> <span aria-hidden="true">→</span></span>
+      </button>
+      <button data-session="c">
+        <span class="eyebrow">Association</span><strong>Banque Alimentaire des Bouches-du-Rhône</strong>
+        <span class="card-copy">Préparez la collecte du 19 novembre à partir de quatre pièces fictives.</span><span class="open-label">Ouvrir le dossier<span class="visually-hidden"> du client C</span> <span aria-hidden="true">→</span></span>
+      </button>
+    </div>
+    <details class="disclosure"><summary>Essayer le parcours sans abonnement</summary>
+      <button class="secondary" data-session="sans">Client sans abonnement</button>
+    </details>
+  </section>
+
+  <section id="denied" class="paper" hidden>
+    <h2>Un abonnement est nécessaire</h2>
+    <p>Le dépôt est réservé aux profils abonnés. Vous pouvez parcourir les formules ou essayer un autre profil fictif.</p>
+    <div class="row"><a class="primary" data-preview-pricing hidden>Comparer les formules</a><button class="secondary" data-session="a">Essayer le client A abonné</button></div>
+  </section>
+
+  <section id="progress" class="paper" hidden>
+    <h2 id="progress-title">Dépôt reçu</h2>
+    <p>Vous pouvez fermer cet onglet. Retrouvez vos résultats dans ce navigateur lorsque le serveur aura terminé.</p>
+    <button class="secondary" data-refresh>Actualiser le dossier</button>
+  </section>
+  <section id="failure" class="paper" hidden><h2>Traitement interrompu</h2>
+    <p>Le serveur n’a pas publié cette livraison.</p><button class="secondary" data-refresh>Vérifier l’état du lot</button>
+  </section>
+
+  <section id="result" hidden>
+    <article class="paper situation">
+      <p class="eyebrow" id="published"></p><h2>Votre situation</h2><p id="summary"></p>
+      <div class="columns"><div><h3>Prochaine action</h3><p><strong id="next-action"></strong></p><small id="owner"></small></div>
+        <div><h3>Prochaine date</h3><p><strong id="due-date"></strong></p><small id="date-source"></small></div>
+      </div>
+      <a id="dashboard-link" class="text-link" download="Tableau-de-bord.pdf">Télécharger le tableau de bord PDF</a>
+    </article>
+    <section class="deliveries" aria-labelledby="deliveries-title">
+      <h2 id="deliveries-title">Vos résultats</h2><p class="meta" id="delivery-metrics"></p>
+      <div id="deliverable-list" class="deliverable-list"></div>
+      <p id="pdf-only" class="meta" hidden>Cette révision a livré le PDF seul.</p>
+      <p id="current-pack" hidden><a id="current-pack-link" download="ClairDossier-revision.zip">Télécharger les fichiers de cette révision</a></p>
+    </section>
+    <details id="draft-block" class="disclosure"><summary>Lire le brouillon de relance</summary><p id="draft" class="draft"></p></details>
+    <details id="initial-pack" class="disclosure" hidden><summary>Autres formats du jeu fictif</summary>
+      <p class="meta">Édition préparée avant vos corrections.</p><a id="initial-pack-link" download="ClairDossier-edition-initiale.zip">Télécharger les fichiers de l’exemple initial</a>
+    </details>
+    <details id="reading" class="disclosure"><summary>Comment les pièces ont-elles été lues ?</summary><ul id="reading-list"></ul></details>
+    <p class="meta" id="notices"></p>
+  </section>
+
+  <section id="upload" class="paper" hidden>
+    <h2 id="piece-title">Vos pièces</h2><p id="piece-help"></p>
+    <button id="deposit" class="primary">Déposer les pièces</button>
+    <details id="choose" class="disclosure"><summary>Choisir les pièces du lot</summary>
+      <fieldset><legend>Pièces fictives à joindre</legend><div id="choices"></div></fieldset>
+      <ul id="fixtures" class="fixture-downloads"></ul>
+      <details><summary>Importer les copies téléchargées</summary>
+        <label class="field" for="copies">Copies du jeu fictif sur cet appareil<input type="file" id="copies" multiple accept=".pdf,.png,.txt,.eml"></label>
+        <p class="meta">L’empreinte des fichiers choisis est vérifiée avant l’envoi.</p>
+      </details>
+    </details>
+  </section>
+
+  <div id="secondary" hidden>
+    <details id="change-date" class="disclosure" hidden><summary>Vérifier ou corriger la date</summary>
+      <p class="meta" id="original-date"></p>
+      <form id="date-form">
+        <label class="field">Date retenue<input type="date" required id="date-value"></label>
+        <label class="field">Motif de la correction<input type="text" minlength="3" maxlength="160" required id="date-reason"></label>
+        <button type="submit">Enregistrer la correction</button>
+      </form>
+    </details>
+  <details id="services-slot" hidden><summary>Préparer une demande ou un rendez-vous</summary>
+    <div class="row" id="service-actions"><button type="button" data-service="justificatifs">Demander les justificatifs</button>
+      <button type="button" data-service="rendezvous">Préparer le rendez-vous</button></div>
+    <details id="communication"><summary>Rédiger pour LinkedIn</summary>
+      <form id="brief"><p>Choisissez le public, l’offre et la zone dans le jeu de communication fictif. Les publications sont remises en brouillon.</p>
+        <div class="columns"><div>
+          <label class="field">Cible<select name="audience" required></select></label>
+          <label class="field">Offre à présenter<select name="offer" required></select></label>
+          <label class="field">Zone géographique<select name="region" required></select></label>
+        </div><div>
+          <label class="field">Ton<select name="tone"><option>Pédagogique</option><option>Direct</option><option>Convivial</option></select></label>
+          <label class="field">Objectif<select name="goal"></select></label>
+          <label class="field">Fuseau horaire<select name="zone"><option>Europe/Paris</option><option>America/Montreal</option><option>Indian/Reunion</option><option>UTC</option></select></label>
+        </div></div>
+        <details><summary>Indiquer un créneau observé pour mon audience</summary>
+          <label class="field">Jour observé<select name="preferredDay"><option value="">Aucun relevé</option><option value="1">Lundi</option><option value="2">Mardi</option><option value="3">Mercredi</option><option value="4">Jeudi</option><option value="5">Vendredi</option><option value="6">Samedi</option><option value="0">Dimanche</option></select></label>
+          <label class="field">Heure locale observée<input name="preferredHour" type="number" min="7" max="20" value="9"></label>
+        </details>
+        <button id="brief-submit" class="spaced" type="submit" disabled>Préparer les trois publications</button>
+      </form>
+    </details>
+    <p class="meta" role="status" id="service-status"></p>
+    <div id="service-results"></div>
+  </details>
+
+    <details id="tools" class="disclosure"><summary>Historique et clôture</summary>
+      <ul id="versions"></ul><ul id="lot-events"></ul><ul id="corrections"></ul>
+      <button type="button" id="close">Clôturer le dossier</button>
+    </details>
+    <p class="meta" id="connector-slot" hidden><a href="/recette/connexion-chatgpt">Autoriser ChatGPT à lire l’état de ce dossier</a></p>
+  </div>
+
+  <button id="retry" hidden data-refresh>Réessayer la connexion</button>
+</main>
+<footer><div class="wrap">Les pièces et abonnements sont fictifs. Les résultats sont préparés sur le serveur de recette. Les messages restent en brouillon.</div></footer>
+
+<dialog id="reset-dialog" aria-labelledby="reset-title">
+  <h2 id="reset-title">Recommencer ce dossier ?</h2><p id="reset-copy"></p>
+  <div class="row"><button id="reset-cancel" class="secondary" autofocus>Annuler</button><button id="reset-confirm" class="primary">Recommencer ce dossier</button></div>
+</dialog>
+<dialog id="preview-dialog" aria-labelledby="preview-title">
+  <header class="dialog-head"><h2 id="preview-title"></h2><button id="preview-close" class="secondary" autofocus>Fermer</button></header>
+  <p id="preview-status" role="status"></p><div id="preview-frame"></div>
+  <a id="preview-download" class="text-link">Télécharger le PDF</a>
+</dialog>
+<!--SCRIPT_DEMO-->
+</body>
+</html>

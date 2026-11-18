@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="referrer" content="no-referrer">
+  <meta name="description" content="Exemple fictif ClairDossier. Consultez le résultat du traitement local de deux pièces et retrouvez la source de l’échéance.">
+  <title>Réception des menuiseries · Dossier fictif ClairDossier</title>
+  <style>
+    :root{--ink:#0d1b3d;--gold:#785b20;--line:#c6ad73;--muted:#4d5669;--sand:#f7f4ed;font:100%/1.6 system-ui,sans-serif;color:var(--ink);background:var(--sand)}
+    *{box-sizing:border-box}body{margin:0}a{color:var(--ink);text-underline-offset:.2em;text-decoration-color:var(--gold)}a:focus-visible,summary:focus-visible{outline:3px solid var(--gold);outline-offset:4px}header,main,footer{max-width:64rem;margin:auto;padding:1.25rem clamp(1rem,4vw,3rem)}header{display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap}header img{display:block;width:9.5rem;height:auto}header small,.meta,cite,footer{color:var(--muted)}small,.meta,cite{font-size:.85rem}h1,h2,h3{font-family:Georgia,'Times New Roman',serif;font-weight:500;line-height:1.15;margin:0}h1{font-size:clamp(2rem,5vw,3.2rem)}h2{font-size:clamp(1.55rem,4vw,2.1rem)}h3{font-size:1.3rem}.intro{max-width:47rem;margin:1rem 0;color:var(--muted)}.actions{display:flex;gap:.4rem 1.25rem;align-items:center;flex-wrap:wrap}.actions a{display:inline-flex;align-items:center;min-height:2.75rem}.primary{border-radius:2rem;background:var(--ink);color:#fff;padding:.5rem 1rem;text-decoration:none}.paper{margin:1.5rem 0;padding:clamp(1rem,4vw,2.5rem);background:#fff;border-top:3px solid var(--line);box-shadow:0 .4rem 1.5rem #0d1b3d0b}.paper p{margin:.55rem 0}.folio{margin:0 0 .5rem;color:var(--gold);font-size:.9rem}.results{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin:1.25rem 0;padding:1.25rem 0;border-block:1px solid #dfd7c8}cite{display:block;font-style:normal}.sources,.faq{margin:2.25rem 0}.sources ul{padding-inline-start:1.25rem}.sources li{padding:.35rem 0}.faq details{border-bottom:1px solid #d2cabc}.faq summary{cursor:pointer;padding:.8rem 0}.faq p{margin:0 0 .9rem}.date{font-variant-numeric:tabular-nums}section:target{scroll-margin-top:1rem}footer{font-size:.85rem;border-top:1px solid #ddd6c7} @media(max-width:38rem){.results{grid-template-columns:1fr}} @media print{header a,.actions,.faq,footer{display:none}.paper{box-shadow:none;padding:1rem 0}body{background:white}}
+  </style>
+</head>
+<body>
+<header><a href="/" aria-label="ClairDossier, accueil"><img src="./clairdossier.webp" width="357" height="88" alt="ClairDossier"></a><small>Recette · Données fictives</small></header>
+<main>
+  <h1>Réception des menuiseries</h1>
+  <p class="intro">Capture d’une exécution locale du 18 novembre 2026 pour Atelier Témoin. Deux pièces fictives ont produit le tableau de bord ci-dessous. Le dépôt en ligne n’est pas activé sur cette page.</p>
+  <nav class="actions" aria-label="Parcourir l’exemple"><a class="primary" href="#resultat">Lire le résultat</a><a href="#pieces">Vérifier les pièces</a></nav>
+  <section id="resultat" class="paper" tabindex="-1" aria-labelledby="situation">
+    <p class="folio">Tableau de bord · Révision 1</p>
+    <h2 id="situation">Situation au 18 novembre 2026</h2>
+    <p>Le devis porte sur le remplacement de trois fenêtres pour 18 400 € TTC. Le bon de réception déposé ne porte pas de signature.</p>
+    <div class="results">
+      <div><h3>Prochaine date</h3><p class="date"><strong><time datetime="2026-12-08">8 décembre 2026</time></strong> · Retour du procès-verbal.</p><cite>Date inscrite au <a href="./devis.pdf#page=1">devis CD-041, p. 1</a>.</cite></div>
+      <div><h3>Prochaine action</h3><p><strong>Demander le bon de réception signé.</strong></p><cite>Responsable · Client. <a href="./scan.png">Voir le bon numérisé</a>.</cite></div>
+    </div>
+    <a class="primary" href="./tableau-de-bord.pdf" download="Tableau-de-bord-Atelier-Temoin.pdf">Télécharger le tableau de bord PDF</a>
+  </section>
+  <section class="sources" id="pieces" aria-labelledby="pieces-titre" tabindex="-1"><h2 id="pieces-titre">Les pièces utilisées</h2><ul><li><a href="./devis.pdf">Devis CD-041 · PDF, 1 page</a>. Le devis du 10 novembre fixe le prix et la date limite de retour.</li><li><a href="./scan.png">Bon de réception · Image numérisée</a>. La copie fournie permet de vérifier la signature manquante.</li></ul></section>
+  <section class="faq" aria-labelledby="questions"><h2 id="questions">Questions sur cet exemple</h2><details><summary>Comment ce résultat a-t-il été obtenu ?</summary><p>Le serveur local de recette a lu le PDF et appliqué la reconnaissance de caractères au scan. Des règles dédiées au jeu fictif ont préparé la synthèse. Le PDF téléchargeable est le fichier issu de cette exécution.</p></details><details><summary>Puis-je modifier ce dossier ou envoyer une relance ?</summary><p>Cette page permet de relire la révision 1, de vérifier les pièces et de télécharger le résultat. Elle ne reçoit aucun document et n’envoie aucun message.</p></details></section>
+</main>
+<footer>ClairDossier · Exemple de recette · <a href="/">Retour à l’accueil</a></footer>
+</body>
+</html>

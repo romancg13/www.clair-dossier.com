@@ -106,7 +106,7 @@ export function AiPanel({ dossierId, ownerId, canManage, isAdmin, closed, pieceC
 
   useEffect(() => {
     if (!analysis) return;
-    if (seenRevision !== null && analysis.revision !== seenRevision) onPublished?.();
+    if (analysis.revision !== seenRevision) onPublished?.();
     setSeenRevision(analysis.revision);
   }, [analysis, seenRevision, onPublished]);
 

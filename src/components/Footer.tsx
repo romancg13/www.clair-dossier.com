@@ -56,7 +56,7 @@ export function Footer() {
                 </a>
               </p>
               <p>
-                <a href="mailto:contact.clairdossier@icloud.com" className="transition-colors hover:text-navy-900">
+                <a href="mailto:contact.clairdossier@icloud.com" className="[overflow-wrap:anywhere] transition-colors hover:text-navy-900">
                   contact.clairdossier@icloud.com
                 </a>
               </p>

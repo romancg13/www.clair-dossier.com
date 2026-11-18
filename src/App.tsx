@@ -1,5 +1,5 @@
 import { lazy, Suspense, type ComponentType } from 'react';
-import { Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { RequireAuth } from './components/RequireAuth';
 
@@ -46,7 +46,7 @@ export async function preloadForPath(pathname: string): Promise<void> {
     : clean === '/fonctionnalites'
       ? 'FeaturesIndex'
       : clean === '/tarifs'
-        ? 'Pricing'
+        ? pricingPageName
         : clean === '/securite'
           ? 'Security'
           : /^\/blog\/[^/]+$/.test(clean)
@@ -104,11 +104,14 @@ const named = <T extends string>(load: () => Promise<Record<T, PageComponent>>, 
 
 const FeaturesIndex = named(() => import('./pages/FeaturesIndex'), 'FeaturesIndex');
 const FeatureDetail = named(() => import('./pages/FeatureDetail'), 'FeatureDetail');
-const Pricing = named(() => import('./pages/Pricing'), 'Pricing');
+const pricingPageName = import.meta.env.VITE_DEMO === '1' ? 'PricingPreviewOnly' : 'Pricing';
+const Pricing = import.meta.env.VITE_DEMO === '1'
+  ? named(() => import('./pages/PricingPreviewOnly'), 'PricingPreviewOnly')
+  : named(() => import('./pages/Pricing'), 'Pricing');
 const Security = named(() => import('./pages/Security'), 'Security');
 const BlogIndex = named(() => import('./pages/BlogIndex'), 'BlogIndex');
 const BlogPost = named(() => import('./pages/BlogPost'), 'BlogPost');
-const Contact = named(() => import('./pages/Contact'), 'Contact');
+const Contact = named(import.meta.env.VITE_DEMO === '1' ? () => import('./pages/RecetteContact') : () => import('./pages/Contact'), 'Contact');
 const DossierFlow = named(() => import('./pages/DossierFlow'), 'DossierFlow');
 // LegalPage prend une prop (slug) : même mécanique que named(), avec ses types.
 pageRegistry.push({
@@ -138,7 +141,7 @@ const GrandsComptes = named(() => import('./pages/SegmentPage'), 'GrandsComptes'
 const ArtisansBtp = named(() => import('./pages/SegmentPage'), 'ArtisansBtp');
 const ProfessionnelsImmobilier = named(() => import('./pages/SegmentPage'), 'ProfessionnelsImmobilier');
 const ProductStatus = named(() => import('./pages/ProductStatus'), 'ProductStatus');
-const RendezVous = named(() => import('./pages/RendezVous'), 'RendezVous');
+const RendezVous = named(import.meta.env.VITE_DEMO === '1' ? () => import('./pages/RecetteContact') : () => import('./pages/RendezVous'), 'RendezVous');
 const Marseille = named(() => import('./pages/Marseille'), 'Marseille');
 
 function RouteFallback() {
@@ -161,9 +164,24 @@ const DemoDossier =
     ? lazy(() => import('./pages/DemoDossier').then((m) => ({ default: m.DemoDossier })))
     : null;
 
+const RecetteDossier = import.meta.env.VITE_DEMO === '1'
+  ? (import.meta.env.VITE_RECETTE_PORTAIL === '1'
+      ? lazy(() => import('./recette/PortailEnLigne').then(m => ({ default: m.PortailEnLigne })))
+      : lazy(() => import('./pages/RecetteDossier').then(m => ({ default: m.RecetteDossier }))))
+  : null;
+
 export default function App() {
+  const location = useLocation();
+  // La recette possède ses propres sessions. Tous ses points d'entrée privés
+  // mènent au même dossier fictif, y compris après le choix de formule.
+  if (RecetteDossier && /^\/(?:compte|connexion|inscription|dossier|admin)(?:\/|$)/.test(location.pathname)) {
+    return <Navigate replace to={'/recette/' + location.search} />;
+  }
   return (
     <Routes>
+      {RecetteDossier && <Route path="recette" element={
+        <Suspense fallback={<RouteFallback />}><RecetteDossier /></Suspense>
+      } />}
       <Route element={<Layout />}>
         <Route index element={<Home />} />
         {DemoDossier && (
