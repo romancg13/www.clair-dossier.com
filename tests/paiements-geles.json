@@ -1,7 +1,7 @@
 {
-  "reference": "main ed12601 (production 2026-11-04) — paiements gelés sur décision du propriétaire ; 2026-11-04 : teintes des 3 fichiers tarifs restaurées à l’identique d’avant la PR #46 sur instruction écrite (couleurs seules, liens inchangés)",
+  "reference": "main ed12601 (production 2026-11-04) — paiements gelés sur décision du propriétaire ; 2026-11-04 : teintes des 3 fichiers tarifs restaurées à l’identique d’avant la PR #46 sur instruction écrite (couleurs seules, liens inchangés) ; 2026-11-04 : src/data/pricing.ts mis à jour sur instruction écrite du propriétaire (PR #42 : valeurs d'affichage de la grille comparative uniquement, prix et liens inchangés)",
   "fichiers": {
-    "src/data/pricing.ts": "977bfd717257d8588bf931565399f815c0deee7bfc5e86e37ff886cc408aa4e7",
+    "src/data/pricing.ts": "519dcad43ed7c12e570117f9279ef9221edc0061735f63a64abe29ccb2e36730",
     "src/pages/Pricing.tsx": "7c06c8f3fc2b4df421b48290a5ed4ebf8db1d751140886d226d13a22ed20e367",
     "src/components/landing/PricingCinematic.tsx": "dd7a7b0aa4ceacb23b7509b7aaeef9c0f547d5a7517fec2f1cc3aae2100b87ae",
     "src/components/sections/PricingPreview.tsx": "9b38de4fa8c6beca3bc855ed0802db3cd9a27fae66d52eafe4d87c15db439f73",
