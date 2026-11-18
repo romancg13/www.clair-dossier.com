@@ -1535,6 +1535,66 @@ await test('IA : quotas par offre — résolution offre/dérogation, décompte, 
   assert.equal(prem.actions_limit, 1000);
 });
 
+// ── Réception e-mail entrante (migration 20261118130000) ────────────────────
+await test('E-mail entrant : adresse par dossier — offre, format, idempotence, révocation, cloisonnement, clôture', async () => {
+  const EA = await newUser('email-a@test.local');
+  const EB = await newUser('email-b@test.local');
+  // Essentiel : fonctionnalité non incluse (grille de recette).
+  await subscribe(EA, 'essentiel');
+  const DA = await insertDossier(EA, { title: 'Réception e-mail' });
+  await asUser(EA);
+  await rejects(q('select * from public.create_inbound_address($1)', [DA]), /FEATURE_NOT_INCLUDED/);
+  // email_inbound_included : rôle serveur seul.
+  await rejects(q('select public.email_inbound_included($1)', [EA]), /permission denied/);
+  // Entrepreneur : incluse ; adresse non devinable ; rappel idempotent.
+  await subscribe(EA, 'entrepreneur');
+  await asUser(EA);
+  const [a1] = await q('select * from public.create_inbound_address($1)', [DA]);
+  assert.match(a1.local_part, /^d-[0-9a-f]{32}$/);
+  const [a2] = await q('select * from public.create_inbound_address($1)', [DA]);
+  assert.equal(a2.local_part, a1.local_part, 'rappel : même adresse active');
+  // Pas titulaire : refusé ; cloisonnement A/B ; écriture directe interdite.
+  await asUser(EB);
+  await rejects(q('select * from public.create_inbound_address($1)', [DA]), /FORBIDDEN/);
+  assert.equal((await q('select count(*)::int n from public.inbound_addresses'))[0].n, 0, 'B ne voit pas l’adresse de A');
+  await rejects(
+    q(`insert into public.inbound_addresses (user_id, dossier_id, local_part) values ($1, $2, 'd-${'0'.repeat(32)}')`, [EB, DA]),
+    /row-level security/,
+  );
+  // Journal des réceptions : écrit par le serveur, anti-rejeu par unicité, lu par le titulaire seul.
+  await asService();
+  await q(
+    `insert into public.inbound_emails (address_id, user_id, dossier_id, provider_email_id, from_addr, subject, spf, dkim, dmarc)
+     select a.id, a.user_id, a.dossier_id, 're_1', 'exp@externe.fr', 'Facture mars', 'pass', 'pass', 'pass'
+       from public.inbound_addresses a where a.local_part = $1`,
+    [a1.local_part],
+  );
+  await rejects(
+    q(`insert into public.inbound_emails (user_id, dossier_id, provider_email_id) values ($1, $2, 're_1')`, [EA, DA]),
+    /duplicate key/,
+  );
+  await asUser(EA);
+  assert.equal((await q('select count(*)::int n from public.inbound_emails'))[0].n, 1);
+  await asUser(EB);
+  assert.equal((await q('select count(*)::int n from public.inbound_emails'))[0].n, 0, 'B ne voit pas les réceptions de A');
+  await rejects(q(`update public.inbound_emails set subject = 'x' where provider_email_id = 're_1'`).then(async () => {
+    await asSuperuser();
+    const [r] = await q(`select subject from public.inbound_emails where provider_email_id = 're_1'`);
+    if (r.subject !== 'x') throw new Error('row-level security: aucune ligne modifiée');
+  }), /row-level security/);
+  // Révocation : plus d'adresse active, historique conservé, nouvelle adresse différente.
+  await asUser(EA);
+  await q('select public.revoke_inbound_address($1)', [DA]);
+  assert.equal((await q('select count(*)::int n from public.inbound_addresses where revoked_at is null'))[0].n, 0);
+  assert.equal((await q('select count(*)::int n from public.inbound_emails'))[0].n, 1, 'historique conservé');
+  const [a3] = await q('select * from public.create_inbound_address($1)', [DA]);
+  assert.notEqual(a3.local_part, a1.local_part, 'une adresse révoquée n’est jamais réutilisée');
+  // Dossier clôturé : création refusée.
+  await q(`insert into public.dossier_events (dossier_id, user_id, type, label) values ($1, $2, 'dossier_cloture', 'Dossier clôturé')`, [DA, EA]);
+  await q('select public.revoke_inbound_address($1)', [DA]);
+  await rejects(q('select * from public.create_inbound_address($1)', [DA]), /DOSSIER_CLOTURE/);
+});
+
 // Dernier test : le retour arrière modifie le schéma pour la suite.
 await test('IA : retour arrière niveau 1 — moteur neutralisé, données conservées', async () => {
   const D = await insertDossier(IA_C, { title: 'Avant retour arrière' });

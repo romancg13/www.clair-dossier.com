@@ -8,6 +8,7 @@ import { ArrowRightIcon } from "../components/icons";
 import { hasDossierTrash, logAudit } from "../lib/admin";
 import { hasQuotaEngine } from "../lib/dossier-workspace";
 import { AiPanel, type AiProgress } from "../components/dossier/AiPanel";
+import { EmailInbox } from "../components/dossier/EmailInbox";
 import { DossierTracker } from "../components/dossier/DossierTracker";
 import { DeliverablesGrid, type DeliverableFile } from "../components/dossier/DeliverablesGrid";
 import { deliverableKeyFromName, deliverableKeyOf } from "../../supabase/functions/_shared/analysis-model.ts";
@@ -1594,6 +1595,8 @@ export function DossierDetail() {
                       </ul>
                     </details>
                   )}
+
+                  <EmailInbox dossierId={dossier.id} isOwner={dossier.user_id === user?.id} />
 
                   <p className="mt-5 border-t hairline pt-4 text-xs leading-relaxed text-slate-500">
                     Formats acceptés : PDF, JPG, PNG, WEBP, DOC, DOCX, TXT — 25 Mo maximum par
