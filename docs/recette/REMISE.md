@@ -14,7 +14,7 @@ Date : 18 novembre 2026 · Branche : `claude/clair-dossier-workflow-63mjz1` · S
 
 1. `/connexion` → bouton **« Abonnée (Camille Roche) »** (compte fictif isolé, propre à chaque visiteur).
 2. **« Nouveau dossier »** → nom + objectif → **« Créer et déposer »**, puis **« lot initial (4) »** (courrier, avis d'échéance scanné, relevé de charges, courriel).
-3. Fermer l'onglet, revenir ~45 s plus tard : situation en deux phrases, **« Joindre le bail »**, dates, six résultats téléchargeables. Option : **« bail + doublon »** → doublon reconnu, nouveau geste **« Vérifier la date »** (5 ou 3 mars 2021).
+3. Fermer l'onglet, revenir ~1 min plus tard : situation en deux phrases, **« Joindre le bail »**, dates, six résultats téléchargeables. Option : **« bail + doublon »** → doublon reconnu, nouveau geste **« Vérifier la date »** (5 ou 3 mars 2021).
 
 Sans abonnement (bouton « Sans abonnement ») : création et dépôt refusés (402), redirection vers `/tarifs`, aucune pièce reçue.
 
@@ -26,7 +26,7 @@ Sans abonnement (bouton « Sans abonnement ») : création et dépôt refusés (
 | Droits vérifiés avant tout stockage (402, rien conservé) | Réel | Démo + tests | parcours `creation_sans_abonnement: 402` ; test `recette-api` |
 | Paiement | **Simulé** (cartes de test de recette) | Démo | aucune transaction Stripe |
 | Activation par événement signé (HMAC, idempotent, ordonné, fin de période) | Réel (mécanisme) / simulé (émetteur) | Démo + tests | parcours « actif après événement signé » |
-| Dépôt fictif → traitement serveur → rendu classé → consultation après fermeture | **Réel** | Fonctions Vercel + Blob | parcours navigateur : premier résultat 45 s, onglet fermé pendant le traitement |
+| Dépôt fictif → traitement serveur → rendu classé → consultation après fermeture | **Réel** | Fonctions Vercel + Blob | parcours navigateur : premier résultat 41–50 s, onglet fermé pendant le traitement |
 | Persistance | Réel (Blob privé, écritures conditionnelles ETag) | Démo | aucune mémoire de processus ni disque temporaire |
 | Lecture PDF texte, tableur, courriel | Réel (règles déterministes, citations page/ligne) | Démo | `exemple-tableau-de-bord.pdf` |
 | Lecture IA des scans / analyse par modèle | **Non vérifié** | Aperçu isolé | passerelle Vercel : `403 — Free tier users do not have access to this model` ; 0 € dépensé ; la pièce est mise en attente (« sera lue dès que le service le permettra »), le reste du dossier est livré |
@@ -43,15 +43,19 @@ Sans abonnement (bouton « Sans abonnement ») : création et dépôt refusés (
 
 Zéro clic admin : aucun compte administrateur n'existe sur la démo (aucun mot de passe admin fourni) ; le parcours n'utilise que le compte client.
 
-## 4. Mesures (session neuve, Playwright, mobile 390 px)
+## 4. Mesures (session neuve, Playwright, mobile 390 px, client hors UE)
+
+Commit testé : `493bead` (trois parcours complets + MCP distant).
 
 | Étape | Démo Vercel | Local |
 |---|---|---|
-| Dépôt de 4 pièces (réponse) | 6,7 – 12,7 s | 0,2 s |
-| Premier résultat après dépôt (onglet fermé) | 40 – 45 s | 6 s |
-| Complément (bail + doublon) | 41 s | 6 s |
+| Dépôt de 4 pièces dont un scan (réponse) | 11 – 12 s | 0,2 s |
+| Premier résultat après dépôt (onglet fermé) | 41 – 50 s | 6 s |
+| Complément (bail + doublon) | 34 – 40 s | 6 s |
 
-Écart : latence du stockage Blob (≈ 0,25 s par accès, 14 accès pour un dépôt) et démarrages à froid. Corrigé en cours de recette : ETag faible renvoyé par le CDN Blob qui bloquait les écritures conditionnelles (consolidation jamais publiée), attente fixe de 20 s avant consolidation, relances de l'exécuteur en rafale, écritures du dépôt en série. Cible production (Supabase) non mesurée.
+Écart : latence du stockage Blob (≈ 0,25 s par accès) et démarrages à froid. Corrigés pendant la recette : ETag faible renvoyé par le CDN Blob (consolidation jamais publiée), conflit d'écriture concurrente non rejoué (un essai à 295 s : travail verrouillé jusqu'à la fin du bail ; bail ramené à 60 s), attente fixe de 20 s avant consolidation, relances en rafale, écritures du dépôt en série. Cible production (Supabase) non mesurée.
+
+Observation : une erreur transitoire « module script … text/html » au premier passage lancé pendant la bascule de déploiement (ancienne page, nouveaux fichiers) ; non reproduite ensuite. Protection contre ce décalage de version : à activer si la démo est conservée.
 
 ## 5. Vérifications sans modification
 
