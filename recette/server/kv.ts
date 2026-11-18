@@ -55,6 +55,7 @@ export class MemoryKv implements Kv {
     return this.m.get(key)?.data.slice() ?? null;
   }
   async putBytes(key: string, bytes: Uint8Array, contentType: string) {
+    blobStats.put++;
     this.m.set(key, { data: bytes.slice(), etag: `e${++this.n}`, type: contentType });
   }
   async delete(key: string) {
@@ -72,6 +73,9 @@ async function readAll(stream: ReadableStream<Uint8Array>): Promise<Uint8Array> 
 /** Vercel Blob privé. Authentification : jeton OIDC de la fonction ou BLOB_READ_WRITE_TOKEN (serveur). */
 const strongEtag = (e: string) => e.replace(/^W\//, '');
 
+/** Compteurs d'accès au stockage (journal des requêtes lentes, sans contenu). */
+export const blobStats = { get: 0, head: 0, put: 0, list: 0, del: 0 };
+
 export class BlobKv implements Kv {
   readonly durable = true;
   constructor(private readonly prefix = 'recette/') {}
@@ -86,6 +90,7 @@ export class BlobKv implements Kv {
    */
   async getJson<T>(key: string, opts: { fresh?: boolean } = {}) {
     if (!opts.fresh) {
+      blobStats.get++;
       const r = await get(this.k(key), { access: 'private', useCache: false, headers: { 'accept-encoding': 'identity' } });
       if (!r || r.statusCode !== 200 || !r.stream) return null;
       return { value: JSON.parse(new TextDecoder().decode(await readAll(r.stream))) as T, etag: strongEtag(r.blob.etag) };
@@ -93,6 +98,7 @@ export class BlobKv implements Kv {
     for (let i = 0; i < 5; i++) {
       let meta: Awaited<ReturnType<typeof head>>;
       try {
+        blobStats.head++;
         meta = await head(this.k(key));
       } catch (e) {
         if (e instanceof BlobNotFoundError) return null;
@@ -111,6 +117,7 @@ export class BlobKv implements Kv {
     throw new Error('lecture incohérente du stockage');
   }
   async putJson(key: string, value: unknown, opts: { ifMatch?: string; create?: boolean } = {}): Promise<PutResult> {
+    blobStats.put++;
     try {
       const r = await put(this.k(key), JSON.stringify(value), {
         access: 'private',
@@ -128,6 +135,7 @@ export class BlobKv implements Kv {
     }
   }
   async getBytes(key: string) {
+    blobStats.get++;
     const r = await get(this.k(key), { access: 'private', useCache: false });
     return r && r.statusCode === 200 && r.stream ? readAll(r.stream) : null;
   }
@@ -141,6 +149,7 @@ export class BlobKv implements Kv {
     const out: string[] = [];
     let cursor: string | undefined;
     do {
+      blobStats.list++;
       const r = await list({ prefix: this.k(prefix), cursor, limit: 1000 });
       out.push(...r.blobs.map((b) => b.pathname.slice(this.prefix.length)));
       cursor = r.hasMore ? r.cursor : undefined;
