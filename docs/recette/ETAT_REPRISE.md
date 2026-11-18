@@ -36,10 +36,26 @@
 - Resend : pas de compte/domaine → réception entrante non testable de bout en bout.
 - Clé Anthropic : absente → aucun passage IA réel.
 
-## Prochaines actions
+## Chantiers livrés (2026-11-18, tout validé : tsc · 184/184 unités · 98/98 SQL PGlite · deno check · build 36 routes)
 
-1. Chantier A — quotas IA par offre : migration additive `plan_entitlements` (+ réservation
-   atomique, suspension sans facturation), tests PGlite, proposition de quotas définitifs.
-2. Chantier B — réception e-mail entrante (adresse par espace, webhook signé, routage) :
-   implémentation + tests purs, marquée « non vérifiée E2E » (Resend absent).
-3. Remise concise (format mission) + mise à jour de la description de PR #27.
+1. Correction cible livrables — commit `eaa3aa8` (type enregistré, alias, « Autres documents »).
+2. Quotas IA par offre — commit `12cc6b6` (migration 20261118120000, worker, AiPanel usage
+   restant, docs/recette/QUOTAS_IA.md, rollback niveau 1).
+3. Réception e-mail entrante — commit `33d0c89` (migration 20261118130000, fonction
+   email-inbound signée Svix, EmailInbox 3 étapes, docs/recette/EMAIL_ENTRANT.md,
+   rollback niveau 1). E2E NON vérifié : domaine Resend absent.
+
+## Différé (décision assumée, pas un oubli)
+
+- Sélecteur des 7 offres en recette : l'affectation d'offre passe par `subscriptions`
+  (source de vérité Stripe) ou `entitlement_overrides` (RPC admin existante) — un
+  sélecteur UI dédié n'a de sens qu'une fois un environnement de recette serveur réel
+  disponible ; y renoncer évite un contournement de la source de vérité Stripe.
+- LinkedIn / connexions MCP admin : aucun module existant, accès et cadrage absents.
+- Révision vitrine/marketing et textes CGV : publication commerciale jamais automatique
+  (mission) — propositions dans docs/recette/*, décision propriétaire requise.
+
+## Prochaine action
+
+Suivi de PR #27 (brouillon) jusqu'à décision du propriétaire ; AUCUNE fusion sur main
+sans accord écrit explicite (« fusionne »).
