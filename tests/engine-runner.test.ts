@@ -191,3 +191,16 @@ test('isolement : une empreinte connue d’un autre titulaire n’est jamais ré
   const v = await view(s, 'DB');
   assert.ok(v.pieces.every((p) => p.id === pb.id), 'aucune pièce de A dans la vue de B');
 });
+
+test('PDF : un montant ne se coupe jamais avant le symbole €', async () => {
+  const { Pdf } = await import('../supabase/functions/_shared/rendus/pdf.ts');
+  const { loadAssets } = await import('../recette/server/assets.ts');
+  const d = await Pdf.create(loadAssets(), { title: 't', subject: 's', kicker: 'K', footer: 'f' });
+  const text = 'Les pièces ne concordent pas : 3 480,00 € (courrier) contre 3 210,00 € (relevé de charges), soit un écart.';
+  // Toutes les largeurs de colonne : aucune ne doit séparer le montant de son symbole.
+  const lines = Array.from({ length: 50 }, (_, k) => 80 + k * 5).flatMap((w) => d.wrap(text, d.f.body, 11, w));
+  for (const l of lines) {
+    assert.ok(!/^€/.test(l), `ligne commençant par € : « ${l} »`);
+    assert.ok(!/,\d\d$/.test(l.trimEnd()), `montant coupé avant € : « ${l} »`);
+  }
+});

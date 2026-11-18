@@ -17,7 +17,10 @@ const SLATE = rgb(0x4a / 255, 0x53 / 255, 0x66 / 255); // contraste ≥ 7:1 sur 
 const LINE = rgb(0.86, 0.85, 0.82);
 const W = 595.28, H = 841.89, M = 56, BOTTOM = 70;
 
-const clean = (s: string) => s.replace(/[   ]/g, ' ').replace(/\t/g, ' ').replace(/[\u0000-\u0008\u000b-\u001f]/g, '');
+// Espaces insécables (fines ou non) unifiés en U+00A0 : jamais de coupure à l'intérieur (« 3 480,00 € »), remplacés par une espace au dessin.
+const clean = (s: string) => s.replace(/[\u00a0\u202f\u2009]/g, '\u00a0').replace(/\t/g, ' ').replace(/[\u0000-\u0008\u000b-\u001f]/g, '');
+/** Texte dessiné ou métadonnée sans découpage : espaces ordinaires. */
+const plain = (s: string) => clean(s).replace(/\u00a0/g, ' ');
 
 export class Pdf {
   pdf!: PDFDocument;
@@ -31,9 +34,9 @@ export class Pdf {
     const d = new Pdf(meta.kicker, meta.footer);
     d.pdf = await PDFDocument.create();
     d.pdf.registerFontkit(fontkit);
-    d.pdf.setTitle(clean(meta.title), { showInWindowTitleBar: true });
+    d.pdf.setTitle(plain(meta.title), { showInWindowTitleBar: true });
     d.pdf.setAuthor('ClairDossier');
-    d.pdf.setSubject(clean(meta.subject));
+    d.pdf.setSubject(plain(meta.subject));
     d.pdf.setLanguage('fr-FR');
     d.pdf.setProducer('ClairDossier');
     d.pdf.setCreator('ClairDossier');
@@ -52,7 +55,7 @@ export class Pdf {
     const lh = 24;
     const lw = (this.logo.width / this.logo.height) * lh;
     this.page.drawImage(this.logo, { x: M, y: H - M - lh + 6, width: lw, height: lh });
-    const k = clean(this.kicker.toUpperCase());
+    const k = plain(this.kicker.toUpperCase());
     this.page.drawText(k, { x: W - M - this.f.bold.widthOfTextAtSize(k, 7.5), y: H - M - 4, size: 7.5, font: this.f.bold, color: SLATE, characterSpacing: 0.6 } as never);
     this.page.drawLine({ start: { x: M, y: H - M - 26 }, end: { x: W - M, y: H - M - 26 }, thickness: 1.2, color: CHAMPAGNE });
     this.y = H - M - 50;
@@ -69,7 +72,7 @@ export class Pdf {
       for (const word of para.split(/[ \t\n]+/)) {
         if (!word) continue;
         const t = line ? `${line} ${word}` : word;
-        if (font.widthOfTextAtSize(t, size) > width && line) {
+        if (font.widthOfTextAtSize(t.replace(/\u00a0/g, ' '), size) > width && line) {
           out.push(line);
           line = word;
         } else line = t;
@@ -134,7 +137,7 @@ export class Pdf {
       this.ensure(22);
       let x = M;
       for (const c of cols) {
-        this.page.drawText(clean(c.label.toUpperCase()), { x: x + pad, y: this.y - 10, size: 7.5, font: this.f.bold, color: NAVY });
+        this.page.drawText(plain(c.label.toUpperCase()), { x: x + pad, y: this.y - 10, size: 7.5, font: this.f.bold, color: NAVY });
         x += c.width;
       }
       this.y -= 16;
