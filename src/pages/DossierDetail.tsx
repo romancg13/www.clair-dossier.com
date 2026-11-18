@@ -588,11 +588,13 @@ export function DossierDetail() {
   // Clôture = dernier événement de cycle de vie (journal), à défaut statut historique « archive ».
   const lifecycle = events.find((e) => e.type === "dossier_cloture" || e.type === "dossier_rouvert");
   const closed = lifecycle ? lifecycle.type === "dossier_cloture" : dossier?.status === "archive";
+  // Moteur éteint (production) : les seuls documents livrés sont ceux que l'équipe dépose
+  // sous leur nom d'origine ; ils annoncent « Documents disponibles », comme avant.
   const step = dossier
     ? trackingStep({
         status: dossier.status,
         forcedStep: dossier.current_step,
-        hasDeliverables: aiDeliverables.length > 0,
+        hasDeliverables: (AI_ENGINE ? aiDeliverables : deliverables).length > 0,
         processing: aiProgress.processing,
         closed,
       })
@@ -1598,7 +1600,7 @@ export function DossierDetail() {
                   <DeliverablesGrid
                     files={deliverableFiles}
                     caption={aiDeliverables.length ? `Dernière version publiée le ${fmtDate(aiDeliverables[aiDeliverables.length - 1].created_at)}` : null}
-                    emptyLabel={aiProgress.processing ? "En préparation…" : "Pas encore disponible."}
+                    emptyLabel={aiProgress.processing ? "En préparation…" : "Pas encore disponibles."}
                     busy={zipping}
                     onDownloadAll={() => downloadZip(deliverables, `documents-${dossier.title || dossier.id}.zip`)}
                   />
@@ -1606,7 +1608,7 @@ export function DossierDetail() {
                   <div className="mt-8 border-t hairline pt-6">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">
-                      Autres documents
+                      {AI_ENGINE ? "Autres documents" : "Documents déposés par l'équipe ClairDossier"}
                     </p>
                   </div>
 

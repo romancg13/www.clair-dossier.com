@@ -4,16 +4,18 @@ import { lazy, Suspense, type ReactNode } from 'react';
 import { Navigate, Route, useLocation } from 'react-router-dom';
 import { MoiProvider, useMoi } from './useMoi';
 
+// Appels marqués purs : sans VITE_RECETTE, recetteRoutes() est éliminé et ces import()
+// dynamiques avec lui — aucun chunk de recette n'est publié dans le build de production.
 const P = {
-  Connexion: lazy(() => import('./pages').then((m) => ({ default: m.RecetteConnexion }))),
-  Inscription: lazy(() => import('./pages').then((m) => ({ default: m.RecetteInscription }))),
-  Compte: lazy(() => import('./pages').then((m) => ({ default: m.RecetteCompte }))),
-  Nouveau: lazy(() => import('./pages').then((m) => ({ default: m.RecetteNouveau }))),
-  Boite: lazy(() => import('./pages').then((m) => ({ default: m.RecetteBoite }))),
-  Admin: lazy(() => import('./pages').then((m) => ({ default: m.RecetteAdmin }))),
-  Dossier: lazy(() => import('./DossierPage').then((m) => ({ default: m.DossierPage }))),
-  Tarifs: lazy(() => import('./tarifs').then((m) => ({ default: m.TarifsLisibles }))),
-  Paiement: lazy(() => import('./tarifs').then((m) => ({ default: m.PaiementRecette }))),
+  Connexion: /* @__PURE__ */ lazy(() => import('./pages').then((m) => ({ default: m.RecetteConnexion }))),
+  Inscription: /* @__PURE__ */ lazy(() => import('./pages').then((m) => ({ default: m.RecetteInscription }))),
+  Compte: /* @__PURE__ */ lazy(() => import('./pages').then((m) => ({ default: m.RecetteCompte }))),
+  Nouveau: /* @__PURE__ */ lazy(() => import('./pages').then((m) => ({ default: m.RecetteNouveau }))),
+  Boite: /* @__PURE__ */ lazy(() => import('./pages').then((m) => ({ default: m.RecetteBoite }))),
+  Admin: /* @__PURE__ */ lazy(() => import('./pages').then((m) => ({ default: m.RecetteAdmin }))),
+  Dossier: /* @__PURE__ */ lazy(() => import('./DossierPage').then((m) => ({ default: m.DossierPage }))),
+  Tarifs: /* @__PURE__ */ lazy(() => import('./tarifs').then((m) => ({ default: m.TarifsLisibles }))),
+  Paiement: /* @__PURE__ */ lazy(() => import('./tarifs').then((m) => ({ default: m.PaiementRecette }))),
 };
 
 function Garde({ children }: { children: ReactNode }) {
