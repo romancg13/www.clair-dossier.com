@@ -140,6 +140,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       },
     ],
   ],
-  // Nouvelle architecture React Native : activée par défaut en SDK 57 (RN 0.86).
+  // Nouvelle architecture React Native : activée par défaut depuis SDK 57 (RN 0.86).
   experiments: { typedRoutes: true },
 });

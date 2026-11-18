@@ -10,7 +10,7 @@
  *     arrière-plan (économie de batterie et de requêtes).
  */
 import 'react-native-url-polyfill/auto';
-import { AppState, type AppStateStatus } from 'react-native';
+import { AppState } from 'react-native';
 import { createClient } from '@supabase/supabase-js';
 import { SUPABASE_ANON_KEY, SUPABASE_URL, isSupabaseConfigured } from './config';
 import { secureSessionStorage } from './storage';
@@ -38,7 +38,8 @@ let subscribed = false;
 export function startAuthRefreshBridge(): () => void {
   if (!isSupabaseConfigured || subscribed) return () => {};
   subscribed = true;
-  const handler = (state: AppStateStatus) => {
+  // RN 0.88 : `AppState.currentState` est typé `string | null | undefined`.
+  const handler = (state: string | null | undefined) => {
     if (state === 'active') supabase.auth.startAutoRefresh();
     else supabase.auth.stopAutoRefresh();
   };

@@ -63,7 +63,7 @@ Le site consomme ce cœur **sans changer son API publique** :
 
 ## 4. Pile mobile
 
-Expo SDK 57 · React Native 0.86 · React 19 · TypeScript strict · expo-router ·
+Expo SDK 58 · React Native 0.88 · React 19.3 · TypeScript strict · expo-router ·
 TanStack Query · supabase-js · SecureStore · react-native-svg.
 
 Choix notables :
@@ -78,6 +78,13 @@ Choix notables :
   le jeton de l'utilisateur) : progression réelle, aucun fichier chargé en mémoire.
 - **Aucun traceur** : pas de Sentry ni d'analytics — ce serait un sous-traitant
   RGPD de plus, décision produit et juridique, pas technique.
+- **`overrides` npm temporaires** (`mobile/package.json`, depuis 2026-11-04) :
+  `glob` ^14.0.2 et `minimatch` ^11.0.1 forcés sous `@expo/cli` et
+  `@expo/fingerprint` (outillage, rien n'est livré dans l'app) pour lever
+  GHSA-3g3m-2fjr-6pw4 et GHSA-g3hv-75wg-m249 ; Expo 58 déclare encore glob ^13 /
+  minimatch ^10. Équivalence vérifiée (mêmes fichiers de routes, même liste de
+  renommage du gabarit prebuild, même empreinte). **À retirer** dès qu'`expo`
+  dépend nativement de ces versions (`npm ls glob minimatch`).
 
 ---
 
