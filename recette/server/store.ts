@@ -129,12 +129,12 @@ export class RecetteStore implements EngineStore {
     return ref ? ((await this.kv.getJson<PieceRec>(`pieces/${ref.value.dossier_id}/${id}.json`))?.value ?? null) : null;
   }
   async addPiece(p: PieceRec, bytes: Uint8Array) {
-    // Écritures indépendantes (clés distinctes) : en parallèle.
+    // Fichier et référence d'abord (en parallèle), fiche de la pièce ensuite : une pièce n'est jamais listée sans son fichier.
     await Promise.all([
       this.kv.putBytes(`files/${p.user_id}/${p.dossier_id}/${p.id}`, bytes, p.mime ?? 'application/octet-stream'),
       this.kv.putJson(`pieceref/${p.id}.json`, { dossier_id: p.dossier_id }, { create: true }),
-      this.kv.putJson(`pieces/${p.dossier_id}/${p.id}.json`, p, { create: true }),
     ]);
+    await this.kv.putJson(`pieces/${p.dossier_id}/${p.id}.json`, p, { create: true });
   }
   async readPieceBytes(p: PieceRec) {
     const b = await this.kv.getBytes(`files/${p.user_id}/${p.dossier_id}/${p.id}`);
@@ -163,8 +163,11 @@ export class RecetteStore implements EngineStore {
     return last ? ((await this.kv.getJson<AnalysisRec>(`analyses/${dossierId}/r${String(last.value.revision).padStart(5, '0')}.json`))?.value ?? null) : null;
   }
   async insertAnalysis(rec: AnalysisRec) {
-    const ok = (await this.kv.putJson(`analyses/${rec.dossier_id}/r${String(rec.revision).padStart(5, '0')}.json`, rec, { create: true })).ok;
-    if (ok) await update<{ revision: number }>(this.kv, `analyses/${rec.dossier_id}/last.json`, (cur) => (cur && cur.revision >= rec.revision ? null : { revision: rec.revision }));
+    const key = `analyses/${rec.dossier_id}/r${String(rec.revision).padStart(5, '0')}.json`;
+    const ok = (await this.kv.putJson(key, rec, { create: true })).ok;
+    // Pointeur avancé aussi quand la révision existait déjà (essai précédent interrompu entre les deux écritures),
+    // jamais vers une révision absente.
+    if (ok || (await this.kv.getJson(key, { fresh: true }))) await update<{ revision: number }>(this.kv, `analyses/${rec.dossier_id}/last.json`, (cur) => (cur && cur.revision >= rec.revision ? null : { revision: rec.revision }));
     return ok;
   }
   async setAnalysisStatus(dossierId: string, revision: number, status: AnalysisRec['status']) {
@@ -320,8 +323,20 @@ export class RecetteStore implements EngineStore {
   async listEvents(dossierId: string) {
     return (await this.kv.getJson<{ items: EventItem[] }>(`events/${dossierId}.json`))?.value.items ?? [];
   }
+  /** Nombre de fichiers annoncé pour un lot envoyé fichier par fichier ; le premier envoi du lot fait foi. */
+  async declareLot(dossierId: string, lotId: string, total: number) {
+    await this.kv.putJson(`lots/${dossierId}/${lotId}.json`, { total }, { create: true });
+  }
   async claimNotification(dossierId: string, lotId: string) {
-    return (await this.kv.putJson(`notif/${dossierId}/${lotId}.json`, { at: this.now().toISOString() }, { create: true })).ok;
+    const key = `notif/${dossierId}/${lotId}.json`;
+    if (await this.kv.getJson(key)) return false;
+    // Lot incomplet (fichiers annoncés encore attendus, ou pièce reçue pas encore traitée) : c'est la révision
+    // qui couvre tout le lot qui notifiera.
+    const total = (await this.kv.getJson<{ total: number }>(`lots/${dossierId}/${lotId}.json`))?.value.total ?? 0;
+    const lot = (await this.listPieces(dossierId)).filter((p) => p.lot_id === lotId);
+    if (lot.length < total) return false;
+    for (const p of lot) if (!p.deleted_at && !p.duplicate_of && !(await this.getExtraction(p.id))) return false;
+    return (await this.kv.putJson(key, { at: this.now().toISOString() }, { create: true })).ok;
   }
   async notificationsAllowed(userId: string) {
     return (await this.getUser(userId))?.notifications ?? false;

@@ -10,7 +10,7 @@ export type JobStatus = 'queued' | 'running' | 'done' | 'failed' | 'cancelled';
 
 export interface Job {
   id: string;
-  /** Clé d'idempotence : x:<dossier>:<empreinte>, c:<dossier>, r:<dossier>. */
+  /** Clé d'idempotence : x:<pièce>, c:<dossier>, r:<dossier> (une seule clé par pièce, quel que soit l'appelant). */
   key: string;
   kind: JobKind;
   user_id: string;
@@ -170,7 +170,7 @@ export interface EngineStore {
   addCost(userId: string, lotId: string | null, cents: number): Promise<void>;
 
   addEvent(dossierId: string, userId: string, type: string, label: string): Promise<void>;
-  /** Vrai une seule fois par (dossier, lot). */
+  /** Vrai une seule fois par (dossier, lot), et seulement quand le lot est complet (pièces annoncées reçues, toutes traitées). */
   claimNotification(dossierId: string, lotId: string): Promise<boolean>;
   notify(userId: string, message: { subject: string; text: string; link: string }): Promise<void>;
   notificationsAllowed(userId: string): Promise<boolean>;

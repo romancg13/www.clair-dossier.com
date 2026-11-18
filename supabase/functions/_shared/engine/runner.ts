@@ -110,14 +110,28 @@ async function runExtract(deps: EngineDeps, job: Job): Promise<RunReport['outcom
   const consolidate = () => store.enqueue({ key: `c:${piece.dossier_id}`, kind: 'consolidate', user_id: piece.user_id, dossier_id: piece.dossier_id, piece_id: null, delayMs: config.consolidateDelayMs });
 
   // Doublon dans le dossier : même empreinte qu'une pièce antérieure → aucune extraction, aucun coût.
+  // Une pièce antérieure en échec de lecture (non reporté) n'est pas un original : la copie redéposée est lue et la remplace.
   const siblings = await store.listPieces(piece.dossier_id);
-  const first = siblings.filter((s) => !s.deleted_at && s.sha256 === piece.sha256).sort((a, b) => a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id))[0];
+  const same = siblings.filter((s) => !s.deleted_at && s.sha256 === piece.sha256).sort((a, b) => a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id));
+  const failedCopies: PieceRec[] = [];
+  let first: PieceRec | undefined;
+  for (const s of same) {
+    if (s.id !== piece.id && s.duplicate_of) continue; // copie déjà rattachée à une autre pièce : jamais un original
+    const sx = s.id === piece.id ? null : await store.getExtraction(s.id);
+    if (sx && sx.status === 'error' && !sx.deferred) {
+      failedCopies.push(s);
+      continue;
+    }
+    first = s;
+    break;
+  }
   if (first && first.id !== piece.id) {
     await store.markDuplicate(piece.id, first.id);
     await store.addEvent(piece.dossier_id, piece.user_id, 'piece_doublon', `« ${piece.file_name} » est identique à « ${first.file_name} » : prise en compte une seule fois.`);
     await consolidate();
     return 'done';
   }
+  for (const f of failedCopies) if (f.duplicate_of !== piece.id) await store.markDuplicate(f.id, piece.id);
   const existing = await store.getExtraction(piece.id);
   if (existing && existing.status !== 'error') {
     await consolidate();
@@ -148,6 +162,9 @@ async function runExtract(deps: EngineDeps, job: Job): Promise<RunReport['outcom
     const over = await overBudget(deps, piece.user_id, piece.lot_id);
     if (over === 'user' || over === 'global') {
       await store.alert('BUDGET', { scope: over, dossier: piece.dossier_id });
+      // Pièce comptée « reportée » : les pièces déjà lues sont publiées sans attendre ; ce travail la relit au début du mois suivant.
+      await store.putExtraction({ ...base, status: 'error', reason: 'Plafond mensuel de lecture atteint : la pièce est conservée et sera lue au début du mois prochain.', deferred: true, data: null, vision: false, provider: provider.name, model: null, reused_from: null, input_tokens: 0, output_tokens: 0, cost_cents: 0 });
+      await consolidate();
       throw Object.assign(new Retry(`budget ${over} atteint`), { until: monthStartNext(config.now()), countAttempt: false });
     }
     if (over === 'lot') return fail('error', 'Budget de traitement de ce dépôt atteint : la pièce est conservée et sera lue lors du prochain recalcul.', provider.name, true);
@@ -155,7 +172,8 @@ async function runExtract(deps: EngineDeps, job: Job): Promise<RunReport['outcom
   const res: ModelResult<ExtractionOutput> = await provider.extract(pp, piece.file_name, deps.boundary());
   const cost = await recordCost(deps, piece.user_id, piece.lot_id, res, provider.name);
   if (!res.ok) {
-    if (res.retryable) throw new Retry(res.message);
+    // Dernière tentative : plus de nouvel essai payant, mêmes replis qu'une erreur définitive.
+    if (res.retryable && job.attempts < job.max_attempts) throw new Retry(res.message);
     // Repli : texte lisible → règles déterministes plutôt qu'un échec.
     if (!pp.needsVision) {
       const fb = await rulesProvider.extract(pp, piece.file_name, '');
@@ -196,7 +214,9 @@ async function runConsolidate(deps: EngineDeps, job: Job): Promise<RunReport['ou
   const p = await processable(store, job.dossier_id);
   if (!p.ok) return 'cancelled';
   const dossier = p.dossier;
-  const open = (await store.openJobs(dossier.id)).filter((j) => j.kind === 'extract' && j.id !== job.id && (j.status === 'queued' || j.status === 'running'));
+  // Lectures en cours ou reprises proches ; une lecture reportée au mois suivant (budget) ne retient pas la publication.
+  const horizon = config.now().getTime() + 10 * 60_000;
+  const open = (await store.openJobs(dossier.id)).filter((j) => j.kind === 'extract' && j.id !== job.id && (j.status === 'running' || (j.status === 'queued' && Date.parse(j.run_after) <= horizon)));
   if (open.length) throw Object.assign(new Retry('extractions en cours'), { delayMs: deps.config.extractionWaitMs ?? 20_000, countAttempt: false });
 
   const pieces = (await store.listPieces(dossier.id)).filter((x) => !x.deleted_at);
@@ -206,7 +226,8 @@ async function runConsolidate(deps: EngineDeps, job: Job): Promise<RunReport['ou
   const cov = coverageOf(pieces, ex);
   if (cov.pending > 0) {
     // Pièce sans extraction ni travail ouvert (travail perdu) : réconciliation.
-    for (const x of main.filter((m) => !ex.get(m.id))) await store.enqueue({ key: `x:${dossier.id}:${x.sha256}`, kind: 'extract', user_id: x.user_id, dossier_id: dossier.id, piece_id: x.id });
+    // Même clé que le dépôt et la réconciliation planifiée (x:<pièce>) : jamais deux travaux pour une même pièce.
+    for (const x of main.filter((m) => !ex.get(m.id))) await store.enqueue({ key: `x:${x.id}`, kind: 'extract', user_id: x.user_id, dossier_id: dossier.id, piece_id: x.id });
     throw Object.assign(new Retry('extractions manquantes'), { delayMs: deps.config.extractionWaitMs ?? 20_000, countAttempt: false });
   }
   const usable = main.filter((x) => ex.get(x.id)?.status === 'ok');
@@ -271,7 +292,15 @@ async function runConsolidate(deps: EngineDeps, job: Job): Promise<RunReport['ou
     cost_cents: cost,
     created_at: iso(config.now()),
   };
-  if (!(await store.insertAnalysis(rec))) return 'done'; // révision créée par un autre exécuteur
+  if (!(await store.insertAnalysis(rec))) {
+    // Révision déjà présente : écrite par un exécuteur concurrent, ou par un essai interrompu avant la mise à jour du pointeur.
+    const cur = await store.lastAnalysis(dossier.id);
+    if (cur && cur.input_fingerprint === fingerprint) {
+      await renderAndPublish(deps, dossier, cur);
+      return 'done';
+    }
+    throw new Retry('révision déjà présente : nouveau calcul'); // compté : un blocage durable finit en alerte TRAVAIL_ECHEC
+  }
   await renderAndPublish(deps, dossier, rec);
   return 'done';
 }
@@ -307,9 +336,11 @@ export async function renderAndPublish(deps: EngineDeps, dossier: DossierState, 
   if (mode === 'approved') {
     if (rec.status !== 'published') await store.setAnalysisStatus(dossier.id, rec.revision, 'published');
     if (changed.length) await store.addEvent(dossier.id, dossier.user_id, 'resultats_disponibles', `Résultats mis à jour (révision ${rec.revision}) : ${changed.length} document${changed.length > 1 ? 's' : ''} actualisé${changed.length > 1 ? 's' : ''}${rec.coverage.complete ? '' : ' — analyse partielle'}.`);
+    // Réservation possible seulement une fois le lot complet (voir EngineStore.claimNotification) : elle peut donc
+    // survenir sur une republication sans changement (dernier fichier du lot identique à un précédent).
     const claimed: string[] = [];
     for (const lot of rec.lots) if (await store.claimNotification(dossier.id, lot)) claimed.push(lot);
-    if (claimed.length && changed.length && (await store.notificationsAllowed(dossier.user_id))) {
+    if (claimed.length && (await store.notificationsAllowed(dossier.user_id))) {
       await store.notify(dossier.user_id, {
         subject: 'Vos résultats ClairDossier sont disponibles',
         text: `Bonjour,\n\nDe nouveaux résultats sont disponibles dans l'un de vos dossiers (situation, dates, prochaine action).${rec.coverage.complete ? '' : "\nCertaines pièces n'ont pas pu être exploitées : le détail figure dans votre espace."}\n\nCes documents sont générés automatiquement et doivent être vérifiés ; ils ne constituent pas un conseil juridique.`,
@@ -333,6 +364,18 @@ async function runRender(deps: EngineDeps, job: Job): Promise<RunReport['outcome
 
 /* ── Boucle ─────────────────────────────────────────────────────────────── */
 
+/**
+ * Lecture en échec après tous les essais : la pièce est comptée « illisible » (et non plus « en attente »),
+ * ce qui arrête la réconciliation de la consolidation et laisse publier les autres pièces.
+ */
+async function recordUnreadable(deps: EngineDeps, pieceId: string) {
+  const { store, config } = deps;
+  const piece = await store.getPiece(pieceId);
+  if (!piece || piece.deleted_at || (await store.getExtraction(piece.id))) return;
+  await store.putExtraction({ piece_id: piece.id, dossier_id: piece.dossier_id, user_id: piece.user_id, sha256: piece.sha256, created_at: iso(config.now()), status: 'error', reason: 'Lecture impossible de cette pièce après plusieurs essais : merci de la redéposer.', deferred: false, data: null, vision: false, provider: 'aucun', model: null, reused_from: null, input_tokens: 0, output_tokens: 0, cost_cents: 0 });
+  await store.enqueue({ key: `c:${piece.dossier_id}`, kind: 'consolidate', user_id: piece.user_id, dossier_id: piece.dossier_id, piece_id: null, delayMs: config.consolidateDelayMs });
+}
+
 export async function runOnce(deps: EngineDeps): Promise<RunReport> {
   if (deps.config.paused) return { job: null, kind: null, outcome: 'paused' };
   const job = await deps.store.claim(deps.config.workerId, deps.config.leaseMs);
@@ -348,6 +391,7 @@ export async function runOnce(deps: EngineDeps): Promise<RunReport> {
     if (countAttempt && job.attempts >= job.max_attempts) {
       await deps.store.complete(job, { status: 'failed', error: message });
       await deps.store.alert('TRAVAIL_ECHEC', { kind: job.kind, dossier: job.dossier_id, attempts: job.attempts });
+      if (job.kind === 'extract' && job.piece_id) await recordUnreadable(deps, job.piece_id);
       return { job: job.id, kind: job.kind, outcome: 'failed' };
     }
     const delayMs = r.until ? r.until.getTime() - deps.config.now().getTime() : r.delayMs ?? Math.min(15 * 60_000, 2 ** job.attempts * 15_000);

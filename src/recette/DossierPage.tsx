@@ -59,6 +59,7 @@ export function DossierPage() {
       for (const [i, f] of files.entries()) {
         const form = new FormData();
         form.append('lot', lot);
+        form.append('total', String(files.length));
         form.append('fichiers', f, f.name);
         await api(`/api/dossiers/${id}/pieces`, { form });
         setUpload({ done: i + 1, total: files.length });

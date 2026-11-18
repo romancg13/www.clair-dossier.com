@@ -287,6 +287,8 @@ export async function handle(env: ApiEnv, req: Request): Promise<Response> {
       if (!files.length) return err(400, 'Aucun fichier reçu.');
       const big = files.find((f) => f.size > MAX_UPLOAD);
       if (big) return err(413, `« ${big.name} » dépasse 4 Mo.`);
+      // Lot envoyé fichier par fichier : nombre annoncé, pour notifier une seule fois, sur le lot complet.
+      await store.declareLot(d.id, lot, Math.min(200, Math.max(files.length, Math.floor(Number(form.get('total')) || 0))));
       // Stockage des pièces en parallèle, puis mise en file (durable avant la réponse).
       const added = await Promise.all(
         files.map(async (f) => {
