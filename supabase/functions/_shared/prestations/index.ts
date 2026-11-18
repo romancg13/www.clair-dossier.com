@@ -117,15 +117,21 @@ export function postsLinkedIn(brief: BriefLinkedIn, today: string): PostLinkedIn
 
 export interface ViewLike {
   dossier: { title: string; as_of: string };
-  tableau: { action: { label: string }; next_date: { date: string; title: string } | null };
+  tableau: { action: { label: string } };
   resume: { missing: { label: string; why: string }[]; contradictions: { text: string }[] };
   pieces: { name: string }[];
+  /** Échéances confirmées à venir (jamais une date « à confirmer » : un brouillon n'affirme que ce qui est écrit). */
   echeances: { confirmed: { date: string; title: string }[] };
 }
 
+const fr = (iso: string) => iso.split('-').reverse().join('/');
+
 export function demandeJustificatifs(v: ViewLike, destinataire: string): { objet: string; corps: string; elements: string[] } {
   const elements = [...v.resume.missing.map((m) => m.label), ...v.resume.contradictions.map((c) => `les justificatifs expliquant l'écart relevé (${c.text.replace(/\.$/, '')})`)].slice(0, 6);
-  const corps = `Bonjour,\n\nPour traiter le dossier « ${v.dossier.title} », pourriez-vous nous transmettre en une seule fois :\n${elements.map((e) => `- ${e}`).join('\n') || '- (aucun élément manquant relevé à ce jour)'}\n${v.tableau.next_date ? `\nUne réponse est attendue avant le ${v.tableau.next_date.date.split('-').reverse().join('/')} : un envoi dans les prochains jours nous permettrait de la préparer.\n` : ''}\nMerci par avance.\n\nCordialement,`;
+  // Seule une échéance de réponse confirmée justifie la phrase : une proposition de rendez-vous ou une date
+  // de paiement n'est pas une « réponse attendue ».
+  const reponse = v.echeances.confirmed.find((d) => /r[ée]ponse|r[ée]pondre/i.test(d.title));
+  const corps = `Bonjour,\n\nPour traiter le dossier « ${v.dossier.title} », pourriez-vous nous transmettre en une seule fois :\n${elements.map((e) => `- ${e}`).join('\n') || '- (aucun élément manquant relevé à ce jour)'}\n${reponse ? `\nUne réponse est attendue avant le ${fr(reponse.date)} : un envoi dans les prochains jours nous permettrait de la préparer.\n` : ''}\nMerci par avance.\n\nCordialement,`;
   return { objet: `Dossier « ${v.dossier.title} » : justificatifs à transmettre${destinataire ? ` (${destinataire})` : ''}`, corps, elements };
 }
 
@@ -133,7 +139,7 @@ export function ficheRendezVous(v: ViewLike): { objectif: string; questions: str
   const questions = [
     ...v.resume.contradictions.map((c) => `Comment expliquez-vous cette différence : ${c.text.replace(/^Montants différents : |^Date différente pour /, '').replace(/\.$/, '')} ?`),
     ...v.resume.missing.map((m) => `Pouvez-vous nous remettre ${m.label} ?`),
-    ...(v.tableau.next_date ? [`Quelles suites prévoyez-vous avant le ${v.tableau.next_date.date.split('-').reverse().join('/')} ?`] : []),
+    ...(v.echeances.confirmed[0] ? [`Quelles suites prévoyez-vous avant le ${fr(v.echeances.confirmed[0].date)} ?`] : []),
   ].slice(0, 3);
   while (questions.length < 3) questions.push(['Quel est le calendrier envisagé pour la suite ?', 'Quels documents vous manquent de notre côté ?', 'Qui est votre interlocuteur pour ce dossier ?'][questions.length]);
   return { objectif: `Faire le point sur « ${v.dossier.title} » et obtenir les éléments pour : ${v.tableau.action.label.toLowerCase()}.`, questions, pieces: v.pieces.map((p) => p.name).slice(0, 8) };

@@ -35,6 +35,8 @@ export interface ViewAnalysis {
 }
 
 export interface ViewInput {
+  /** Identifiant du dossier : rend l'UID des événements ICS propre au dossier. */
+  dossierId?: string;
   title: string;
   revision: number;
   generatedAt: Date;
@@ -60,7 +62,7 @@ export interface DeadlineView {
 
 export interface RenduView {
   version: 1;
-  dossier: { title: string; revision: number; as_of: string; provider: string; simulation: boolean; coverage_label: string; complete: boolean };
+  dossier: { id: string | null; title: string; revision: number; as_of: string; provider: string; simulation: boolean; coverage_label: string; complete: boolean };
   tableau: {
     situation: string;
     action: { label: string; owner: Owner; owner_label: string; rationale: string; due_date: string | null; target: 'pieces' | 'dates' | 'resume' | 'relances' | 'echeances' | null };
@@ -93,12 +95,13 @@ export const OWNER_LABEL: Record<Owner, string> = { client: 'Vous', cabinet: 'Vo
 const FACT_STATUS: Record<string, string> = { documented: 'documenté', asserted_by_party: 'déclaré par une partie', inferred: 'déduit', missing: 'manquant' };
 const NATURE: Record<string, string> = { mentioned: 'Date écrite dans une pièce', computed: 'Date calculée', hypothesis: 'À confirmer' };
 
-export function reliabilityOf(ev: Ev[], opts: { contradicted?: boolean; hypothesis?: boolean } = {}): Reliab {
+export function reliabilityOf(ev: Ev[], opts: { contradicted?: boolean; kind?: 'mentioned' | 'computed' | 'hypothesis' } = {}): Reliab {
   const reasons: string[] = [];
   if (!ev.length) reasons.push('non sourcé');
   else if (!ev.some((e) => e.status === 'found')) reasons.push(ev.some((e) => e.status === 'unknown') ? 'lecture visuelle à vérifier' : 'extrait non retrouvé dans la pièce');
   if (opts.contradicted) reasons.push('contredit par une autre pièce');
-  if (opts.hypothesis) reasons.push('date non écrite dans une pièce');
+  if (opts.kind === 'hypothesis') reasons.push('date proposée, non confirmée');
+  if (opts.kind === 'computed') reasons.push('date calculée, non écrite dans une pièce');
   return { level: reasons.length ? 'a_verifier' : 'elevee', reasons };
 }
 
@@ -127,12 +130,28 @@ export function buildView(i: ViewInput): RenduView {
   const today = parisDay(i.generatedAt);
   const contradictedKeys = new Set((a.contradictions ?? []).flatMap((c) => c.event_keys ?? []));
 
+  // Dernière correction humaine par clé (même règle que applyOverrides).
+  const latest = new Map<string, EventOverride>();
+  for (const o of [...i.overrides].sort((x, y) => x.created_at.localeCompare(y.created_at))) latest.set(o.event_key, o);
+  // Événement d'origine d'une échéance (rendez-vous proposé…) : même clé, sinon même date et même extrait cité.
+  // La clé seule ne suffit pas : celle de l'échéance porte souvent un suffixe (« proposition, non confirmée »).
+  const cite = (e: Ev) => `${e.document_id}\u0000${e.quote}`;
+  const eventOf = (d: ViewAnalysis['deadlines'][number], key: string): string | null => {
+    if (a.events.some((e) => e.key === key)) return key;
+    const quotes = new Set(d.evidence.map(cite));
+    return a.events.find((e) => e.date === d.date && (e.evidence as Ev[]).some((x) => quotes.has(cite(x))))?.key ?? null;
+  };
+
   // Échéances : analyse + lignes en base (corrections et ajouts manuels prioritaires).
-  const fromAnalysis = a.deadlines.filter((d) => d.date && /^\d{4}-\d{2}-\d{2}$/.test(d.date)).map((d) => ({ d, key: deadlineKey(d.title, d.date!) }));
+  const fromAnalysis = a.deadlines.filter((d) => d.date && /^\d{4}-\d{2}-\d{2}$/.test(d.date)).map((d) => {
+    const key = deadlineKey(d.title, d.date!);
+    return { d, key, event: eventOf(d, key) };
+  });
   const byKey = new Map(fromAnalysis.map((x) => [x.key, x.d]));
-  const rows = new Map<string, DeadlineView & { kind: string }>();
+  const linkedEvent = new Map(fromAnalysis.map((x) => [x.key, x.event]));
+  const rows = new Map<string, DeadlineView & { kind: string; manual: boolean }>();
   for (const { d, key } of fromAnalysis) {
-    rows.set(key, { key, date: d.date!, time: null, title: d.title, owner: d.owner_name ?? OWNER_LABEL[d.owner ?? 'client'], nature: NATURE[d.kind], source: src(d.evidence), reliability: reliabilityOf(d.evidence, { hypothesis: d.kind !== 'mentioned' }), done: false, kind: d.kind });
+    rows.set(key, { key, date: d.date!, time: null, title: d.title, owner: d.owner_name ?? OWNER_LABEL[d.owner ?? 'client'], nature: NATURE[d.kind], source: src(d.evidence), reliability: reliabilityOf(d.evidence, { kind: d.kind }), done: false, kind: d.kind, manual: false });
   }
   for (const r of i.deadlineRows) {
     const key = r.ai_key ?? deadlineKey(r.title, r.due_date);
@@ -142,12 +161,25 @@ export function buildView(i: ViewInput): RenduView {
       key, date: r.due_date, time: r.due_time, title: r.title, owner: base?.owner_name ?? OWNER_LABEL[base?.owner ?? 'client'],
       nature: !r.ai_key ? 'Ajoutée par vous' : r.user_edited ? `${NATURE[base?.kind ?? 'mentioned']} — corrigée par vous` : NATURE[base?.kind ?? 'mentioned'],
       source: base ? src(base.evidence) : null,
-      reliability: manual ? { level: 'elevee', reasons: [] } : reliabilityOf(base?.evidence ?? [], { hypothesis: (base?.kind ?? 'mentioned') !== 'mentioned' }),
-      done: r.done, kind: manual ? 'mentioned' : (base?.kind ?? 'mentioned'),
+      reliability: manual ? { level: 'elevee', reasons: [] } : reliabilityOf(base?.evidence ?? [], { kind: base?.kind ?? 'mentioned' }),
+      done: r.done, kind: manual ? 'mentioned' : (base?.kind ?? 'mentioned'), manual,
     });
   }
+  // Corrections faites dans « Dates modifiables » : reprises par les échéances (date retenue, masquage).
+  // La nature ne change pas : une proposition corrigée reste « à confirmer » et hors ICS.
+  for (const [key, r] of rows) {
+    const target = linkedEvent.get(key) ?? key;
+    const o = r.manual ? undefined : latest.get(target);
+    if (!o) continue;
+    if (o.hidden) {
+      rows.delete(key);
+      continue;
+    }
+    const date = o.retained_date && /^\d{4}-\d{2}-\d{2}$/.test(o.retained_date) ? o.retained_date : r.date;
+    rows.set(key, { ...r, date, title: target === key && o.label ? o.label : r.title, nature: `${r.nature} — corrigée par vous` });
+  }
   const all = [...rows.values()].sort((x, y) => x.date.localeCompare(y.date));
-  const strip = ({ kind: _k, ...rest }: DeadlineView & { kind: string }): DeadlineView => rest;
+  const strip = ({ kind: _k, manual: _m, ...rest }: DeadlineView & { kind: string; manual: boolean }): DeadlineView => rest;
   const future = all.filter((d) => d.date >= today && !d.done);
   const confirmed = future.filter((d) => d.kind === 'mentioned' && d.reliability.level === 'elevee').map(strip);
   const toConfirm = future.filter((d) => !(d.kind === 'mentioned' && d.reliability.level === 'elevee')).map(strip);
@@ -163,13 +195,21 @@ export function buildView(i: ViewInput): RenduView {
     .filter((x): x is { m: { event_key: string; importance: 'majeure' | 'utile' }; e: (typeof events)[number] } => Boolean(x.e && !x.e.hidden))
     .map(({ m, e }) => ({ key: e.key, date: e.retained_date, label: e.retained_label, importance: m.importance, reliability: reliabilityOf(e.evidence as Ev[], { contradicted: contradictedKeys.has(e.key) && !e.edited }), source: src(e.evidence as Ev[]), corrected: e.edited }))
     .sort((x, y) => x.date.localeCompare(y.date));
+  // « Dates modifiables » : les événements, plus les échéances sans événement d'origine (dates limites
+  // écrites, dont celles du calendrier ICS), pour que toute date d'un rendu soit corrigeable.
+  type DateRow = RenduView['dates']['rows'][number];
+  const eventRows = events.map((e): DateRow => ({ key: e.key, label: e.retained_label, extracted: e.date, retained: e.retained_date, status: e.hidden ? 'masquee' : e.edited ? 'corrigee' : 'extraite', flag: contradictedKeys.has(e.key) && !e.edited ? 'Date contredite par une autre pièce : à vérifier' : null, reason: e.reason ?? null, author: e.author ?? null, edited_at: e.edited_at ?? null, source: src(e.evidence as Ev[]) }));
+  const deadlineDateRows = [...new Map(fromAnalysis.filter((x) => !x.event).map((x) => [x.key, x])).values()].map(({ d, key }): DateRow => {
+    const o = latest.get(key);
+    return { key, label: o?.label ?? d.title, extracted: d.date!, retained: o?.retained_date ?? d.date!, status: o?.hidden ? 'masquee' : o ? 'corrigee' : 'extraite', flag: null, reason: o?.reason ?? null, author: o?.author ?? null, edited_at: o?.created_at ?? null, source: src(d.evidence) };
+  });
   const coverageLabel = i.coverage.complete
     ? `Analyse complète — ${i.coverage.extracted} pièce${i.coverage.extracted > 1 ? 's' : ''} exploitée${i.coverage.extracted > 1 ? 's' : ''}`
     : `Analyse partielle — ${i.coverage.extracted}/${i.coverage.total} pièces exploitées${i.coverage.unsupported ? `, ${i.coverage.unsupported} non lisible(s)` : ''}${i.coverage.deferred ? `, ${i.coverage.deferred} en attente de lecture` : ''}${i.coverage.failed ? `, ${i.coverage.failed} en échec` : ''}${i.coverage.pending ? `, ${i.coverage.pending} en cours` : ''}`;
 
   return {
     version: 1,
-    dossier: { title: i.title, revision: i.revision, as_of: today, provider: i.provider, simulation: i.provider === 'regles', coverage_label: coverageLabel, complete: i.coverage.complete },
+    dossier: { id: i.dossierId ?? null, title: i.title, revision: i.revision, as_of: today, provider: i.provider, simulation: i.provider === 'regles', coverage_label: coverageLabel, complete: i.coverage.complete },
     tableau: {
       situation: a.situation ?? a.summary_short,
       action: { label: pa.label, owner: pa.owner, owner_label: OWNER_LABEL[pa.owner], rationale: pa.rationale, due_date: pa.due_date, target: targetOf(pa.label) },
@@ -190,7 +230,7 @@ export function buildView(i: ViewInput): RenduView {
       all: events.map((e) => ({ key: e.key, date: e.retained_date, extracted: e.date, precision: e.precision, nature: e.kind === 'document_date' ? 'Date de la pièce' : 'Événement', label: e.retained_label, sources: (e.evidence as Ev[]).map((x) => src([x])!).filter(Boolean), corrected: e.edited, reason: e.reason ?? null, hidden: e.hidden })),
     },
     dates: {
-      rows: events.map((e) => ({ key: e.key, label: e.retained_label, extracted: e.date, retained: e.retained_date, status: e.hidden ? 'masquee' : e.edited ? 'corrigee' : 'extraite', flag: contradictedKeys.has(e.key) && !e.edited ? 'Date contredite par une autre pièce : à vérifier' : null, reason: e.reason ?? null, author: e.author ?? null, edited_at: e.edited_at ?? null, source: src(e.evidence as Ev[]) })),
+      rows: [...eventRows, ...deadlineDateRows].sort((x, y) => x.retained.localeCompare(y.retained) || x.label.localeCompare(y.label, 'fr')),
       history: [...i.overrides].sort((x, y) => x.created_at.localeCompare(y.created_at)).map((o) => ({ at: o.created_at, key: o.event_key, retained: o.retained_date, label: o.label, hidden: o.hidden, reason: o.reason, author: o.author })),
     },
     echeances: { confirmed, to_confirm: toConfirm, past, none_confirmed: confirmed.length === 0 },

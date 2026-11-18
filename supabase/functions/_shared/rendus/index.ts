@@ -73,7 +73,7 @@ function icsFold(line: string): string {
   out.push(cur);
   return out.join('\r\n ');
 }
-const icsEsc = (s: string) => s.replace(/\\/g, '\\\\').replace(/;/g, '\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+const icsEsc = (s: string) => s.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
 export function buildConfirmedIcs(v: RenduView, stamp: Date): string {
   const dt = stamp.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z');
   const needsTz = v.echeances.confirmed.some((d) => d.time);
@@ -81,7 +81,9 @@ export function buildConfirmedIcs(v: RenduView, stamp: Date): string {
   if (needsTz) lines.push('BEGIN:VTIMEZONE', 'TZID:Europe/Paris', 'BEGIN:DAYLIGHT', 'TZOFFSETFROM:+0100', 'TZOFFSETTO:+0200', 'TZNAME:CEST', 'DTSTART:19700329T020000', 'RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1SU', 'END:DAYLIGHT', 'BEGIN:STANDARD', 'TZOFFSETFROM:+0200', 'TZOFFSETTO:+0100', 'TZNAME:CET', 'DTSTART:19701025T030000', 'RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU', 'END:STANDARD', 'END:VTIMEZONE');
   for (const d of v.echeances.confirmed) {
     const day = d.date.replace(/-/g, '');
-    lines.push('BEGIN:VEVENT', `UID:${d.key.replace(/[^A-Za-z0-9:-]/g, '-')}@clair-dossier.com`, `DTSTAMP:${dt}`);
+    // UID propre au dossier (deux dossiers peuvent avoir la même échéance) et stable d'une révision à l'autre.
+    const uid = `${v.dossier.id ? `${v.dossier.id}-` : ''}${d.key}`.replace(/[^A-Za-z0-9:-]/g, '-');
+    lines.push('BEGIN:VEVENT', `UID:${uid}@clair-dossier.com`, `DTSTAMP:${dt}`);
     if (d.time) lines.push(`DTSTART;TZID=Europe/Paris:${day}T${d.time.replace(/:/g, '').slice(0, 4)}00`);
     else lines.push(`DTSTART;VALUE=DATE:${day}`);
     lines.push(`SUMMARY:${icsEsc(`${v.dossier.title} — ${d.title}`)}`, `DESCRIPTION:${icsEsc(`${d.nature}. Responsable : ${d.owner}. Source : ${srcShort(d.source)}.`)}`, 'STATUS:CONFIRMED', 'END:VEVENT');
@@ -191,10 +193,13 @@ async function datesPdf(v: RenduView, a: PdfAssets, demo: boolean) {
   rows.forEach((r, i) => {
     const label = `${r.label}`;
     const lines = p.wrap(label, p.f.body, 9.5, 230);
-    p.ensure(lines.length * 13 + 30);
+    // Sous-ligne repliée elle aussi dans la colonne « Événement » : jamais sous le champ « Date retenue ».
+    const subFont = r.flag ? p.f.bold : p.f.body;
+    const sub = p.wrap(`Extraite : ${short(r.extracted)}${r.flag ? ` · ${r.flag}` : ''}${r.status === 'corrigee' ? ' · corrigée' : ''}`, subFont, 8, 230);
+    p.ensure(lines.length * 13 + sub.length * 10 + 20);
     const top = p.y;
     lines.forEach((l, j) => p.page.drawText(l, { x: 56, y: top - 10 - j * 13, size: 9.5, font: p.f.body }));
-    p.page.drawText(`Extraite : ${short(r.extracted)}${r.flag ? ` · ${r.flag}` : ''}${r.status === 'corrigee' ? ' · corrigée' : ''}`, { x: 56, y: top - 14 - lines.length * 13, size: 8, font: r.flag ? p.f.bold : p.f.body });
+    sub.forEach((l, j) => p.page.drawText(l, { x: 56, y: top - 14 - lines.length * 13 - j * 10, size: 8, font: subFont }));
     const d = form.createTextField(`date_retenue_${i}`);
     d.setText(short(r.retained));
     d.addToPage(p.page, { x: 300, y: top - 22, width: 82, height: 18, borderWidth: 0.6, font: p.f.body });
@@ -204,12 +209,16 @@ async function datesPdf(v: RenduView, a: PdfAssets, demo: boolean) {
     m.addToPage(p.page, { x: 390, y: top - 22, width: 149, height: 18, borderWidth: 0.6, font: p.f.body });
     m.setFontSize(8.5);
     keys.push(r.key);
-    p.y = top - Math.max(30, lines.length * 13 + 22);
+    p.y = top - Math.max(30, lines.length * 13 + sub.length * 10 + 12);
   });
-  const k = form.createTextField('cles');
-  k.setText(JSON.stringify(keys));
-  k.enableReadOnly();
-  k.addToPage(p.page, { x: 0, y: 0, width: 1, height: 1, borderWidth: 0, hidden: true } as never);
+  // Champs cachés en lecture seule : clés des lignes et dates imprimées (une ligne laissée telle quelle
+  // n'est pas une correction ; une date changée en ligne depuis l'impression n'est pas écrasée).
+  for (const [field, value] of [['cles', keys], ['dates_imprimees', rows.map((r) => r.retained)]] as const) {
+    const k = form.createTextField(field);
+    k.setText(JSON.stringify(value));
+    k.enableReadOnly();
+    k.addToPage(p.page, { x: 0, y: 0, width: 1, height: 1, borderWidth: 0, hidden: true } as never);
+  }
   form.updateFieldAppearances(p.f.body);
   if (v.dates.history.length) {
     p.h2('Historique des corrections');
@@ -218,22 +227,50 @@ async function datesPdf(v: RenduView, a: PdfAssets, demo: boolean) {
   return p.save();
 }
 
-/** Corrections lues dans un formulaire « Dates modifiables » rempli. */
-export async function readDatesForm(bytes: Uint8Array): Promise<{ key: string; retained: string; reason: string }[]> {
+/** Date ISO AAAA-MM-JJ qui existe dans le calendrier (refuse « 2021-02-31 »). */
+export function isCalendarDate(iso: string): boolean {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  if (!m) return false;
+  const t = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
+  return t.toISOString().slice(0, 10) === iso;
+}
+
+export interface DatesFormRow {
+  key: string;
+  retained: string;
+  reason: string;
+  /** Date imprimée dans le formulaire (null : formulaire émis avant ce champ). */
+  printed: string | null;
+}
+
+/** Corrections lues dans un formulaire « Dates modifiables » rempli ; `invalid` : clés dont la saisie est illisible ou impossible. */
+export async function readDatesForm(bytes: Uint8Array): Promise<{ rows: DatesFormRow[]; invalid: string[] }> {
   const { PDFDocument } = await import('pdf-lib');
   const doc = await PDFDocument.load(bytes, { ignoreEncryption: true });
   const form = doc.getForm();
-  const keysField = form.getFields().find((f) => f.getName() === 'cles');
+  const field = (n: string) => form.getFields().find((f) => f.getName() === n);
+  const keysField = field('cles');
   if (!(keysField instanceof PDFTextField)) throw new Error("Ce PDF n'est pas un formulaire « Dates modifiables » ClairDossier.");
   const keys = JSON.parse(keysField.getText() ?? '[]') as string[];
-  const out: { key: string; retained: string; reason: string }[] = [];
+  const printedField = field('dates_imprimees');
+  let printed: unknown[] = [];
+  try {
+    if (printedField instanceof PDFTextField) printed = JSON.parse(printedField.getText() ?? '[]') as unknown[];
+  } catch {
+    printed = []; // champ altéré : comportement des formulaires émis avant ce champ
+  }
+  const rows: DatesFormRow[] = [];
+  const invalid: string[] = [];
   keys.forEach((key, i) => {
     const d = form.getTextField(`date_retenue_${i}`).getText()?.trim() ?? '';
     const r = form.getTextField(`raison_${i}`).getText()?.trim() ?? '';
-    const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(d);
-    if (m) out.push({ key, retained: `${m[3]}-${m[2]}-${m[1]}`, reason: r });
+    if (!d) return; // champ vidé : aucune correction
+    const m = /^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})$/.exec(d);
+    const iso = m ? `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}` : '';
+    if (!isCalendarDate(iso)) invalid.push(key);
+    else rows.push({ key, retained: iso, reason: r, printed: Array.isArray(printed) && typeof printed[i] === 'string' ? (printed[i] as string) : null });
   });
-  return out;
+  return { rows, invalid };
 }
 
 function deadlineRowsPdf(p: Pdf, list: DeadlineView[]) {

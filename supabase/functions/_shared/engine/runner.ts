@@ -14,6 +14,8 @@ import type { AnalysisData3, AnalysisRec, CoverageRec, DossierState, EngineConfi
 import { SCHEMA_VERSION, type AnalysisOutput, type ExtractionOutput } from './schemas.ts';
 
 export interface RenderInput {
+  /** Identifiant du dossier (UID des événements ICS propres au dossier). */
+  dossierId?: string;
   title: string;
   revision: number;
   generatedAt: Date;
@@ -293,7 +295,7 @@ export async function renderAndPublish(deps: EngineDeps, dossier: DossierState, 
   const mode: 'approved' | 'pending' = again.dossier.review_mode === 'auto' && !again.dossier.sensitive ? 'approved' : 'pending';
   if (mode === 'approved') await store.syncDeadlines(dossier.id, dossier.user_id, toDeadlineRows(rec.data));
   const pieces = (await store.listPieces(dossier.id)).filter((x) => !x.deleted_at && !x.duplicate_of).map((x) => ({ id: x.id, file_name: x.file_name, created_at: x.created_at }));
-  const input: RenderInput = { title: dossier.title, revision: rec.revision, generatedAt: config.now(), analysis: rec.data, coverage: rec.coverage, pieces, overrides: await store.listOverrides(dossier.id), deadlineRows: await store.listDeadlines(dossier.id), provider: rec.provider };
+  const input: RenderInput = { dossierId: dossier.id, title: dossier.title, revision: rec.revision, generatedAt: config.now(), analysis: rec.data, coverage: rec.coverage, pieces, overrides: await store.listOverrides(dossier.id), deadlineRows: await store.listDeadlines(dossier.id), provider: rec.provider };
   const { view, hashes } = await deps.renderer.prepare(input);
   const published = await store.getPublished(dossier.id);
   const changed = (Object.keys(hashes) as DeliverableKey[]).filter((k) => published[k]?.data_hash !== hashes[k] || published[k]?.status !== mode);

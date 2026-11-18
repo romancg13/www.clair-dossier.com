@@ -28,6 +28,9 @@ export class Pdf {
   logo!: PDFImage;
   page!: PDFPage;
   y = 0;
+  /** Pied de page replié (toutes ses lignes sont dessinées) et marge basse du corps qui en découle. */
+  private footerLines: string[] = [];
+  private bottom = BOTTOM;
   private constructor(private readonly kicker: string, private readonly footer: string) {}
 
   static async create(assets: PdfAssets, meta: { title: string; kicker: string; footer: string; subject: string }): Promise<Pdf> {
@@ -46,6 +49,10 @@ export class Pdf {
       title: await d.pdf.embedFont(assets.title, { subset: true }),
     };
     d.logo = await d.pdf.embedPng(assets.logo);
+    // Le pied de page n'est jamais tronqué (avertissement juridique, mentions « sans IA » et « Données
+    // fictives ») : il remonte s'il dépasse deux lignes, et le corps s'arrête au-dessus de son filet.
+    d.footerLines = d.wrap(d.footer, d.f.body, 7, W - 2 * M - 50);
+    d.bottom = Math.max(BOTTOM, d.footerTop() + 12 + 10);
     d.newPage();
     return d;
   }
@@ -62,7 +69,12 @@ export class Pdf {
   }
 
   ensure(h: number) {
-    if (this.y - h < BOTTOM) this.newPage();
+    if (this.y - h < this.bottom) this.newPage();
+  }
+
+  /** Ligne de base de la première ligne du pied de page (36 pt jusqu'à trois lignes). */
+  private footerTop() {
+    return Math.max(36, 12 + (this.footerLines.length - 1) * 9);
   }
 
   wrap(text: string, font: PDFFont, size: number, width: number): string[] {
@@ -147,7 +159,7 @@ export class Pdf {
     for (const r of rows) {
       const cells = r.map((v, i) => this.wrap(v, this.f.body, size, cols[i].width - 2 * pad));
       const h = Math.max(...cells.map((c) => c.length)) * size * 1.35 + 2 * pad;
-      if (this.y - h < BOTTOM) {
+      if (this.y - h < this.bottom) {
         this.newPage();
         drawHeader();
       }
@@ -164,11 +176,12 @@ export class Pdf {
 
   async save(): Promise<Uint8Array> {
     const pages = this.pdf.getPages();
+    const top = this.footerTop();
     pages.forEach((p, i) => {
-      p.drawLine({ start: { x: M, y: 48 }, end: { x: W - M, y: 48 }, thickness: 0.5, color: CHAMPAGNE });
-      this.wrap(this.footer, this.f.body, 7, W - 2 * M - 50).slice(0, 2).forEach((l, j) => p.drawText(l, { x: M, y: 36 - j * 9, size: 7, font: this.f.body, color: SLATE }));
+      p.drawLine({ start: { x: M, y: top + 12 }, end: { x: W - M, y: top + 12 }, thickness: 0.5, color: CHAMPAGNE });
+      this.footerLines.forEach((l, j) => p.drawText(l, { x: M, y: top - j * 9, size: 7, font: this.f.body, color: SLATE }));
       const n = `${i + 1} / ${pages.length}`;
-      p.drawText(n, { x: W - M - this.f.body.widthOfTextAtSize(n, 7.5), y: 36, size: 7.5, font: this.f.body, color: SLATE });
+      p.drawText(n, { x: W - M - this.f.body.widthOfTextAtSize(n, 7.5), y: top, size: 7.5, font: this.f.body, color: SLATE });
     });
     return this.pdf.save();
   }
