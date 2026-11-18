@@ -44,7 +44,11 @@ export interface TrackingFacts {
   status: string;
   /** Étape forcée par l'administration (historique 1–5) : ne peut que signaler un traitement en cours. */
   forcedStep?: number | null;
-  /** Au moins un livrable (manuel ou généré) visible par le client. */
+  /**
+   * Au moins un des six documents du catalogue visible par le client — même règle
+   * que les cartes (voir splitDeliverables) : un document libre déposé à la main
+   * ne suffit pas à annoncer « Documents disponibles ».
+   */
   hasDeliverables: boolean;
   /** Traitement en cours (travaux ouverts, prise en charge par l'équipe). */
   processing: boolean;
@@ -62,6 +66,21 @@ export function trackingStep(f: TrackingFacts): number {
   if (f.hasDeliverables) return 3;
   if (f.processing || (f.forcedStep ?? 0) >= 2 || currentStep(f.status) >= 2) return 2;
   return 1;
+}
+
+/**
+ * Sélecteur unique des documents livrés : la même partition alimente le suivi,
+ * les cartes et la liste « Autres documents ». `keyOf` reconnaît un document du
+ * catalogue (nom « <Slug>-r<n>.<ext> ») ; tout le reste est un autre document.
+ */
+export function splitDeliverables<T extends { file_name: string }>(
+  items: readonly T[],
+  keyOf: (fileName: string) => string | null,
+): { catalog: T[]; others: T[] } {
+  const catalog: T[] = [];
+  const others: T[] = [];
+  for (const it of items) (keyOf(it.file_name) ? catalog : others).push(it);
+  return { catalog, others };
 }
 
 /** Suivi du dossier — 4 étapes (mêmes libellés sur le web et le mobile). */

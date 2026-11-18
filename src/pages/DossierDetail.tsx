@@ -19,6 +19,7 @@ import {
   TIMELINE_STEPS as TIMELINE,
   STEP_NEXT_ACTIONS,
   trackingStep,
+  splitDeliverables,
   answerLabel as labelFor,
   isDateKey,
 } from "../../packages/core/src/index";
@@ -581,9 +582,9 @@ export function DossierDetail() {
   const pieces = documents.filter((d) => d.kind !== "deliverable" && !d.deleted_at);
   const trashed = documents.filter((d) => d.kind !== "deliverable" && Boolean(d.deleted_at));
   const deliverables = documents.filter((d) => d.kind === "deliverable" && !d.deleted_at);
-  // Livrables générés (« <Livrable>-r<n>.<ext> ») et livrables déposés à la main par l'équipe.
-  const aiDeliverables = deliverables.filter((d) => deliverableKeyOf(d.file_name));
-  const manualDeliverables = deliverables.filter((d) => !deliverableKeyOf(d.file_name));
+  // Sélecteur unique (suivi, cartes, « Autres documents ») : documents du catalogue
+  // (« <Livrable>-r<n>.<ext> ») d'un côté, documents libres déposés par l'équipe de l'autre.
+  const { catalog: aiDeliverables, others: manualDeliverables } = splitDeliverables(deliverables, deliverableKeyOf);
   // Clôture = dernier événement de cycle de vie (journal), à défaut statut historique « archive ».
   const lifecycle = events.find((e) => e.type === "dossier_cloture" || e.type === "dossier_rouvert");
   const closed = lifecycle ? lifecycle.type === "dossier_cloture" : dossier?.status === "archive";
@@ -591,7 +592,7 @@ export function DossierDetail() {
     ? trackingStep({
         status: dossier.status,
         forcedStep: dossier.current_step,
-        hasDeliverables: deliverables.length > 0,
+        hasDeliverables: aiDeliverables.length > 0,
         processing: aiProgress.processing,
         closed,
       })
@@ -1286,7 +1287,7 @@ export function DossierDetail() {
                     <DossierTracker
                       step={step}
                       detail={aiProgress.detail}
-                      updating={aiProgress.processing && deliverables.length > 0}
+                      updating={aiProgress.processing && aiDeliverables.length > 0}
                     />
                     {eventsOn && (isAdmin || dossier.user_id === user?.id) && (
                       <div className="mt-3 flex flex-wrap items-center justify-end gap-3">
@@ -1605,7 +1606,7 @@ export function DossierDetail() {
                   <div className="mt-8 border-t hairline pt-6">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">
-                      Documents déposés par l'équipe ClairDossier
+                      Autres documents
                     </p>
                   </div>
 

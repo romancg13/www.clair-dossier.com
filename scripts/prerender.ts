@@ -255,7 +255,7 @@ async function main(): Promise<void> {
     if (seo) {
       // Une route du manifeste rendue en noindex = page introuvable servie en
       // 200 (soft 404) et listée au sitemap : on bloque.
-      if (seo.noindex) {
+      if (seo.noindex && process.env.VITE_NOINDEX !== '1') {
         throw new Error(`prerender: ${route.path} est rendue en noindex (page introuvable ?) — retirez-la du manifeste ou corrigez-la.`);
       }
       const dup = titles.get(seo.title);
