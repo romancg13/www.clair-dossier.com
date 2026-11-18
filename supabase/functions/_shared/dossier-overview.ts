@@ -26,7 +26,7 @@ export function reportDeadlines(analysis: AnalysisData, pieces: PieceRef[], rows
       responsible: d.responsible?.trim() || 'À préciser', done: false, uid: deadlineKey(d.title, d.date ?? '0000'),
     };
   });
-  const sorted = (list: ReportDeadline[]) => list.sort((a, b) => (a.date ?? '9999').localeCompare(b.date ?? '9999'));
+  const sorted = (list: ReportDeadline[]) => list.sort((a, b) => (a.date ?? '9999').localeCompare(b.date ?? '9999') || (a.time ?? '').localeCompare(b.time ?? ''));
   if (!rows) return sorted(fromAnalysis);
   const byKey = new Map(fromAnalysis.map(d => [d.uid, d]));
   return sorted([...fromAnalysis.filter(d => !d.date), ...rows.map((r): ReportDeadline => {
@@ -52,6 +52,6 @@ export function dossierOverview(analysis: AnalysisData, pieces: PieceRef[], gene
     situation: sentences.join(' ') || 'Les pièces exploitables ne permettent pas encore de décrire la situation.',
     action: analysis.next_actions.find(a => a.trim()) ?? 'Rien à faire pour le moment',
     responsible: analysis.action_owner?.trim() || 'À préciser',
-    nextDate: next?.date ? { date: next.date, title: next.title, source: next.sources, confirmed: next.confirmed, responsible: next.responsible } : null,
+    nextDate: next?.date ? { date: next.date, time: next.time, title: next.title, source: next.sources, confirmed: next.confirmed, responsible: next.responsible } : null,
   };
 }

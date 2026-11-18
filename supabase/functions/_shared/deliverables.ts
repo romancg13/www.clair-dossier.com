@@ -47,7 +47,7 @@ const NAVY = rgb(0x0d / 255, 0x1b / 255, 0x3d / 255);
 const GOLD = rgb(0xc7 / 255, 0xa6 / 255, 0x54 / 255);
 const SLATE = rgb(0.39, 0.45, 0.55);
 
-async function renderPdf(title: string, subtitle: string, blocks: PdfBlock[], demo: boolean): Promise<Uint8Array> {
+export async function renderPdf(title: string, subtitle: string, blocks: PdfBlock[], demo: boolean): Promise<Uint8Array> {
   const pdf = await PDFDocument.create();
   pdf.setTitle(title);
   pdf.setAuthor('ClairDossier');
@@ -227,7 +227,7 @@ export async function buildDeliverables(input: DeliverableInput): Promise<OutFil
       { kind: 'para', text: overview.action },
       ...(a.next_actions.length ? [{ kind: 'note', text: `Responsable · ${overview.responsible}` } as DocBlock] : []),
       { kind: 'heading', text: 'Prochaine date' },
-      { kind: 'para', text: next ? `${frDate(next.date)} — ${next.title}` : 'Aucune échéance à venir documentée.' },
+      { kind: 'para', text: next ? `${frDate(next.date)}${next.time ? ` à ${next.time.slice(0, 5)} (Europe/Paris)` : ''} — ${next.title}` : 'Aucune échéance à venir documentée.' },
       ...(next ? [{ kind: 'note', text: `${next.confirmed ? 'Date confirmée' : 'Date à confirmer'} · ${next.source}. Responsable · ${next.responsible}.` } as DocBlock] : []),
     ];
     files.push({ key: 'dashboard', name: name('dashboard', 'pdf'), mime: MIME.pdf, bytes: await renderPdf('Tableau de bord du dossier', sub, dashboard, demo) });

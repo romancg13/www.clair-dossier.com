@@ -1,6 +1,27 @@
 // Bundle build.mjs supplies only synthetic inputs, their verified hashes, the sample report and the page.
-import { page, assets, fixtureHashes, fixtureList, processor } from './assets.mjs';
+import {
+  page,
+  assets,
+  fixtureHashes,
+  fixtureList,
+  bFixtureList,
+  foodFixtureList,
+  processor,
+} from './assets.mjs';
 import { handleDossierServices } from './services.mjs';
+import { FOOD_FIXTURES, FOOD_TITLE, foodEvidenceValid, foodReport } from './collecte.mjs';
+import {
+  fixtures as B_FIXTURES,
+  title as B_TITLE,
+  evidenceValid as bEvidenceValid,
+  report as bReport,
+} from './chantier-b.mjs';
+import { unzipSync } from 'fflate';
+import {
+  MIME,
+  DELIVERABLE_CATALOG,
+  deliverableKeyOf,
+} from '../../supabase/functions/_shared/deliverables.ts';
 import { renderReport } from './report.mjs';
 import { handlesConnector, handleConnector } from './connector.mjs';
 
@@ -26,6 +47,14 @@ const dataReplay = {
     'Le bon ne porte pas de signature.',
   ],
 };
+const scenarios = {
+  atelier: { title: 'Atelier Témoin · Réception des trois fenêtres', fixtures: fixtureList },
+  b: { title: B_TITLE, fixtures: bFixtureList },
+  c: { title: FOOD_TITLE, fixtures: foodFixtureList },
+};
+const defaultScenario = (persona) => (persona === 'a' ? 'atelier' : persona);
+const evidenceFixtures = { ...FOOD_FIXTURES, ...B_FIXTURES };
+
 const frenchDate = (iso) =>
   new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long', timeZone: 'UTC' }).format(
     new Date(iso + 'T12:00:00Z'),
@@ -64,7 +93,7 @@ async function readBody(request) {
     const { value, done } = await reader.read();
     if (done) break;
     size += value.length;
-    if (size > 40_000) {
+    if (size > 512_000) {
       await reader.cancel();
       return null;
     }
@@ -92,7 +121,7 @@ async function extractPublicFixture(id, bytes) {
   const digest = await sha(bytes);
   if (digest !== fixtureHashes[id]) throw new Error('fixture');
   if (processor) {
-    const expectedMethod = id === 'scan' ? 'tesseract-wasm-eng' : 'pdf-text';
+    const expectedMethod = assets[id]?.type === 'image/png' ? 'tesseract-wasm-eng' : 'pdf-text';
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 6000);
     try {
@@ -121,10 +150,13 @@ async function extractPublicFixture(id, bytes) {
             .normalize('NFD')
             .replace(/[\u0300-\u036f]/g, '')
             .toLowerCase();
-          const reliable =
-            id === 'scan'
-              ? /15\/11\/2026/.test(text) && /pas de signature/.test(text)
-              : /18\s?400/.test(text) && /08\/12\/2026/.test(text) && /trois fenetres/.test(text);
+          const reliable = FOOD_FIXTURES[id]
+            ? foodEvidenceValid(id, result.lines)
+            : B_FIXTURES[id]
+              ? bEvidenceValid(id, result.lines)
+              : id === 'scan'
+                ? /15\/11\/2026/.test(text) && /pas de signature/.test(text)
+                : /18\s?400/.test(text) && /08\/12\/2026/.test(text) && /trois fenetres/.test(text);
           if (reliable)
             return {
               method: expectedMethod,
@@ -140,7 +172,7 @@ async function extractPublicFixture(id, bytes) {
       clearTimeout(timer);
     }
   }
-  return { method: 'fixture-replay', sha256: digest, lines: dataReplay[id] };
+  return { method: 'fixture-replay', sha256: digest, lines: dataReplay[id] ?? evidenceFixtures[id].lines };
 }
 
 function valueFrom(lines, regex) {
@@ -197,6 +229,7 @@ function resultFor(extraction, retainedDate, corrections) {
     dateSource,
     action,
     originalDate: extractedDate,
+    extractedDateSource: hasDevis ? 'Devis CD-041, page 1.' : null,
     hasDevis,
     hasScan,
   };
@@ -250,7 +283,7 @@ async function drainOne(db) {
     `UPDATE runs SET status='processing',lease=?,lease_end=?,attempts=attempts+1
     WHERE id=(SELECT r.id FROM runs r JOIN sandboxes s ON s.id=r.sandbox WHERE s.expires>? AND r.closed=0 AND r.attempts<3
     AND ((r.status='queued' AND r.due<=?) OR (r.status='processing' AND r.lease_end<=?)) ORDER BY r.due LIMIT 1)
-    RETURNING id,revision,input_pdf,input_scan,retained_date,corrections,attempts,
+    RETURNING id,persona,revision,input_pdf,input_scan,retained_date,corrections,attempts,
       (SELECT extraction FROM deliveries d WHERE d.run_id=runs.id AND d.revision=runs.published_revision) cached`,
     lease,
     now + 20000,
@@ -261,11 +294,16 @@ async function drainOne(db) {
   if (!job) return false;
   try {
     const cached = job.cached ? JSON.parse(job.cached) : {};
+    const stored = (
+      await query(db, 'SELECT fixture,bytes FROM run_inputs WHERE run_id=? ORDER BY fixture', job.id).all()
+    ).results;
+    const inputs = [
+      ['devis', job.input_pdf],
+      ['scan', job.input_scan],
+      ...stored.map((row) => [row.fixture, row.bytes]),
+    ];
     const entries = await Promise.all(
-      [
-        ['devis', job.input_pdf],
-        ['scan', job.input_scan],
-      ]
+      inputs
         .filter(([, v]) => v?.length || v?.byteLength)
         .map(async ([id, v]) => {
           const previous = cached[id];
@@ -281,8 +319,10 @@ async function drainOne(db) {
     if (!entries.length) throw new Error('empty');
     const extraction = Object.fromEntries(entries),
       corrections = JSON.parse(job.corrections);
-    const report = resultFor(extraction, job.retained_date, corrections);
-    const { pdf, pack, count } = await renderReport({
+    const project =
+      job.persona === 'c' ? foodReport : entries.some(([id]) => B_FIXTURES[id]) ? bReport : resultFor;
+    const report = project(extraction, job.retained_date, corrections);
+    const { pdf, pack, count, files } = await renderReport({
       ...report,
       extraction,
       corrections,
@@ -298,8 +338,8 @@ async function drainOne(db) {
     await db.batch([
       query(
         db,
-        `INSERT OR IGNORE INTO deliveries(run_id,revision,published_at,summary,draft,deadline,date_source,action,extraction,pdf,pack,file_count)
-        SELECT id,revision,?,?,?,?,?,?,?,?,?,? FROM runs WHERE ${live} AND
+        `INSERT OR IGNORE INTO deliveries(run_id,revision,published_at,summary,draft,deadline,date_source,action,extraction,pdf,pack,file_count,files,extracted_date,extracted_source)
+        SELECT id,revision,?,?,?,?,?,?,?,?,?,?,?,?,? FROM runs WHERE ${live} AND
         (SELECT coalesce(sum(length(pdf)+coalesce(length(pack),0)),0) FROM deliveries)+? <= 100000000`,
         publishedAt,
         report.summary,
@@ -311,6 +351,17 @@ async function drainOne(db) {
         pdf,
         pack,
         count,
+        JSON.stringify(
+          files.map(({ name, key, category, title, mime }) => ({
+            name,
+            key,
+            category: category || key,
+            title,
+            mime,
+          })),
+        ),
+        report.originalDate ?? null,
+        report.extractedDateSource ?? null,
         ...check,
         totalBytes,
       ),
@@ -363,18 +414,142 @@ async function reconcile(db, initialDelay = 0) {
   }
 }
 
+// The slot exists before the first upload. Its changing UUID fences every request and worker lease.
+async function openSlot(db, sandbox) {
+  const read = () =>
+    query(
+      db,
+      `SELECT x.dossier_id dossierId,x.scenario,x.generation FROM dossier_slots x JOIN sandboxes s ON s.id=x.sandbox AND s.persona=x.persona
+    WHERE x.sandbox=? AND x.persona=? AND s.expires>?`,
+      sandbox.id,
+      sandbox.persona,
+      Date.now(),
+    ).first();
+  const current = await read();
+  if (current) return current;
+  await query(
+    db,
+    `INSERT OR IGNORE INTO dossier_slots(sandbox,persona,dossier_id,scenario)
+    SELECT s.id,s.persona,coalesce(r.id,?),CASE WHEN s.persona='b' AND r.id IS NOT NULL THEN 'atelier' ELSE ? END
+    FROM sandboxes s LEFT JOIN runs r ON r.sandbox=s.id AND r.persona=s.persona
+    WHERE s.id=? AND s.persona=? AND s.expires>?`,
+    crypto.randomUUID(),
+    defaultScenario(sandbox.persona),
+    sandbox.id,
+    sandbox.persona,
+    Date.now(),
+  ).run();
+  return read();
+}
+async function reset(db, sandbox, data) {
+  if (!data?.dossier || typeof data.dossier !== 'string' || data.persona !== sandbox.persona)
+    return error('Dossier à réinitialiser inconnu.', 400);
+  if (data.dossier !== sandbox.dossierId) return respond({ reset: false });
+  const active = `EXISTS(SELECT 1 FROM dossier_slots x JOIN sandboxes s ON x.sandbox=s.id AND x.persona=s.persona
+    WHERE x.sandbox=? AND x.persona=? AND x.dossier_id=? AND s.expires>?)`;
+  const guard = [sandbox.id, sandbox.persona, data.dossier, Date.now()];
+  const result = await db.batch([
+    query(
+      db,
+      `DELETE FROM connector_grants WHERE sandbox=? AND persona=? AND ${active}`,
+      sandbox.id,
+      sandbox.persona,
+      ...guard,
+    ),
+    query(
+      db,
+      `DELETE FROM runs WHERE id=? AND sandbox=? AND persona=? AND ${active}`,
+      data.dossier,
+      sandbox.id,
+      sandbox.persona,
+      ...guard,
+    ),
+    query(
+      db,
+      `UPDATE dossier_slots SET dossier_id=?,scenario=?,generation=generation+1 WHERE sandbox=? AND persona=? AND dossier_id=?
+      AND ${active} RETURNING dossier_id`,
+      crypto.randomUUID(),
+      defaultScenario(sandbox.persona),
+      sandbox.id,
+      sandbox.persona,
+      data.dossier,
+      ...guard,
+    ),
+  ]);
+  return respond({ reset: Boolean(result[2].results.length) });
+}
+function fileHref(path, id, revision, name) {
+  const params = new URLSearchParams({ dossier: id });
+  if (revision) params.set('revision', String(revision));
+  if (name) params.set('name', name);
+  return path + '?' + params.toString();
+}
+const linkedFiles = (files, id, revision) =>
+  files.map((file) => ({ ...file, href: fileHref('/api/fichier', id, revision, file.name) }));
+// Archives published before manifests were introduced remain downloadable by their exact ZIP entry names.
+async function fileManifest(db, id, revision, files, pdfCount) {
+  if (files) return JSON.parse(files);
+  if (!pdfCount) return [];
+  const row = await query(
+    db,
+    'SELECT pack FROM deliveries WHERE run_id=? AND revision=?',
+    id,
+    revision,
+  ).first();
+  let names = [];
+  if (row?.pack)
+    unzipSync(new Uint8Array(row.pack), {
+      filter(entry) {
+        names.push(entry.name);
+        return false;
+      },
+    });
+  else names = ['Dashboard-r' + revision + '.pdf'];
+  const manifest = names.map((name) => {
+    const key = deliverableKeyOf(name) || 'dashboard';
+    return {
+      name,
+      key,
+      category: key,
+      title: DELIVERABLE_CATALOG.find((row) => row.key === key)?.label || name,
+      mime: MIME[name.split('.').at(-1)],
+    };
+  });
+  await query(
+    db,
+    'UPDATE deliveries SET files=? WHERE run_id=? AND revision=? AND files IS NULL',
+    JSON.stringify(manifest),
+    id,
+    revision,
+  ).run();
+  return manifest;
+}
 async function runFor(db, sandbox) {
   const row = await query(
     db,
     `SELECT r.id,r.status,r.submitted submittedAt,r.published_at publishedAt,r.notifications,r.summary,r.draft,
     r.revision,r.published_revision publishedRevision,r.closed,length(r.input_pdf)>0 hasPdf,length(r.input_scan)>0 hasScan,r.corrections,
-    d.deadline date,d.date_source dateSource,d.action,d.extraction,coalesce(d.file_count,0) fileCount FROM runs r LEFT JOIN deliveries d ON d.run_id=r.id AND d.revision=r.published_revision
-    WHERE r.sandbox=? AND r.persona=?`,
+    d.deadline date,d.date_source dateSource,d.extracted_date extractedDate,d.extracted_source extractedDateSource,d.action,d.files manifest,d.extraction,coalesce(d.file_count,0) fileCount FROM runs r LEFT JOIN deliveries d ON d.run_id=r.id AND d.revision=r.published_revision
+    WHERE r.sandbox=? AND r.persona=? AND r.id=?`,
     sandbox.id,
     sandbox.persona,
+    sandbox.dossierId,
   ).first();
   if (!row) return null;
-  const { id, hasPdf, hasScan, corrections, extraction, ...publicRow } = row;
+  const { id, hasPdf, hasScan, corrections, extraction, manifest, ...publicRow } = row;
+  const storedInputs = (
+    await query(db, 'SELECT fixture FROM run_inputs WHERE run_id=?', id).all()
+  ).results.map((x) => x.fixture);
+  const inputs = scenarios[sandbox.scenario].fixtures
+    .map((f) => f.id)
+    .filter(
+      (key) => storedInputs.includes(key) || (key === 'devis' && hasPdf) || (key === 'scan' && hasScan),
+    );
+  const files = linkedFiles(
+    await fileManifest(db, id, row.publishedRevision, manifest, row.fileCount),
+    id,
+    row.publishedRevision,
+  );
   const past = (
     await query(
       db,
@@ -392,29 +567,37 @@ async function runFor(db, sandbox) {
   const coversBoth = Boolean(extraction && JSON.parse(extraction).devis && JSON.parse(extraction).scan);
   return {
     ...publicRow,
+    id,
+    files,
+    deliverables: files,
+    actionOwner: row.action ? (sandbox.scenario === 'c' ? 'Coordination de collecte' : 'Client') : null,
+    pdfHref: row.publishedRevision ? fileHref('/api/livraison.pdf', id, row.publishedRevision) : null,
+    packHref: row.fileCount > 1 ? fileHref('/api/livraison.zip', id, row.publishedRevision) : null,
+    initialPackHref: assets.initialPack && coversBoth ? fileHref('/api/edition-initiale.zip', id) : null,
     lotEvents,
     packStatus: publicRow.fileCount > 1 ? 'complete' : publicRow.fileCount === 1 ? 'pdf-only' : 'pending',
     hasInitialPack: Boolean(assets.initialPack && coversBoth),
-    extractedDate: hasPdf ? originalDate : null,
-    extractedDateSource: hasPdf ? 'Devis CD-041, page 1.' : null,
+    extractedDate: row.extractedDate ?? (hasPdf ? originalDate : null),
+    extractedDateSource: row.extractedDateSource ?? (hasPdf ? 'Devis CD-041, page 1.' : null),
     closed: Boolean(row.closed),
-    inputs: [...(hasPdf ? ['devis'] : []), ...(hasScan ? ['scan'] : [])],
+    inputs,
     corrections: JSON.parse(corrections),
     extraction: extraction ? JSON.parse(extraction) : null,
     history: past.map((r) => ({
       ...r,
-      href: '/api/livraison.pdf?revision=' + r.revision,
-      packHref: r.fileCount > 1 ? '/api/livraison.zip?revision=' + r.revision : null,
+      href: fileHref('/api/livraison.pdf', id, r.revision),
+      packHref: r.fileCount > 1 ? fileHref('/api/livraison.zip', id, r.revision) : null,
     })),
   };
 }
 
 async function submit(db, sandbox, data, ctx) {
-  if (!Array.isArray(data?.uploads) || data.uploads.length < 1 || data.uploads.length > 2)
-    return error('Choisissez une ou deux pièces du jeu fictif.', 400);
+  const fixtures = scenarios[sandbox.scenario].fixtures;
+  if (!Array.isArray(data?.uploads) || data.uploads.length < 1 || data.uploads.length > fixtures.length)
+    return error('Choisissez les pièces fictives de ce scénario.', 400);
   const inputs = new Map();
   for (const raw of data.uploads) {
-    if (typeof raw !== 'string' || raw.length > 30000) return error('Format de pièce invalide.', 400);
+    if (typeof raw !== 'string' || raw.length > 300000) return error('Format de pièce invalide.', 400);
     let bytes;
     try {
       bytes = unpack(raw);
@@ -422,42 +605,54 @@ async function submit(db, sandbox, data, ctx) {
       return error('Format de pièce invalide.', 400);
     }
     const hash = await sha(bytes);
-    if (hash !== fixtureHashes.devis && hash !== fixtureHashes.scan)
-      return error('Seules les pièces fictives fournies sont admises.', 422);
-    inputs.set(hash, bytes);
+    const fixture = fixtures.find((f) => fixtureHashes[f.id] === hash);
+    if (!fixture) return error('Seules les pièces fictives de ce dossier sont admises.', 422);
+    inputs.set(fixture.id, bytes);
   }
-  const pdf = inputs.get(fixtureHashes.devis) || new Uint8Array(),
-    scan = inputs.get(fixtureHashes.scan) || new Uint8Array();
   const now = Date.now(),
-    command = crypto.randomUUID();
+    command = crypto.randomUUID(),
+    ids = JSON.stringify([...inputs.keys()]);
+  // The two legacy input columns contain the already accepted fixtures of migrated Atelier dossiers.
+  const additions = `SELECT count(*) FROM json_each(?) j WHERE NOT EXISTS
+     (SELECT 1 FROM run_inputs i WHERE i.run_id=runs.id AND i.fixture=j.value)
+     AND NOT(j.value='devis' AND length(runs.input_pdf)>0) AND NOT(j.value='scan' AND length(runs.input_scan)>0)`;
   const batch = await db.batch([
     query(
       db,
       `INSERT INTO runs(id,sandbox,persona,status,submitted,due,input_pdf,input_scan,last_added,lot_command)
-    SELECT ?,id,persona,'queued',?,?,?,?,?,? FROM sandboxes WHERE id=? AND persona=? AND persona IN ('a','b') AND expires>?
-    ON CONFLICT(sandbox,persona) DO UPDATE SET status='queued',revision=runs.revision+1,lots=runs.lots+1,attempts=0,lease=NULL,
-      last_added=(length(runs.input_pdf)=0 AND length(excluded.input_pdf)>0)+(length(runs.input_scan)=0 AND length(excluded.input_scan)>0),
-      submitted=excluded.submitted,due=excluded.due,lot_command=excluded.lot_command,input_pdf=CASE WHEN length(runs.input_pdf)=0 THEN excluded.input_pdf ELSE runs.input_pdf END,
-      input_scan=CASE WHEN length(runs.input_scan)=0 THEN excluded.input_scan ELSE runs.input_scan END
-    WHERE runs.closed=0 AND runs.revision<16 AND ((length(runs.input_pdf)=0 AND length(excluded.input_pdf)>0) OR (length(runs.input_scan)=0 AND length(excluded.input_scan)>0))
-    RETURNING last_added,revision`,
-      crypto.randomUUID(),
+      SELECT x.dossier_id,s.id,s.persona,'queued',?,?,zeroblob(0),zeroblob(0),?,? FROM sandboxes s JOIN dossier_slots x
+      ON x.sandbox=s.id AND x.persona=s.persona WHERE s.id=? AND s.persona=? AND s.expires>? AND x.dossier_id=?
+      ON CONFLICT(sandbox,persona) DO UPDATE SET status='queued',revision=runs.revision+1,lots=runs.lots+1,
+      attempts=0,lease=NULL,last_added=(${additions}),submitted=excluded.submitted,due=excluded.due,lot_command=excluded.lot_command
+      WHERE runs.id=excluded.id AND runs.closed=0 AND runs.revision<16 AND (${additions})>0 RETURNING last_added,revision`,
       now,
       now + 550,
-      pdf,
-      scan,
       inputs.size,
       command,
       sandbox.id,
       sandbox.persona,
       now,
+      sandbox.dossierId,
+      ids,
+      ids,
+    ),
+    ...[...inputs].map(([fixture, bytes]) =>
+      query(
+        db,
+        `INSERT OR IGNORE INTO run_inputs(run_id,fixture,bytes)
+      SELECT id,?,? FROM runs WHERE id=? AND lot_command=? AND NOT(?='devis' AND length(input_pdf)>0) AND NOT(?='scan' AND length(input_scan)>0)`,
+        fixture,
+        bytes,
+        sandbox.dossierId,
+        command,
+        fixture,
+        fixture,
+      ),
     ),
     query(
       db,
-      `INSERT OR IGNORE INTO lot_events(run_id,revision,submitted) SELECT id,revision,submitted FROM runs
-      WHERE sandbox=? AND persona=? AND lot_command=?`,
-      sandbox.id,
-      sandbox.persona,
+      `INSERT OR IGNORE INTO lot_events(run_id,revision,submitted) SELECT id,revision,submitted FROM runs WHERE id=? AND lot_command=?`,
+      sandbox.dossierId,
       command,
     ),
   ]);
@@ -503,7 +698,8 @@ async function correct(db, sandbox, data, ctx) {
     db,
     `UPDATE runs SET retained_date=?,corrections=json_insert(corrections,'$[#]',json_object(
     'date',?,'reason',?,'author',?,'createdAt',?,'revision',revision+1)),revision=revision+1,status='queued',attempts=0,lease=NULL,submitted=?,due=?
-    WHERE sandbox=? AND persona=? AND closed=0 AND revision=? AND published_revision=revision AND revision<15 AND length(input_pdf)>0 AND COALESCE(retained_date,?)<>?
+    WHERE id=? AND sandbox=? AND persona=? AND closed=0 AND revision=? AND published_revision=revision AND revision<15
+    AND EXISTS(SELECT 1 FROM deliveries d WHERE d.run_id=runs.id AND d.revision=runs.revision AND d.deadline IS NOT NULL AND d.deadline<>?)
     AND EXISTS(SELECT 1 FROM sandboxes WHERE id=runs.sandbox AND persona=runs.persona AND expires>?) RETURNING revision`,
     date,
     date,
@@ -512,10 +708,10 @@ async function correct(db, sandbox, data, ctx) {
     now,
     now,
     now + 550,
+    sandbox.dossierId,
     sandbox.id,
     sandbox.persona,
     base,
-    originalDate,
     date,
     now,
   ).first();
@@ -534,9 +730,10 @@ async function closeDossier(db, sandbox, data, ctx) {
     db,
     `UPDATE runs SET closed=?,status=CASE WHEN status='processing' THEN 'queued' ELSE status END,
     attempts=CASE WHEN status='processing' THEN 0 ELSE attempts END,lease=NULL,due=?
-    WHERE sandbox=? AND persona=? AND closed<>? AND EXISTS(SELECT 1 FROM sandboxes WHERE id=runs.sandbox AND persona=runs.persona AND expires>?) RETURNING closed`,
+    WHERE id=? AND sandbox=? AND persona=? AND closed<>? AND EXISTS(SELECT 1 FROM sandboxes WHERE id=runs.sandbox AND persona=runs.persona AND expires>?) RETURNING closed`,
     Number(data.closed),
     Date.now(),
+    sandbox.dossierId,
     sandbox.id,
     sandbox.persona,
     Number(data.closed),
@@ -545,7 +742,8 @@ async function closeDossier(db, sandbox, data, ctx) {
   if (!row) {
     const current = await query(
       db,
-      'SELECT closed FROM runs WHERE sandbox=? AND persona=?',
+      'SELECT closed FROM runs WHERE id=? AND sandbox=? AND persona=?',
+      sandbox.dossierId,
       sandbox.id,
       sandbox.persona,
     ).first();
@@ -565,17 +763,17 @@ export default {
         return respond(page, 200, { 'Content-Type': 'text/html; charset=utf-8' });
       if (path === '/robots.txt')
         return respond('User-agent: *\nDisallow: /\n', 200, { 'Content-Type': 'text/plain' });
-      const entry = {
-        '/assets/logo.webp': assets.logo,
-        '/fixtures/devis.pdf': assets.devis,
-        '/fixtures/scan.png': assets.scan,
-      }[path];
+      const fixture = [...fixtureList, ...bFixtureList, ...foodFixtureList].find((item) => item.url === path);
+      const entry = path === '/assets/logo.webp' ? assets.logo : fixture ? assets[fixture.id] : null;
       if (entry) return respond(unpack(entry.data), 200, { 'Content-Type': entry.type });
     }
     if (
       ![
         '/api/services',
         '/api/session',
+        '/api/reset',
+        '/api/fichier',
+        '/api/fichiers',
         '/api/depot',
         '/api/dossier',
         '/api/livraison.pdf',
@@ -597,7 +795,7 @@ export default {
         : null;
       if (path === '/api/session' && request.method === 'POST') {
         const data = await readBody(request);
-        if (!['a', 'b', 'sans'].includes(data?.persona)) return error('Profil de recette inconnu.', 400);
+        if (!['a', 'b', 'c', 'sans'].includes(data?.persona)) return error('Profil de recette inconnu.', 400);
         if (sandbox) {
           await query(db, 'UPDATE sandboxes SET persona=? WHERE id=?', data.persona, id).run();
           return respond({ persona: data.persona });
@@ -621,32 +819,52 @@ export default {
           'Set-Cookie': cookieName + '=' + raw + '; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=86400',
         });
       }
-      if (sandbox && sandbox.persona !== 'sans') await restoreLegacy(db, sandbox);
+      if (sandbox && sandbox.persona !== 'sans') {
+        const slot = await openSlot(db, sandbox);
+        if (!slot) return error('Le profil sélectionné a changé.', 409);
+        Object.assign(sandbox, slot);
+        if (slot.scenario === 'atelier') await restoreLegacy(db, sandbox);
+      }
       if (path === '/api/dossier' && request.method === 'GET') {
         ctx.waitUntil(reconcile(db));
+        const scenario = scenarios[sandbox?.scenario];
         return respond({
           persona: sandbox?.persona ?? null,
-          run: sandbox ? await runFor(db, sandbox) : null,
-          fixtures: fixtureList,
+          dossierId: sandbox?.dossierId ?? null,
+          scenario: scenario
+            ? {
+                id: sandbox.scenario,
+                title: scenario.title,
+                clientLabel: 'Client ' + sandbox.persona.toUpperCase(),
+              }
+            : null,
+          run: scenario ? await runFor(db, sandbox) : null,
+          fixtures: (scenario?.fixtures ?? []).map((f) => ({ ...f, sha256: fixtureHashes[f.id] })),
         });
       }
       if (!sandbox) return error('Choisissez un profil de recette.', 401);
       if (sandbox.persona === 'sans')
         return error('Un abonnement fictif actif est requis avant le dépôt.', 402);
+      const data = request.method === 'POST' ? await readBody(request) : null;
+      if (path === '/api/reset' && request.method === 'POST') return await reset(db, sandbox, data);
+      const submittedId = request.method === 'POST' ? data?.dossier : url.searchParams.get('dossier');
+      // Old unqualified URLs remain valid only until their original client resets the dossier.
+      if (
+        (submittedId != null || sandbox.generation > 0) &&
+        submittedId !== sandbox.dossierId &&
+        !(path === '/api/services' && request.method === 'GET' && submittedId == null)
+      )
+        return error('Ce dossier de recette n’est plus actif.', request.method === 'POST' ? 409 : 404);
       if (path === '/api/services') {
-        const result = await handleDossierServices(
-          db,
-          sandbox,
-          request.method,
-          request.method === 'POST' ? await readBody(request) : null,
-        );
+        const result = await handleDossierServices(db, sandbox, request.method, data);
         return respond(result.data, result.status);
       }
       if (path === '/api/edition-initiale.zip' && request.method === 'GET') {
         const dbRow = await query(
           db,
           `SELECT d.extraction FROM runs r JOIN deliveries d ON d.run_id=r.id AND d.revision=r.published_revision
-          WHERE r.sandbox=? AND r.persona=?`,
+          WHERE r.id=? AND r.sandbox=? AND r.persona=?`,
+          sandbox.dossierId,
           sandbox.id,
           sandbox.persona,
         ).first();
@@ -658,17 +876,62 @@ export default {
           'Content-Disposition': 'attachment; filename=Edition-initiale-fictive.zip',
         });
       }
-      if (['/api/livraison.pdf', '/api/livraison.zip'].includes(path) && request.method === 'GET') {
+      if (
+        ['/api/livraison.pdf', '/api/livraison.zip', '/api/fichier', '/api/fichiers'].includes(path) &&
+        request.method === 'GET'
+      ) {
         const rev = url.searchParams.get('revision');
         if (rev !== null && !/^[1-9]\d?$/.test(rev)) return error('Révision inconnue.', 404);
-        const archive = path.endsWith('.zip');
+        const individual = path === '/api/fichier',
+          listing = path === '/api/fichiers',
+          archive = path.endsWith('.zip');
+        if (individual || listing) {
+          const row = await query(
+            db,
+            `SELECT d.revision,d.files,d.file_count FROM runs r JOIN deliveries d ON d.run_id=r.id
+            WHERE r.sandbox=? AND r.persona=? AND r.id=? AND d.revision=coalesce(?,r.published_revision)`,
+            sandbox.id,
+            sandbox.persona,
+            sandbox.dossierId,
+            rev === null ? null : Number(rev),
+          ).first();
+          if (!row) return error('Livraison indisponible.', 404);
+          const files = await fileManifest(db, sandbox.dossierId, row.revision, row.files, row.file_count);
+          if (listing)
+            return respond({
+              revision: row.revision,
+              files: linkedFiles(files, sandbox.dossierId, row.revision),
+            });
+          const file = files.find((f) => f.name === url.searchParams.get('name'));
+          if (!file) return error('Fichier absent de cette révision.', 404);
+          const source = await query(
+            db,
+            'SELECT ' +
+              (row.file_count === 1 ? 'pdf' : 'pack') +
+              ' bytes FROM deliveries WHERE run_id=? AND revision=?',
+            sandbox.dossierId,
+            row.revision,
+          ).first();
+          if (!source?.bytes) return error('Fichier indisponible.', 404);
+          const bytes = new Uint8Array(source.bytes);
+          const content =
+            row.file_count === 1
+              ? bytes
+              : unzipSync(bytes, { filter: (entry) => entry.name === file.name })[file.name];
+          if (!content) return error('Fichier absent de cette archive.', 404);
+          return respond(content, 200, {
+            'Content-Type': file.mime,
+            'Content-Disposition': "attachment; filename*=UTF-8''" + encodeURIComponent(file.name),
+          });
+        }
         const field = archive ? 'pack' : 'pdf';
         const row = await query(
           db,
           `SELECT d.${field} bytes,d.revision FROM runs r JOIN deliveries d ON d.run_id=r.id
-          WHERE r.sandbox=? AND r.persona=? AND d.revision=coalesce(?,r.published_revision)`,
+          WHERE r.sandbox=? AND r.persona=? AND r.id=? AND d.revision=coalesce(?,r.published_revision)`,
           sandbox.id,
           sandbox.persona,
+          sandbox.dossierId,
           rev === null ? null : Number(rev),
         ).first();
         if (!row?.bytes) return error('Livraison indisponible.', 404);
@@ -680,7 +943,6 @@ export default {
         });
       }
       if (request.method !== 'POST') return error('Méthode non autorisée.', 405);
-      const data = await readBody(request);
       if (path === '/api/depot') return await submit(db, sandbox, data, ctx);
       if (path === '/api/correction') return await correct(db, sandbox, data, ctx);
       if (path === '/api/cloture') return await closeDossier(db, sandbox, data, ctx);

@@ -1,5 +1,5 @@
 // Prestations de recette : les textes de communication proviennent uniquement du brief.
-const goals = new Set(['Demandes de devis', 'Visites du profil', 'Échanges en commentaire']);
+const goals = new Set(['Demandes de devis', 'Prises de contact', 'Visites du profil', 'Échanges en commentaire']);
 const tones = new Set(['Direct', 'Pédagogique', 'Convivial']);
 export const zones = ['Europe/Paris', 'America/Montreal', 'Indian/Reunion', 'UTC'];
 const dayNames = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
@@ -31,7 +31,24 @@ function slot(previous, weekday, hour, zone) {
   };
 }
 
-export function linkedin(brief, now = new Date()) {
+function collectionPosts({ audience, offer, region, tone, goal }) {
+  const firstLine = {
+    Direct: 'Vous proposez des denrées pour une collecte ?',
+    Pédagogique: 'Trois précisions facilitent la préparation d’une collecte.',
+    Convivial: 'Et si votre prochain don commençait par une conversation ?',
+  }[tone];
+  const contact = goal === 'Visites du profil' ? 'Retrouvez le point de contact sur notre profil.'
+    : goal === 'Échanges en commentaire' ? 'Quelle information vous aide le plus ? Partagez votre expérience en commentaire.'
+    : 'Prenez contact avec notre équipe pour préparer ce premier échange.';
+  const tags = ['#SolidaritéAlimentaire', hashtag(region)].join(' ');
+  return [
+    [firstLine, `Pour préparer « ${offer} » avec les ${audience} du secteur de ${region}, un premier message peut tenir en trois lignes. Quelles denrées proposez-vous ? En quelle quantité ? À quel moment peut-on les récupérer ?`],
+    ['Un créneau utile commence par une question toute simple.', `Avant de fixer une heure pour « ${offer} », convenons ensemble de l’endroit où se retrouver. Préciser l’accès et la personne à prévenir évite aux équipes de chercher ces renseignements le jour venu.`],
+    ['Le travail continue après la remise des cartons.', `Un bref retour entre les ${audience} et l’équipe de collecte permet de savoir ce qui a été remis et ce qui reste à organiser. Dans le secteur de ${region}, que gagneriez-vous à préparer ensemble avant une prochaine collecte ?`],
+  ].map(([heading, paragraph]) => [heading, paragraph, contact, tags].join('\n\n'));
+}
+
+export function linkedin(brief, now = new Date(), campaign = 'chantier') {
   const audience = field(brief.audience, 'Cible', 80);
   const offer = field(brief.offer, 'Offre', 140);
   const region = field(brief.region, 'Zone', 80);
@@ -41,7 +58,10 @@ export function linkedin(brief, now = new Date()) {
   const preferredDay = Number(brief.preferredDay), preferredHour = Number(brief.preferredHour);
   if (custom && (!Number.isInteger(preferredDay) || preferredDay < 0 || preferredDay > 6 ||
       !Number.isInteger(preferredHour) || preferredHour < 7 || preferredHour > 20)) invalid('Vérifiez le jour et l’heure relevés pour votre audience.');
-  const metric = goal === 'Demandes de devis' ? 'demandes de devis reçues' : goal === 'Visites du profil' ? 'visites du profil' : 'commentaires et impressions';
+  const metric = {
+    'Demandes de devis': 'demandes de devis reçues', 'Prises de contact': 'prises de contact',
+    'Visites du profil': 'visites du profil', 'Échanges en commentaire': 'commentaires et impressions',
+  }[goal];
   const openings = tone === 'Convivial'
     ? ['Et si on parlait de votre prochain projet ?', 'Un petit conseil avant de demander un devis.', 'Quel serait votre premier critère de choix ?']
     : tone === 'Pédagogique'
@@ -64,16 +84,19 @@ export function linkedin(brief, now = new Date()) {
     `Quand on prépare un projet, une question change souvent la discussion : qu’est-ce qui vous ferait dire que le résultat vous convient ? Pour notre offre « ${offer} », nous proposons de partir de ce critère lors du premier échange avec le public « ${audience} ».`,
   ];
   const labels = [...new Set([hashtag(region), hashtag(audience), goal === 'Demandes de devis' ? '#Devis' : '#Projet'])].filter(tag => tag.length > 1);
+  const texts = campaign === 'collecte'
+    ? collectionPosts({ audience, offer, region, tone, goal })
+    : paragraphs.map((paragraph, index) => [openings[index], paragraph, calls[index], labels.join(' ')].join('\n\n'));
   let previous = new Intl.DateTimeFormat('sv-SE', { timeZone: zone }).format(now);
   return {
     title: 'Trois brouillons LinkedIn', metric, audience, channel: 'Aucune publication automatique',
-    posts: paragraphs.map((paragraph, index) => {
+    posts: texts.map((text, index) => {
       const when = slot(previous, custom ? preferredDay : [2, 4, 2][index], custom ? preferredHour : [8, 12, 17][index], zone);
       previous = when.date;
       const reason = custom
         ? `Créneau relevé pour « ${audience} » dans votre brief. Comparez les ${metric} sur ces trois dates.`
         : [`Créneau test pour « ${audience} » : mesurer la réponse en début de journée.`, `Créneau test à la pause de midi pour « ${audience} » : comparer les ${metric} au premier post.`, `Créneau test en fin de journée pour « ${audience} » : comparer la réponse aux deux horaires précédents.`][index];
-      return { text: [openings[index], paragraph, calls[index], labels.join(' ')].join('\n\n'), when, reason };
+      return { text, when, reason };
     }),
   };
 }
@@ -102,9 +125,9 @@ function prepare(kind, analysis) {
   };
 }
 
-export function buildService(body, analysis) {
+export function buildService(body, analysis, campaign = 'chantier') {
   if (!['linkedin', 'justificatifs', 'rendezvous'].includes(body?.kind)) invalid('Format de prestation inconnu.');
-  return body.kind === 'linkedin' ? linkedin(body.brief ?? {}) : prepare(body.kind, analysis);
+  return body.kind === 'linkedin' ? linkedin(body.brief ?? {}, new Date(), campaign) : prepare(body.kind, analysis);
 }
 
 export function handleServices({ method, body, db, session, analysis }) {

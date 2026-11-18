@@ -58,7 +58,8 @@ async function rpc(request,db) {
   const row=await statement(db,`SELECT r.status,r.published_revision,r.published_at FROM connector_grants g
     JOIN sandboxes s ON s.id=g.sandbox JOIN runs r ON r.sandbox=g.sandbox AND r.persona=g.persona
     WHERE g.subject=? AND g.expires>? AND s.expires>? AND s.persona=g.persona
-    AND g.persona IN ('a','b') AND r.closed=0`,owner,now,now).first();
+    AND (g.run_id=r.id OR (g.run_id IS NULL AND coalesce((SELECT generation FROM dossier_slots x WHERE x.sandbox=g.sandbox AND x.persona=g.persona),0)=0))
+    AND g.persona IN ('a','b','c') AND r.closed=0`,owner,now,now).first();
   if (!row) return ok(denied(help));
   return ok(success({etat:row.status,revision_livree:row.published_revision||Number(Boolean(row.published_at)),
     derniere_livraison:row.published_at?new Date(row.published_at).toISOString():null,
@@ -86,17 +87,17 @@ export async function handleConnector(request,env,digestCookie) {
         return html('Accès révoqué','<p>ChatGPT devra obtenir une nouvelle autorisation pour lire l’état de votre dossier.</p>');
       }
       if(form.get('action')!=='allow') return json({error:'Action inconnue.'},400);
-      const consent=await statement(env.DB,`INSERT INTO connector_grants(subject,sandbox,persona,expires)
-        SELECT ?,s.id,s.persona,min(?,s.expires) FROM sandboxes s JOIN runs r ON r.sandbox=s.id AND r.persona=s.persona
-        WHERE s.id=? AND s.expires>? AND s.persona IN ('a','b') AND r.closed=0
-        ON CONFLICT(subject) DO UPDATE SET sandbox=excluded.sandbox,persona=excluded.persona,expires=excluded.expires
-        RETURNING expires`,owner,now+900_000,sandbox,now).first();
-      if(!consent) return html('Aucun dossier éligible','<p>Revenez au bac de recette. Choisissez le client A ou B puis déposez les pièces fictives dans un dossier ouvert.</p>',403);
+      const consent=await statement(env.DB,`INSERT INTO connector_grants(subject,sandbox,persona,expires,run_id)
+        SELECT ?,s.id,s.persona,min(?,s.expires),r.id FROM sandboxes s JOIN runs r ON r.sandbox=s.id AND r.persona=s.persona
+        WHERE s.id=? AND s.expires>? AND s.persona IN ('a','b','c') AND r.closed=0 AND r.id=?
+        ON CONFLICT(subject) DO UPDATE SET sandbox=excluded.sandbox,persona=excluded.persona,expires=excluded.expires,run_id=excluded.run_id
+        RETURNING expires`,owner,now+900_000,sandbox,now,form.get('dossier')).first();
+      if(!consent) return html('Aucun dossier éligible','<p>Revenez au bac de recette. Choisissez un profil abonné puis déposez les pièces fictives dans un dossier ouvert.</p>',403);
       return html('Lecture autorisée','<p>Dans ChatGPT, sélectionnez l’app privée ClairDossier de recette et demandez « Lis l’état de mon dossier ». L’autorisation expire dans quinze minutes ou à la fin de la session de recette.</p><form method="post"><button name="action" value="revoke">Révoquer maintenant</button></form>');
     }
-    const eligible = sandbox && await statement(env.DB,`SELECT s.persona FROM sandboxes s JOIN runs r ON r.sandbox=s.id AND r.persona=s.persona WHERE s.id=? AND s.expires>? AND s.persona IN ('a','b') AND r.closed=0`,sandbox,now).first();
+    const eligible = sandbox && await statement(env.DB,`SELECT s.persona,r.id FROM sandboxes s JOIN runs r ON r.sandbox=s.id AND r.persona=s.persona WHERE s.id=? AND s.expires>? AND s.persona IN ('a','b','c') AND r.closed=0`,sandbox,now).first();
     const grant = await statement(env.DB,'SELECT expires FROM connector_grants WHERE subject=? AND expires>?',owner,now).first();
-    const permission = eligible ? `<p>Vous autorisez pendant quinze minutes l’app privée ChatGPT à lire l’état du dossier Atelier Témoin du client fictif ${eligible.persona==='b'?'B':'A'}, sa révision livrée, l’heure de dernière livraison et les anomalies techniques. Le contenu des pièces reste privé.</p><form method="post"><button name="action" value="allow">Autoriser cette lecture</button></form>` : '<p>Choisissez un profil abonné et déposez les pièces dans votre dossier fictif pour autoriser sa lecture.</p>';
+    const permission = eligible ? `<p>Vous autorisez pendant quinze minutes l’app privée ChatGPT à lire l’état du dossier du client fictif ${eligible.persona.toUpperCase()}, sa révision livrée, l’heure de dernière livraison et les anomalies techniques. Le contenu des pièces reste privé.</p><form method="post"><input type="hidden" name="dossier" value="${eligible.id.replace(/[^a-zA-Z0-9-]/g,'')}"><button name="action" value="allow">Autoriser cette lecture</button></form>` : '<p>Choisissez un profil abonné et déposez les pièces dans votre dossier fictif pour autoriser sa lecture.</p>';
     return html('Accès privé depuis ChatGPT',permission+(grant?'<form method="post"><button name="action" value="revoke">Révoquer mon autorisation</button></form>':''));
   } catch { return json({error:'Connecteur temporairement indisponible.'},503); }
 }

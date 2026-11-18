@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {readFileSync,readdirSync} from 'node:fs';
 import {DatabaseSync} from 'node:sqlite';
 import {test} from 'node:test';
 import {handleConnector} from './connector.mjs';
@@ -7,8 +7,8 @@ import {handleConnector} from './connector.mjs';
 test('la lecture MCP utilise le consentement du compte Sites, un seul dossier et son droit actuel',async t=>{
   const sql=new DatabaseSync(':memory:');
   t.after(()=>sql.close());
-  for(const migration of ['0000_recette','0001_versions','0002_connecteur']) {
-    sql.exec(readFileSync(new URL('./drizzle/'+migration+'.sql',import.meta.url),'utf8'));
+  for(const migration of readdirSync(new URL('./drizzle/',import.meta.url)).filter(f=>f.endsWith('.sql')).sort()) {
+    sql.exec(readFileSync(new URL('./drizzle/'+migration,import.meta.url),'utf8'));
   }
   const db={prepare(statement){const prepared=sql.prepare(statement);return {bind(...values){return {
     first:()=>prepared.get(...values),run:()=>prepared.run(...values),
@@ -32,7 +32,7 @@ test('la lecture MCP utilise le consentement du compte Sites, un seul dossier et
     return (await reply.json()).result;
   };
   const read=()=>ask('tools/call',{name:'lire_etat_dossier',arguments:{}});
-  const consent=action=>send(consentPath,'action='+action,'application/x-www-form-urlencoded');
+  const consent=action=>send(consentPath,'action='+action+'&dossier='+sandbox+'-dossier','application/x-www-form-urlencoded');
   assert.equal((await ask('tools/list')).tools[0].name,'lire_etat_dossier');
   assert.equal((await read()).isError,true);
   assert.match(await (await send(consentPath)).text(),/signin-with-chatgpt/);

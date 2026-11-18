@@ -1,21 +1,21 @@
-// Moteur de recette limité aux deux pièces fictives livrées avec le dépôt.
+// Moteur de recette limité aux pièces fictives vérifiées et distribuées avec cette version.
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { gunzipSync } from 'node:zlib';
+import empreintes from '../recette/fixtures/empreintes.json' with { type: 'json' };
 
 const require = createRequire(import.meta.url);
+// Les chemins littéraux permettent à Vercel de tracer exclusivement les huit fichiers du corpus.
 const fixtures = new Map([
-  ['devis', {
-    read: () => readFile(new URL('../recette/fixtures/devis.pdf', import.meta.url)),
-    sha256: 'ae8189109c52965537faaa11921ae31c63823f57c9c5a29598a49f9b7bfc3898',
-    method: 'pdf-text',
-  }],
-  ['scan', {
-    read: () => readFile(new URL('../recette/fixtures/scan.png', import.meta.url)),
-    sha256: 'a7fc08e708aab24a320711f6ca485e144ba0d9c305a32013165651758a03f871',
-    method: 'tesseract-wasm-eng',
-  }],
+  ['devis', { method: 'pdf-text', read: () => readFile(new URL('../recette/fixtures/devis.pdf', import.meta.url)) }],
+  ['scan', { method: 'tesseract-wasm-eng', read: () => readFile(new URL('../recette/fixtures/scan.png', import.meta.url)) }],
+  ['devis-b', { method: 'pdf-text', read: () => readFile(new URL('../recette/fixtures/devis-b.pdf', import.meta.url)) }],
+  ['reception-b', { method: 'tesseract-wasm-eng', read: () => readFile(new URL('../recette/fixtures/reception-b.png', import.meta.url)) }],
+  ['don', { method: 'pdf-text', read: () => readFile(new URL('../recette/fixtures/don.pdf', import.meta.url)) }],
+  ['inventaire', { method: 'pdf-text', read: () => readFile(new URL('../recette/fixtures/inventaire.pdf', import.meta.url)) }],
+  ['tournee', { method: 'pdf-text', read: () => readFile(new URL('../recette/fixtures/tournee.pdf', import.meta.url)) }],
+  ['quai', { method: 'tesseract-wasm-eng', read: () => readFile(new URL('../recette/fixtures/quai.png', import.meta.url)) }],
 ]);
 
 async function readScan(bytes) {
@@ -42,9 +42,9 @@ async function extract(fixture, revision) {
   const source = fixtures.get(fixture);
   const bytes = await source.read();
   const sha256 = createHash('sha256').update(bytes).digest('hex');
-  if (source.sha256 !== sha256) throw new Error('Empreinte du corpus incorrecte');
+  if (empreintes[fixture] !== sha256) throw new Error('Empreinte du corpus incorrecte');
   let text;
-  if (fixture === 'scan') {
+  if (source.method === 'tesseract-wasm-eng') {
     text = await readScan(bytes);
   } else {
     const { extractText } = await import('unpdf');
@@ -59,7 +59,7 @@ async function extract(fixture, revision) {
   return { fixture, revision, sha256, method: source.method, lines };
 }
 
-// Au plus deux calculs par instance. Le cache partagé de Vercel est lié au SHA.
+// Un calcul par pièce connue et par instance. Le cache partagé de Vercel est lié au SHA.
 const results = new Map();
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');

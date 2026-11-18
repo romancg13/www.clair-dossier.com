@@ -1,5 +1,10 @@
 // Le même état sourcé alimente l'écran, les PDF, les tableaux et le calendrier d'une révision.
-import { buildDeliverables, buildChronology } from '../../supabase/functions/_shared/deliverables.ts';
+import {
+  buildDeliverables,
+  buildChronology,
+  renderPdf,
+  MIME,
+} from '../../supabase/functions/_shared/deliverables.ts';
 import { deadlineKey } from '../../supabase/functions/_shared/ai-pipeline.ts';
 import { zipSync } from 'fflate';
 
@@ -48,9 +53,7 @@ function projectSources(extraction) {
   return { pieces, facts, events: buildChronology(extractedEvents), deadlineQuote };
 }
 
-export async function renderReport({
-  revision,
-  publishedAt,
+function atelierReport({
   summary,
   action,
   date,
@@ -61,11 +64,8 @@ export async function renderReport({
   draft,
   corrections,
   extraction,
-  pdfOnly = false,
 }) {
-  const stamp = new Date(publishedAt);
   const { pieces, facts, events, deadlineQuote } = projectSources(extraction);
-  for (const piece of pieces) piece.created_at = stamp.toISOString();
   const deadlines = hasDevis
     ? [
         {
@@ -142,14 +142,50 @@ export async function renderReport({
         },
       ]
     : undefined;
+  const preparation = [
+    { heading: 'Objet du suivi', text: summary },
+    {
+      heading: 'Avant la prise de contact',
+      text: hasScan
+        ? 'Vérifier la référence des fenêtres et préparer le bon de réception avant de demander sa signature. [Bon de réception numérisé.png, p. 1]'
+        : 'Réunir le bon de réception cité par le devis et vérifier son état de signature.',
+    },
+    ...(hasDevis ? [{ heading: 'Échéance à rappeler', text: displayedDate + ' · ' + dateSource }] : []),
+    {
+      heading: 'À conserver après l’échange',
+      text: 'Classer la réponse écrite et, si elle est obtenue, la copie signée dans ce dossier.',
+    },
+  ];
+  return { title, analysis, pieces, deadlineRows, overrides, preparation };
+}
+
+const fileTitles = {
+  dashboard: 'Tableau de bord',
+  resume: 'Synthèse des faits',
+  chronologie: 'Chronologie',
+  echeances: 'Échéances et calendrier',
+  dates: 'Dates et corrections',
+  relances: 'Projet de courriel',
+  manquants: 'Pièces et confirmations attendues',
+  preparation: 'Fiche de préparation',
+};
+
+/** Toutes les éditions proviennent de la même projection métier que la situation affichée. */
+export async function renderReport(input) {
+  const { revision, publishedAt, pdfOnly = false } = input;
+  const { title, analysis, pieces, deadlineRows, overrides, preparation } = input.analysis
+    ? input
+    : atelierReport(input);
+  if (!title || !pieces.length) throw Error('Une pièce source et un dossier sont requis.');
+  const stamp = new Date(publishedAt);
   const categories = pdfOnly
     ? ['dashboard']
     : [
         'dashboard',
         'resume',
-        ...(events.length ? ['chronologie', 'dates'] : []),
-        ...(hasDevis ? ['echeances'] : []),
-        ...(hasScan ? ['relances'] : []),
+        ...(analysis.events.length ? ['chronologie', 'dates'] : []),
+        ...(analysis.deadlines.length ? ['echeances'] : []),
+        ...(analysis.reminder_drafts.length ? ['relances'] : []),
       ];
   const files = await buildDeliverables({
     title,
@@ -164,16 +200,60 @@ export async function renderReport({
       pending: 0,
       complete: true,
     },
-    pieces,
+    pieces: pieces.map((piece) => ({ ...piece, created_at: piece.created_at || stamp.toISOString() })),
     deadlineRows,
     overrides,
     demo: true,
     categories,
   });
   const pdf = files.find((f) => f.key === 'dashboard').bytes;
-  // Les formats Office et PDF sont déjà compressés. Le ZIP évite une seconde compression coûteuse.
+  if (!pdfOnly) {
+    const subtitle =
+      title +
+      ' · révision ' +
+      revision +
+      ' · ' +
+      stamp.toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris' });
+    const missing = analysis.missing_items.flatMap((m) => [
+      { kind: 'heading', text: m.text },
+      { kind: 'para', text: m.why },
+    ]);
+    files.push({
+      key: 'manquants',
+      name: `Pieces-a-confirmer-r${revision}.pdf`,
+      mime: MIME.pdf,
+      bytes: await renderPdf(
+        'Pièces et confirmations attendues',
+        subtitle,
+        missing.length
+          ? missing
+          : [
+              {
+                kind: 'para',
+                text: 'Aucune pièce indispensable supplémentaire n’a été identifiée dans ce lot.',
+              },
+            ],
+        true,
+      ),
+    });
+    files.push({
+      key: 'preparation',
+      name: `Preparation-logistique-r${revision}.pdf`,
+      mime: MIME.pdf,
+      bytes: await renderPdf(
+        'Fiche de préparation',
+        subtitle,
+        preparation.flatMap((s) => [
+          { kind: 'heading', text: s.heading },
+          { kind: 'para', text: s.text },
+        ]),
+        true,
+      ),
+    });
+  }
+  const published = files.map((f) => ({ ...f, category: f.key, title: fileTitles[f.key] }));
   const pack = pdfOnly
     ? null
     : zipSync(Object.fromEntries(files.map((f) => [f.name, f.bytes])), { level: 0, mtime: stamp });
-  return { pdf, pack, count: files.length };
+  return { pdf, pack, count: files.length, files: published };
 }
