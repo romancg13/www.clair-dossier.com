@@ -12,7 +12,8 @@ export type PutResult = { ok: true; etag: string } | { ok: false };
 
 export interface Kv {
   readonly durable: boolean;
-  getJson<T>(key: string): Promise<KvEntry<T> | null>;
+  /** `fresh` : lecture d'autorité (plus lente) avant une écriture conditionnelle qui a déjà échoué. */
+  getJson<T>(key: string, opts?: { fresh?: boolean }): Promise<KvEntry<T> | null>;
   /** ifMatch : remplace seulement si l'ETag correspond ; create : échoue si la clé existe. */
   putJson(key: string, value: unknown, opts?: { ifMatch?: string; create?: boolean }): Promise<PutResult>;
   getBytes(key: string): Promise<Uint8Array | null>;
@@ -24,7 +25,7 @@ export interface Kv {
 /** Lecture-modification-écriture avec reprise sur conflit (optimiste). */
 export async function update<T>(kv: Kv, key: string, fn: (cur: T | null) => T | null, attempts = 8): Promise<T | null> {
   for (let i = 0; i < attempts; i++) {
-    const cur = await kv.getJson<T>(key);
+    const cur = await kv.getJson<T>(key, { fresh: i >= 2 });
     const next = fn(cur ? structuredClone(cur.value) : null);
     if (next === null) return cur?.value ?? null;
     const r = await kv.putJson(key, next, cur ? { ifMatch: cur.etag } : { create: true });
@@ -78,12 +79,17 @@ export class BlobKv implements Kv {
     return `${this.prefix}${key}`;
   }
   /**
-   * Lecture cohérente : l'ETag de référence vient de head() (API, toujours à jour) ;
-   * le contenu est lu à une adresse propre à cet ETag, que le cache ne peut pas
-   * servir périmée. Sans cela, une lecture juste après écriture pouvait renvoyer
-   * l'ancienne version et faire échouer en boucle les écritures conditionnelles.
+   * Lecture rapide : CDN de la région du magasin, sans cache (cache=0) et sans
+   * compression — un CDN qui compresse renvoie un ETag faible (W/"…") que
+   * l'écriture conditionnelle refuse. Lecture d'autorité (`fresh`) : ETag de
+   * référence via head() (API) et contenu lu à une adresse propre à cet ETag.
    */
-  async getJson<T>(key: string) {
+  async getJson<T>(key: string, opts: { fresh?: boolean } = {}) {
+    if (!opts.fresh) {
+      const r = await get(this.k(key), { access: 'private', useCache: false, headers: { 'accept-encoding': 'identity' } });
+      if (!r || r.statusCode !== 200 || !r.stream) return null;
+      return { value: JSON.parse(new TextDecoder().decode(await readAll(r.stream))) as T, etag: strongEtag(r.blob.etag) };
+    }
     for (let i = 0; i < 5; i++) {
       let meta: Awaited<ReturnType<typeof head>>;
       try {
@@ -94,11 +100,9 @@ export class BlobKv implements Kv {
       }
       const u = new URL(meta.url);
       u.searchParams.set('v', meta.etag.replace(/[^A-Za-z0-9]/g, ''));
-      // Sans compression : un CDN qui compresse renvoie un ETag faible (W/"…") que l'écriture conditionnelle refuse.
       const r = await get(u.toString(), { access: 'private', useCache: false, headers: { 'accept-encoding': 'identity' } });
       if (r && r.statusCode === 200 && r.stream) {
         const text = new TextDecoder().decode(await readAll(r.stream));
-        // Paire (contenu, ETag) cohérente : c'est elle qui conditionne l'écriture suivante.
         if (!r.blob.etag || strongEtag(r.blob.etag) === strongEtag(meta.etag)) return { value: JSON.parse(text) as T, etag: meta.etag };
         if (i === 4) console.error(JSON.stringify({ evt: 'stockage', etag_api: meta.etag, etag_lu: r.blob.etag }));
       }
