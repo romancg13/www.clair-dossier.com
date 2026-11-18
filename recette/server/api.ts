@@ -31,6 +31,8 @@ export interface ApiEnv {
 }
 
 const MAX_UPLOAD = 4 * 1024 * 1024;
+/** Fichiers par envoi : borne le travail d'une requête (l'interface envoie un fichier par requête). */
+const MAX_FILES = 20;
 const SESSION_DAYS = 30;
 const json = (data: unknown, status = 200, headers: Record<string, string> = {}) => new Response(JSON.stringify(data), { status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', 'x-robots-tag': 'noindex, nofollow', ...headers } });
 const err = (status: number, message: string, extra: Record<string, unknown> = {}) => json({ error: message, ...extra }, status);
@@ -285,6 +287,7 @@ export async function handle(env: ApiEnv, req: Request): Promise<Response> {
       if (!/^[0-9a-f-]{36}$/.test(lot)) return err(400, 'Lot invalide.');
       const files = form.getAll('fichiers').filter((f): f is File => typeof f === 'object' && f !== null && 'arrayBuffer' in f);
       if (!files.length) return err(400, 'Aucun fichier reçu.');
+      if (files.length > MAX_FILES) return err(413, `Au plus ${MAX_FILES} fichiers par envoi : répartissez vos pièces en plusieurs dépôts.`);
       const big = files.find((f) => f.size > MAX_UPLOAD);
       if (big) return err(413, `« ${big.name} » dépasse 4 Mo.`);
       // Stockage des pièces en parallèle, puis mise en file (durable avant la réponse).
