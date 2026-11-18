@@ -69,6 +69,8 @@ async function readAll(stream: ReadableStream<Uint8Array>): Promise<Uint8Array> 
 }
 
 /** Vercel Blob privé. Authentification : jeton OIDC de la fonction ou BLOB_READ_WRITE_TOKEN (serveur). */
+const strongEtag = (e: string) => e.replace(/^W\//, '');
+
 export class BlobKv implements Kv {
   readonly durable = true;
   constructor(private readonly prefix = 'recette/') {}
@@ -92,11 +94,13 @@ export class BlobKv implements Kv {
       }
       const u = new URL(meta.url);
       u.searchParams.set('v', meta.etag.replace(/[^A-Za-z0-9]/g, ''));
-      const r = await get(u.toString(), { access: 'private', useCache: false });
+      // Sans compression : un CDN qui compresse renvoie un ETag faible (W/"…") que l'écriture conditionnelle refuse.
+      const r = await get(u.toString(), { access: 'private', useCache: false, headers: { 'accept-encoding': 'identity' } });
       if (r && r.statusCode === 200 && r.stream) {
         const text = new TextDecoder().decode(await readAll(r.stream));
         // Paire (contenu, ETag) cohérente : c'est elle qui conditionne l'écriture suivante.
-        if (!r.blob.etag || r.blob.etag === meta.etag) return { value: JSON.parse(text) as T, etag: meta.etag };
+        if (!r.blob.etag || strongEtag(r.blob.etag) === strongEtag(meta.etag)) return { value: JSON.parse(text) as T, etag: meta.etag };
+        if (i === 4) console.error(JSON.stringify({ evt: 'stockage', etag_api: meta.etag, etag_lu: r.blob.etag }));
       }
       await new Promise((res) => setTimeout(res, 40 * (i + 1)));
     }
