@@ -15,7 +15,7 @@ export const homeFaq: FaqEntry[] = [
     id: "donnees-securisees",
     question: "Mes données sont-elles vraiment sécurisées ?",
     answer:
-      "Vos échanges passent en HTTPS (chiffrement en transit) et vos données sont chiffrées au repos côté hébergeur. Vos pièces sont déposées dans un stockage privé, accessible uniquement après authentification, via des liens temporaires. Chaque compte est isolé des autres, et nos hébergeurs sous-traitants sont conformes au RGPD.",
+      "Vos échanges passent en HTTPS (chiffrement en transit) et vos données sont chiffrées au repos côté hébergeur. Vos pièces sont déposées dans un stockage privé, accessible uniquement après authentification, via des liens temporaires. Chaque compte est isolé des autres, et nos sous-traitants techniques sont nommés sur la page Sécurité.",
   },
   {
     id: "obligation-avocat",
@@ -27,13 +27,13 @@ export const homeFaq: FaqEntry[] = [
     id: "compatible-cabinet",
     question: "Comment je récupère ou partage mes dossiers ?",
     answer:
-      "Depuis la liste de vos dossiers, ouvrez la page détail « Avancement du dossier » : vous y consultez les 5 étapes, téléchargez chaque pièce et voyez les échéances. Quand vous le souhaitez, vous téléchargez vos pièces et transmettez le dossier vous-même au destinataire de votre choix — rien ne part automatiquement.",
+      "Depuis la liste de vos dossiers, ouvrez la page détail « Suivi du dossier » : vous y consultez les 4 états du suivi, téléchargez chaque pièce et voyez les échéances. Quand vous le souhaitez, vous téléchargez vos pièces et transmettez le dossier vous-même au destinataire de votre choix — rien ne part automatiquement.",
   },
   {
     id: "refus-avocat",
     question: "Comment je suis l'avancement de mon dossier ?",
     answer:
-      "La page détail « Avancement du dossier » affiche 5 étapes métier cliquables. Vous y voyez où en est votre dossier, les pièces déjà déposées (téléchargeables) et les échéances à venir. Si une pièce manque, vous complétez le dossier directement depuis l'app, puis vous le transmettez quand il est prêt.",
+      "La page détail « Suivi du dossier » affiche 4 états cliquables : dossier créé, traitement en cours, documents disponibles, dossier clôturé. Vous y voyez où en est votre dossier, les pièces déjà déposées (téléchargeables) et les échéances à venir. Si une pièce manque, vous complétez le dossier directement depuis l'app, puis vous le transmettez quand il est prêt.",
   },
   {
     id: "tarification-cabinet",
@@ -51,6 +51,6 @@ export const homeFaq: FaqEntry[] = [
     id: "rgpd-donnees",
     question: "Conformité RGPD : comment exercer mes droits sur mes données ?",
     answer:
-      "Vos données sont chiffrées au repos chez notre hébergeur, conforme au RGPD, et chaque compte est isolé des autres. Vous gardez vos droits d'accès, d'export et de suppression : il suffit d'en faire la demande via le contact ou votre espace. Une demande est traitée dans un délai raisonnable, sous 30 jours.",
+      "Vos données sont chiffrées au repos chez notre hébergeur, et chaque compte est isolé des autres. Vous gardez vos droits d'accès, d'export et de suppression : il suffit d'en faire la demande via le contact. Une demande est traitée dans un délai raisonnable, sous 30 jours.",
   },
 ];

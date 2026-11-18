@@ -10,7 +10,7 @@ url: https://www.clair-dossier.com/fonctionnalites/calendrier-relances
 
 Les délais sont au cœur des dossiers : délai de contestation, date d'échéance, paiement, rendez-vous. Les garder en vue, c'est déjà éviter de les laisser passer. ClairDossier conserve ces dates avec le dossier auquel elles se rattachent.
 
-Vous renseignez les échéances connues lors de la création du dossier. Elles sont enregistrées et affichées sur la page d'avancement, à côté des pièces et des étapes. Vous les retrouvez à chaque fois que vous ouvrez le dossier.
+Vous renseignez les échéances connues lors de la création du dossier. Elles sont enregistrées et affichées sur la page d'avancement, à côté des pièces et de l'état du suivi. Vous les retrouvez à chaque fois que vous ouvrez le dossier.
 
 Vous gardez ainsi vos dates importantes réunies au même endroit que le reste du dossier, plutôt que dispersées dans des notes ou des agendas séparés. Vous décidez ensuite quand et comment transmettre le dossier.
 
@@ -18,7 +18,7 @@ Vous gardez ainsi vos dates importantes réunies au même endroit que le reste d
 
 - Échéances renseignées à la création du dossier
 - Dates affichées sur la page d'avancement
-- Échéances réunies avec les pièces et les étapes
+- Échéances réunies avec les pièces et l'état du suivi
 - Transmission du dossier décidée et déclenchée par vous
 
 

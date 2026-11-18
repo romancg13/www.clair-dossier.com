@@ -84,13 +84,13 @@
   to = "/fonctionnalites/recapitulatif-transmission.md"
   status = 301
 
-# SPA fallback : les routes publiques sont pré-rendues (dist/<route>/index.html,
-# servies comme fichiers réels) ; ce fallback ne capte plus que les routes
-# privées (/compte, /dossier/nouveau…) et inconnues, servies avec la coquille
-# SPA vierge (spa-shell.html) pour éviter toute hydratation croisée.
+# Routes : publiques et d'application (/connexion, /compte…) sont des fichiers
+# réels du prérendu. Seule la route dynamique d'un dossier est réécrite vers la
+# coquille noindex de /compte ; toute autre URL inconnue reçoit dist/404.html
+# avec un vrai statut 404 (pas de règle globale en 200 : soft 404).
 [[redirects]]
-  from = "/*"
-  to = "/spa-shell.html"
+  from = "/compte/dossier/*"
+  to = "/compte/index.html"
   status = 200
 
 # Sécurité (defense-in-depth) — appliqué à toutes les réponses.

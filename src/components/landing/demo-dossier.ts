@@ -10,16 +10,12 @@
  *    automatique des pièces, pas de rappel envoyé — voir /etat-du-produit).
  */
 
+import { STEP_NEXT_ACTIONS, TIMELINE_STEPS } from '../../../packages/core/src/dossiers';
+
 export const DEMO_LABEL = 'Dossier de démonstration';
 
-/** Les 5 étapes métier de la page « Avancement du dossier » (DossierDetail.tsx). */
-export const BUSINESS_STEPS = [
-  'Création du dossier',
-  'Devis, contrat ou accord',
-  'Suivi du dossier',
-  'Facture et paiement',
-  'Option impayé / pré-contentieux',
-] as const;
+/** Les 4 étapes du « Suivi du dossier » — même source que la page dossier (packages/core). */
+export const BUSINESS_STEPS = TIMELINE_STEPS;
 
 /** Les 5 étapes du tunnel de création (DossierFlow.tsx). */
 export const TUNNEL_STEPS = ['Profil', 'Nature', 'Informations', 'Pièces', 'Récapitulatif'] as const;
@@ -62,11 +58,11 @@ export const DEMO = {
     daysInMonth: 31,
     status: 'À venir',
   },
-  /** Étape métier atteinte (1-indexée) et statut réel (statuses.ts). */
-  step: 3,
+  /** État du suivi atteint (1-indexé) et statut réel (STATUS_LABELS, packages/core). */
+  step: 2,
   status: 'En cours',
-  /** Texte réel STEP_NEXT_ACTIONS[3] (DossierDetail.tsx). */
-  nextAction: 'Mettez à jour le suivi : nouveaux courriers, relances, pièces reçues.',
+  /** Texte réel affiché par la page dossier à cet état (DossierDetail.tsx). */
+  nextAction: STEP_NEXT_ACTIONS[2],
   pieces: [
     { name: 'Devis D-2026-018 signé.pdf', type: 'devis', tag: 'Devis', meta: '2 pages · déposé le 12 sept.' },
     { name: 'Facture F-2026-042.pdf', type: 'facture', tag: 'Facture', meta: '1 page · déposée le 13 sept.' },
@@ -99,12 +95,10 @@ export const SCATTERED_DOCS: DemoPiece[] = [
   { name: 'Extrait Kbis client', type: 'courrier', tag: 'Administratif', meta: '' },
 ];
 
-/** Événements datés de la frise (un par statut réel, dans l'ordre de statuses.ts). */
-export const DEMO_TIMELINE: Array<{ statusId: string; event: string; when: string }> = [
-  { statusId: 'brouillon', event: 'Dossier créé, nommé, profil renseigné', when: '12 sept.' },
-  { statusId: 'complete', event: '4 pièces déposées, récapitulatif relu', when: '13 sept.' },
-  { statusId: 'attente-avocat', event: 'Transmis par e-mail — sur votre validation', when: '14 sept.' },
-  { statusId: 'validation', event: 'Suivi en cours · échéance du 15 oct. affichée', when: 'aujourd’hui' },
-  { statusId: 'valide', event: 'Dossier complet, prêt à être partagé', when: 'à venir' },
-  { statusId: 'archive', event: 'Affaire close, données conservées et isolées', when: 'à venir' },
+/** Événements datés de la frise : un par état du suivi, dans l'ordre de TIMELINE_STEPS. */
+export const DEMO_TIMELINE: Array<{ step: string; event: string; when: string }> = [
+  { step: TIMELINE_STEPS[0], event: 'Dossier nommé, 4 pièces déposées, récapitulatif relu', when: '12 sept.' },
+  { step: TIMELINE_STEPS[1], event: 'Échéance du 15 oct. affichée sur le dossier', when: 'aujourd’hui' },
+  { step: TIMELINE_STEPS[2], event: 'Documents à consulter et télécharger', when: 'à venir' },
+  { step: TIMELINE_STEPS[3], event: 'Pièces et documents restent accessibles', when: 'à venir' },
 ];

@@ -54,7 +54,7 @@ export function BlogPost() {
       '@type': 'Organization',
       name: 'ClairDossier',
       url: 'https://www.clair-dossier.com/',
-      logo: { '@type': 'ImageObject', url: 'https://www.clair-dossier.com/favicon.svg' },
+      logo: { '@type': 'ImageObject', url: 'https://www.clair-dossier.com/icon-512.png' },
     },
     mainEntityOfPage: `https://www.clair-dossier.com/blog/${post.slug}`,
     keywords: post.tags.join(', '),

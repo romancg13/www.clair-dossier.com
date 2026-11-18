@@ -120,7 +120,7 @@ const CARDS: Card[] = [
               Aucune lecture, extraction ou analyse automatique des documents déposés — engagement
               contractuel (<Link to="/cgv" className={linkClass}>CGV</Link>, article 6).
             </>,
-            "Valider un dossier l'enregistre dans votre compte : rien n'est envoyé par e-mail ou WhatsApp. Vous transmettez vous-même vos pièces, au destinataire de votre choix.",
+            "Valider un dossier l'enregistre dans votre compte : rien n'est envoyé à un tiers par e-mail ou WhatsApp. Vous transmettez vous-même vos pièces, au destinataire de votre choix.",
           ]}
         />
         <div id="secret-professionnel" className="scroll-mt-24">
@@ -140,7 +140,7 @@ const CARDS: Card[] = [
     title: "Traitement des données",
     lead: [
       "Vos données servent à fournir le service, à le facturer et à vous répondre ; elles ne sont ni vendues ni cédées à des fins commerciales.",
-      "Chaque prestataire technique est nommé, avec sa finalité, sa localisation et la durée de conservation des données.",
+      "Chaque prestataire technique est nommé, avec sa finalité, sa localisation lorsqu'elle est confirmée et la durée de conservation des données.",
     ],
     details: (
       <>
@@ -290,6 +290,19 @@ const DOCUMENTS = [
   { to: "/etat-du-produit", label: "État du produit" },
 ];
 
+// Synthèse en tête : le détail de chaque point reste plus bas (ancres).
+const SUMMARY = [
+  { href: "#acces", label: "Accès", text: "un compte confirmé par e-mail ; chaque compte ne voit que ses dossiers." },
+  {
+    href: "#protection-documents",
+    label: "Documents",
+    text: "stockage privé, liens signés temporaires ; aucune lecture automatique de vos pièces aujourd'hui (CGV, art. 6).",
+  },
+  { href: "#sous-traitants", label: "Données", text: `ni vendues ni cédées ; ${subprocessors.length} prestataires techniques nommés.` },
+  { href: "#exercice-droits", label: "Vos droits", text: "accès, export et suppression sur demande, sous 30 jours." },
+  { href: "#journal", label: "À confirmer", text: "ce qui n'est pas encore vérifié est marqué comme tel." },
+];
+
 const JUMP_LINKS = [
   { href: "#conformite", label: "L'essentiel" },
   { href: "#indicateurs", label: "Indicateurs observables" },
@@ -334,11 +347,19 @@ export function Security() {
             <h1 className="mt-4 font-display text-4xl font-semibold leading-[1.05] text-navy-900 sm:text-5xl lg:text-6xl">
               Vos données, leur protection et vos droits
             </h1>
-            <p className="mt-5 text-base leading-relaxed text-slate-500 sm:text-lg">
-              L'essentiel tient en quatre points, détaillés à la demande. Nous
-              séparons ce qui se vérifie automatiquement de ce qui relève de nos
-              engagements, et ce qui n'est pas encore confirmé est marqué comme tel.
-            </p>
+            <ul className="mt-6 space-y-2.5 text-base leading-relaxed text-slate-500" aria-label="En bref">
+              {SUMMARY.map((item) => (
+                <li key={item.href} className="flex gap-3">
+                  <span className="mt-[0.7em] h-1 w-1 shrink-0 rounded-full bg-gold-500" aria-hidden="true" />
+                  <span>
+                    <a href={item.href} className="font-medium text-navy-900 underline decoration-gold-500/60 underline-offset-2 hover:text-gold-700">
+                      {item.label}
+                    </a>{" "}
+                    : {item.text}
+                  </span>
+                </li>
+              ))}
+            </ul>
           </div>
           <nav aria-label="Sur cette page" className="mt-7">
             <ul className="flex flex-wrap gap-2">

@@ -49,6 +49,8 @@ const staticRoutes: PublicRoute[] = [
   { path: '/cabinets-avocats', changefreq: 'monthly', priority: 0.8, sources: SEGMENT_SOURCES },
   { path: '/experts-comptables', changefreq: 'monthly', priority: 0.8, sources: SEGMENT_SOURCES },
   { path: '/grands-comptes', changefreq: 'monthly', priority: 0.8, sources: SEGMENT_SOURCES },
+  { path: '/artisans-btp', changefreq: 'monthly', priority: 0.8, sources: SEGMENT_SOURCES },
+  { path: '/professionnels-immobilier', changefreq: 'monthly', priority: 0.8, sources: SEGMENT_SOURCES },
   { path: '/rendez-vous', changefreq: 'monthly', priority: 0.7, sources: ['src/pages/RendezVous.tsx'] },
   { path: '/marseille', changefreq: 'monthly', priority: 0.7, sources: ['src/pages/Marseille.tsx', 'src/data/contact.ts'] },
 ];

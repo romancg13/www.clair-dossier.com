@@ -1,0 +1,56 @@
+# Maintenance hébergée : hebdomadaire (lundi 07:10 UTC) et mensuelle (le 1er, 07:40 UTC).
+# Lecture seule — ne déploie rien, ne modifie rien, aucun secret.
+# Un échec (= action requise) déclenche la notification GitHub habituelle.
+name: Maintenance
+
+on:
+  schedule:
+    - cron: '10 7 * * 1'
+    - cron: '40 7 1 * *'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'hebdo ou mensuel'
+        type: choice
+        options: [hebdo, mensuel]
+        default: hebdo
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  maintenance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Contrôles
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || (github.event.schedule == '40 7 1 * *' && 'mensuel' || 'hebdo') }}
+        run: node scripts/maintenance.mjs "$MODE"
+
+  lighthouse:
+    # Mesure de laboratoire sur le domaine réel (rapport seulement : la variance
+    # des machines GitHub ne permet pas d'en faire un seuil bloquant).
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '10 7 * * 1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Lighthouse mobile et desktop (accueil)
+        run: |
+          for f in mobile desktop; do
+            p=""; [ "$f" = desktop ] && p="--preset=desktop"
+            npx -y lighthouse@13.5.0 https://www.clair-dossier.com/ $p --output=json --output-path=lh-$f.json \
+              --only-categories=performance,accessibility,best-practices,seo --chrome-flags="--headless=new --no-sandbox" --quiet || true
+            node -e "const r=require('./lh-$f.json'),c=r.categories,a=r.audits;console.log('| $f | '+['performance','accessibility','best-practices','seo'].map(k=>Math.round(c[k].score*100)).join(' | ')+' | '+Math.round(a['largest-contentful-paint'].numericValue)+' ms | '+a['cumulative-layout-shift'].numericValue.toFixed(3)+' |')" >> lh.md || echo "| $f | mesure indisponible |" >> lh.md
+          done
+          { echo '## Lighthouse — www.clair-dossier.com'; echo; echo '| Profil | Perf | A11y | BP | SEO | LCP | CLS |'; echo '|---|---|---|---|---|---|---|'; cat lh.md; } >> "$GITHUB_STEP_SUMMARY"
+          cat lh.md

@@ -6,7 +6,7 @@ import {
   logAudit,
   type AdminEntitlementRow,
 } from "../../lib/admin";
-import { CATEGORIES, PLAN_LABELS, TYPOLOGY_LABELS, type PlanId } from "../../../packages/core/src/index";
+import { CATEGORIES, PLAN_LABELS, TIMELINE_STEPS, TYPOLOGY_LABELS, type PlanId } from "../../../packages/core/src/index";
 
 /**
  * Console admin — automatisation (migration 20260917120000).
@@ -22,14 +22,6 @@ const STATUS_LABELS: Record<string, string> = {
   valide: "Validé",
   archive: "Archivé",
 };
-
-const TIMELINE = [
-  "Création du dossier",
-  "Devis, contrat ou accord",
-  "Suivi du dossier",
-  "Facture et paiement",
-  "Option impayé / pré-contentieux",
-];
 
 const chip = "rounded-full border hairline-strong bg-white px-3 py-1.5 text-xs font-medium text-navy-900 hover:bg-cream-100";
 
@@ -260,7 +252,7 @@ export function NewDossiersSection({
                 <label className="sr-only" htmlFor={`nd-step-${d.id}`}>Étape</label>
                 <select
                   id={`nd-step-${d.id}`}
-                  value={d.current_step ?? ""}
+                  value={d.current_step == null ? "" : d.current_step >= 2 ? "2" : "1"}
                   onChange={(e) =>
                     patch(d, { current_step: e.target.value ? Number(e.target.value) : null }, "dossier_etape", {
                       ancienne: String(d.current_step ?? "auto"),
@@ -270,7 +262,8 @@ export function NewDossiersSection({
                   className="max-w-[14rem] rounded-full border hairline-strong bg-white px-3 py-1.5 text-xs text-navy-900"
                 >
                   <option value="">Étape : automatique</option>
-                  {TIMELINE.map((label, i) => (
+                  {/* Étapes 3 et 4 : jamais forcées — documents publiés, clôture tracée. */}
+                  {TIMELINE_STEPS.slice(0, 2).map((label, i) => (
                     <option key={label} value={i + 1}>Étape {i + 1} · {label}</option>
                   ))}
                 </select>

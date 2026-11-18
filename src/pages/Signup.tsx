@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { Seo } from "../lib/seo";
 import { useAuth, type CompanyType } from "../lib/auth";
+import { safeNextPath } from "../lib/safe-redirect";
 import { trackEvent } from "../lib/analytics";
 import { ArrowRightIcon } from "../components/icons";
 import {
@@ -27,7 +28,7 @@ export function Signup() {
   const { signUp, verifyEmailOtp, resendSignupCode, configured } = useAuth();
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const next = params.get("next") || "/compte";
+  const next = safeNextPath(params.get("next"));
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<SignupErrors>({});
   const [loading, setLoading] = useState(false);

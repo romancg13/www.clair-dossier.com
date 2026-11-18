@@ -12,7 +12,7 @@ import { useSectionProgress } from './useCinematic';
  */
 export function BeforeAfter() {
   const ref = useRef<HTMLDivElement>(null);
-  const { p, reduce } = useSectionProgress(ref, ['start 80%', 'end 90%']);
+  const { p } = useSectionProgress(ref, ['start 80%', 'end 90%']);
   const draw = useTransform(p, [0.1, 0.95], [0, 1]);
 
   return (
@@ -46,14 +46,14 @@ export function BeforeAfter() {
           {/* Trait central qui se dessine */}
           <div aria-hidden="true" className="pointer-events-none absolute bottom-6 left-1/2 top-[5.5rem] hidden w-px -translate-x-1/2 bg-navy-900/8 sm:block">
             <motion.div
-              style={reduce ? undefined : { scaleY: draw }}
+              style={{ scaleY: draw }}
               className="cd-draw h-full w-full bg-gradient-to-b from-gold-500 via-gold-500 to-gold-500/30"
             />
           </div>
 
           <ul className="divide-y hairline">
             {AVANT.map((before, i) => (
-              <Pair key={before} p={p} i={i} reduce={reduce} before={before} after={AVEC[i]} />
+              <Pair key={before} p={p} i={i} before={before} after={AVEC[i]} />
             ))}
           </ul>
         </div>
@@ -65,13 +65,11 @@ export function BeforeAfter() {
 function Pair({
   p,
   i,
-  reduce,
   before,
   after,
 }: {
   p: MotionValue<number>;
   i: number;
-  reduce: boolean;
   before: string;
   after: string;
 }) {
@@ -81,14 +79,14 @@ function Pair({
   const rightX = useTransform(p, [start, start + 0.12], [10, 0]);
   return (
     <li className="grid gap-3 px-5 py-5 sm:grid-cols-[1fr_auto_1fr] sm:items-start sm:gap-4 sm:px-8 sm:py-6">
-      <motion.div style={reduce ? undefined : { opacity, x: leftX }} className="flex gap-3">
+      <motion.div style={{ opacity, x: leftX }} className="flex gap-3">
         <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-navy-900/6">
           <CrossIcon width={10} height={10} strokeWidth={2} className="text-slate-400" />
         </span>
         <p className="text-sm leading-relaxed text-slate-500">{before}</p>
       </motion.div>
       <span aria-hidden="true" className="hidden sm:block sm:w-10" />
-      <motion.div style={reduce ? undefined : { opacity, x: rightX }} className="flex gap-3">
+      <motion.div style={{ opacity, x: rightX }} className="flex gap-3">
         <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-gold-500/18">
           <CheckIcon width={11} height={11} strokeWidth={2.2} className="text-gold-700" />
         </span>

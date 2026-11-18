@@ -38,8 +38,8 @@ import { uploadVerified } from "../lib/document-links";
 
 type DraftAnswers = Record<string, string>;
 
-const AI_OPTION_TEXT =
-  "Obtenez un premier résumé du dossier, identifiez les pièces utiles et préparez les éléments à faire valider par un professionnel du droit.";
+const REVIEW_OPTION_TEXT =
+  "la demande est indiquée sur votre dossier (« Préavis juridique demandé »).";
 
 type Saved = { dossierId: string; alreadySaved: boolean; warning: string | null; notified: boolean };
 
@@ -795,7 +795,7 @@ function StepRecap({
         </div>
       </dl>
 
-      {/* Option : question IA préparatoire (impayé / pré-contentieux uniquement) */}
+      {/* Option : demande de préavis juridique (impayé / pré-contentieux uniquement) */}
       {showAiOption && (
         <label className="mt-6 flex cursor-pointer items-start gap-3 rounded-xl bg-cream-100 p-5">
           <input
@@ -805,8 +805,7 @@ function StepRecap({
             className="mt-1 h-4 w-4 accent-gold-500"
           />
           <span className="text-sm leading-relaxed text-navy-900">
-            <span className="font-semibold">Option — question IA préparatoire</span> : {AI_OPTION_TEXT} Le
-            professionnel du droit reste un validateur optionnel.
+            <span className="font-semibold">Option — signaler un besoin d’avis juridique</span> : {REVIEW_OPTION_TEXT}
           </span>
         </label>
       )}

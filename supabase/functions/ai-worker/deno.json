@@ -1,0 +1,6 @@
+{
+  "imports": {
+    "pdf-lib": "npm:pdf-lib@1.17.1",
+    "fflate": "npm:fflate@0.8.3"
+  }
+}

@@ -9,6 +9,12 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  # Campagne DROIT10_2026 (src/data/campagnes.ts), lancée le 06/11/2026 : reconstruction du HTML
+  # prérendu juste après la FIN — 9 novembre 2027, 12:05 UTC = 13:05 Paris. (Un cron n'a pas d'année :
+  # l'exécution du 09/11/2026 ne fait qu'un rebuild identique, sans effet.) Le navigateur applique déjà
+  # la fin à la seconde ; surveillance.yml relance ce déploiement si ce cron n'a pas tourné.
+  schedule:
+    - cron: '5 12 9 11 *'
 
 permissions:
   contents: read
@@ -55,6 +61,10 @@ jobs:
           VITE_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ1emdva2ZteHBteWNlcHB2anBwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1NDk5NjksImV4cCI6MjA5NzEyNTk2OX0.MBRiuEYKl-b4_dNYpWKjWRm8qaFAXfwHjyAvf3Kzn2U
           # Lien PUBLIC du portail client Stripe (factures, abonnement) — variable de dépôt, facultative.
           VITE_STRIPE_PORTAL_URL: ${{ vars.VITE_STRIPE_PORTAL_URL }}
+          # Mesure d'audience sans cookie (Plausible) — domaine PUBLIC du site, pas un secret.
+          # Étiquette "data-domain" : doit être IDENTIQUE au nom du site dans le
+          # compte Plausible. Aligné sur le domaine canonique servi (www).
+          VITE_PLAUSIBLE_DOMAIN: www.clair-dossier.com
 
       # Repère de version public (aucun secret) : prouve quel commit est servi
       # par le domaine — https://www.clair-dossier.com/version.json

@@ -53,6 +53,14 @@ Ce centre de confiance expose ce que nous faisons concrètement : chiffrement, i
 - **Conservation** : Journaux techniques selon la politique de l’hébergeur.
 - **DPA** : Conditions de traitement des données de GitHub : référence à publier ici. *(À CONFIRMER)*
 
+### Plausible Insights OÜ (Plausible Analytics)
+
+- **Finalité** : Mesure d’audience sans cookie du site public (pages vues, provenance, campagnes, appareils, pays).
+- **Données** : Statistiques agrégées et anonymes ; ni cookie, ni adresse IP conservée. Espaces privés (compte, dossiers, administration) exclus.
+- **Localisation** : Société établie en Estonie (Union européenne) ; hébergement dans l’UE selon le fournisseur.
+- **Conservation** : Statistiques agrégées : durée cible de 25 mois maximum (recommandation CNIL) — à confirmer.
+- **DPA** : Accord de traitement des données Plausible (public, plausible.io/dpa).
+
 ### WhatsApp (Meta)
 
 - **Finalité** : Canal de contact optionnel : vous choisissez d’écrire à l’équipe par WhatsApp.

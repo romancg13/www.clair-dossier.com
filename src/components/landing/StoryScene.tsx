@@ -9,12 +9,12 @@ import { CinematicGate } from './cinematics/CinematicGate';
 import { CINEMATIC_SCENES } from './cinematics/scenes';
 
 /**
- * Chapitre 01 — du chaos au dossier.
+ * « Comment ça fonctionne », geste 01 — déposer ses documents.
  *
  * Desktop + motion autorisée : scène épinglée (sticky) sur 340 vh, trois
  * temps pilotés par le scroll natif (jamais de scroll hijacking) :
- *   0 → 0,28  « Vos informations sont partout. »  (pièces dispersées)
- *   0,28 → 0,55  « ClairDossier les réunit. »  (convergence)
+ *   0 → 0,28  « Vos documents sont partout. »  (pièces dispersées)
+ *   0,28 → 0,55  « Déposez-les dans votre dossier. »  (convergence)
  *   0,58 → 0,90  « Chaque pièce trouve sa place. »  (rangement dans le dossier)
  * Ailleurs : composition statique équivalente (même contenu, même ordre).
  */
@@ -61,7 +61,13 @@ function slot(i: number) {
 export function StoryScene() {
   const cinematic = useCinematic();
   return (
-    <div id={STORY_ANCHOR} tabIndex={-1} className="outline-none">
+    <div id={STORY_ANCHOR} tabIndex={-1} className="scroll-mt-16 outline-none">
+      <header className="mx-auto max-w-7xl px-5 pt-6 text-center sm:px-8 lg:px-12">
+        <p className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-gold-400">Comment ça fonctionne</p>
+        <h2 className="mt-4 font-display text-[clamp(2.1rem,4.4vw,3.6rem)] font-semibold leading-[1.02] tracking-[-0.015em] text-cream-50">
+          Trois gestes, un dossier clair.
+        </h2>
+      </header>
       {cinematic ? <PinnedScene /> : <StaticScene />}
     </div>
   );
@@ -103,21 +109,21 @@ function PinnedScene() {
             <span className="mx-2 text-silver-400/50" aria-hidden="true">
               —
             </span>
-            Le chaos documentaire
+            Déposez vos documents
           </p>
           <div className="relative mt-4 h-[5.5rem]">
-            <motion.h2
+            <motion.h3
               style={{ opacity: cap1, y: cap1Y }}
               className="absolute inset-x-0 font-display text-[clamp(2rem,4.2vw,3.6rem)] font-semibold leading-[1.02] text-cream-50"
             >
-              Vos informations sont partout.
-            </motion.h2>
+              Vos documents sont partout.
+            </motion.h3>
             <motion.p
               style={{ opacity: cap2, y: cap2Y }}
               className="absolute inset-x-0 font-display text-[clamp(2rem,4.2vw,3.6rem)] font-semibold leading-[1.02] text-cream-50"
               aria-hidden="true"
             >
-              ClairDossier les réunit.
+              Déposez-les dans votre dossier.
             </motion.p>
             <motion.p
               style={{ opacity: cap3, y: cap3Y }}
@@ -197,17 +203,13 @@ function StaticScene() {
         <span className="mx-2 text-silver-400/50" aria-hidden="true">
           —
         </span>
-        Le chaos documentaire
+        Déposez vos documents
       </p>
-      <h2 className="mt-4 font-display text-[clamp(2.1rem,7vw,3.6rem)] font-semibold leading-[1.02] text-cream-50">
-        Vos informations sont partout.
+      <h3 className="mt-4 font-display text-[clamp(2.1rem,7vw,3.6rem)] font-semibold leading-[1.02] text-cream-50">
+        Vos documents sont partout.
         <br />
-        <span className="text-silver-200/70">ClairDossier les réunit.</span>
-      </h2>
-      <p className="mt-5 max-w-lg text-[1.02rem] leading-[1.65] text-silver-200/78">
-        E-mails, devis, factures, courriers, photos, échéances : chaque pièce trouve sa place dans
-        votre dossier, dans un espace privé — rien ne se perd.
-      </p>
+        <span className="text-silver-200/70">Déposez-les dans votre dossier.</span>
+      </h3>
 
       <div className="cd-stage mt-10 rounded-[1.25rem] p-4 sm:p-5">
         <div className="flex items-center justify-between gap-3">

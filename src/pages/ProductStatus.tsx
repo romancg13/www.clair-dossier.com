@@ -48,7 +48,11 @@ function StatusSection({
         {entries.map((e) => (
           <li key={e.label} className="rounded-xl border hairline bg-white p-5">
             <div className="flex items-start gap-3">
-              <CheckIcon width={14} height={14} strokeWidth={2.2} className="mt-1 shrink-0 text-gold-700" />
+              {id === 'operationnel' ? (
+                <CheckIcon width={14} height={14} strokeWidth={2.2} className="mt-1 shrink-0 text-gold-700" />
+              ) : (
+                <span className="mt-[0.55rem] h-1.5 w-1.5 shrink-0 rounded-full bg-slate-400" aria-hidden="true" />
+              )}
               <div>
                 <h3 className="font-medium text-navy-900">{e.label}</h3>
                 <p className="mt-1 text-sm leading-relaxed text-slate-500">{e.detail}</p>

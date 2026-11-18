@@ -1,0 +1,37 @@
+{
+  "reference": "main ed12601 (production 2026-11-04) — paiements gelés sur décision du propriétaire ; 2026-11-04 : teintes des 3 fichiers tarifs restaurées à l’identique d’avant la PR #46 sur instruction écrite (couleurs seules, liens inchangés)",
+  "fichiers": {
+    "src/data/pricing.ts": "977bfd717257d8588bf931565399f815c0deee7bfc5e86e37ff886cc408aa4e7",
+    "src/pages/Pricing.tsx": "7c06c8f3fc2b4df421b48290a5ed4ebf8db1d751140886d226d13a22ed20e367",
+    "src/components/landing/PricingCinematic.tsx": "dd7a7b0aa4ceacb23b7509b7aaeef9c0f547d5a7517fec2f1cc3aae2100b87ae",
+    "src/components/sections/PricingPreview.tsx": "9b38de4fa8c6beca3bc855ed0802db3cd9a27fae66d52eafe4d87c15db439f73",
+    "src/components/account/AccountPanels.tsx": "1f6b81ab44215dc333a8ed2026837fdf6893a386831ca138dbe660da3f87338c",
+    "src/components/admin/AdminRevenue.tsx": "c65e6bb8a6d3e6fcd7fc05414f1ee07db885a8fb58336ac1f9ddcdfa022fe5b4",
+    "src/lib/revenue.ts": "d3398abdfa375e5eaaea1d2e940a3ba00b2d0be322c596682308547507ff8d3f",
+    "src/lib/profile.ts": "37566f4940569c598b2ae365ea10f479fa67b00773833d4811bf120ccd0f15f0",
+    "packages/core/src/entitlements.ts": "a582fdf32a3e0fc621b80b0fb4a49ee4db37ea96b333105443908d050c6d21f1",
+    "packages/core/src/quota.ts": "37c9595420617ee29b04ddd9b183055268da8d30454910f5fc103212a1456f34",
+    "supabase/functions/stripe-webhook/index.ts": "407552793c1911b5826e50fcf4832d3356dafbeec4540b344360375290583c5f",
+    "supabase/functions/_shared/stripe-sync.ts": "38f927b1b31618dc9d5c7359c81fdd49fd99fa98af5129c15895c5eb167b5c1c",
+    "supabase/migrations/20260917120000_automatisation_quotas.sql": "c53378dbac4b7d23cc233a89ccd82370d3a259f531d11387e6298b11ee4c5c85",
+    "supabase/migrations/20261012120000_revenus_abonnements.sql": "f895a8adc23ab96119f46e78ee22c67cd065c00fd988a520d731a55543749713",
+    "supabase/config.toml": "a665d9cfbbc2bfb811863535e5f2200211d4eb2d89ba2c8d0fe6820c2d606642",
+    "scripts/add-annual-prices.mjs": "342fe08fd5fef1562ac213b4050a0762bbef3cb304e10b6f8370e61d9fbf58bd",
+    "scripts/create-stripe-products.mjs": "ee4d7ed3dabd1eb18a4a5b0c33ac337153106bb4f9a50a0a8ee0a025707999a4",
+    "scripts/sync-stripe-subscriptions.ts": "ce28ba3a64f24e86f35985fc0296dcc96e8139f4d235dc3c2bcb751ffad1a6e4"
+  },
+  "liensStripe": [
+    "https://buy.stripe.com/00w9AT9Qm7fJ4vbeSibV605",
+    "https://buy.stripe.com/14AbJ18MicA3e5L11sbV60d",
+    "https://buy.stripe.com/28E4gz8Mi9nRaTz25wbV608",
+    "https://buy.stripe.com/28EeVd9QmgQj7HndOebV60c",
+    "https://buy.stripe.com/28EeVdaUq7fJd1H11sbV60g",
+    "https://buy.stripe.com/5kQaEX7IeeIb4vb11sbV607",
+    "https://buy.stripe.com/5kQbJ1e6C7fJ6DjdOebV609",
+    "https://buy.stripe.com/6oU00j5A69nR3r7bG6bV60e",
+    "https://buy.stripe.com/8x214n1jQ2Zt9Pvh0qbV606",
+    "https://buy.stripe.com/9B628raUq8jNgdT8tUbV60a",
+    "https://buy.stripe.com/cNifZh9Qm8jNe5L39AbV60f",
+    "https://buy.stripe.com/dRm9ATbYu6bF9PvfWmbV60b"
+  ]
+}

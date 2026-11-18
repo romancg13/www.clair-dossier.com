@@ -36,6 +36,7 @@ import {
   newDraftId,
   removeDraft,
   saveDraft,
+  setDraftOwner,
   type KeyValueStore,
 } from '../src/lib/drafts.ts';
 import {
@@ -148,6 +149,7 @@ test('nouveau dossier : brouillon vierge, identifiant unique au format UUID', ()
 });
 
 test('brouillons isolés : restaurer A ne renvoie jamais les valeurs de B', () => {
+  setDraftOwner('compte-test');
   const store = memoryStore();
   const a = { ...blankDraft(), typology: 'facture-paiement', title: 'Facture X', answers: { amount: '4800', deadline: '2026-10-15' } };
   const b = { ...blankDraft(), typology: 'rh', title: 'RH Y', answers: { counterparty: 'Salarié Z' } };
@@ -164,18 +166,21 @@ test('brouillons isolés : restaurer A ne renvoie jamais les valeurs de B', () =
 });
 
 test('brouillon vide jamais enregistré', () => {
+  setDraftOwner('compte-test');
   const store = memoryStore();
   saveDraft(blankDraft(), store);
   assert.deepEqual(store.dump(), {});
 });
 
-test('ancienne clé globale : convertie en brouillon nommé, jamais restaurée d’office', () => {
+test('anciens brouillons sans propriétaire : jamais attribués à un compte, jamais effacés', () => {
+  setDraftOwner('compte-test');
   const store = memoryStore();
-  store.setItem('clairdossier_draft', JSON.stringify({ typology: 'autre', title: 'Ancien', answers: { amount: '999' }, step: 3 }));
-  const drafts = listDrafts(store);
-  assert.equal(drafts.length, 1);
-  assert.equal(drafts[0].title, 'Ancien');
-  assert.equal(store.getItem('clairdossier_draft'), null);
+  const legacy = JSON.stringify({ typology: 'autre', title: 'Ancien', answers: { amount: '999' }, step: 3 });
+  store.setItem('clairdossier_draft', legacy);
+  store.setItem('clairdossier_drafts_v2', JSON.stringify([{ id: 'x', title: 'Ancien v2', step: 2, updatedAt: '2026-10-01' }]));
+  assert.deepEqual(listDrafts(store), []);
+  assert.equal(loadDraft('x', store), null);
+  assert.equal(store.getItem('clairdossier_draft'), legacy);
   // Un nouveau dossier reste vierge.
   assert.deepEqual(blankDraft().answers, {});
 });

@@ -3,6 +3,9 @@
 
 export type StripeLikePrice = {
   id?: string;
+  unit_amount?: number | null;
+  currency?: string | null;
+  recurring?: { interval?: string | null; interval_count?: number | null } | null;
   metadata?: Record<string, string> | null;
   product?: string | { id?: string; metadata?: Record<string, string> | null } | null;
 };
@@ -18,6 +21,7 @@ export type StripeLikeSubscription = {
   items?: {
     data?: Array<{
       price?: StripeLikePrice | null;
+      quantity?: number | null;
       current_period_start?: number | null;
       current_period_end?: number | null;
     }>;
@@ -77,6 +81,49 @@ export function subscriptionRow(userId: string, sub: StripeLikeSubscription, kno
     canceled_at: iso(sub.canceled_at),
     updated_at: new Date().toISOString(),
   };
+}
+
+/**
+ * Conditions tarifaires de l'abonnement (migration 20261012120000), pour le
+ * tableau de bord revenus. Montants en centimes, tels que facturés par Stripe.
+ * Plusieurs lignes : leur total est enregistré (quantité 1) si elles partagent devise et
+ * périodicité ; sinon AUCUN montant n'est écrit (jamais de total partiel ni d'estimation).
+ */
+export function priceTerms(sub: StripeLikeSubscription) {
+  const unknown = { unit_amount: null, currency: null, billing_interval: null, interval_count: null, quantity: null };
+  const items = sub.items?.data ?? [];
+  const first = items[0]?.price;
+  if (!first) return unknown;
+  const same = items.every(
+    (it) =>
+      typeof it.price?.unit_amount === 'number' &&
+      it.price.currency === first.currency &&
+      it.price.recurring?.interval === first.recurring?.interval &&
+      (it.price.recurring?.interval_count ?? 1) === (first.recurring?.interval_count ?? 1),
+  );
+  if (!same) return unknown;
+  if (items.length === 1) {
+    const item = items[0]!;
+    return {
+      unit_amount: first.unit_amount ?? null,
+      currency: first.currency ?? null,
+      billing_interval: first.recurring?.interval ?? null,
+      interval_count: first.recurring?.interval_count ?? null,
+      quantity: typeof item.quantity === 'number' ? item.quantity : null,
+    };
+  }
+  return {
+    unit_amount: items.reduce((sum, it) => sum + (it.price!.unit_amount as number) * (it.quantity ?? 1), 0),
+    currency: first.currency ?? null,
+    billing_interval: first.recurring?.interval ?? null,
+    interval_count: first.recurring?.interval_count ?? null,
+    quantity: 1,
+  };
+}
+
+/** Colonne inconnue : la migration des montants n'est pas encore appliquée. */
+export function isMissingColumn(code: string | undefined): boolean {
+  return code === 'PGRST204' || code === '42703';
 }
 
 /**

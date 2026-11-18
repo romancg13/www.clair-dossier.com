@@ -227,7 +227,7 @@ export default function DossierDetail() {
       {tab === 'resume' ? (
         <View style={styles.block}>
           <Card>
-            <SectionHeader title={`Étape ${step} sur 5`} caption={TIMELINE_STEPS[step - 1]} />
+            <SectionHeader title={`Étape ${step} sur ${TIMELINE_STEPS.length}`} caption={TIMELINE_STEPS[step - 1]} />
             <View style={styles.steps}>
               {TIMELINE_STEPS.map((label, i) => (
                 <View key={label} style={[styles.stepDot, i < step && styles.stepDotDone]} accessibilityLabel={`Étape ${i + 1} : ${label}`} />

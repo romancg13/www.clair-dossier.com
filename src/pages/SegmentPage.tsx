@@ -14,6 +14,12 @@ export function ExpertsComptables() {
 export function GrandsComptes() {
   return <SegmentPage data={getSegmentPage('grands-comptes')!} />;
 }
+export function ArtisansBtp() {
+  return <SegmentPage data={getSegmentPage('artisans-btp')!} />;
+}
+export function ProfessionnelsImmobilier() {
+  return <SegmentPage data={getSegmentPage('professionnels-immobilier')!} />;
+}
 
 /**
  * Page de parcours métier (Vague 1 — 5.1). Même système graphique que le

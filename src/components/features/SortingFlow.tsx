@@ -299,7 +299,7 @@ export function SortingFlow({ className = '' }: { className?: string }) {
           <span className="block font-mono text-[0.68rem] uppercase tracking-[0.16em] text-gold-700">
             2 · Classés
           </span>
-          Chacun est rangé par catégorie d'après son nom de fichier ; son contenu n'est jamais lu.
+          Chacun est rangé par catégorie d'après son nom de fichier ; son contenu n'est pas lu.
         </li>
         <li>
           <span className="block font-mono text-[0.68rem] uppercase tracking-[0.16em] text-gold-700">

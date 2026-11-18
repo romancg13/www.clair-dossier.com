@@ -1,12 +1,15 @@
 import { useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { motion, useReducedMotion, useScroll } from 'motion/react';
+import { motion, useScroll } from 'motion/react';
 // Phase 4b — convergence finale 3D (client-only, différée, desktop).
 import { CinematicGate } from './cinematics/CinematicGate';
 import { CINEMATIC_SCENES } from './cinematics/scenes';
 import { useMediaQuery } from './useCinematic';
 import { Magnetic } from '../primitives/Magnetic';
+import { useReducedMotionSafe } from '../primitives/useMediaQuery';
 import { ArrowRightIcon } from '../icons';
+import { useAuth } from '../../lib/auth';
+import { newDossierHref } from '../../lib/cta';
 import { BUSINESS_STEPS, DEMO } from './demo-dossier';
 import { DocumentGlyph } from './DocumentGlyph';
 import { DemoBadge } from './Stage';
@@ -18,19 +21,19 @@ const EASE = [0.16, 1, 0.3, 1] as const;
  * une phrase et une seule action. Même CTA principal que le hero (§32).
  */
 export function FinalCinematic() {
-  const reduce = useReducedMotion();
+  // Moins de mouvement : mêmes états, transition instantanée — motion garde la main
+  // sur le style (sans quoi l'état initial pré-rendu, opacity:0, resterait affiché).
+  const reduce = useReducedMotionSafe();
+  const { session } = useAuth();
   const sectionRef = useRef<HTMLElement>(null);
   const desktop = useMediaQuery('(min-width: 1024px)');
   const { scrollYProgress: approach } = useScroll({ target: sectionRef, offset: ['start 92%', 'center 50%'], layoutEffect: false });
-  const enter = (delay: number) =>
-    reduce
-      ? {}
-      : {
-          initial: { opacity: 0, y: 16 },
-          whileInView: { opacity: 1, y: 0 },
-          viewport: { once: true, amount: 0.3 },
-          transition: { duration: 0.7, delay, ease: EASE },
-        };
+  const enter = (delay: number) => ({
+    initial: { opacity: 0, y: 16 },
+    whileInView: { opacity: 1, y: 0 },
+    viewport: { once: true, amount: 0.3 },
+    transition: reduce ? { duration: 0 } : { duration: 0.7, delay, ease: EASE },
+  });
 
   return (
     <section ref={sectionRef} className="cd-cinema cd-grain relative isolate overflow-hidden text-cream-50">
@@ -45,14 +48,10 @@ export function FinalCinematic() {
         <motion.div
           aria-hidden="true"
           className="mx-auto max-w-2xl"
-          {...(reduce
-            ? {}
-            : {
-                initial: { opacity: 0, scale: 0.94, y: 24 },
-                whileInView: { opacity: 1, scale: 1, y: 0 },
-                viewport: { once: true, amount: 0.3 },
-                transition: { duration: 1, ease: EASE },
-              })}
+          initial={{ opacity: 0, scale: 0.94, y: 24 }}
+          whileInView={{ opacity: 1, scale: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.3 }}
+          transition={reduce ? { duration: 0 } : { duration: 1, ease: EASE }}
         >
           <div className="cd-stage rounded-[1.25rem] p-4 text-left sm:p-5">
             <div className="flex items-center justify-between gap-3">
@@ -61,8 +60,8 @@ export function FinalCinematic() {
             </div>
             <div className="mt-4 grid gap-3 sm:grid-cols-3">
               <motion.div {...enter(0.25)} className="rounded-lg border cd-hairline bg-navy-950/40 p-3">
-                <p className="font-mono text-[0.56rem] uppercase tracking-[0.14em] text-silver-400">Étapes</p>
-                <div className="mt-2 grid grid-cols-5 gap-1">
+                <p className="font-mono text-[0.56rem] uppercase tracking-[0.14em] text-silver-400">Suivi</p>
+                <div className="mt-2 grid grid-cols-4 gap-1">
                   {BUSINESS_STEPS.map((s, i) => (
                     <span
                       key={s}
@@ -103,17 +102,13 @@ export function FinalCinematic() {
         >
           Transformez vos dossiers en décisions claires.
         </motion.h2>
-        <motion.p {...enter(0.7)} className="mx-auto mt-6 max-w-2xl text-[1.05rem] leading-relaxed text-silver-200/78">
-          Centralisez vos pièces, suivez chaque étape et transmettez quand vous le décidez — avec
-          ClairDossier.
-        </motion.p>
         <motion.div {...enter(0.8)} className="mt-10 flex flex-wrap items-center justify-center gap-3">
           <Magnetic strength={0.12}>
             <Link
-              to="/inscription"
+              to={newDossierHref(Boolean(session))}
               className="sheen cd-btn-primary group inline-flex items-center gap-2 rounded-full bg-gold-500 px-6 py-3.5 text-sm font-semibold text-navy-900 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-gold-strong"
             >
-              Commencer
+              Créer un dossier
               <ArrowRightIcon width={14} height={14} strokeWidth={2} className="transition-transform group-hover:translate-x-0.5" />
             </Link>
           </Magnetic>

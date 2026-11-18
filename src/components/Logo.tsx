@@ -1,26 +1,36 @@
 import { Link } from 'react-router-dom';
+import horizontal179 from '../assets/brand/logo-horizontal-clair-179.webp';
+import horizontal357 from '../assets/brand/logo-horizontal-clair-357.webp';
+import horizontal536 from '../assets/brand/logo-horizontal-clair-536.webp';
+// no-inline : variante des très petits écrans, inutile de la loger dans chaque page.
+import symbole47 from '../assets/brand/logo-symbole-clair-47.webp?no-inline';
+import symbole94 from '../assets/brand/logo-symbole-clair-94.webp';
+import symbole141 from '../assets/brand/logo-symbole-clair-141.webp';
 
-export function Logo({ size = 40, withWordmark = true }: { size?: number; withWordmark?: boolean }) {
+// Logo officiel détouré (fond transparent, déclinaison pour fonds clairs : bleu nuit + or).
+// Symbole seul sous 300 px de large. Kit complet et méthode d'extraction : docs/marque/.
+export function Logo() {
   return (
-    <Link
-      to="/"
-      className="group inline-flex items-center gap-3"
-      aria-label={withWordmark ? undefined : 'CD — ClairDossier, accueil'}
-    >
-      <span
-        className="grid place-items-center rounded-md bg-navy-900 font-display font-bold leading-none text-gold-500 transition-colors group-hover:bg-navy-800"
-        style={{ width: size, height: size, fontSize: size * 0.42 }}
-      >
-        CD
-      </span>
-      {withWordmark && (
-        <span className="flex flex-col leading-tight">
-          <span className="font-display text-[1.05rem] font-semibold text-navy-900">
-            ClairDossier
-          </span>
-          <span className="text-[0.7rem] text-slate-500">Dossiers administratifs et juridiques, clairs.</span>
-        </span>
-      )}
+    <Link to="/" aria-label="ClairDossier, accueil" className="inline-flex shrink-0 rounded-sm">
+      <picture>
+        <source
+          media="(max-width: 299px)"
+          srcSet={`${symbole47} 47w, ${symbole94} 94w, ${symbole141} 141w`}
+          sizes="47px"
+          width={47}
+          height={36}
+        />
+        <img
+          src={horizontal179}
+          srcSet={`${horizontal179} 179w, ${horizontal357} 357w, ${horizontal536} 536w`}
+          sizes="(min-width: 640px) 179px, 146px"
+          width={179}
+          height={44}
+          alt="ClairDossier"
+          decoding="async"
+          className="h-9 w-auto sm:h-11"
+        />
+      </picture>
     </Link>
   );
 }

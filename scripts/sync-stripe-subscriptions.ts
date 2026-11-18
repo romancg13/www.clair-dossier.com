@@ -22,6 +22,8 @@ import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
 import {
   planIdFromSubscription,
+  isMissingColumn,
+  priceTerms,
   subscriptionRow,
   type StripeLikeSubscription,
 } from '../supabase/functions/_shared/stripe-sync.ts';
@@ -77,7 +79,12 @@ for await (const sub of stripe.subscriptions.list({
   }
   const row = subscriptionRow(userId, sub as unknown as StripeLikeSubscription, planId && knownPlans.has(planId) ? planId : null);
   if (apply) {
-    const { error } = await admin.from('subscriptions').upsert(row, { onConflict: 'stripe_subscription_id' });
+    let { error } = await admin
+      .from('subscriptions')
+      .upsert({ ...row, ...priceTerms(sub as unknown as StripeLikeSubscription) }, { onConflict: 'stripe_subscription_id' });
+    if (error && isMissingColumn(error.code)) {
+      ({ error } = await admin.from('subscriptions').upsert(row, { onConflict: 'stripe_subscription_id' }));
+    }
     if (error) {
       console.log(`❌ ${label} · écriture refusée (${error.code ?? 'erreur'})`);
       continue;

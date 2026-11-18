@@ -1,0 +1,3 @@
+{
+  "rewrites": [{ "source": "/compte/dossier/:id", "destination": "/compte/index.html" }]
+}

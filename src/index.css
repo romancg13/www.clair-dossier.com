@@ -17,6 +17,12 @@
 /* Phase 4 — couche landing cinématique (tokens @theme + styles préfixés cd-). */
 @import "./styles/landing.css";
 
+/* Campagne DROIT10_2026 : garde posée par index.html après la fin (src/data/campagnes.ts) — l'encart
+   prérendu n'apparaît jamais après le 09/11/2027 13 h, même avant reconstruction du site. */
+html[data-droit10="fini"] [data-campagne="DROIT10_2026"] {
+  display: none !important;
+}
+
 @theme {
   /* ─── Palette signature ──────────────────────────────────── */
   --color-navy-900: #0d1b3d;

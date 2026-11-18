@@ -2,13 +2,14 @@ import { useState, type FormEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Seo } from '../lib/seo';
 import { useAuth } from '../lib/auth';
+import { safeNextPath } from '../lib/safe-redirect';
 import { ArrowRightIcon } from '../components/icons';
 
 export function Login() {
   const { signIn } = useAuth();
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const next = params.get('next') || '/compte';
+  const next = safeNextPath(params.get('next'));
   const [error, setError] = useState<string | null>(null);
   const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
