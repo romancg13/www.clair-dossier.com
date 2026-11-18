@@ -9,11 +9,12 @@ import { drain } from '../../supabase/functions/_shared/engine/runner.ts';
 import type { EngineDeps } from '../../supabase/functions/_shared/engine/runner.ts';
 import { readDatesForm, type RenduView } from '../../supabase/functions/_shared/rendus/index.ts';
 import { demandeJustificatifs, ficheRendezVous, postsLinkedIn, type BriefLinkedIn } from '../../supabase/functions/_shared/prestations/index.ts';
-import { checkPassword, emailKey, hashPassword, sha, signEvent, signLink, token, verifyEvent, verifyLink } from './security.ts';
+import { checkPassword, emailKey, hashPassword, safeEqual, sha, signEvent, signLink, token, verifyEvent, verifyLink } from './security.ts';
+import { update } from './kv.ts';
 import { RecetteStore, type DossierRec, type Subscription, type UserRec } from './store.ts';
 import { sha256 } from './engine-deps.ts';
 import { handleMcp, handleOAuth, listConnections } from './mcp.ts';
-import { seedDemo } from './seed.ts';
+import { DOMAINE_RECETTE, seedDemo } from './seed.ts';
 
 export interface ApiEnv {
   store: RecetteStore;
@@ -32,6 +33,21 @@ export interface ApiEnv {
 
 const MAX_UPLOAD = 4 * 1024 * 1024;
 const SESSION_DAYS = 30;
+const MINUTE = 60_000;
+
+/** Plafonds de la recette (comptes fictifs) ; modifiables par les tests. */
+export const LIMITES = {
+  /** Comptes créés (démonstration ou inscription) par adresse IP, par heure. */
+  comptesParIp: 10,
+  /** Comptes créés par heure, toutes adresses confondues. */
+  comptesParHeure: 60,
+  /** Tentatives de connexion par compte sur 15 min (remises à zéro par une connexion réussie). */
+  connexionsParCompte: 8,
+  /** Tentatives de connexion par adresse IP sur 15 min, tous comptes confondus. */
+  connexionsParIp: 30,
+  /** Volume total de pièces conservé par compte. */
+  octetsParCompte: 50 * 1024 * 1024,
+};
 const json = (data: unknown, status = 200, headers: Record<string, string> = {}) => new Response(JSON.stringify(data), { status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', 'x-robots-tag': 'noindex, nofollow', ...headers } });
 const err = (status: number, message: string, extra: Record<string, unknown> = {}) => json({ error: message, ...extra }, status);
 
@@ -98,6 +114,36 @@ async function body<T>(req: Request): Promise<T> {
 const validEmail = (e: string) => /^[^\s@]{1,64}@[^\s@]{1,190}\.[a-z]{2,24}$/i.test(e);
 const uuid = () => crypto.randomUUID();
 
+/** Adresse IP du client (posée par l'hébergeur), utilisée seulement sous forme d'empreinte. */
+const clientIp = (req: Request) => sha((req.headers.get('x-real-ip') ?? req.headers.get('x-forwarded-for')?.split(',')[0] ?? '').trim() || 'inconnue');
+
+/**
+ * Compteur borné à fenêtre fixe, incrémenté par écriture conditionnelle (ETag) AVANT l'action
+ * protégée : des requêtes parallèles ne peuvent pas lire la même valeur et passer toutes.
+ * Conflit d'écriture persistant : refus (choix sûr).
+ */
+async function consume(store: RecetteStore, key: string, max: number, windowMs: number, amount = 1): Promise<boolean> {
+  const now = store.now().getTime();
+  let ok = false;
+  try {
+    await update<{ n: number; since: string }>(store.kv, key, (cur) => {
+      const live = cur !== null && now - Date.parse(cur.since) < windowMs;
+      const n = live && cur ? cur.n : 0;
+      ok = n + amount <= max;
+      return ok ? { n: n + amount, since: live && cur ? cur.since : new Date(now).toISOString() } : null;
+    });
+  } catch {
+    return false;
+  }
+  return ok;
+}
+
+/** Création de compte (démonstration ou inscription) : plafond par adresse IP, puis plafond global, par heure. */
+async function accountAllowed(store: RecetteStore, req: Request) {
+  return (await consume(store, `limites/comptes/ip-${clientIp(req)}.json`, LIMITES.comptesParIp, 60 * MINUTE)) && (await consume(store, 'limites/comptes/global.json', LIMITES.comptesParHeure, 60 * MINUTE));
+}
+const TROP_DE_COMPTES = 'Trop de comptes créés récemment. Réessayez dans une heure.';
+
 export async function handle(env: ApiEnv, req: Request): Promise<Response> {
   const url = new URL(req.url);
   const path = url.pathname.replace(/\/+$/, '') || '/';
@@ -113,25 +159,21 @@ export async function handle(env: ApiEnv, req: Request): Promise<Response> {
 
   /* ── Exécuteur ─────────────────────────────────────────────────────── */
   if (path === '/api/worker' && m === 'POST') {
-    if (req.headers.get('x-worker-token') !== env.workerToken || !env.workerToken) return err(401, 'non autorisé');
+    if (!env.workerToken || !safeEqual(req.headers.get('x-worker-token') ?? '', env.workerToken)) return err(401, 'non autorisé');
     // Réponse immédiate ; le traitement continue en arrière-plan (et se relance si la file n'est pas vide).
     env.waitUntil(runNow(env));
     return json({ accepte: true }, 202);
   }
   if (path === '/api/cron') {
-    if (req.headers.get('authorization') !== `Bearer ${env.cronSecret}` || !env.cronSecret) return err(401, 'non autorisé');
+    if (!env.cronSecret || !safeEqual(req.headers.get('authorization') ?? '', `Bearer ${env.cronSecret}`)) return err(401, 'non autorisé');
     await reconcile(env);
     env.waitUntil(runNow(env));
     return json({ ok: true });
   }
 
-  if (path === '/api/diag/ia' && m === 'GET' && process.env.VERCEL_ENV === 'preview') {
-    const { diagnosticIa } = await import('./runtime.ts');
-    return json(await diagnosticIa());
-  }
-
   /* ── Démonstration : compte fictif isolé par visiteur ───────────────── */
   if (path === '/api/demo/demarrer' && m === 'POST') {
+    if (!(await accountAllowed(store, req))) return err(429, TROP_DE_COMPTES);
     const b = await body<{ scenario?: string }>(req);
     const u = await seedDemo(env, b.scenario === 'sans-abonnement' ? 'sans-abonnement' : b.scenario === 'b' ? 'b' : 'a');
     return json({ ok: true, user: publicUser(u) }, 200, { 'set-cookie': await openSession(env, u.id) });
@@ -144,6 +186,9 @@ export async function handle(env: ApiEnv, req: Request): Promise<Response> {
     if (!validEmail(email)) return err(400, 'Adresse e-mail invalide.');
     if ((b.password ?? '').length < 10) return err(400, 'Mot de passe trop court (10 caractères minimum).');
     if (!b.first_name?.trim() || !b.last_name?.trim()) return err(400, 'Prénom et nom requis.');
+    // Domaine des comptes créés par le serveur (démonstration, administration) : personne ne peut s'y inscrire.
+    if (email.endsWith(`@${DOMAINE_RECETTE}`)) return err(400, 'Cette adresse est réservée à la recette : utilisez votre propre adresse e-mail.');
+    if (!(await accountAllowed(store, req))) return err(429, TROP_DE_COMPTES);
     const id = uuid();
     if (!(await store.claimEmail(emailKey(email), id))) return err(409, 'Un compte existe déjà avec cet e-mail. Connectez-vous.');
     await store.putUser({ id, email, first_name: b.first_name.trim().slice(0, 60), last_name: b.last_name.trim().slice(0, 60), company: b.company?.trim().slice(0, 120) || null, role: 'client', pwd: await hashPassword(b.password!), notifications: true, created_at: now.toISOString() });
@@ -152,15 +197,13 @@ export async function handle(env: ApiEnv, req: Request): Promise<Response> {
   if (path === '/api/auth/connexion' && m === 'POST') {
     const b = await body<{ email?: string; password?: string }>(req);
     const key = emailKey(b.email ?? '');
-    const lim = await store.kv.getJson<{ n: number; since: string }>(`limites/connexion/${key}.json`);
-    if (lim && lim.value.n >= 8 && Date.parse(lim.value.since) > now.getTime() - 15 * 60_000) return err(429, 'Trop de tentatives. Réessayez dans quelques minutes.');
+    const lim = `limites/connexion/${key}.json`;
+    // Tentative comptée AVANT la vérification du mot de passe (écriture conditionnelle) : des requêtes parallèles ne dépassent pas le plafond.
+    if (!(await consume(store, `limites/connexion-ip/${clientIp(req)}.json`, LIMITES.connexionsParIp, 15 * MINUTE)) || !(await consume(store, lim, LIMITES.connexionsParCompte, 15 * MINUTE))) return err(429, 'Trop de tentatives. Réessayez dans quelques minutes.');
     const id = await store.userIdByEmailHash(key);
     const u = id ? await store.getUser(id) : null;
-    if (!u || !(await checkPassword(b.password ?? '', u.pwd))) {
-      await store.kv.putJson(`limites/connexion/${key}.json`, { n: (lim && Date.parse(lim.value.since) > now.getTime() - 15 * 60_000 ? lim.value.n : 0) + 1, since: lim && Date.parse(lim.value.since) > now.getTime() - 15 * 60_000 ? lim.value.since : now.toISOString() });
-      return err(401, 'E-mail ou mot de passe incorrect.');
-    }
-    await store.kv.delete(`limites/connexion/${key}.json`);
+    if (!u || !(await checkPassword(b.password ?? '', u.pwd))) return err(401, 'E-mail ou mot de passe incorrect.');
+    await store.kv.delete(lim);
     return json({ ok: true, user: publicUser(u) }, 200, { 'set-cookie': await openSession(env, u.id) });
   }
   if (path === '/api/auth/deconnexion' && m === 'POST') {
@@ -191,6 +234,11 @@ export async function handle(env: ApiEnv, req: Request): Promise<Response> {
   }
 
   const user = await currentUser(env, req);
+  // Diagnostic de la passerelle IA (aperçu seulement) : réservé à l'administration, car chaque appel interroge le modèle hors budget.
+  if (path === '/api/diag/ia' && m === 'GET' && process.env.VERCEL_ENV === 'preview' && user?.role === 'admin') {
+    const { diagnosticIa } = await import('./runtime.ts');
+    return json(await diagnosticIa());
+  }
   if (path === '/api/moi' && m === 'GET') {
     if (!user) return json({ user: null });
     return json({ user: publicUser(user), abonnement: entitlementView(await store.getSub(user.id), now), ia: env.aiLabel });
@@ -287,6 +335,8 @@ export async function handle(env: ApiEnv, req: Request): Promise<Response> {
       if (!files.length) return err(400, 'Aucun fichier reçu.');
       const big = files.find((f) => f.size > MAX_UPLOAD);
       if (big) return err(413, `« ${big.name} » dépasse 4 Mo.`);
+      // Volume total par compte : réservé avant tout stockage (écriture conditionnelle).
+      if (!(await consume(store, `limites/stockage/${d.user_id}.json`, LIMITES.octetsParCompte, Infinity, files.reduce((n, f) => n + f.size, 0)))) return err(413, `Espace de stockage plein : un compte de recette conserve au plus ${Math.round(LIMITES.octetsParCompte / 1048576)} Mo de pièces.`);
       // Stockage des pièces en parallèle, puis mise en file (durable avant la réponse).
       const added = await Promise.all(
         files.map(async (f) => {
