@@ -1480,6 +1480,61 @@ await test('IA : bilan de santé quotidien — écrit par la tâche planifiée s
   assert.equal((await q('select * from public.ai_health_reports')).length, 0, 'client : aucune lecture');
 });
 
+// ── Quotas IA par offre (migration 20261118) ────────────────────────────────
+await test('IA : quotas par offre — résolution offre/dérogation, décompte, rôles, cloisonnement', async () => {
+  const QA = await newUser('quota-a@test.local');
+  const QB = await newUser('quota-b@test.local');
+  // Fonctions de décompte : rôle serveur seul ; get_my_ai_quota : titulaire.
+  await asUser(QA);
+  await rejects(q('select * from public.ai_quota_state($1)', [QA]), /permission denied/);
+  await rejects(q('select public.ai_quota_allows_pages($1, 1)', [QA]), /permission denied/);
+  await rejects(q(`select public.ai_consume_action($1, null, 'question')`, [QA]), /permission denied/);
+  const [none] = await q('select * from public.get_my_ai_quota()');
+  assert.equal(none.pages_limit, null, 'sans abonnement : aucune limite applicable (moteur déjà inaccessible)');
+  // Offre Essentiel : 50 pages, 0 action (grille proposée).
+  await subscribe(QA, 'essentiel');
+  await asUser(QA);
+  const [ess] = await q('select * from public.get_my_ai_quota()');
+  assert.equal(ess.pages_limit, 50);
+  assert.equal(ess.actions_limit, 0);
+  assert.equal(ess.pages_used, 0);
+  // 48 pages consommées (extraction réussie) ; l'échec ne consomme rien.
+  const DQ = await insertDossier(QA, { title: 'Quota pages' });
+  await asSuperuser();
+  await q(`insert into public.dossier_documents (dossier_id, user_id, file_path, file_name, kind) values ($1::uuid, $2::uuid, $2::text || '/' || $1::text || '/q.pdf', 'q.pdf', 'piece')`, [DQ, QA]);
+  const [docQ] = await q('select id from public.dossier_documents where dossier_id = $1 order by created_at desc limit 1', [DQ]);
+  await q(`insert into public.ai_extractions (dossier_id, user_id, document_id, status, pages) values ($1, $2, $3, 'ok', 48) on conflict (document_id) do update set status = 'ok', pages = 48`, [DQ, QA, docQ.id]);
+  await asService();
+  assert.equal((await q('select public.ai_quota_allows_pages($1, 2) as a', [QA]))[0].a, true, '48 + 2 ≤ 50');
+  assert.equal((await q('select public.ai_quota_allows_pages($1, 3) as a', [QA]))[0].a, false, '48 + 3 > 50 : pause, rien de consommé');
+  assert.equal((await q('select public.ai_quota_allows_pages($1, null) as a', [QA]))[0].a, true, 'pièce sans pagination = 1 page');
+  // 0 action incluse : refusée et jamais journalisée (pas de décompte sans journal).
+  assert.equal((await q(`select public.ai_consume_action($1, $2, 'question') as a`, [QA, DQ]))[0].a, false);
+  await asSuperuser();
+  assert.equal((await q('select count(*)::int n from public.ai_action_events'))[0].n, 0);
+  // Dérogation (offre personnalisée en recette) : prioritaire sur l'offre.
+  await q(`insert into public.entitlement_overrides (user_id, mode, dossier_limit, reason, ai_pages_month, ai_actions_month)
+           values ($1, 'custom_limit', 100, 'contrat fictif de recette', 10000, 2)`, [QA]);
+  await asService();
+  assert.equal((await q('select public.ai_quota_allows_pages($1, 500) as a', [QA]))[0].a, true, 'plafond contractuel prioritaire');
+  assert.equal((await q(`select public.ai_consume_action($1, $2, 'brouillon') as a`, [QA, DQ]))[0].a, true);
+  assert.equal((await q(`select public.ai_consume_action($1, $2, 'question') as a`, [QA, DQ]))[0].a, true);
+  assert.equal((await q(`select public.ai_consume_action($1, $2, 'question') as a`, [QA, DQ]))[0].a, false, '2 actions épuisées : suspension sans facturation');
+  // Journal et usage : visibles du titulaire seul (cloisonnement A/B).
+  await asUser(QA);
+  assert.equal((await q('select count(*)::int n from public.ai_action_events'))[0].n, 2);
+  assert.equal((await q('select * from public.get_my_ai_quota()'))[0].actions_used, 2);
+  await asUser(QB);
+  assert.equal((await q('select count(*)::int n from public.ai_action_events'))[0].n, 0, 'B ne voit pas les actions de A');
+  await rejects(q(`insert into public.ai_action_events (user_id, kind) values ($1, 'question')`, [QB]), /row-level security/);
+  // « Dossiers illimités » ≠ consommation illimitée : Premium reste plafonnée.
+  await subscribe(QB, 'business-pme-premium');
+  await asUser(QB);
+  const [prem] = await q('select * from public.get_my_ai_quota()');
+  assert.equal(prem.pages_limit, 5000);
+  assert.equal(prem.actions_limit, 1000);
+});
+
 // Dernier test : le retour arrière modifie le schéma pour la suite.
 await test('IA : retour arrière niveau 1 — moteur neutralisé, données conservées', async () => {
   const D = await insertDossier(IA_C, { title: 'Avant retour arrière' });

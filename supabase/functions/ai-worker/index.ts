@@ -206,6 +206,13 @@ async function runExtract(job: Job): Promise<void> {
   const bytes = new Uint8Array(await dl.data.arrayBuffer());
   const prepared = await documentContent(bytes, doc.file_name, dl.data.type || null);
   if ('unsupported' in prepared) return unsupported(prepared.unsupported);
+  // Quota de l'offre (pages IA du mois — migration 20261118, configuration
+  // serveur unique) : vérifié avec le nombre RÉEL de pages avant tout appel au
+  // modèle ; rien n'est consommé en cas de refus. Préfixe BUDGET: = même état
+  // « pause » que le plafond de dépense (travail non retenté, données conservées).
+  const quota = await db.rpc('ai_quota_allows_pages', { p_user: doc.user_id, p_pages: prepared.pages ?? 1 });
+  if (quota.error) return finish(job, false, 'BUDGET: quota de l’offre illisible (migration 20261118 manquante ?) — pause par prudence');
+  if (quota.data === false) return finish(job, false, 'BUDGET: pages IA incluses dans l’offre épuisées pour ce mois — traitement suspendu, documents et résultats conservés');
   const res = await anthropic.messages.parse({
     model: MODEL_EXTRACT,
     max_tokens: 16000,
