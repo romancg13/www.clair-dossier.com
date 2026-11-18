@@ -424,11 +424,18 @@ export async function applyEvent(store: RecetteStore, ev: { id: string; type: st
 async function runNow(env: ApiEnv) {
   try {
     const deps = await env.deps();
-    await drain(deps, 200_000, 120);
+    const reports = await drain(deps, 200_000, 120);
+    // Journal technique (sans contenu de pièce) : type de travail, issue, motif d'erreur.
+    for (const r of reports) {
+      if (r.outcome !== 'requeued' && r.outcome !== 'failed') continue;
+      const j = await env.store.kv.getJson<{ last_error: string | null; attempts: number }>(`jobs/${r.job}.json`);
+      console.error(JSON.stringify({ evt: 'travail', kind: r.kind, outcome: r.outcome, tentatives: j?.value.attempts, erreur: j?.value.last_error?.slice(0, 300) }));
+    }
     // Travaux encore prêts (lot volumineux) : nouvelle invocation ; travaux différés : repris par la consultation ou la tâche planifiée.
     const nowIso = env.store.now().toISOString();
     if ((await env.store.allOpenJobs()).some((j) => j.status === 'queued' && j.run_after <= new Date(Date.parse(nowIso) + 30_000).toISOString())) await env.kickWorker();
-  } catch {
+  } catch (e) {
+    console.error(JSON.stringify({ evt: 'executeur', erreur: String(e instanceof Error ? e.stack ?? e.message : e).slice(0, 600) }));
     await env.store.alert('EXECUTEUR_INTERROMPU', { at: env.store.now().toISOString() });
   }
 }
