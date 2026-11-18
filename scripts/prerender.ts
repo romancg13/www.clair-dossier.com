@@ -24,7 +24,8 @@
  *
  * Usage :  npm run prerender   (inclus dans npm run build)
  */
-import { mkdirSync, readFileSync, readdirSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -160,7 +161,7 @@ export function buildNotFoundPage(shell: string): string {
  */
 export function appShellRoutes(env: Record<string, string | undefined> = process.env): string[] {
   const routes = ['/inscription', '/connexion', '/compte', '/dossier/nouveau', '/admin'];
-  return env.VITE_DEMO === '1' ? [...routes, '/demo'] : routes;
+  return env.VITE_DEMO === '1' ? [...routes, '/demo', '/recette'] : routes;
 }
 
 /**
@@ -289,6 +290,26 @@ async function main(): Promise<void> {
     const outDir = join(dist, 'fonctionnalites', oldSlug);
     mkdirSync(outDir, { recursive: true });
     writeFileSync(join(outDir, 'index.html'), buildRedirectPage(`/fonctionnalites/${newSlug}`, target.title));
+  }
+
+  if (process.env.VITE_DEMO === '1') {
+    // Les mêmes validations de routes/prérendu s'appliquent à la recette.
+    // Seule la sortie de recette supprime les signaux d'indexation.
+    for (const relative of readdirSync(dist, { recursive: true, encoding: 'utf8' })) {
+      if (!relative.endsWith('.html')) continue;
+      const path = join(dist, relative);
+      const html = readFileSync(path, 'utf8')
+        .replace(/<meta name="robots" content="[^"]*"\s*\/?>/i, '<meta name="robots" content="noindex, nofollow" />')
+        .replace(CANONICAL_TAG, '');
+      writeFileSync(path, html);
+    }
+    writeFileSync(join(dist, 'robots.txt'), 'User-agent: *\nDisallow: /\n');
+    for (const name of ['CNAME', 'sitemap.xml']) rmSync(join(dist, name), { force: true });
+    const commit = process.env.VERCEL_GIT_COMMIT_SHA || execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
+    if (!/^[0-9a-f]{40}$/.test(commit)) throw new Error('Commit de recette introuvable.');
+    writeFileSync(join(dist, 'version.json'), JSON.stringify({ commit }));
+    const specimen = join(root, 'recette', 'specimen');
+    if (existsSync(specimen)) cpSync(specimen, join(dist, 'exemple-recette'), { recursive: true });
   }
 
   // ── 6. Nettoyage ───────────────────────────────────────────────────────

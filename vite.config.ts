@@ -27,13 +27,24 @@ function shortlinkPage(): Plugin {
     apply: 'build',
     configResolved(config) {
       env = config.env;
+      if (env.VITE_DEMO === '1') {
+        const allowed = new Set(['VITE_DEMO', 'VITE_BASE_PATH', 'VITE_HOME_CINEMATIC', 'VITE_CINEMATICS']);
+        const inherited = Object.keys(env).filter(key => key.startsWith('VITE_') && env[key] && !allowed.has(key));
+        if (inherited.length) throw new Error('Configuration de recette non isolée : ' + inherited.join(', '));
+      }
     },
     closeBundle() {
       const safe = (v: string | undefined) => (v && /^[\w.:/-]+$/.test(v) ? v : '');
-      const html = readFileSync(resolve(__dirname, 'src/shortlink/v.html'), 'utf-8')
-        .replaceAll('__SUPABASE_URL__', safe(env.VITE_SUPABASE_URL))
-        .replaceAll('__SUPABASE_ANON_KEY__', safe(env.VITE_SUPABASE_ANON_KEY))
-        .replaceAll('__PLAUSIBLE_DOMAIN__', safe(env.VITE_PLAUSIBLE_DOMAIN));
+      const demo = env.VITE_DEMO === '1';
+      const template = readFileSync(resolve(__dirname, 'src/shortlink/v.html'), 'utf-8');
+      // Le lien de campagne reste sur le même hôte en recette, sans comptage externe.
+      const scopedTemplate = demo
+        ? template.replaceAll('https://www.clair-dossier.com/', '/').replace(/<link rel="preconnect"[^>]*>/g, '')
+        : template;
+      const html = scopedTemplate
+        .replaceAll('__SUPABASE_URL__', demo ? '' : safe(env.VITE_SUPABASE_URL))
+        .replaceAll('__SUPABASE_ANON_KEY__', demo ? '' : safe(env.VITE_SUPABASE_ANON_KEY))
+        .replaceAll('__PLAUSIBLE_DOMAIN__', demo ? '' : safe(env.VITE_PLAUSIBLE_DOMAIN));
       const dist = resolve(__dirname, 'dist');
       writeFileSync(resolve(dist, 'v.html'), html);
       mkdirSync(resolve(dist, 'v'), { recursive: true });

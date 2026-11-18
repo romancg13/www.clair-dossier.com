@@ -27,6 +27,7 @@ export const PRIVATE_PATH_PREFIXES = [
   '/dossier',
   '/admin',
   '/corbeille',
+  '/recette',
   '/connexion',
   '/inscription',
 ] as const;
@@ -128,7 +129,7 @@ export function Seo({
       'meta[name="robots"]',
       'name',
       'robots',
-      noindex ? 'noindex, follow' : 'index, follow, max-image-preview:large'
+      import.meta.env.VITE_DEMO === '1' ? 'noindex, nofollow' : noindex ? 'noindex, follow' : 'index, follow, max-image-preview:large'
     );
     upsertMeta('meta[property="og:title"]', 'property', 'og:title', fullTitle);
     upsertMeta('meta[property="og:description"]', 'property', 'og:description', description);

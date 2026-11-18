@@ -1,7 +1,12 @@
-import { useEffect, useRef } from "react";
+import { lazy, Suspense, useEffect, useRef } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { Nav } from "./Nav";
 import { Footer } from "./Footer";
+
+const RecetteLegalNotice = import.meta.env.VITE_DEMO === '1'
+  ? lazy(() => import('./RecetteLegalNotice'))
+  : null;
+const notices = new Set(['/cgv', '/politique-confidentialite', '/securite', '/etat-du-produit', '/cookies']);
 
 export function Layout() {
   const location = useLocation();
@@ -34,6 +39,9 @@ export function Layout() {
         className="flex-1 outline-none"
       >
         <Outlet />
+        {RecetteLegalNotice && notices.has(location.pathname.replace(/\/$/, '')) && (
+          <Suspense fallback={null}><RecetteLegalNotice /></Suspense>
+        )}
       </main>
       <Footer />
     </div>

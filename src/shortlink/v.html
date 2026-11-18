@@ -29,7 +29,7 @@
         var BEACON_TIMEOUT_MS = 1500;
         var BOT = /bot\/|bot-|\bbot\b|telegrambot|crawl|spider|slurp|preview|facebookexternalhit|meta-externalagent|whatsapp|embedly|headless|lighthouse|pagespeed|inspectiontool|validator|python-|curl\/|wget|go-http|okhttp|axios|node-fetch/i;
 
-        var dest = new URL('https://www.clair-dossier.com/');
+        var dest = new URL('https://www.clair-dossier.com/', location.origin);
         dest.searchParams.set('utm_source', SOURCE);
         dest.searchParams.set('utm_medium', 'publiredactionnel');
         dest.searchParams.set('utm_campaign', '2026');
