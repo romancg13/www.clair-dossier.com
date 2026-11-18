@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive"><meta name="referrer" content="no-referrer">
+<title>Dossier de démonstration · ClairDossier</title>
+<style>
+:root{color:#0d1b3d;background:#f8f6f1;font:100%/1.55 system-ui,sans-serif;--champagne:#b69a61;--line:#ded9ce;--muted:#505a6d}
+*{box-sizing:border-box}body{margin:0}header,main,footer{width:min(100% - 2rem,53rem);margin:auto}header{padding:1.25rem 0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.6rem;border-bottom:1px solid var(--line)}header img{width:9.5rem;height:auto;display:block}header small,footer,.meta{color:var(--muted)}main{min-height:65vh;padding:clamp(2rem,5vw,4rem) 0}h1,h2,h3{font:500 2rem/1.15 Georgia,serif;margin:0}h1{font-size:clamp(2.3rem,6vw,3.65rem);max-width:16em}h2{font-size:clamp(1.5rem,4vw,2.15rem)}h3{font-size:1.3rem}p{margin:.65rem 0;max-width:42rem}button,a.primary{min-height:2.75rem;font:inherit;cursor:pointer}button{background:white;color:inherit;border:1px solid var(--line);border-radius:2rem;padding:.5rem 1rem}button:disabled{opacity:.6;cursor:wait}a{color:inherit;text-underline-offset:.2em}.primary{background:#0d1b3d;color:white;padding:.65rem 1.2rem;border:0;border-radius:2rem;display:inline-flex;align-items:center;text-decoration:none;font-weight:600}button:focus-visible,a:focus-visible,summary:focus-visible,input:focus-visible{outline:3px solid #806018;outline-offset:3px}.paper{margin-top:1.3rem;border-top:3px solid var(--champagne);background:white;padding:clamp(1rem,4vw,2rem);box-shadow:0 6px 22px #0d1b3d0b}.row{display:flex;align-items:center;flex-wrap:wrap;gap:.65rem}.meta,small{font-size:.875rem}.meta{margin-bottom:.5rem}details{margin-top:1rem}summary{cursor:pointer;min-height:2.5rem;padding:.4rem 0;font-weight:600}input[type=file]{max-width:100%}ul{padding-left:1.25rem}li{margin:.4rem 0}.columns{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin:1.25rem 0;padding:1rem 0;border-block:1px solid var(--line)}.draft{white-space:pre-line}.error{border-left:3px solid #9c3339;background:#fff;padding:.7rem 1rem;color:#7f1d1d}footer{padding:1rem 0;border-top:1px solid var(--line);font-size:.85rem}.spaced{margin-top:1rem}[hidden]{display:none!important}@media(max-width:37rem){.columns{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header><img src="/assets/logo.webp" width="357" height="88" alt="ClairDossier"><small>Recette · Données fictives</small></header>
+<main>
+<h1>Réception des menuiseries</h1>
+<p class="meta">Atelier Témoin · Dossier de démonstration</p>
+<p id="message" role="status" aria-live="polite">Ouverture de l’espace de recette…</p>
+<p id="error" class="error" role="alert" hidden></p>
+<section id="entry" class="paper" hidden>
+  <h2>Ouvrir le dossier fictif</h2>
+  <p>Déposez le devis et le bon numérisé. Vous pourrez fermer cet onglet puis retrouver le résultat dans ce navigateur.</p>
+  <button class="primary spaced" data-session="a">Ouvrir le dossier du client A</button>
+  <details><summary>Essayer un autre profil</summary><div class="row">
+    <button data-session="b">Client B</button><button data-session="sans">Client sans abonnement</button>
+  </div></details>
+</section>
+<section id="denied" class="paper" hidden>
+  <h2>Un abonnement est nécessaire</h2>
+  <p>Ce compte fictif ne peut pas déposer de pièces. Vous pouvez essayer le parcours avec un compte abonné de recette.</p>
+  <button class="primary spaced" data-session="a">Essayer le client A abonné</button>
+</section>
+<section id="upload" class="paper" hidden>
+  <h2>Vos pièces</h2>
+  <p>Le dossier porte sur le prix des trois fenêtres et la date de retour du procès-verbal. Les deux pièces d’exemple sont prêtes à être déposées.</p>
+  <ul id="fixtures"></ul>
+  <details><summary>Choisir les copies téléchargées sur cet appareil</summary>
+    <label for="copies">PDF et scan du jeu fictif</label><br><input type="file" id="copies" multiple accept=".pdf,.png">
+    <p class="meta">Seules les deux copies dont l’empreinte correspond aux exemples peuvent être envoyées.</p>
+  </details>
+  <button id="deposit" class="primary spaced">Déposer les deux pièces</button>
+</section>
+<section id="progress" class="paper" hidden>
+  <h2 id="progress-title">Dépôt reçu</h2>
+  <p>Vous pouvez fermer cet onglet. Le résultat sera disponible ici lorsque le serveur aura terminé.</p>
+  <button class="spaced" data-refresh>Actualiser le dossier</button>
+</section>
+<section id="failure" class="paper" hidden><h2>Traitement interrompu</h2>
+  <p>Le serveur n’a pas publié cette livraison.</p><button data-refresh>Vérifier l’état du lot</button>
+</section>
+<section id="result" class="paper" hidden>
+  <p class="meta" id="published"></p><h2>Votre situation</h2><p id="summary"></p>
+  <div class="columns"><div><h3>Prochaine date</h3><p><strong>8 décembre 2026</strong> · Retour du procès-verbal.</p><small>Devis CD-041, page 1.</small></div>
+    <div><h3>Prochaine action</h3><p><strong>Demander le bon de réception signé.</strong></p><small>À la charge du client · Bon numérisé.</small></div></div>
+  <a class="primary" href="/api/livraison.pdf" download="Tableau-de-bord.pdf">Télécharger le tableau de bord PDF</a>
+  <details><summary>Lire le brouillon de relance</summary><p id="draft" class="draft"></p></details>
+  <p class="meta" id="notices"></p>
+</section>
+<details id="profiles" hidden><summary>Changer de compte fictif</summary>
+  <div class="row"><button data-session="a">Client A</button><button data-session="b">Client B</button><button data-session="sans">Sans abonnement</button></div>
+</details>
+<button id="retry" hidden data-refresh>Réessayer la connexion</button>
+</main>
+<footer>Le serveur traite les dépôts du jeu fictif. Les droits d’abonnement sont simulés. L’extraction et la synthèse proviennent de l’exemple préparé à l’avance. Les relances restent des brouillons.</footer>
+<script>
+"use strict";
+const byId=id=>document.getElementById(id);
+const hashes={devis:"ae8189109c52965537faaa11921ae31c63823f57c9c5a29598a49f9b7bfc3898",scan:"a7fc08e708aab24a320711f6ca485e144ba0d9c305a32013165651758a03f871"};
+let state=null, busy=false, timer=0, sequence=0;
+function feedback(message=""){byId("error").textContent=message;byId("error").hidden=!message;}
+function lock(locked){busy=locked;document.querySelectorAll("button,input").forEach(el=>{el.disabled=locked;});}
+async function request(path,body){
+  const opts={credentials:"same-origin",cache:"no-store"};
+  if(body!==undefined){opts.method="POST";opts.headers={"Content-Type":"application/json"};opts.body=JSON.stringify(body);}
+  const response=await fetch(path,opts);
+  const data=await response.json().catch(()=>null);
+  if(path==="/api/dossier" && response.status===401)return {persona:null,run:null,fixtures:[]};
+  if(!response.ok){const err=new Error(typeof data?.error==="string"?data.error:"La requête n’a pas abouti. Vérifiez l’état du dossier.");err.status=response.status;throw err;}
+  return data;
+}
+function render(next){
+  if(!next||!Array.isArray(next.fixtures))throw new Error("Le serveur n’a pas renvoyé l’état du dossier.");
+  state=next;const run=state.run;
+  for(const id of ["entry","denied","upload","progress","result","profiles","retry","failure"])byId(id).hidden=true;
+  byId("message").textContent=state.persona==="a"?"Client A · Abonné fictif":state.persona==="b"?"Client B · Abonné fictif":"";
+  if(!state.persona){byId("entry").hidden=false;return;}
+  byId("profiles").hidden=false;
+  if(state.persona==="sans"){byId("denied").hidden=false;return;}
+  if(!run){
+    byId("upload").hidden=false;byId("fixtures").replaceChildren();
+    for(const f of state.fixtures){
+      const href=new URL(f.url,location.origin);if(href.origin!==location.origin||!Object.hasOwn(hashes,f.id))continue;
+      const link=document.createElement("a");link.href=href.href;link.download=f.name;link.textContent=f.name;
+      const li=document.createElement("li");li.append(link);byId("fixtures").append(li);
+    }
+    return;
+  }
+  if(run.status==="failed"){byId("failure").hidden=false;return;}
+  if(run.status==="queued"||run.status==="processing"){
+    byId("progress").hidden=false;byId("progress-title").textContent=run.status==="queued"?"Dépôt reçu":"Traitement en cours";
+    timer=setTimeout(()=>void refresh(),1800);return;
+  }
+  if(run.status!=="published")throw new Error("État de traitement inconnu.");
+  byId("result").hidden=false;
+  byId("summary").textContent=run.summary||"Le tableau de bord est disponible.";
+  byId("draft").textContent=run.draft||"Aucun brouillon publié.";
+  byId("published").textContent=run.publishedAt?"Livré le "+new Date(run.publishedAt).toLocaleString("fr-FR",{timeZone:"Europe/Paris"}):"Résultat disponible";
+  byId("notices").textContent="Notifications enregistrées dans la boîte de recette · "+run.notifications;
+}
+async function refresh(){
+  clearTimeout(timer);const version=++sequence;
+  try{const next=await request("/api/dossier");if(version===sequence){render(next);byId("retry").hidden=true;}}
+  catch(e){if(version===sequence){feedback(e.message);byId("retry").hidden=false;}}
+}
+async function runAction(fn){
+  if(busy)return;lock(true);feedback();clearTimeout(timer);sequence++;
+  try{await fn();}
+  catch(e){feedback(e.message);byId("retry").hidden=false;}
+  finally{lock(false);}
+}
+async function fixtureData(){
+  const chosen=Array.from(byId("copies").files);
+  if(chosen.length && chosen.length!==2)throw new Error("Sélectionnez le PDF et le scan ensemble.");
+  const fixtures=state.fixtures.filter(f=>Object.hasOwn(hashes,f.id));
+  if(fixtures.length!==2)throw new Error("Les deux pièces de recette sont indisponibles.");
+  let buffers;
+  if(chosen.length){
+    if(chosen.some(f=>f.size>100000))throw new Error("Fichier hors du jeu de recette.");
+    buffers=await Promise.all(chosen.map(f=>f.arrayBuffer()));
+  }else{
+    buffers=await Promise.all(fixtures.map(async f=>{
+      const url=new URL(f.url,location.origin);
+      if(url.origin!==location.origin)throw new Error("Adresse de pièce indisponible.");
+      const r=await fetch(url,{credentials:"same-origin"});if(!r.ok)throw new Error("Pièce de recette indisponible.");
+      return r.arrayBuffer();
+    }));
+  }
+  const result={};
+  for(const b of buffers){
+    if(b.byteLength>100000)throw new Error("Fichier hors du jeu de recette.");
+    const digest=Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",b)),v=>v.toString(16).padStart(2,"0")).join("");
+    const id=Object.keys(hashes).find(k=>hashes[k]===digest);
+    if(!id||result[id])throw new Error("Le jeu attendu contient le devis et le scan fournis, une fois chacun.");
+    result[id]=btoa(Array.from(new Uint8Array(b),v=>String.fromCharCode(v)).join(""));
+  }
+  return [result.devis,result.scan];
+}
+document.querySelectorAll("[data-session]").forEach(el=>el.addEventListener("click",()=>runAction(async()=>{
+  await request("/api/session",{persona:el.dataset.session});byId("copies").value="";await refresh();
+})));
+document.querySelectorAll("[data-refresh]").forEach(el=>el.addEventListener("click",()=>runAction(refresh)));
+byId("deposit").addEventListener("click",()=>runAction(async()=>{
+  const uploads=await fixtureData();
+  try{await request("/api/depot",{uploads});}
+  catch(e){if(e.status!==409)throw e;feedback("Ce lot a déjà été déposé. Sa livraison est conservée.");}
+  await refresh();
+}));
+void refresh();
+</script>
+</body></html>

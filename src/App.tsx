@@ -165,7 +165,9 @@ const DemoDossier =
     : null;
 
 const RecetteDossier = import.meta.env.VITE_DEMO === '1'
-  ? lazy(() => import('./pages/RecetteDossier').then(m => ({ default: m.RecetteDossier })))
+  ? (import.meta.env.VITE_RECETTE_PORTAIL === '1'
+      ? lazy(() => import('./recette/PortailEnLigne').then(m => ({ default: m.PortailEnLigne })))
+      : lazy(() => import('./pages/RecetteDossier').then(m => ({ default: m.RecetteDossier }))))
   : null;
 
 export default function App() {

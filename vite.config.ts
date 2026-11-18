@@ -28,7 +28,12 @@ function shortlinkPage(): Plugin {
     configResolved(config) {
       env = config.env;
       if (env.VITE_DEMO === '1') {
-        const allowed = new Set(['VITE_DEMO', 'VITE_BASE_PATH', 'VITE_HOME_CINEMATIC', 'VITE_CINEMATICS']);
+        // Vercel préfixe aussi ses propres métadonnées de build. Le client de
+        // recette n'en consomme aucune ; les retirer avant le remplacement Vite.
+        for (const key of Object.keys(env)) {
+          if (key.startsWith('VITE_VERCEL_')) delete env[key];
+        }
+        const allowed = new Set(['VITE_DEMO', 'VITE_RECETTE_PORTAIL', 'VITE_BASE_PATH', 'VITE_HOME_CINEMATIC', 'VITE_CINEMATICS']);
         const inherited = Object.keys(env).filter(key => key.startsWith('VITE_') && env[key] && !allowed.has(key));
         if (inherited.length) throw new Error('Configuration de recette non isolée : ' + inherited.join(', '));
       }
