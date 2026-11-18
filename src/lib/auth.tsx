@@ -6,8 +6,19 @@ import {
   type ReactNode,
 } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
-import { supabase, isSupabaseConfigured } from './supabase';
+import { isSupabaseConfigured } from './supabase-env';
 import { setDraftOwner } from './drafts';
+
+// Perf (audit 2026-09) : le SDK Supabase (~209 Ko) était tiré dans le chunk
+// d'entrée via cet import statique, donc téléchargé et parsé sur toutes les
+// pages vitrine avant le premier rendu. On ne le charge plus que par import
+// dynamique (mis en cache par Vite) : après hydratation pour l'état de
+// session, ou au premier appel signUp/signIn/signOut. Comportement identique,
+// chemin critique allégé.
+async function getSupabase() {
+  const { supabase } = await import('./supabase');
+  return supabase;
+}
 
 export type CompanyType =
   | 'pme'
@@ -78,22 +89,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
     let active = true;
-    supabase.auth.getSession().then(({ data }) => {
+    let unsubscribe: (() => void) | null = null;
+    void getSupabase().then((supabase) => {
       if (!active) return;
-      setSession(data.session);
-      setLoading(false);
-    });
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      setSession(nextSession);
+      supabase.auth.getSession().then(({ data }) => {
+        if (!active) return;
+        setSession(data.session);
+        setLoading(false);
+      });
+      const { data: sub } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+        setSession(nextSession);
+      });
+      unsubscribe = () => sub.subscription.unsubscribe();
+    }).catch(() => {
+      // Échec de chargement du chunk (réseau, déploiement entre deux hashes) :
+      // ne jamais laisser RequireAuth sur « Chargement… » indéfiniment.
+      if (active) setLoading(false);
     });
     return () => {
       active = false;
-      sub.subscription.unsubscribe();
+      unsubscribe?.();
     };
   }, []);
 
   async function signUp(email: string, password: string, info?: SignUpInfo): Promise<SignUpResult> {
     if (!isSupabaseConfigured) return { error: "Le service de comptes n'est pas configuré." };
+    const supabase = await getSupabase().catch(() => null);
+    if (!supabase) return { error: 'Service momentanément indisponible. Vérifiez votre connexion, puis réessayez.' };
     const first = info?.firstName?.trim() || null;
     const last = info?.lastName?.trim() || null;
     const full = info?.fullName?.trim() || [first, last].filter(Boolean).join(' ') || null;
@@ -123,6 +145,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Vérification e-mail par code à 6 chiffres (Supabase Auth natif).
   async function verifyEmailOtp(email: string, code: string): Promise<AuthResult> {
     if (!isSupabaseConfigured) return { error: "Le service de comptes n'est pas configuré." };
+    const supabase = await getSupabase().catch(() => null);
+    if (!supabase) return { error: 'Service momentanément indisponible. Vérifiez votre connexion, puis réessayez.' };
     const { data, error } = await supabase.auth.verifyOtp({ email, token: code.trim(), type: 'signup' });
     if (error) return { error: translateError(error.message) };
     if (data.session) setSession(data.session);
@@ -131,6 +155,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function resendSignupCode(email: string): Promise<AuthResult> {
     if (!isSupabaseConfigured) return { error: "Le service de comptes n'est pas configuré." };
+    const supabase = await getSupabase().catch(() => null);
+    if (!supabase) return { error: 'Service momentanément indisponible. Vérifiez votre connexion, puis réessayez.' };
     const { error } = await supabase.auth.resend({ type: 'signup', email });
     if (error) return { error: translateError(error.message) };
     return { error: null };
@@ -138,6 +164,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function signIn(email: string, password: string): Promise<AuthResult> {
     if (!isSupabaseConfigured) return { error: "Le service de comptes n'est pas configuré." };
+    const supabase = await getSupabase().catch(() => null);
+    if (!supabase) return { error: 'Service momentanément indisponible. Vérifiez votre connexion, puis réessayez.' };
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) return { error: translateError(error.message) };
     setSession(data.session);
@@ -145,7 +173,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function signOut(): Promise<void> {
-    await supabase.auth.signOut();
+    // Si le chunk ne charge pas, on déconnecte au moins l'état local (le SDK
+    // aura de toute façon échoué à charger la session dans le même contexte).
+    const supabase = await getSupabase().catch(() => null);
+    if (supabase) await supabase.auth.signOut();
     setSession(null);
   }
 

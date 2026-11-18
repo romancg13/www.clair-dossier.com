@@ -24,6 +24,26 @@ export function deliverableKeyOf(fileName: string): DeliverableKey | null {
   return hit ? hit.key : null;
 }
 
+/**
+ * Rattachement au catalogue tolérant aux alias historiques : après le nom
+ * strict `<slug>-r<n>.<ext>`, accepte le slug seul ou suivi d'un séparateur
+ * (« Resume-IA.pdf », « resume-ia (1).PDF », « Échéances-r2.ics » avec accents),
+ * casse et accents ignorés. Sert uniquement à choisir la carte d'affichage :
+ * la décision généré/manuel revient au type enregistré (`generated_by`),
+ * jamais au nom du fichier quand ce type est disponible.
+ */
+export function deliverableKeyFromName(fileName: string): DeliverableKey | null {
+  const strict = deliverableKeyOf(fileName);
+  if (strict) return strict;
+  const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  const base = norm(fileName).replace(/\.[a-z0-9]+$/, '');
+  const hit = DELIVERABLE_CATALOG.find((d) => {
+    const slug = norm(d.slug);
+    return base === slug || (base.startsWith(slug) && /^[-._ (]/.test(base.slice(slug.length)));
+  });
+  return hit ? hit.key : null;
+}
+
 /* ── Modèle de données ──────────────────────────────────────────────────── */
 
 export type Precision = 'day' | 'month' | 'year' | 'unknown';

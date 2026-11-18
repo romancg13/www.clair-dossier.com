@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { Nav } from "./Nav";
 import { Footer } from "./Footer";
+import { AppErrorBoundary } from "./AppErrorBoundary";
 
 export function Layout() {
   const location = useLocation();
@@ -33,7 +34,10 @@ export function Layout() {
         tabIndex={-1}
         className="flex-1 outline-none"
       >
-        <Outlet />
+        {/* key={pathname} : la frontière se réarme à chaque navigation. */}
+        <AppErrorBoundary key={location.pathname}>
+          <Outlet />
+        </AppErrorBoundary>
       </main>
       <Footer />
     </div>

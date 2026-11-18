@@ -31,6 +31,8 @@ type Props = {
 };
 
 type Settings = { enabled_at: string | null; terms_version: string | null };
+/** Usage du mois et plafonds de l'offre (RPC get_my_ai_quota, migration 20261118) — null si indisponible. */
+type QuotaRow = { pages_limit: number | null; actions_limit: number | null; pages_used: number; actions_used: number };
 type JobRow = { id: string; kind: "extract" | "consolidate" | "render"; status: string; last_error: string | null };
 type AnalysisRow = { revision: number; created_at: string; cost_cents: number | string; coverage: CoverageInfo; data: AnalysisData };
 type OverrideRow = Omit<EventOverride, "author"> & { author_role: "titulaire" | "equipe" };
@@ -53,6 +55,7 @@ export function AiPanel({ dossierId, ownerId, canManage, isAdmin, closed, pieceC
   const [error, setError] = useState<string | null>(null);
   const [consent, setConsent] = useState(false);
   const [seenRevision, setSeenRevision] = useState<number | null>(null);
+  const [quota, setQuota] = useState<QuotaRow | null>(null);
 
   const load = useCallback(async () => {
     const s = await supabase.from("dossier_ai_settings").select("enabled_at,terms_version").eq("dossier_id", dossierId).maybeSingle();
@@ -72,7 +75,14 @@ export function AiPanel({ dossierId, ownerId, canManage, isAdmin, closed, pieceC
     setExtracted(x.count ?? 0);
     setAnalysis((a.data as AnalysisRow | null) ?? null);
     setOverrides((o.data as OverrideRow[] | null) ?? []);
-  }, [dossierId]);
+    // Usage restant de l'offre : lecture du TITULAIRE uniquement (la RPC renvoie
+    // le quota du compte connecté). Migration 20261118 absente → rien d'affiché.
+    if (!isAdmin) {
+      const qr = await supabase.rpc("get_my_ai_quota");
+      const row = Array.isArray(qr.data) ? (qr.data[0] as QuotaRow | undefined) : (qr.data as QuotaRow | null);
+      setQuota(qr.error ? null : row ?? null);
+    }
+  }, [dossierId, isAdmin]);
 
   useEffect(() => {
     void load();
@@ -152,6 +162,14 @@ export function AiPanel({ dossierId, ownerId, canManage, isAdmin, closed, pieceC
                 : "Sur activation, ClairDossier lit vos pièces et prépare vos documents : résumé, tableau de bord, chronologie, dates, échéances et projets de relance."}
             </p>
             {detail && <p className="mt-2 font-mono text-xs text-gold-700">{detail}</p>}
+            {settings?.enabled_at && quota && quota.pages_limit !== null && (
+              <p className="mt-2 text-xs text-slate-500">
+                Pages incluses ce mois-ci : {Math.min(quota.pages_used, quota.pages_limit)} / {quota.pages_limit} utilisées
+                {quota.actions_limit !== null && quota.actions_limit > 0
+                  ? ` · actions : ${Math.min(quota.actions_used, quota.actions_limit)} / ${quota.actions_limit}`
+                  : ""}
+              </p>
+            )}
           </div>
           {canManage && settings?.enabled_at && (
             <button type="button" onClick={() => void toggle(false)} disabled={busy} className="rounded-full border hairline px-4 py-2 text-xs font-semibold text-navy-900 transition-colors hover:bg-white disabled:opacity-60">

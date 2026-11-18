@@ -70,6 +70,10 @@ export function Account() {
   const singleFlight = useRef(createSingleFlight());
   const [emails, setEmails] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
+  // Une erreur réseau/RLS ne doit pas s'afficher comme « aucun dossier »
+  // (état vide trompeur) : on la distingue et on propose de réessayer.
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
   const { profile, extended, reload: reloadProfile } = useMyProfile(user?.id);
 
   useEffect(() => {
@@ -82,11 +86,12 @@ export function Account() {
       // Les politiques RLS renvoient automatiquement TOUS les dossiers à l'admin,
       // et uniquement les siens à un utilisateur normal.
       const trashAware = await hasDossierTrash();
-      const { data: rawRows } = await supabase
+      const { data: rawRows, error: dossiersError } = await supabase
         .from('dossiers')
         .select(`id,user_id,typology,title,status,created_at${trashAware ? ',deleted_at,deleted_by' : ''}`)
         .order('created_at', { ascending: false });
-      const allRows = (rawRows as DossierRow[] | null) ?? [];
+      if (dossiersError) throw dossiersError;
+      const allRows = (rawRows as unknown as DossierRow[] | null) ?? [];
       const data = allRows.filter((r) => !r.deleted_at);
       const ownTrash = trashAware && (await clientTrashEnabled());
       if (active) {
@@ -142,12 +147,17 @@ export function Account() {
       setOwners(ownerMap);
       setEmails(emailMap);
       setDossiers((data as DossierRow[] | null) ?? []);
+      setLoadError(null);
       setLoading(false);
-    })();
+    })().catch(() => {
+      if (!active) return;
+      setLoadError('Impossible de charger vos dossiers pour le moment. Vérifiez votre connexion, puis réessayez.');
+      setLoading(false);
+    });
     return () => {
       active = false;
     };
-  }, []);
+  }, [reloadKey]);
 
   async function confirmTrash(reason: string) {
     const d = toTrash;
@@ -343,6 +353,22 @@ export function Account() {
 
           {loading ? (
             <p className="mt-8 text-sm text-slate-500">Chargement…</p>
+          ) : loadError ? (
+            <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-8 text-center">
+              <p role="alert" className="text-sm leading-relaxed text-red-700">
+                {loadError}
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setLoading(true);
+                  setReloadKey((k) => k + 1);
+                }}
+                className="mt-5 inline-flex items-center gap-2 rounded-full bg-navy-900 px-5 py-3 text-sm font-medium text-cream-50 transition-colors hover:bg-navy-800"
+              >
+                Réessayer
+              </button>
+            </div>
           ) : dossiers.length === 0 ? (
             <div className="mt-6 rounded-2xl border hairline bg-white p-8 text-center shadow-card">
               <p className="text-sm leading-relaxed text-slate-500">

@@ -89,6 +89,17 @@ export function hasEvents(): Promise<boolean> {
   });
 }
 
+/** Colonne generated_by sur dossier_documents (moteur IA, migration 20261023120000) ? */
+export function hasAiDocMeta(): Promise<boolean> {
+  return probe('ai-doc-meta', async () => {
+    const { error } = await (await client())
+      .from('dossier_documents')
+      .select('id,generated_by')
+      .limit(1);
+    return !error;
+  });
+}
+
 /** Moteur de quota + idempotence (migration 20260917120000) disponible ? */
 export function hasQuotaEngine(): Promise<boolean> {
   return probe('quota-engine', async () => {
