@@ -71,3 +71,30 @@ export async function apiEnv(siteUrl: string, waitUntil: (p: Promise<unknown>) =
   await ensureAdmin(env).catch(() => undefined);
   return env;
 }
+
+/**
+ * Diagnostic de la passerelle IA (prévisualisation uniquement) : trois appels
+ * minimaux, sans aucune pièce, pour distinguer facturation / modèle / option.
+ * Ne renvoie que des statuts et des types d'erreur.
+ */
+export async function diagnosticIa(): Promise<unknown> {
+  if (process.env.VERCEL_ENV !== 'preview' || process.env.RECETTE_AI !== 'passerelle') return { disponible: false };
+  const { getVercelOidcToken } = await import('@vercel/functions/oidc');
+  const apiKey = await getVercelOidcToken().catch(() => null);
+  if (!apiKey) return { oidc: false };
+  const client = new Anthropic({ apiKey, baseURL: 'https://ai-gateway.vercel.sh', maxRetries: 0 });
+  const model = process.env.RECETTE_MODELE_EXTRACTION || 'anthropic/claude-sonnet-5.5';
+  const essai = async (label: string, body: Record<string, unknown>) => {
+    try {
+      const r = await client.messages.create({ model, max_tokens: 16, messages: [{ role: 'user', content: 'Réponds OK.' }], ...body } as never);
+      return { label, ok: true, modele: (r as { model?: string }).model ?? null };
+    } catch (e) {
+      const err = e as { status?: number; error?: { error?: { type?: string; message?: string }; type?: string } };
+      return { label, ok: false, statut: err.status ?? 0, type: err.error?.error?.type ?? err.error?.type ?? null, message: (err.error?.error?.message ?? '').slice(0, 160) };
+    }
+  };
+  return [
+    await essai('texte simple', {}),
+    await essai('sortie structurée', { output_config: { format: { type: 'json_schema', schema: { type: 'object', properties: { ok: { type: 'string' } }, required: ['ok'], additionalProperties: false } } } }),
+  ];
+}

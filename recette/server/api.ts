@@ -125,6 +125,11 @@ export async function handle(env: ApiEnv, req: Request): Promise<Response> {
     return json({ ok: true });
   }
 
+  if (path === '/api/diag/ia' && m === 'GET' && process.env.VERCEL_ENV === 'preview') {
+    const { diagnosticIa } = await import('./runtime.ts');
+    return json(await diagnosticIa());
+  }
+
   /* ── Démonstration : compte fictif isolé par visiteur ───────────────── */
   if (path === '/api/demo/demarrer' && m === 'POST') {
     const b = await body<{ scenario?: string }>(req);

@@ -4,7 +4,7 @@
 // Il ne lit pas les scans ni les photos (lecture visuelle = fournisseur IA).
 import type { PreparedPiece } from './reading.ts';
 import type { AnalysisOutput, ExtractionOutput } from './schemas.ts';
-import { capitalize, findAmounts, findDates, fold, frEuro, frLongDate, pdfParagraphs, sentences, shortLabel, squash } from './text-rules.ts';
+import { capitalize, findAmounts, findDates, fold, frEuro, frLongDate, pdfParagraphs, sentences, shortLabel, squash, tidy } from './text-rules.ts';
 
 type Quote = { page: number | null; locator: string | null; quote: string };
 interface Unit { page: number | null; locator: string | null; text: string }
@@ -163,7 +163,7 @@ export function extractByRules(piece: PreparedPiece, fileName: string): Extracti
   const docDate = dates.find((d) => d.kind === 'document_date')?.date ?? null;
   const objet = units.find((u) => /^objet\s*:/i.test(u.text) || u.locator === 'en-tête Objet')?.text.replace(/^objet\s*:\s*/i, '');
   const firstLong = units.map((u) => u.text).find((t) => t.length > 50 && !findDates(t).length) ?? '';
-  const summary = squash(`${capitalize(docType)}${issuer ? ` de ${issuer}` : ''}${docDate ? ` du ${frLongDate(docDate)}` : ''} : ${objet ?? firstLong}`).slice(0, 300);
+  const summary = tidy(`${capitalize(docType)}${issuer ? ` de ${issuer}` : ''}${docDate ? ` du ${frLongDate(docDate)}` : ''} : ${objet ?? firstLong}`).slice(0, 300);
 
   return {
     document_type: docType,
@@ -314,13 +314,17 @@ export function consolidateByRules(input: ConsolidationInput): AnalysisOutput {
 
   const s1 = claimed
     ? `Au ${frLongDate(today)}, ${issuerOf(claimed.id) ?? 'votre interlocuteur'} réclame ${frEuro(claimed.amount)}${/charges/i.test(claimed.label) ? ' au titre des charges' : ''}${yearsOf(claimed.label)[0] ? ` ${yearsOf(claimed.label)[0]}` : ''}.`
-    : `Au ${frLongDate(today)}, ${pieces.length} pièce${pieces.length > 1 ? 's' : ''} de votre dossier ${pieces.length > 1 ? 'ont été lues' : 'a été lue'}.`;
+    : pieces.length
+      ? `Au ${frLongDate(today)}, ${pieces.length} pièce${pieces.length > 1 ? 's' : ''} de votre dossier ${pieces.length > 1 ? 'ont été lues' : 'a été lue'}.`
+      : `Au ${frLongDate(today)}, aucune pièce de votre dossier n'a encore pu être lue.`;
+  const pending = (input.others ?? []).length;
   const s2parts: string[] = [];
   if (amountC) s2parts.push(amountC.text.replace(/^Montants différents : /, 'Les pièces ne concordent pas : ').replace(/\.$/, ''));
   if (nextConfirmed) s2parts.push(`réponse attendue avant le ${frLongDate(nextConfirmed.date!)}`);
   if (!s2parts.length && referencedMissing) s2parts.push(`il manque ${referencedMissing.short_label} pour vérifier`);
+  if (!s2parts.length && pending) s2parts.push(`${pending} pièce${pending > 1 ? 's sont' : ' est'} en attente de lecture : vous serez prévenu dès que les résultats seront prêts`);
   const s2 = s2parts.length ? `${capitalize(s2parts.join(' ; '))}.` : '';
-  const situation = squash(`${s1} ${s2}`);
+  const situation = tidy(`${s1} ${s2}`);
 
   let primary: AnalysisOutput['primary_action'];
   if (referencedMissing) primary = { label: `Joindre ${referencedMissing.short_label}`, owner: 'client', rationale: referencedMissing.text, due_date: null };
@@ -328,7 +332,7 @@ export function consolidateByRules(input: ConsolidationInput): AnalysisOutput {
   else if (dateC) primary = { label: 'Vérifier la date', owner: 'client', rationale: dateC.text, due_date: null };
   else if (amountC) primary = { label: 'Vérifier le montant', owner: 'client', rationale: amountC.text, due_date: nextConfirmed?.date ?? null };
   else if (nextConfirmed) primary = { label: 'Préparer votre réponse', owner: nextConfirmed.owner, rationale: nextConfirmed.title, due_date: nextConfirmed.date };
-  else primary = { label: 'Rien à faire pour le moment', owner: 'personne', rationale: 'Aucune échéance ni pièce manquante relevée.', due_date: null };
+  else primary = { label: 'Rien à faire pour le moment', owner: 'personne', rationale: pending && !pieces.length ? 'La lecture de vos pièces est en attente ; aucune action de votre part n\'est nécessaire.' : 'Aucune échéance ni pièce manquante relevée.', due_date: null };
 
   // Jalons : événements datés les plus utiles (signature, courriers, contestation, rendez-vous), 3 à 5.
   const score = (e: ConsolidationEvent) => (/signature/i.test(e.label) ? 3 : 0) + (/(courrier|courriel)/i.test(e.label) ? 2 : 0) + (/(conteste|rendez-vous|regl|propose)/i.test(fold(e.label)) ? 2 : 0) + (e.kind === 'document_date' ? 1 : 0);

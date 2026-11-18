@@ -21,6 +21,7 @@ test('lot initial : six catégories publiées sans geste, geste « Joindre le ba
   const v = await view(s, 'D1');
   assert.equal(v.tableau.action.label, 'Joindre le bail');
   assert.match(v.tableau.situation, /^Au 18 novembre 2026, .*3\s480,00\s€/);
+  assert.ok(v.tableau.situation.includes("480,00\u00a0€"), "espace insécable conservé avant €");
   assert.equal(v.tableau.next_date?.date, '2027-01-15');
   assert.equal(v.tableau.next_date?.status, 'confirmee');
   assert.equal(v.dossier.complete, false, 'le scan n’est pas lu sans IA : analyse partielle explicite');

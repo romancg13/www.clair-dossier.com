@@ -8,6 +8,8 @@ const EN_MONTHS: Record<string, number> = { jan: 1, feb: 2, mar: 3, apr: 4, may:
 
 export const fold = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 export const squash = (s: string) => s.replace(/[\s  ]+/g, ' ').trim();
+/** Comme squash, mais conserve les espaces insécables (« 3 480,00 € » ne se coupe pas) : texte destiné au client. */
+export const tidy = (s: string) => s.replace(/[ \t\r\n\f\v\u2000-\u200a]+/g, ' ').trim();
 
 const pad = (n: number) => String(n).padStart(2, '0');
 function iso(y: number, m: number, d: number): string | null {
