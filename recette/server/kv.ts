@@ -130,6 +130,8 @@ export class BlobKv implements Kv {
       return { ok: true, etag: (r as { etag?: string }).etag ?? '' };
     } catch (e) {
       if (e instanceof BlobPreconditionFailedError) return { ok: false };
+      // Écriture concurrente sur la même clé : même traitement qu'une précondition échouée (relecture puis nouvel essai).
+      if (/conditional request cannot succeed|conflicting operation/i.test(String((e as Error).message))) return { ok: false };
       if (opts.create && /already exists/i.test(String((e as Error).message))) return { ok: false };
       throw e;
     }

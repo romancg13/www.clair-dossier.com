@@ -19,7 +19,8 @@ export function engineDeps(store: RecetteStore, o: { ai: ModelProvider | null; c
     budgetCentsPerLot: 150,
     paused: false,
     maxAttempts: 4,
-    leaseMs: 4 * 60_000,
+    // Bail court : un exécuteur interrompu ne bloque un travail que le temps de l’appel le plus long (IA : délai 110 s).
+    leaseMs: o.ai ? 150_000 : 60_000,
     consolidateDelayMs: 2_000,
     extractionWaitMs: 3_000,
     now: store.now,
