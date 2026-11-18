@@ -21,6 +21,7 @@ export function engineDeps(store: RecetteStore, o: { ai: ModelProvider | null; c
     maxAttempts: 4,
     leaseMs: 4 * 60_000,
     consolidateDelayMs: 2_000,
+    extractionWaitMs: 3_000,
     now: store.now,
     workerId: `w-${crypto.randomUUID().slice(0, 8)}`,
     dossierLink: (id) => `${o.siteUrl ?? ''}/compte/dossier/${id}`,

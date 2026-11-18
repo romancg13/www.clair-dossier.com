@@ -165,6 +165,11 @@ async function runExtract(deps: EngineDeps, job: Job): Promise<RunReport['outcom
         return 'done';
       }
     }
+    // Service indisponible (configuration, facturation, panne durable) : la pièce n'est pas en cause.
+    if (res.kind === 'unavailable' || res.kind === 'timeout') {
+      await store.alert('IA_INDISPONIBLE', { dossier: piece.dossier_id, detail: res.message.slice(0, 120) });
+      return fail('error', "La lecture automatique est momentanément indisponible : la pièce est conservée et sera lue dès que le service le permettra.", provider.name, true);
+    }
     return fail('error', 'Lecture impossible de cette pièce : merci de la redéposer (copie nette, sans mot de passe).', provider.name);
   }
   const data: StoredExtraction = verifyExtraction(res.data, pp);
@@ -192,7 +197,7 @@ async function runConsolidate(deps: EngineDeps, job: Job): Promise<RunReport['ou
   if (!p.ok) return 'cancelled';
   const dossier = p.dossier;
   const open = (await store.openJobs(dossier.id)).filter((j) => j.kind === 'extract' && j.id !== job.id && (j.status === 'queued' || j.status === 'running'));
-  if (open.length) throw Object.assign(new Retry('extractions en cours'), { delayMs: 20_000, countAttempt: false });
+  if (open.length) throw Object.assign(new Retry('extractions en cours'), { delayMs: deps.config.extractionWaitMs ?? 20_000, countAttempt: false });
 
   const pieces = (await store.listPieces(dossier.id)).filter((x) => !x.deleted_at);
   const main = pieces.filter((x) => !x.duplicate_of);
@@ -202,7 +207,7 @@ async function runConsolidate(deps: EngineDeps, job: Job): Promise<RunReport['ou
   if (cov.pending > 0) {
     // Pièce sans extraction ni travail ouvert (travail perdu) : réconciliation.
     for (const x of main.filter((m) => !ex.get(m.id))) await store.enqueue({ key: `x:${dossier.id}:${x.sha256}`, kind: 'extract', user_id: x.user_id, dossier_id: dossier.id, piece_id: x.id });
-    throw Object.assign(new Retry('extractions manquantes'), { delayMs: 20_000, countAttempt: false });
+    throw Object.assign(new Retry('extractions manquantes'), { delayMs: deps.config.extractionWaitMs ?? 20_000, countAttempt: false });
   }
   const usable = main.filter((x) => ex.get(x.id)?.status === 'ok');
   const notOk = main.filter((x) => ex.get(x.id) && ex.get(x.id)!.status !== 'ok');

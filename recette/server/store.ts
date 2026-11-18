@@ -129,9 +129,12 @@ export class RecetteStore implements EngineStore {
     return ref ? ((await this.kv.getJson<PieceRec>(`pieces/${ref.value.dossier_id}/${id}.json`))?.value ?? null) : null;
   }
   async addPiece(p: PieceRec, bytes: Uint8Array) {
-    await this.kv.putBytes(`files/${p.user_id}/${p.dossier_id}/${p.id}`, bytes, p.mime ?? 'application/octet-stream');
-    await this.kv.putJson(`pieceref/${p.id}.json`, { dossier_id: p.dossier_id }, { create: true });
-    await this.kv.putJson(`pieces/${p.dossier_id}/${p.id}.json`, p, { create: true });
+    // Écritures indépendantes (clés distinctes) : en parallèle.
+    await Promise.all([
+      this.kv.putBytes(`files/${p.user_id}/${p.dossier_id}/${p.id}`, bytes, p.mime ?? 'application/octet-stream'),
+      this.kv.putJson(`pieceref/${p.id}.json`, { dossier_id: p.dossier_id }, { create: true }),
+      this.kv.putJson(`pieces/${p.dossier_id}/${p.id}.json`, p, { create: true }),
+    ]);
   }
   async readPieceBytes(p: PieceRec) {
     const b = await this.kv.getBytes(`files/${p.user_id}/${p.dossier_id}/${p.id}`);
@@ -331,6 +334,7 @@ export class RecetteStore implements EngineStore {
     return (await this.kv.getJson<{ items: { subject: string; text: string; link: string; id: string; at: string }[] }>(`mail/${userId}.json`))?.value.items ?? [];
   }
   async alert(code: string, meta: Record<string, string | number | boolean | null>) {
+    console.error(JSON.stringify({ evt: 'alerte', code, meta }));
     await update<{ items: { code: string; meta: typeof meta; at: string }[] }>(this.kv, 'alerts.json', (cur) => ({ items: [{ code, meta, at: this.now().toISOString() }, ...(cur?.items ?? [])].slice(0, 200) }));
   }
   async alerts() {

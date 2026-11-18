@@ -186,6 +186,8 @@ export interface EngineConfig {
   maxAttempts: number;
   leaseMs: number;
   consolidateDelayMs: number;
+  /** Attente avant de retenter une consolidation dont des lectures sont encore en cours (défaut 20 s). */
+  extractionWaitMs?: number;
   now: () => Date;
   workerId: string;
   /** Lien vers l'espace du dossier (notification). */

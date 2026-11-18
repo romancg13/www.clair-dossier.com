@@ -280,17 +280,20 @@ export async function handle(env: ApiEnv, req: Request): Promise<Response> {
       if (!/^[0-9a-f-]{36}$/.test(lot)) return err(400, 'Lot invalide.');
       const files = form.getAll('fichiers').filter((f): f is File => typeof f === 'object' && f !== null && 'arrayBuffer' in f);
       if (!files.length) return err(400, 'Aucun fichier reçu.');
-      const added = [];
-      for (const f of files) {
-        if (f.size > MAX_UPLOAD) return err(413, `« ${f.name} » dépasse 4 Mo.`);
-        const bytes = new Uint8Array(await f.arrayBuffer());
-        const id = uuid();
-        const name = f.name.replace(/[\u0000-\u001f\\/]/g, '_').slice(0, 160) || 'piece';
-        await store.addPiece({ id, dossier_id: d.id, user_id: d.user_id, lot_id: lot, file_name: name, mime: f.type || null, size_bytes: bytes.byteLength, sha256: await sha256(bytes), duplicate_of: null, created_at: store.now().toISOString(), deleted_at: null }, bytes);
-        await store.enqueue({ key: `x:${id}`, kind: 'extract', user_id: d.user_id, dossier_id: d.id, piece_id: id });
-        added.push({ id, nom: name });
-      }
-      await store.addEvent(d.id, user.id, 'pieces_deposees', `${added.length} pièce${added.length > 1 ? 's' : ''} déposée${added.length > 1 ? 's' : ''}`);
+      const big = files.find((f) => f.size > MAX_UPLOAD);
+      if (big) return err(413, `« ${big.name} » dépasse 4 Mo.`);
+      // Stockage des pièces en parallèle, puis mise en file (durable avant la réponse).
+      const added = await Promise.all(
+        files.map(async (f) => {
+          const bytes = new Uint8Array(await f.arrayBuffer());
+          const id = uuid();
+          const name = f.name.replace(/[\u0000-\u001f\\/]/g, '_').slice(0, 160) || 'piece';
+          await store.addPiece({ id, dossier_id: d.id, user_id: d.user_id, lot_id: lot, file_name: name, mime: f.type || null, size_bytes: bytes.byteLength, sha256: await sha256(bytes), duplicate_of: null, created_at: store.now().toISOString(), deleted_at: null }, bytes);
+          return { id, nom: name };
+        }),
+      );
+      for (const a of added) await store.enqueue({ key: `x:${a.id}`, kind: 'extract', user_id: d.user_id, dossier_id: d.id, piece_id: a.id });
+      env.waitUntil(store.addEvent(d.id, user.id, 'pieces_deposees', `${added.length} pièce${added.length > 1 ? 's' : ''} déposée${added.length > 1 ? 's' : ''}`));
       env.waitUntil(runNow(env));
       return json({ lot, pieces: added }, 201);
     }
@@ -432,8 +435,13 @@ async function runNow(env: ApiEnv) {
       console.error(JSON.stringify({ evt: 'travail', kind: r.kind, outcome: r.outcome, tentatives: j?.value.attempts, erreur: j?.value.last_error?.slice(0, 300) }));
     }
     // Travaux encore prêts (lot volumineux) : nouvelle invocation ; travaux différés : repris par la consultation ou la tâche planifiée.
-    const nowIso = env.store.now().toISOString();
-    if ((await env.store.allOpenJobs()).some((j) => j.status === 'queued' && j.run_after <= new Date(Date.parse(nowIso) + 30_000).toISOString())) await env.kickWorker();
+    // Relance unique, à l'échéance du prochain travail (≤ 30 s) : pas de rafale d'invocations à vide.
+    const now = env.store.now().getTime();
+    const next = (await env.store.allOpenJobs()).filter((j) => j.status === 'queued').map((j) => Date.parse(j.run_after)).sort((x, y) => x - y)[0];
+    if (next !== undefined && next <= now + 30_000) {
+      if (next > now) await new Promise((res) => setTimeout(res, next - now + 50));
+      await env.kickWorker();
+    }
   } catch (e) {
     console.error(JSON.stringify({ evt: 'executeur', erreur: String(e instanceof Error ? e.stack ?? e.message : e).slice(0, 600) }));
     await env.store.alert('EXECUTEUR_INTERROMPU', { at: env.store.now().toISOString() });

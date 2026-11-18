@@ -109,6 +109,26 @@ test('deux exécuteurs simultanés : chaque travail une seule fois, une seule r�
   assert.equal((await s.store.mailbox('A')).length, 1);
 });
 
+test('service IA mal configuré : scan mis en attente (pas « redéposez »), texte lu par les règles', async () => {
+  const down: ModelProvider = {
+    name: 'anthropic',
+    canReadImages: true,
+    extract: async () => ({ ok: false, kind: 'unavailable', message: 'fournisseur indisponible (401 authentication_error)', retryable: false }),
+    consolidate: (i, b) => rulesProvider.consolidate(i, b),
+  };
+  const s = stack({ ai: down });
+  await s.user('A');
+  await s.dossier('D1', 'A');
+  const [scan, courrier] = await s.depose('D1', 'A', 'L1', ['Avis-echeance-T4-2026.pdf', 'Courrier-bailleur-2026-10-12.pdf']);
+  await s.run();
+  const xs = await s.store.getExtraction(scan);
+  assert.equal(xs?.deferred, true, 'reprise prévue');
+  assert.match(xs?.reason ?? '', /momentanément indisponible/);
+  assert.doesNotMatch(xs?.reason ?? '', /redéposer/);
+  assert.equal((await s.store.getExtraction(courrier))?.provider, 'regles', 'repli déterministe');
+  assert.ok((await s.store.alerts()).some((a) => a.code === 'IA_INDISPONIBLE'));
+});
+
 test('panne du fournisseur puis reprise : pas de double notification ; budget dépassé = pause sans échec', async () => {
   let calls = 0;
   const flaky: ModelProvider = {
