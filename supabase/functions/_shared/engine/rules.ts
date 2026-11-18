@@ -4,7 +4,7 @@
 // Il ne lit pas les scans ni les photos (lecture visuelle = fournisseur IA).
 import type { PreparedPiece } from './reading.ts';
 import type { AnalysisOutput, ExtractionOutput } from './schemas.ts';
-import { capitalize, findAmounts, findDates, fold, frEuro, frLongDate, pdfParagraphs, sentences, shortLabel, squash, tidy } from './text-rules.ts';
+import { capitalize, findAmounts, findDates, fold, frEuro, frLongDate, pdfParagraphs, sentences, shortLabel, squash, tidy, type DateHit } from './text-rules.ts';
 
 type Quote = { page: number | null; locator: string | null; quote: string };
 interface Unit { page: number | null; locator: string | null; text: string }
@@ -51,15 +51,40 @@ export function yearsOf(s: string): string[] {
   return [...new Set(s.match(/\b20\d{2}\b/g) ?? [])];
 }
 
+/**
+ * Dates d'une phrase, hors bornes de plage : « du 1er octobre 2026 au 31 décembre 2026 »,
+ * « 01/10/2026 – 31/12/2026 », « du 1er au 31 décembre 2026 ». Seules les bornes sont
+ * écartées : « règlement du solde au plus tard le 15 janvier 2027 » garde son échéance.
+ */
+const RANGE_JOIN = /^\s*(au|a|jusqu.au|[-–—])\s*$/;
+const RANGE_OPEN = /\bdu\s+(1er|[0-3]?\d)(\s+(janvier|fevrier|mars|avril|mai|juin|juillet|aout|septembre|octobre|novembre|decembre)|\/[01]?\d)?\s+(au|jusqu.au)\s*$/;
+function datesOutsideRanges(s: string): DateHit[] {
+  const found = findDates(s);
+  const joined = (i: number) => i >= 0 && i + 1 < found.length && RANGE_JOIN.test(fold(s.slice(found[i].index + found[i].text.length, found[i + 1].index)));
+  return found.filter((d, i) => !joined(i) && !joined(i - 1) && !RANGE_OPEN.test(fold(s.slice(0, d.index))));
+}
+
+/** Somme en faveur du client (solde créditeur, trop-perçu) : ni réclamée, ni due par lui. */
+const CREDIT = /(en votre faveur|en faveur d(?:u|e la|es) (?:locataire|preneur|client)s?|trop[- ]?percu|crediteur|a votre credit)/g;
+/** « En faveur de … » réclamant : tout bénéficiaire autre que le client (bailleur, propriétaire, SCI…). */
+const FAVOR_THIRD = /en faveur (?!d(?:u|e la|es) (?:locataire|preneur|client))/;
+/** Indice d'une autre somme placé APRÈS la mention du crédit (« trop-perçu de 270 €, le solde en faveur du bailleur s'élève à… »). */
+const KIND_CUE = /(reclam|en faveur|regularisation|appel|demand|solde|reste|restant|a payer|exigible|doit|regle|paye|verse|provision|acquitte|total)/;
+function creditToClient(b: string): boolean {
+  const last = [...b.matchAll(CREDIT)].pop();
+  return !!last && !KIND_CUE.test(b.slice((last.index ?? 0) + last[0].length));
+}
+
 function amountKind(before: string, sentence: string): ExtractionOutput['amounts'][number]['kind'] {
   const b = fold(before.slice(-70));
   const s = fold(sentence);
-  if (/(reclam|en faveur|regularisation|appel|demand)/.test(b)) return 'claimed';
+  if (creditToClient(b)) return 'other';
+  if (/(reclam|regularisation|appel|demand)/.test(b) || FAVOR_THIRD.test(b)) return 'claimed';
   if (/(solde|reste|restant|du\b|a payer|exigible|doit)/.test(b)) return 'due';
   if (/(regle|paye|verse|provision|acquitte)/.test(b)) return 'paid';
   if (/total/.test(b)) return 'total';
   if (/(ecart|difference)/.test(b)) return 'other';
-  if (/(reclam|en faveur)/.test(s)) return 'claimed';
+  if (/reclam/.test(s) || FAVOR_THIRD.test(s)) return 'claimed';
   return 'other';
 }
 
@@ -111,25 +136,26 @@ export function extractByRules(piece: PreparedPiece, fileName: string): Extracti
     for (const s of sentences(u.text)) {
       const fs = fold(s);
       const ev: Quote[] = [{ page: u.page, locator: u.locator, quote: s }];
-      // Dates
-      if (!/(periode|\bdu .{3,40} au )/.test(fs)) {
-        for (const d of findDates(s)) {
-          const isHeaderDate = u.locator === 'en-tête Date';
-          const before = fold(s.slice(0, d.index));
-          let kind: ExtractionOutput['dates'][number]['kind'] = 'event_date';
-          if (isHeaderDate || /(^[a-zà-ÿ' -]{2,30}, le\s*$|fait a .{2,40}, le\s*$|emis le\s*$|etabli le\s*$|en date du\s*$)/.test(before)) kind = 'document_date';
-          else if (/(avant le|au plus tard|exigible|date limite|echeance de paiement|a regler|a payer|reponse .* attendue)/.test(fs)) kind = 'deadline';
-          let label: string;
-          const signed = /(bail(?: commercial)?|contrat|avenant|acte)([^,.;]{0,40}?),?\s*sign[ée]e?s? le\s*$/i.exec(s.slice(0, d.index));
-          if (kind === 'document_date') label = docType === 'bail commercial' || docType === 'contrat' ? `Signature du ${docType}` : `${capitalize(docType)}${issuer ? ` (${issuer})` : ''}`;
-          else if (signed) label = `Signature du ${squash(signed[1] + signed[2])}`.replace(/\s+n°/, ' n°');
-          else {
-            label = shortLabel(s, [`avant le ${d.text}`, `au plus tard le ${d.text}`, `le ${d.text}`, `du ${d.text}`, `au ${d.text}`, d.text]);
-            if (label.length < 14) label = `${capitalize(docType)} : ${label.toLowerCase()}`;
-          }
-          dates.push({ date: d.iso, precision: 'day', label, kind, evidence: ev });
-          if (signed) referenced.push({ label: `${signed[1]}${signed[2]}`.trim(), short_label: REFERENCED.find((r) => r.re.test(signed[1]))?.short ?? `le ${signed[1].toLowerCase()}`, date: d.iso, evidence: ev });
+      // Dates (les bornes d'une plage ne sont pas des événements ; les autres dates de la phrase sont gardées)
+      for (const d of datesOutsideRanges(s)) {
+        const isHeaderDate = u.locator === 'en-tête Date';
+        const before = fold(s.slice(0, d.index));
+        let kind: ExtractionOutput['dates'][number]['kind'] = 'event_date';
+        // « Marseille, le 12 octobre 2026 » : la phrase s'arrête à la date (ligne d'en-tête). Une incise
+        // (« Pour mémoire, le 2 octobre 2026, vous avez réglé… ») se poursuit : ce n'est pas la date du document.
+        const placeLine = /^[a-zà-ÿ' -]{2,30}, le\s*$/.test(before) && !/^\s*(,\s*\S|[a-zà-ÿ])/.test(s.slice(d.index + d.text.length));
+        if (isHeaderDate || placeLine || /(fait a .{2,40}, le\s*$|emis le\s*$|etabli le\s*$|en date du\s*$)/.test(before)) kind = 'document_date';
+        else if (/(avant le|au plus tard|exigible|date limite|echeance de paiement|a regler|a payer|reponse .* attendue)/.test(fs)) kind = 'deadline';
+        let label: string;
+        const signed = /(bail(?: commercial)?|contrat|avenant|acte)([^,.;]{0,40}?),?\s*sign[ée]e?s? le\s*$/i.exec(s.slice(0, d.index));
+        if (kind === 'document_date') label = docType === 'bail commercial' || docType === 'contrat' ? `Signature du ${docType}` : `${capitalize(docType)}${issuer ? ` (${issuer})` : ''}`;
+        else if (signed) label = `Signature du ${squash(signed[1] + signed[2])}`.replace(/\s+n°/, ' n°');
+        else {
+          label = shortLabel(s, [`avant le ${d.text}`, `au plus tard le ${d.text}`, `le ${d.text}`, `du ${d.text}`, `au ${d.text}`, d.text]);
+          if (label.length < 14) label = `${capitalize(docType)} : ${label.toLowerCase()}`;
         }
+        dates.push({ date: d.iso, precision: 'day', label, kind, evidence: ev });
+        if (signed) referenced.push({ label: `${signed[1]}${signed[2]}`.trim(), short_label: REFERENCED.find((r) => r.re.test(signed[1]))?.short ?? `le ${signed[1].toLowerCase()}`, date: d.iso, evidence: ev });
       }
       // Montants (lignes de tableur traitées à part, cellule par cellule)
       for (const a of u.locator?.startsWith('feuille') ? [] : findAmounts(s)) {
@@ -267,8 +293,10 @@ export function consolidateByRules(input: ConsolidationInput): AnalysisOutput {
       }
       if (r.date) {
         for (const q of present) {
-          const own = q.data.dates.find((d) => d.kind === 'document_date');
-          if (own && own.date !== r.date) {
+          // La date citée est comparée à toutes les dates propres de la pièce (établie le…, fait à…, le…).
+          const owns = q.data.dates.filter((d) => d.kind === 'document_date');
+          const own = owns[0];
+          if (own && !owns.some((d) => d.date === r.date)) {
             const k1 = input.events.find((e) => e.date === r.date && e.evidence.some((x) => x.document_id === p.document_id))?.key;
             const k2 = input.events.find((e) => e.date === own.date && e.evidence.some((x) => x.document_id === q.document_id))?.key;
             contradictions.push({
@@ -286,19 +314,32 @@ export function consolidateByRules(input: ConsolidationInput): AnalysisOutput {
 
   // Échéances : dates limites écrites (confirmées si à venir), rendez-vous proposés (à confirmer).
   const deadlines: AnalysisOutput['deadlines'] = [];
+  // Courriel du titulaire à un tiers (De : une personne ; À : gestionnaire, bailleur, cabinet) : la date
+  // qu'il y demande (« je … vous demande … avant le … ») engage le tiers, pas le client.
+  const THIRD = /(gestionnaire|bailleur|cabinet|societe civile)/;
+  const sentToThird = (id: string) => {
+    const parties = pieces.find((p) => p.document_id === id)?.data.parties ?? [];
+    const roleAt = (locator: string) => fold(parties.find((x) => x.evidence[0]?.locator === locator)?.role ?? '');
+    return typeOf.get(id) === 'courriel' && THIRD.test(roleAt('en-tête À')) && !THIRD.test(roleAt('en-tête De'));
+  };
+  const askedOfThird = new Set<AnalysisOutput['deadlines'][number]>();
   for (const d of allDates) {
     const fs = fold(d.evidence[0]?.quote ?? '');
     if (d.kind === 'deadline') {
-      const toClient = /(votre|vous|preneur|locataire|a payer|exigible)/.test(fs);
-      deadlines.push({ title: d.label, date: d.date, kind: 'mentioned', basis: `Date écrite dans ${typeOf.get(d.id)}`, priority: d.date >= today ? 'haute' : 'normale', owner: toClient ? 'client' : 'tiers', owner_name: null, evidence: [dq(d.id, d.evidence[0])] });
+      const asked = /^(je |j'|nous )/.test(fs) && /(\bvous (demande|demandons|prie|prions|remercie|remercions)\b|sollicit)/.test(fs) && sentToThird(d.id);
+      const toClient = !asked && /(votre|vous|preneur|locataire|a payer|exigible)/.test(fs);
+      const x: AnalysisOutput['deadlines'][number] = { title: d.label, date: d.date, kind: 'mentioned', basis: `Date écrite dans ${typeOf.get(d.id)}`, priority: d.date >= today ? 'haute' : 'normale', owner: toClient ? 'client' : 'tiers', owner_name: null, evidence: [dq(d.id, d.evidence[0])] };
+      deadlines.push(x);
+      if (asked) askedOfThird.add(x);
     } else if (d.kind === 'event_date' && d.date >= today && /(rendez-vous|reunion|audience|propose)/.test(fs)) {
       deadlines.push({ title: `${d.label} (proposition, non confirmée)`, date: d.date, kind: 'hypothesis', basis: 'Proposition écrite, sans confirmation dans les pièces', priority: 'normale', owner: 'client', owner_name: null, evidence: [dq(d.id, d.evidence[0])] });
     }
   }
   const dedup = new Map<string, AnalysisOutput['deadlines'][number]>();
-  for (const d of deadlines) if (!dedup.has(`${d.date}|${d.kind}`)) dedup.set(`${d.date}|${d.kind}`, d);
+  // À date égale, l'échéance du client prime sur celle demandée au tiers.
+  for (const d of [...deadlines].sort((a, b) => Number(askedOfThird.has(a)) - Number(askedOfThird.has(b)))) if (!dedup.has(`${d.date}|${d.kind}`)) dedup.set(`${d.date}|${d.kind}`, d);
   const dl = [...dedup.values()].sort((a, b) => (a.date ?? '').localeCompare(b.date ?? ''));
-  const nextConfirmed = dl.find((d) => d.kind === 'mentioned' && d.date && d.date >= today);
+  const nextConfirmed = dl.find((d) => d.kind === 'mentioned' && !askedOfThird.has(d) && d.date && d.date >= today);
 
   // Faits : montants réclamés / dus, allégations, références de pièces.
   const facts: AnalysisOutput['facts'] = [];
