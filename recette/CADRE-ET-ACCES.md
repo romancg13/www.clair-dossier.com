@@ -27,7 +27,20 @@ Les preuves du 18 novembre sont reproductibles hors production.
 | Registre gelé | 18 empreintes de fichiers et les 12 URL de paiement distinctes du registre sont conformes. `tests/paiements-geles.test.ts` et son JSON de référence sont conservés. |
 | Tests ciblés applicatifs | 59 assertions de la suite Node réussies (gel, automatisation/Stripe, sécurité de session, pipeline, admin IA, validation et score prospects). |
 | PostgreSQL de test | Les 21 migrations ont été appliquées à PGlite 0.5.16. 96 scénarios réussis, couvrant notamment rôles A/B, stockage, quotas, validation, notifications et pause. Les 21 scénarios complémentaires de `tests/sql/prospects-partenariat.pglite.mjs` ont réussi. Auth, stockage et service réseau Supabase sont représentés par les schémas de test. |
-| Stripe en tant que fournisseur | Le code de webhook et les fixtures SQL n’attestent pas un achat Stripe, la livraison d’un événement signé réel, sa chronologie ou un renouvellement réel. Rejouer en sandbox sur deux comptes fictifs avec paiement accepté/refusé, complément et livraison du même événement et d’événements hors ordre ; rapprocher l’identifiant d’événement et le droit effectif. Un administrateur du projet Stripe peut donner accès uniquement à cette sandbox et à ses paramètres de webhook, par gestionnaire de secrets. |
+| Stripe en tant que fournisseur | Rattachement, renouvellement, refus et expiration simulés. La réception d’un événement réellement émis et signé par la sandbox Stripe reste à établir. |
+
+## Prestations, essais fournisseur et mise en service
+
+Les sept formules de `src/data/pricing.ts` et les règles de droits historiques examinées ne définissent aucun droit à la rédaction LinkedIn. Dans la table `prospects`, « rendez-vous » désigne un motif de contact. En recette, les comptes fictifs abonnés disposent des trois prestations à titre d’essai. Les posts sont rédigés par des modèles déterministes à partir du seul brief de communication. Les justificatifs et la fiche de rendez-vous utilisent le dossier fictif. Avant commercialisation, le titulaire doit approuver la matrice **formule × prestation**, y compris les droits acquis, puis vérifier son application côté serveur lors de la demande et de la consultation.
+
+| Preuve à obtenir | Accès minimal et essai |
+| --- | --- |
+| Parcours Stripe | Dans une sandbox dédiée à ClairDossier, habiliter le parcours de souscription existant avec ses ressources de test et le point de terminaison du webhook. Configurer `STRIPE_SECRET_KEY` de test et `STRIPE_WEBHOOK_SECRET` uniquement dans les secrets du serveur de recette. Sur deux comptes fictifs, rapprocher chaque événement signé du droit effectif après paiement accepté, refusé ou incomplet, renouvellement et résiliation à terme. Rejouer un doublon et un événement antérieur. Vérifier aussi le refus avant stockage et après expiration. [Sandbox Stripe](https://docs.stripe.com/billing/testing) |
+| Analyse Anthropic | Utiliser une clé de projet de recette placée dans `ANTHROPIC_API_KEY`. Avant toute dépense, convenir d’un plafond en euros et configurer les limites mensuelles par compte et globales du worker. Proposition soumise à accord : **1 € au total pour un lot fictif de deux pièces**, avec arrêt au plafond et contrôle de l’usage fournisseur. Relever modèle, jetons, coût, sources et comportement en cas de pause. [Gestion des coûts Anthropic](https://docs.anthropic.com/en/docs/about-claude/pricing) |
+
+**Coût observé.** La recette des pièces fictives n’a déclenché aucun paiement Stripe ni appel à l’API Anthropic. Les factures d’hébergement et le coût d’une analyse fournisseur réelle n’ont pas été mesurés.
+
+**Après accord écrit sur le commit.** Valider les textes et consentements, puis éprouver en environnement Supabase dédié le point d’admission, les droits Storage/RLS, la file persistante et le réveil du worker. Vérifier le maintien du circuit manuel pour les dossiers sensibles, la pause immédiate et la consultation de la dernière version publiée. La décision de production doit préciser le lot de nouveaux dossiers autorisés et son mécanisme de retour arrière. Les dossiers historiques nécessitent une décision distincte avant tout retraitement.
 
 ## Textes publics et cadre proposé
 
@@ -44,7 +57,15 @@ L’encart de recette présente la proposition relative aux articles 2 et 6. Pou
 
 Sources consultées : le RGPD, en particulier les articles 5, 6, 9, 10, 13–14, 28, 32, 35–36 et le chapitre V ; le RIN publié par le Conseil national des barreaux, article 2, qui couvre notamment consultations, correspondances et pièces du dossier. Les deux liens Légifrance fournis ont renvoyé HTTP 403 dans cet environnement. Aucune décision de justice n’est invoquée. [RGPD, EUR-Lex](https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32016R0679) · [RIN, Conseil national des barreaux](https://www.cnb.avocat.fr/fr/reglement-interieur-national-de-la-profession-davocat-rin)
 
-## Connecter les comptes personnels à la recette serveur
+## Suivre le portail hébergé depuis ChatGPT
+
+Le portail Atelier Témoin sur Sites propose un lien « Autoriser ChatGPT à lire l’état de ce dossier ». Depuis le même navigateur, ouvrez le dossier fictif du client A, suivez le lien, connectez-vous avec votre compte ChatGPT et accordez la lecture. Le portail conserve une autorisation de quinze minutes, rattachée à l’identité fournie par Sites, hachée avant enregistrement, et à ce dossier. Le même lien permet de la révoquer. Un changement de profil fictif, la clôture ou l’expiration du bac suspend la lecture.
+
+Dans le client ChatGPT de ce compte, sélectionnez l’app privée de recette créée lors de la publication Sites. Si nécessaire, ouvrez Plugins → Personnel → Créés par vous et choisissez Installer ou Connecter. **Test sur le compte du titulaire** : « Utilise ClairDossier pour lire l’état de mon dossier autorisé et indique la dernière livraison et sa révision. » L’unique outil renvoie quatre champs techniques, sans résumé des pièces, adresse électronique ni lien de téléchargement. La publication du plugin et son installation sont distinctes d’une lecture réussie dans ce compte.
+
+## Connecter les clients au serveur Node de recette
+
+L’URL du portail Sites expose le protocole MCP géré par Sites. La configuration OAuth ci-dessous concerne le serveur Node séparé, à une origine HTTPS de recette où `/recette/mcp` et sa découverte OAuth sont servis.
 
 Le serveur donne accès à un seul outil, `lire_etat_dossier`. Il retourne l’identifiant du dossier fictif autorisé, son état, sa révision, la date de dernière livraison et les codes d’anomalie. Le titulaire ouvre une session admin de recette réservée dans son bac A. Chaque application demande ensuite une autorisation distincte, liée au dossier, à l’URI de retour et au serveur. Le jeton expire après quinze minutes. Une nouvelle lecture réévalue les droits du dossier. Le bouton de révocation se trouve à `/recette/oauth/access`.
 

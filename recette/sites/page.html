@@ -5,6 +5,7 @@
 <meta name="robots" content="noindex,nofollow,noarchive"><meta name="referrer" content="no-referrer">
 <title>Dossier de démonstration · ClairDossier</title>
 <style>
+fieldset{border:0;padding:0;margin:.5rem 0}label.choice{display:flex;gap:.7rem;align-items:center;min-height:2.75rem}input:not([type]),input[type=number],input[type=date],input[type=text],select,textarea{font:inherit;color:inherit;border:1px solid #a39f94;border-radius:.4rem;max-width:100%;padding:.4rem .6rem}label.field{display:grid;gap:.25rem;margin:.5rem 0;max-width:29rem}#secondary{border-top:1px solid var(--line);margin-top:1.4rem;padding-top:.3rem}#tools details{margin:.4rem 0}button.link{background:transparent;text-decoration:underline;border:0;padding-left:0}#versions a{display:inline-block;min-height:2.5rem}#notice{color:#263e38}
 :root{color:#0d1b3d;background:#f8f6f1;font:100%/1.55 system-ui,sans-serif;--champagne:#b69a61;--line:#ded9ce;--muted:#505a6d}
 *{box-sizing:border-box}body{margin:0}header,main,footer{width:min(100% - 2rem,53rem);margin:auto}header{padding:1.25rem 0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.6rem;border-bottom:1px solid var(--line)}header img{width:9.5rem;height:auto;display:block}header small,footer,.meta{color:var(--muted)}main{min-height:65vh;padding:clamp(2rem,5vw,4rem) 0}h1,h2,h3{font:500 2rem/1.15 Georgia,serif;margin:0}h1{font-size:clamp(2.3rem,6vw,3.65rem);max-width:16em}h2{font-size:clamp(1.5rem,4vw,2.15rem)}h3{font-size:1.3rem}p{margin:.65rem 0;max-width:42rem}button,a.primary{min-height:2.75rem;font:inherit;cursor:pointer}button{background:white;color:inherit;border:1px solid var(--line);border-radius:2rem;padding:.5rem 1rem}button:disabled{opacity:.6;cursor:wait}a{color:inherit;text-underline-offset:.2em}.primary{background:#0d1b3d;color:white;padding:.65rem 1.2rem;border:0;border-radius:2rem;display:inline-flex;align-items:center;text-decoration:none;font-weight:600}button:focus-visible,a:focus-visible,summary:focus-visible,input:focus-visible{outline:3px solid #806018;outline-offset:3px}.paper{margin-top:1.3rem;border-top:3px solid var(--champagne);background:white;padding:clamp(1rem,4vw,2rem);box-shadow:0 6px 22px #0d1b3d0b}.row{display:flex;align-items:center;flex-wrap:wrap;gap:.65rem}.meta,small{font-size:.875rem}.meta{margin-bottom:.5rem}details{margin-top:1rem}summary{cursor:pointer;min-height:2.5rem;padding:.4rem 0;font-weight:600}input[type=file]{max-width:100%}ul{padding-left:1.25rem}li{margin:.4rem 0}.columns{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin:1.25rem 0;padding:1rem 0;border-block:1px solid var(--line)}.draft{white-space:pre-line}.error{border-left:3px solid #9c3339;background:#fff;padding:.7rem 1rem;color:#7f1d1d}footer{padding:1rem 0;border-top:1px solid var(--line);font-size:.85rem}.spaced{margin-top:1rem}[hidden]{display:none!important}@media(max-width:37rem){.columns{grid-template-columns:1fr}}
 </style>
@@ -16,6 +17,7 @@
 <p class="meta">Atelier Témoin · Dossier de démonstration</p>
 <p id="message" role="status" aria-live="polite">Ouverture de l’espace de recette…</p>
 <p id="error" class="error" role="alert" hidden></p>
+<p id="notice" class="meta" role="status" hidden></p>
 <section id="entry" class="paper" hidden>
   <h2>Ouvrir le dossier fictif</h2>
   <p>Déposez le devis et le bon numérisé. Vous pourrez fermer cet onglet puis retrouver le résultat dans ce navigateur.</p>
@@ -29,16 +31,6 @@
   <p>Ce compte fictif ne peut pas déposer de pièces. Vous pouvez essayer le parcours avec un compte abonné de recette.</p>
   <button class="primary spaced" data-session="a">Essayer le client A abonné</button>
 </section>
-<section id="upload" class="paper" hidden>
-  <h2>Vos pièces</h2>
-  <p>Le dossier porte sur le prix des trois fenêtres et la date de retour du procès-verbal. Les deux pièces d’exemple sont prêtes à être déposées.</p>
-  <ul id="fixtures"></ul>
-  <details><summary>Choisir les copies téléchargées sur cet appareil</summary>
-    <label for="copies">PDF et scan du jeu fictif</label><br><input type="file" id="copies" multiple accept=".pdf,.png">
-    <p class="meta">Seules les deux copies dont l’empreinte correspond aux exemples peuvent être envoyées.</p>
-  </details>
-  <button id="deposit" class="primary spaced">Déposer les deux pièces</button>
-</section>
 <section id="progress" class="paper" hidden>
   <h2 id="progress-title">Dépôt reçu</h2>
   <p>Vous pouvez fermer cet onglet. Le résultat sera disponible ici lorsque le serveur aura terminé.</p>
@@ -49,25 +41,84 @@
 </section>
 <section id="result" class="paper" hidden>
   <p class="meta" id="published"></p><h2>Votre situation</h2><p id="summary"></p>
-  <div class="columns"><div><h3>Prochaine date</h3><p><strong>8 décembre 2026</strong> · Retour du procès-verbal.</p><small>Devis CD-041, page 1.</small></div>
-    <div><h3>Prochaine action</h3><p><strong>Demander le bon de réception signé.</strong></p><small>À la charge du client · Bon numérisé.</small></div></div>
+  <div class="columns"><div><h3>Prochaine date</h3><p><strong id="due-date"></strong></p><small id="date-source"></small></div>
+    <div><h3>Prochaine action</h3><p><strong id="next-action"></strong></p><small id="owner"></small></div></div>
   <a class="primary" href="/api/livraison.pdf" download="Tableau-de-bord.pdf">Télécharger le tableau de bord PDF</a>
-  <details><summary>Lire le brouillon de relance</summary><p id="draft" class="draft"></p></details>
+  <p id="pdf-only" class="meta" hidden>Cette révision a livré le PDF seul.</p>
+  <p id="current-pack" hidden><a id="current-pack-link" href="/api/livraison.zip" download="ClairDossier-revision.zip">Télécharger les fichiers de cette révision</a></p>
+  <details id="draft-block"><summary>Lire le brouillon de relance</summary><p id="draft" class="draft"></p></details>
+  <details id="initial-pack" hidden><summary>Autres formats du jeu fictif</summary>
+    <p class="meta">Édition préparée avant vos corrections. Le PDF de chaque révision reste disponible dans l’historique.</p>
+    <a href="/api/edition-initiale.zip" download="ClairDossier-edition-initiale.zip">Télécharger les 13 fichiers de l’exemple initial</a>
+  </details>
+  <details id="reading"><summary>Comment les pièces ont-elles été lues ?</summary><ul id="reading-list"></ul></details>
   <p class="meta" id="notices"></p>
 </section>
+<section id="upload" class="paper" hidden>
+  <h2 id="piece-title">Vos pièces</h2>
+  <p id="piece-help">Les deux pièces d’exemple sont prêtes pour le premier dépôt.</p>
+  <ul id="fixtures"></ul>
+  <details id="choose"><summary>Choisir les pièces du lot</summary>
+    <fieldset><legend>Pièces fictives à joindre</legend><div id="choices"></div></fieldset>
+    <details><summary>Importer les copies téléchargées</summary>
+      <label class="field" for="copies">Fichiers fictifs depuis cet appareil<input type="file" id="copies" multiple accept=".pdf,.png"></label>
+      <p class="meta">Les fichiers choisis sur l’appareil remplacent la sélection. Leur empreinte est vérifiée avant l’envoi.</p>
+    </details>
+  </details>
+  <button id="deposit" class="primary spaced">Déposer les deux pièces</button>
+</section>
+<div id="secondary" hidden>
+  <details id="change-date" hidden><summary>Vérifier ou corriger la date</summary>
+    <p class="meta" id="original-date"></p>
+    <form id="date-form">
+      <label class="field">Date retenue<input type="date" required id="date-value"></label>
+      <label class="field">Motif de la correction<input type="text" minlength="3" maxlength="160" required id="date-reason"></label>
+      <button type="submit">Enregistrer la correction</button>
+    </form>
+  </details>
+  <details id="services-slot" hidden><summary>Préparer une demande ou un rendez-vous</summary>
+    <div class="row" id="service-actions"><button type="button" data-service="justificatifs">Demander les justificatifs</button>
+      <button type="button" data-service="rendezvous">Préparer le rendez-vous</button></div>
+    <details id="communication"><summary>Rédiger pour LinkedIn</summary>
+      <form id="brief"><p>Choisissez le public, l’offre et la zone dans le jeu de communication fictif. Les publications sont remises en brouillon.</p>
+        <div class="columns"><div>
+          <label class="field">Cible<select name="audience" required><option>syndics de copropriété</option></select></label>
+          <label class="field">Offre à présenter<select name="offer" required><option>diagnostic de menuiseries avant rénovation</option></select></label>
+          <label class="field">Zone géographique<select name="region" required><option>Marseille</option></select></label>
+        </div><div>
+          <label class="field">Ton<select name="tone"><option>Pédagogique</option><option>Direct</option><option>Convivial</option></select></label>
+          <label class="field">Objectif<select name="goal"><option>Demandes de devis</option><option>Visites du profil</option><option>Échanges en commentaire</option></select></label>
+          <label class="field">Fuseau horaire<select name="zone"><option>Europe/Paris</option><option>America/Montreal</option><option>Indian/Reunion</option><option>UTC</option></select></label>
+        </div></div>
+        <details><summary>Indiquer un créneau observé pour mon audience</summary>
+          <label class="field">Jour observé<select name="preferredDay"><option value="">Aucun relevé</option><option value="1">Lundi</option><option value="2">Mardi</option><option value="3">Mercredi</option><option value="4">Jeudi</option><option value="5">Vendredi</option><option value="6">Samedi</option><option value="0">Dimanche</option></select></label>
+          <label class="field">Heure locale observée<input name="preferredHour" type="number" min="7" max="20" value="9"></label>
+        </details>
+        <button class="spaced" type="submit">Préparer les trois publications</button>
+      </form>
+    </details>
+    <p class="meta" role="status" id="service-status"></p>
+    <div id="service-results"></div>
+  </details>
+  <details id="tools"><summary>Historique et clôture</summary>
+    <ul id="versions"></ul><ul id="lot-events"></ul><ul id="corrections"></ul>
+    <button type="button" id="close">Clôturer le dossier</button>
+  </details>
+  <p class="meta"><a href="/recette/connexion-chatgpt">Autoriser ChatGPT à lire l’état de ce dossier</a></p>
+</div>
 <details id="profiles" hidden><summary>Changer de compte fictif</summary>
   <div class="row"><button data-session="a">Client A</button><button data-session="b">Client B</button><button data-session="sans">Sans abonnement</button></div>
 </details>
 <button id="retry" hidden data-refresh>Réessayer la connexion</button>
 </main>
-<footer>Le serveur traite les dépôts du jeu fictif. Les droits d’abonnement sont simulés. L’extraction et la synthèse proviennent de l’exemple préparé à l’avance. Les relances restent des brouillons.</footer>
+<footer>Le serveur traite les dépôts du jeu fictif. Les droits d’abonnement sont simulés. Des règles dédiées au jeu fictif préparent la synthèse. La méthode de lecture de chaque pièce figure dans le résultat. Les relances restent des brouillons.</footer>
 <script>
 "use strict";
 const byId=id=>document.getElementById(id);
 const hashes={devis:"ae8189109c52965537faaa11921ae31c63823f57c9c5a29598a49f9b7bfc3898",scan:"a7fc08e708aab24a320711f6ca485e144ba0d9c305a32013165651758a03f871"};
 let state=null, busy=false, timer=0, sequence=0;
 function feedback(message=""){byId("error").textContent=message;byId("error").hidden=!message;}
-function lock(locked){busy=locked;document.querySelectorAll("button,input").forEach(el=>{el.disabled=locked;});}
+function lock(locked){busy=locked;document.querySelectorAll("button,input").forEach(el=>{el.disabled=locked;});if(!locked)updateDeposit();}
 async function request(path,body){
   const opts={credentials:"same-origin",cache:"no-store"};
   if(body!==undefined){opts.method="POST";opts.headers={"Content-Type":"application/json"};opts.body=JSON.stringify(body);}
@@ -77,34 +128,125 @@ async function request(path,body){
   if(!response.ok){const err=new Error(typeof data?.error==="string"?data.error:"La requête n’a pas abouti. Vérifiez l’état du dossier.");err.status=response.status;throw err;}
   return data;
 }
+let selectionScope="";
+function notice(message=""){byId("notice").textContent=message;byId("notice").hidden=!message;}
+function dateFr(value){
+  if(!value)return "Aucune date confirmée";
+  return new Date(value+"T12:00:00Z").toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric",timeZone:"Europe/Paris"});
+}
+function timeFr(value){return new Date(value).toLocaleString("fr-FR",{timeZone:"Europe/Paris"});}
+function renderFixtures(next, inputs, run) {
+  const scope=next.persona+"|"+inputs.slice().sort().join(",")+"|"+Boolean(run?.closed);
+  if(scope===selectionScope)return;
+  selectionScope=scope;
+  byId("fixtures").replaceChildren();byId("choices").replaceChildren();byId("copies").value="";
+  for(const f of next.fixtures){
+    const href=new URL(f.url,location.origin);
+    if(href.origin!==location.origin||!Object.hasOwn(hashes,f.id))continue;
+    const li=document.createElement("li"),link=document.createElement("a");
+    link.href=href.href;link.download=f.name;link.textContent=f.name;li.append(link);
+    if(inputs.includes(f.id))li.append(" · déjà déposé");
+    byId("fixtures").append(li);
+    const label=document.createElement("label"),check=document.createElement("input");
+    label.className="choice";check.type="checkbox";check.name="fixture";check.value=f.id;
+    check.checked=!inputs.includes(f.id);check.addEventListener("change",updateDeposit);
+    label.append(check,document.createTextNode(f.name));byId("choices").append(label);
+  }
+  byId("choose").open=false;
+  updateDeposit();
+}
+function updateDeposit(){
+  const count=byId("copies").files.length||document.querySelectorAll("[name=fixture]:checked").length;
+  byId("deposit").textContent=state?.run?"Déposer le complément":count===2?"Déposer les deux pièces":"Déposer la pièce";
+  byId("deposit").disabled=busy||!count;
+}
+function renderHistory(run){
+  byId("versions").replaceChildren();byId("corrections").replaceChildren();byId("lot-events").replaceChildren();
+  for(const lot of run.lotEvents||[]){
+    const li=document.createElement("li");li.textContent="Lot "+lot.revision+" du "+timeFr(lot.submittedAt)+(lot.publishedAt?" · Notification de disponibilité le "+timeFr(lot.publishedAt):" · Livraison en attente");byId("lot-events").append(li);
+  }
+  for(const record of run.history||[]){
+    const version=Number(record.revision);if(!Number.isInteger(version)||version<1)continue;
+    const link=document.createElement("a"),li=document.createElement("li");
+    link.href="/api/livraison.pdf?revision="+version;link.download="Tableau-de-bord-r"+version+".pdf";
+    link.textContent="Télécharger la révision "+version+" du "+timeFr(record.publishedAt);
+    li.append(link);
+    if(record.packHref&&Number(record.fileCount)>1){const pack=document.createElement("a");
+      pack.href="/api/livraison.zip?revision="+version;pack.download="ClairDossier-r"+version+".zip";
+      pack.textContent="Archive de "+record.fileCount+" fichiers";li.append(" · ",pack);
+    }
+    byId("versions").append(li);
+  }
+  for(const change of run.corrections||[]){
+    const li=document.createElement("li");
+    li.textContent=dateFr(change.date)+" · "+change.reason+" · "+change.author+" · "+timeFr(change.createdAt);
+    byId("corrections").append(li);
+  }
+  byId("close").textContent=run.closed?"Rouvrir le dossier":"Clôturer le dossier";
+}
 function render(next){
   if(!next||!Array.isArray(next.fixtures))throw new Error("Le serveur n’a pas renvoyé l’état du dossier.");
-  state=next;const run=state.run;
-  for(const id of ["entry","denied","upload","progress","result","profiles","retry","failure"])byId(id).hidden=true;
+  const previous=state;state=next;const run=state.run;
+  for(const id of ["entry","denied","upload","progress","result","profiles","retry","failure","secondary","change-date","services-slot"])byId(id).hidden=true;
   byId("message").textContent=state.persona==="a"?"Client A · Abonné fictif":state.persona==="b"?"Client B · Abonné fictif":"";
+  if(previous?.persona!==next.persona){
+    serviceGeneration++;byId("services-slot").open=false;byId("communication").open=false;
+    byId("service-results").replaceChildren();byId("service-status").textContent="";byId("brief").reset();
+    selectionScope="";byId("tools").open=false;byId("change-date").open=false;byId("draft-block").open=false;
+    for(const id of ["summary","draft","due-date","date-source","next-action","versions","corrections","notices","published","original-date"])byId(id).replaceChildren();
+    byId("date-form").reset();
+  }
   if(!state.persona){byId("entry").hidden=false;return;}
   byId("profiles").hidden=false;
   if(state.persona==="sans"){byId("denied").hidden=false;return;}
-  if(!run){
-    byId("upload").hidden=false;byId("fixtures").replaceChildren();
-    for(const f of state.fixtures){
-      const href=new URL(f.url,location.origin);if(href.origin!==location.origin||!Object.hasOwn(hashes,f.id))continue;
-      const link=document.createElement("a");link.href=href.href;link.download=f.name;link.textContent=f.name;
-      const li=document.createElement("li");li.append(link);byId("fixtures").append(li);
-    }
-    return;
-  }
-  if(run.status==="failed"){byId("failure").hidden=false;return;}
-  if(run.status==="queued"||run.status==="processing"){
+  const published=Boolean(run?.publishedRevision)||run?.status==="published";
+  const working=run?.status==="queued"||run?.status==="processing";
+  const inputs=run?.inputs||[];
+  renderFixtures(next,inputs,run);
+  if(run?.closed)byId("message").textContent+=" · Dossier clôturé";
+  if(working&&!run.closed){
     byId("progress").hidden=false;byId("progress-title").textContent=run.status==="queued"?"Dépôt reçu":"Traitement en cours";
-    timer=setTimeout(()=>void refresh(),1800);return;
+    timer=setTimeout(()=>void refresh(),1800);
   }
-  if(run.status!=="published")throw new Error("État de traitement inconnu.");
-  byId("result").hidden=false;
-  byId("summary").textContent=run.summary||"Le tableau de bord est disponible.";
-  byId("draft").textContent=run.draft||"Aucun brouillon publié.";
-  byId("published").textContent=run.publishedAt?"Livré le "+new Date(run.publishedAt).toLocaleString("fr-FR",{timeZone:"Europe/Paris"}):"Résultat disponible";
-  byId("notices").textContent="Notifications enregistrées dans la boîte de recette · "+run.notifications;
+  if(run?.status==="failed")byId("failure").hidden=false;
+  if(published){
+    byId("result").hidden=false;
+    const count=Number(run.fileCount),revision=Number(run.publishedRevision);
+    byId("pdf-only").hidden=run.packStatus!=="pdf-only";
+    byId("current-pack").hidden=!(count>1 && revision>=1);
+    if(count>1 && revision>=1){
+      byId("current-pack-link").href="/api/livraison.zip?revision="+revision;
+      byId("current-pack-link").textContent="Télécharger les "+count+" fichiers de cette révision";
+    }
+    byId("initial-pack").hidden=run.hasInitialPack!==true||(count>1&&!run.corrections?.length);
+    byId("summary").textContent=run.summary||"Le tableau de bord est disponible.";
+    byId("due-date").textContent=dateFr(run.date);
+    byId("date-source").textContent=run.dateSource||"Aucune échéance documentée dans les pièces remises.";
+    byId("next-action").textContent=run.action||"Rien à faire pour le moment.";
+    byId("owner").textContent=run.action?"Responsable · Client":"";
+    byId("draft-block").hidden=!run.draft;byId("draft").textContent=run.draft||"";
+    byId("published").textContent="Révision "+(run.publishedRevision||run.revision||1)+(run.publishedAt?" · Livrée le "+timeFr(run.publishedAt):"");
+    const methods={"fixture-replay":"reprise d’une extraction préenregistrée","tesseract-wasm-eng":"reconnaissance optique du scan (Tesseract)","pdf-text":"extraction du texte du PDF"};
+    const readings=Object.entries(run.extraction||{});byId("reading").hidden=!readings.length;
+    byId("reading-list").replaceChildren();
+    for(const [id,extraction] of readings){
+      const li=document.createElement("li"),fixture=next.fixtures.find(f=>f.id===id);
+      li.textContent=(fixture?.name||"Pièce")+" · "+(methods[extraction?.method]||"Méthode à vérifier");byId("reading-list").append(li);
+    }
+    byId("notices").textContent="Notifications enregistrées dans la boîte de recette · "+run.notifications;
+  }
+  byId("upload").hidden=Boolean(run?.closed||working);
+  byId("piece-title").textContent=run?"Vos pièces et compléments":"Vos pièces";
+  byId("piece-help").textContent=run?(inputs.length===next.fixtures.length?"Les deux pièces du jeu ont été déposées.":"La pièce restante est présélectionnée pour compléter le dossier."):"Les deux pièces d’exemple sont prêtes pour le premier dépôt.";
+  if(run){
+    byId("secondary").hidden=false;renderHistory(run);
+    byId("change-date").hidden=!published||!inputs.includes("devis")||run.closed||working;
+    if(!byId("change-date").open){byId("date-value").value=run.date||"";byId("date-reason").value="";}
+    byId("original-date").textContent=(run.extractedDate?"Valeur extraite · "+dateFr(run.extractedDate)+" · "+(run.extractedDateSource||"Devis du dossier")+". ":"Valeur extraite consultable dans le devis du dossier. ")+"Date retenue · "+dateFr(run.date)+".";
+    byId("services-slot").hidden=!published;
+    byId("service-actions").hidden=run.closed;byId("communication").hidden=run.closed;
+    if(run.closed)byId("communication").open=false;
+  }
 }
 async function refresh(){
   clearTimeout(timer);const version=++sequence;
@@ -119,9 +261,10 @@ async function runAction(fn){
 }
 async function fixtureData(){
   const chosen=Array.from(byId("copies").files);
-  if(chosen.length && chosen.length!==2)throw new Error("Sélectionnez le PDF et le scan ensemble.");
-  const fixtures=state.fixtures.filter(f=>Object.hasOwn(hashes,f.id));
-  if(fixtures.length!==2)throw new Error("Les deux pièces de recette sont indisponibles.");
+  if(chosen.length>2)throw new Error("Sélectionnez au plus le PDF et le scan fournis.");
+  const selected=Array.from(document.querySelectorAll("[name=fixture]:checked"),el=>el.value);
+  const fixtures=state.fixtures.filter(f=>Object.hasOwn(hashes,f.id)&&selected.includes(f.id));
+  if(!chosen.length&&!fixtures.length)throw new Error("Choisissez au moins une pièce du jeu fictif.");
   let buffers;
   if(chosen.length){
     if(chosen.some(f=>f.size>100000))throw new Error("Fichier hors du jeu de recette.");
@@ -139,20 +282,77 @@ async function fixtureData(){
     if(b.byteLength>100000)throw new Error("Fichier hors du jeu de recette.");
     const digest=Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",b)),v=>v.toString(16).padStart(2,"0")).join("");
     const id=Object.keys(hashes).find(k=>hashes[k]===digest);
-    if(!id||result[id])throw new Error("Le jeu attendu contient le devis et le scan fournis, une fois chacun.");
+    if(!id||result[id])throw new Error("Chaque pièce doit provenir du jeu fictif et figurer une seule fois dans le lot.");
     result[id]=btoa(Array.from(new Uint8Array(b),v=>String.fromCharCode(v)).join(""));
   }
-  return [result.devis,result.scan];
+  return Object.values(result);
 }
 document.querySelectorAll("[data-session]").forEach(el=>el.addEventListener("click",()=>runAction(async()=>{
-  await request("/api/session",{persona:el.dataset.session});byId("copies").value="";await refresh();
+  await request("/api/session",{persona:el.dataset.session});notice();byId("copies").value="";await refresh();
 })));
 document.querySelectorAll("[data-refresh]").forEach(el=>el.addEventListener("click",()=>runAction(refresh)));
 byId("deposit").addEventListener("click",()=>runAction(async()=>{
   const uploads=await fixtureData();
-  try{await request("/api/depot",{uploads});}
-  catch(e){if(e.status!==409)throw e;feedback("Ce lot a déjà été déposé. Sa livraison est conservée.");}
+  try{
+    const receipt=await request("/api/depot",{uploads});
+    notice("Lot enregistré"+(receipt?.duplicates?" · "+receipt.duplicates+" doublon(s) écarté(s).":"."));
+  } catch(e){if(e.status!==409)throw e;notice(e.message);}
   await refresh();
+}));
+let serviceGeneration=0;
+function appendText(parent,tag,text,className=""){
+  const el=document.createElement(tag);el.textContent=text;el.className=className;parent.append(el);return el;
+}
+function showDraft(parent,text,label){
+  appendText(parent,"p",text,"draft");
+  const copy=appendText(parent,"button",label,"link");copy.type="button";
+  copy.addEventListener("click",async()=>{try{await navigator.clipboard.writeText(text);byId("service-status").textContent="Brouillon copié.";}
+    catch{byId("service-status").textContent="Sélectionnez le texte pour le copier."; }
+  });
+}
+function showServices(items){
+  const list=byId("service-results");list.replaceChildren();
+  for(const service of items){
+    const result=service.result,article=document.createElement("article");article.className="paper";list.append(article);
+    appendText(article,"h3",result.title);
+    if(result.text)showDraft(article,result.text,"Copier le brouillon");
+    for(const [i,post] of (result.posts||[]).entries()){
+      appendText(article,"h4","Publication "+(i+1)+" · "+post.when.display+", "+post.when.hour);
+      appendText(article,"p",post.when.zone+" ("+post.when.offset+") · "+post.reason,"meta");
+      showDraft(article,post.text,"Copier la publication "+(i+1));
+    }
+    if(result.metric)appendText(article,"p",result.metric,"meta");
+  }
+}
+async function services(payload){
+  const seq=++serviceGeneration;
+  byId("service-status").textContent=payload?"Préparation du brouillon…":"Lecture des brouillons…";
+  try{
+    const data=await request("/api/services",payload);
+    if(seq!==serviceGeneration)return;
+    if(!Array.isArray(data?.services))throw new Error("Réponse du service indisponible.");
+    for(const name of ["audience","offer","region"]){
+      const select=byId("brief").elements.namedItem(name),was=select.value,choices=data.communication?.[name];
+      if(Array.isArray(choices)){select.replaceChildren(...choices.map(v=>new Option(v,v)));if(choices.includes(was))select.value=was;}
+    }
+    showServices(data.services);byId("service-status").textContent=payload?"Brouillon enregistré dans ce dossier.":"";
+    if(payload?.kind==="linkedin")byId("communication").open=false;
+  }catch(e){if(seq===serviceGeneration)byId("service-status").textContent=e.message;}
+}
+byId("services-slot").addEventListener("toggle",()=>{if(byId("services-slot").open)void services();});
+document.querySelectorAll("[data-service]").forEach(b=>b.addEventListener("click",()=>runAction(()=>services({kind:b.dataset.service}))));
+byId("brief").addEventListener("submit",e=>{
+  e.preventDefault();const brief=Object.fromEntries(new FormData(e.currentTarget));
+  void runAction(()=>services({kind:"linkedin",brief}));
+});
+byId("copies").addEventListener("change",updateDeposit);
+byId("change-date").addEventListener("toggle",()=>{if(byId("change-date").open && state?.run)byId("date-form").dataset.revision=String(state.run.revision);});
+byId("date-form").addEventListener("submit",e=>{e.preventDefault();void runAction(async()=>{
+  await request("/api/correction",{date:byId("date-value").value,reason:byId("date-reason").value.trim(),revision:Number(byId("date-form").dataset.revision)});
+  byId("change-date").open=false;notice("Correction enregistrée. La nouvelle version est en préparation.");await refresh();
+});});
+byId("close").addEventListener("click",()=>runAction(async()=>{
+  await request("/api/cloture",{closed:!state.run.closed});notice();await refresh();
 }));
 void refresh();
 </script>

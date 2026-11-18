@@ -102,6 +102,11 @@ function prepare(kind, analysis) {
   };
 }
 
+export function buildService(body, analysis) {
+  if (!['linkedin', 'justificatifs', 'rendezvous'].includes(body?.kind)) invalid('Format de prestation inconnu.');
+  return body.kind === 'linkedin' ? linkedin(body.brief ?? {}) : prepare(body.kind, analysis);
+}
+
 export function handleServices({ method, body, db, session, analysis }) {
   db.exec(`CREATE TABLE IF NOT EXISTS recipe_services (
     dossier TEXT NOT NULL REFERENCES dossiers(id) ON DELETE CASCADE,
@@ -109,8 +114,7 @@ export function handleServices({ method, body, db, session, analysis }) {
     PRIMARY KEY(dossier, kind))`);
   const id = session.dossierId;
   if (method === 'POST') {
-    if (!['linkedin', 'justificatifs', 'rendezvous'].includes(body?.kind)) invalid('Format de prestation inconnu.');
-    const result = body.kind === 'linkedin' ? linkedin(body.brief ?? {}) : prepare(body.kind, analysis);
+    const result = buildService(body, analysis);
     db.prepare(`INSERT INTO recipe_services(dossier,kind,content,updated) VALUES (?,?,?,?)
       ON CONFLICT(dossier,kind) DO UPDATE SET content=excluded.content,updated=excluded.updated`)
       .run(id, body.kind, JSON.stringify(result), new Date().toISOString());

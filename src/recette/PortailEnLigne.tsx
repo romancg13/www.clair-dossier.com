@@ -2,7 +2,10 @@ import { useEffect } from 'react';
 
 // Origine dédiée aux seuls dossiers fictifs. La navigation n'emporte ni
 // identifiant de dossier, ni cookie, ni paramètre provenant du visiteur.
-const portail = 'https://clairdossier-recette-atelier-20261118.j-gomes346249.chatgpt.site/';
+declare const __RECETTE_COMMIT__: string;
+const url = new URL('https://clairdossier-recette-atelier-20261118.j-gomes346249.chatgpt.site/');
+if (/^[a-f0-9]{40}$/.test(__RECETTE_COMMIT__)) url.searchParams.set('version', __RECETTE_COMMIT__);
+const portail = url.href;
 
 export function PortailEnLigne() {
   useEffect(() => { window.location.replace(portail); }, []);
