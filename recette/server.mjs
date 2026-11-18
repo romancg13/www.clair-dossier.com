@@ -1,6 +1,6 @@
 // Adaptateur de recette isolé. Aucune dépendance Auth, Stripe ou Supabase réelle.
 import { createServer } from 'node:http';
-import { createHmac, timingSafeEqual } from 'node:crypto';
+import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { createReadStream, existsSync, mkdirSync, statSync, chmodSync } from 'node:fs';
 import { resolve, dirname, extname, isAbsolute, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -32,10 +32,6 @@ const same = (a, b) =>
   typeof a === 'string' &&
   typeof b === 'string' &&
   timingSafeEqual(Buffer.from(hash(a), 'hex'), Buffer.from(hash(b), 'hex'));
-const signature = (token, path, expiry) =>
-  createHmac('sha256', token)
-    .update(path + '|' + expiry)
-    .digest('base64url');
 const json = (res, value, status = 200) => {
   res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' });
   res.end(JSON.stringify(value));
@@ -83,6 +79,13 @@ export async function startServer({
   mkdirSync(dirname(dbPath), { recursive: true, mode: 0o700 });
   const store = openStore(dbPath);
   chmodSync(dbPath, 0o600);
+  // Une clé privée du volume signe les liens ; le cookie lie la signature à
+  // la session correspondante. Un redémarrage préserve les liens encore valides.
+  store.db.exec('CREATE TABLE IF NOT EXISTS server_keys (name TEXT PRIMARY KEY, value BLOB NOT NULL)');
+  store.db.prepare('INSERT OR IGNORE INTO server_keys VALUES (?, ?)').run('download', randomBytes(32));
+  const signingKey = store.db.prepare('SELECT value FROM server_keys WHERE name = ?').get('download').value;
+  const signature = (token, path, expiry) => createHmac('sha256', signingKey)
+    .update([token, path, expiry].join('|')).digest('base64url');
   const modules = {};
   for (const file of ['mcp', 'services']) {
     const url = new URL('./' + file + '.mjs', import.meta.url);

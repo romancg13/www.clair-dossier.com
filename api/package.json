@@ -1,0 +1,10 @@
+{
+  "name": "clairdossier-recette-extraction",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@tesseract.js-data/eng": "1.0.0",
+    "tesseract.js-core": "7.0.0",
+    "unpdf": "2.2.1"
+  }
+}
