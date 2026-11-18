@@ -61,7 +61,8 @@ export function findAmounts(text: string): AmountHit[] {
 }
 
 export function frEuro(v: number): string {
-  return `${v.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).replace(/ | /g, ' ')} €`;
+  // Espaces insécables : « 3 480,00 € » ne se coupe jamais en fin de ligne.
+  return `${v.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).replace(/[\u202f\u00a0 ]/g, '\u00a0')}\u00a0€`;
 }
 
 const FR_MONTH_NAMES = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];

@@ -114,15 +114,14 @@ export async function handle(env: ApiEnv, req: Request): Promise<Response> {
   /* ── Exécuteur ─────────────────────────────────────────────────────── */
   if (path === '/api/worker' && m === 'POST') {
     if (req.headers.get('x-worker-token') !== env.workerToken || !env.workerToken) return err(401, 'non autorisé');
-    const deps = await env.deps();
-    const reports = await drain(deps, 240_000, 120);
-    if ((await store.allOpenJobs()).some((j) => j.status === 'queued' && j.run_after <= store.now().toISOString())) env.waitUntil(env.kickWorker());
-    return json({ traites: reports.length });
+    // Réponse immédiate ; le traitement continue en arrière-plan (et se relance si la file n'est pas vide).
+    env.waitUntil(runNow(env));
+    return json({ accepte: true }, 202);
   }
   if (path === '/api/cron') {
     if (req.headers.get('authorization') !== `Bearer ${env.cronSecret}` || !env.cronSecret) return err(401, 'non autorisé');
     await reconcile(env);
-    env.waitUntil(env.kickWorker());
+    env.waitUntil(runNow(env));
     return json({ ok: true });
   }
 
@@ -252,6 +251,8 @@ export async function handle(env: ApiEnv, req: Request): Promise<Response> {
     if (!d || d.deleted || (d.user_id !== user.id && user.role !== 'admin')) return err(404, 'Dossier introuvable.');
     const sub = dm[2] ?? '';
     if (sub === '' && m === 'GET') {
+      const open = await store.openJobs(d.id);
+      if (open.some((j) => (j.status === 'queued' && j.run_after <= now.toISOString()) || (j.status === 'running' && (j.lease_until ?? '') < now.toISOString()))) env.waitUntil(runNow(env));
       const v = await store.getView(d.id);
       const pieces = (await store.listPieces(d.id)).filter((p) => !p.deleted_at);
       const extractions = await Promise.all(pieces.map((p) => store.getExtraction(p.id)));
@@ -424,7 +425,9 @@ async function runNow(env: ApiEnv) {
   try {
     const deps = await env.deps();
     await drain(deps, 200_000, 120);
-    if ((await env.store.allOpenJobs()).some((j) => j.status === 'queued')) await env.kickWorker();
+    // Travaux encore prêts (lot volumineux) : nouvelle invocation ; travaux différés : repris par la consultation ou la tâche planifiée.
+    const nowIso = env.store.now().toISOString();
+    if ((await env.store.allOpenJobs()).some((j) => j.status === 'queued' && j.run_after <= new Date(Date.parse(nowIso) + 30_000).toISOString())) await env.kickWorker();
   } catch {
     await env.store.alert('EXECUTEUR_INTERROMPU', { at: env.store.now().toISOString() });
   }

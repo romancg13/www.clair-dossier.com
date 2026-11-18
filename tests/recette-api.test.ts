@@ -140,7 +140,7 @@ test('dates : formulaire PDF rempli, réouvert et réimporté → date corrigée
   const reopened = await PDFDocument.load(saved);
   assert.equal(reopened.getForm().getTextField(`date_retenue_${i}`).getText(), '05/03/2021', 'saisie conservée après réouverture');
   const f = new FormData();
-  f.append('fichier', new File([saved], 'dates.pdf'));
+  f.append('fichier', new File([new Uint8Array(saved)], 'dates.pdf'));
   assert.equal((await (await c.call('POST', `/api/dossiers/${id}/dates/formulaire`, f)).json()).corrigees, 1);
   await settle();
   const d1 = await (await c.call('GET', `/api/dossiers/${id}`)).json();

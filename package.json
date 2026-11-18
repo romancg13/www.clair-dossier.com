@@ -14,7 +14,9 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "tsx --test tests/*.test.ts",
     "ia:commission": "node scripts/mise-en-service-supabase.mjs --ia-seulement",
-    "ia:corpus": "node --import tsx scripts/ia-corpus-test.ts"
+    "ia:corpus": "node --import tsx scripts/ia-corpus-test.ts",
+    "recette:vercel": "node scripts/recette/vercel-build.mjs",
+    "typecheck:recette": "tsc -p tsconfig.recette.json --noEmit"
   },
   "dependencies": {
     "@fontsource/cormorant-garamond": "^5.2.5",

@@ -7,6 +7,7 @@ import { features, featuresByGroup } from "../data/features";
 import { ENTERPRISE_NOTE, planned } from "../data/product-status";
 import { ArrowRightIcon } from "../components/icons";
 import { SortingFlow } from "../components/features/SortingFlow";
+import { TroisResultats } from "../components/clarte/HomeClarte";
 import { FeaturesBento } from "../components/landing/FeaturesBento";
 import { ChapterTimeline } from "../components/landing/ChapterTimeline";
 import { ChapterTransmission } from "../components/landing/ChapterTransmission";
@@ -99,6 +100,7 @@ export function FeaturesIndex() {
       <AudienceSwitcher />
 
       {/* Disponible / offre sur devis / projets — même source que /etat-du-produit */}
+      {import.meta.env.VITE_HOME_CLARTE === "1" && <TroisResultats />}
       <section
         aria-labelledby="disponibilite-titre"
         className="border-t hairline bg-cream-100/40"

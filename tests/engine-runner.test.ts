@@ -20,11 +20,11 @@ test('lot initial : six catégories publiées sans geste, geste « Joindre le ba
   for (const c of Object.values(pub)) assert.equal(c!.status, 'approved');
   const v = await view(s, 'D1');
   assert.equal(v.tableau.action.label, 'Joindre le bail');
-  assert.match(v.tableau.situation, /^Au 18 novembre 2026, .*3 480,00 €/);
+  assert.match(v.tableau.situation, /^Au 18 novembre 2026, .*3\s480,00\s€/);
   assert.equal(v.tableau.next_date?.date, '2027-01-15');
   assert.equal(v.tableau.next_date?.status, 'confirmee');
   assert.equal(v.dossier.complete, false, 'le scan n’est pas lu sans IA : analyse partielle explicite');
-  assert.ok(v.resume.contradictions.some((c) => /3 480,00 €.*3 210,00 €/.test(c.text)));
+  assert.ok(v.resume.contradictions.some((c) => /3\s480,00\s€.*3\s210,00\s€/.test(c.text)));
   assert.equal((await s.store.mailbox('A')).length, 1);
   assert.equal(v.echeances.confirmed.length, 1, 'une seule date confirmée (15 janvier 2027)');
   assert.ok(v.echeances.to_confirm.some((d) => d.date === '2026-12-09'), 'rendez-vous proposé : à confirmer');

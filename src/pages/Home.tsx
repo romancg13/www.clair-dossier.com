@@ -15,6 +15,7 @@ import { homeFaq } from "../data/faq";
 // (src/lib/flags.ts). VITE_HOME_CINEMATIC=false rétablit la composition ci-dessous.
 import { HOME_CINEMATIC } from "../lib/flags";
 import { HomeCinematic } from "../components/landing/HomeCinematic";
+import { HomeClarte } from "../components/clarte/HomeClarte";
 
 const softwareSchema = {
   "@context": "https://schema.org",
@@ -44,6 +45,7 @@ const faqSchema = {
 };
 
 export function Home() {
+  if (import.meta.env.VITE_HOME_CLARTE === "1") return <HomeClarte />;
   if (HOME_CINEMATIC) return <HomeCinematic />;
   return (
     <>
