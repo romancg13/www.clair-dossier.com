@@ -8,6 +8,7 @@ import {
   applyOverrides,
   buildChronology,
   buildDeliverables,
+  deliverableKeyFromName,
   deliverableKeyOf,
   type DeadlineRow,
 } from '../supabase/functions/_shared/deliverables.ts';
@@ -82,6 +83,14 @@ test('six livrables : 13 fichiers valides, noms reconnus, formats PDF/DOCX/XLSX/
   for (const d of DELIVERABLE_CATALOG) assert.ok(files.some((f) => f.key === d.key), `livrable ${d.key} présent`);
   for (const f of files) assert.equal(deliverableKeyOf(f.name), f.key, f.name);
   assert.equal(deliverableKeyOf('Contrat signé.pdf'), null, 'un livrable manuel n’est jamais confondu');
+  // Alias historiques (affichage uniquement — la décision généré/manuel revient à generated_by) :
+  assert.equal(deliverableKeyFromName('Resume-IA-r3.pdf'), 'resume', 'le nom strict reste reconnu');
+  assert.equal(deliverableKeyFromName('Resume-IA.pdf'), 'resume', 'slug sans révision');
+  assert.equal(deliverableKeyFromName('resume-ia (1).PDF'), 'resume', 'casse, copie numérotée');
+  assert.equal(deliverableKeyFromName('Échéances-r2.ics'), 'echeances', 'accents ignorés');
+  assert.equal(deliverableKeyFromName('Dates-modifiables_v2.docx'), 'dates', 'séparateur underscore');
+  assert.equal(deliverableKeyFromName('Contrat signé.pdf'), null, 'pièce quelconque jamais rattachée');
+  assert.equal(deliverableKeyFromName('Resumeria.pdf'), null, 'préfixe sans séparateur refusé');
   for (const f of files.filter((x) => x.name.endsWith('.pdf'))) {
     const pdf = await PDFDocument.load(f.bytes);
     assert.ok(pdf.getPageCount() >= 1, f.name);

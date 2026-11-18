@@ -10,7 +10,7 @@ import { hasQuotaEngine } from "../lib/dossier-workspace";
 import { AiPanel, type AiProgress } from "../components/dossier/AiPanel";
 import { DossierTracker } from "../components/dossier/DossierTracker";
 import { DeliverablesGrid, type DeliverableFile } from "../components/dossier/DeliverablesGrid";
-import { deliverableKeyOf } from "../../supabase/functions/_shared/analysis-model.ts";
+import { deliverableKeyFromName, deliverableKeyOf } from "../../supabase/functions/_shared/analysis-model.ts";
 // Statuts, typologies, étapes et libellés de réponses : source unique partagée
 // avec l'application mobile (packages/core) — mêmes libellés des deux côtés.
 import {
@@ -29,6 +29,7 @@ import {
   deadlineStatus,
   effectiveCategory,
   formatBytes,
+  hasAiDocMeta,
   hasDeadlines,
   hasDocExtras,
   hasEvents,
@@ -83,6 +84,8 @@ type DocumentRow = {
   created_at: string;
   category: string | null;
   deleted_at: string | null;
+  /** 'ai' = généré par le moteur documentaire (migration 20261023), null = déposé à la main. */
+  generated_by?: string | null;
 };
 
 type DeadlineRow = {
@@ -355,6 +358,7 @@ export function DossierDetail() {
 
   // Capacités (migration gestion documentaire appliquée ou non).
   const [docExtras, setDocExtras] = useState(false);
+  const [docAiMeta, setDocAiMeta] = useState(false);
   const [deadlinesOn, setDeadlinesOn] = useState(false);
   const [eventsOn, setEventsOn] = useState(false);
 
@@ -394,9 +398,15 @@ export function DossierDetail() {
     let active = true;
     setLoading(true);
     (async () => {
-      const [extras, dlOk, evOk] = await Promise.all([hasDocExtras(), hasDeadlines(), hasEvents()]);
+      const [extras, aiMeta, dlOk, evOk] = await Promise.all([
+        hasDocExtras(),
+        hasAiDocMeta(),
+        hasDeadlines(),
+        hasEvents(),
+      ]);
       if (!active) return;
       setDocExtras(extras);
+      setDocAiMeta(aiMeta);
       setDeadlinesOn(dlOk);
       setEventsOn(evOk);
 
@@ -439,7 +449,7 @@ export function DossierDetail() {
 
       if (row) {
         await Promise.all([
-          reloadDocuments(row.id, row.user_id, extras, (v) => {
+          reloadDocuments(row.id, row.user_id, extras, aiMeta, (v) => {
             if (active) {
               setDocuments(v.docs);
               setLinks(v.links);
@@ -461,9 +471,10 @@ export function DossierDetail() {
     dossierId: string,
     ownerUserId: string,
     extras: boolean,
+    aiMeta: boolean,
     apply: (v: { docs: DocumentRow[]; links: Record<string, LinkState> }) => void,
   ) {
-    const cols = extras ? `${DOC_COLS_BASE},category,deleted_at` : DOC_COLS_BASE;
+    const cols = `${DOC_COLS_BASE}${extras ? ",category,deleted_at" : ""}${aiMeta ? ",generated_by" : ""}`;
     const { data: docs } = await supabase
       .from("dossier_documents")
       .select(cols)
@@ -479,6 +490,7 @@ export function DossierDetail() {
       created_at: (d.created_at as string) ?? new Date(0).toISOString(),
       category: d.category ?? null,
       deleted_at: d.deleted_at ?? null,
+      generated_by: d.generated_by ?? null,
     }));
     // Liens générés à partir du chemin stable stocké en base (jamais d'URL
     // enregistrée). Fichier introuvable : recherche du chemin réel dans le
@@ -523,7 +535,7 @@ export function DossierDetail() {
 
   async function refreshDocs() {
     if (!dossier) return;
-    await reloadDocuments(dossier.id, dossier.user_id, docExtras, (v) => {
+    await reloadDocuments(dossier.id, dossier.user_id, docExtras, docAiMeta, (v) => {
       setDocuments(v.docs);
       setLinks(v.links);
     });
@@ -581,9 +593,20 @@ export function DossierDetail() {
   const pieces = documents.filter((d) => d.kind !== "deliverable" && !d.deleted_at);
   const trashed = documents.filter((d) => d.kind !== "deliverable" && Boolean(d.deleted_at));
   const deliverables = documents.filter((d) => d.kind === "deliverable" && !d.deleted_at);
-  // Livrables générés (« <Livrable>-r<n>.<ext> ») et livrables déposés à la main par l'équipe.
-  const aiDeliverables = deliverables.filter((d) => deliverableKeyOf(d.file_name));
-  const manualDeliverables = deliverables.filter((d) => !deliverableKeyOf(d.file_name));
+  // Rendus du catalogue (grille des six documents), générés ou produits à la main :
+  // le TYPE ENREGISTRÉ fait foi (generated_by='ai' → nom strict, puis alias
+  // historiques, sinon « Autres documents ») ; sans type enregistré, le nom
+  // strict « <slug>-r<n>.<ext> » conserve le comportement historique (rendus
+  // manuels de l'équipe affichés dans la même grille). Jamais de déplacement
+  // de fichier : seul l'affichage est unifié.
+  const gridKeyOf = (d: DocumentRow) =>
+    d.generated_by === "ai" ? deliverableKeyFromName(d.file_name) : deliverableKeyOf(d.file_name);
+  const aiDeliverables = deliverables.filter((d) => d.generated_by === "ai" || gridKeyOf(d));
+  const gridDeliverables = aiDeliverables.filter((d) => gridKeyOf(d));
+  // Généré mais intitulé hors catalogue (alias inconnu) : « Autres documents »,
+  // mêmes liens privés, jamais présenté comme un dépôt manuel de l'équipe.
+  const otherGenerated = aiDeliverables.filter((d) => !gridKeyOf(d));
+  const manualDeliverables = deliverables.filter((d) => !aiDeliverables.includes(d));
   // Clôture = dernier événement de cycle de vie (journal), à défaut statut historique « archive ».
   const lifecycle = events.find((e) => e.type === "dossier_cloture" || e.type === "dossier_rouvert");
   const closed = lifecycle ? lifecycle.type === "dossier_cloture" : dossier?.status === "archive";
@@ -596,8 +619,8 @@ export function DossierDetail() {
         closed,
       })
     : 1;
-  const deliverableFiles: DeliverableFile[] = aiDeliverables.map((d) => ({
-    key: deliverableKeyOf(d.file_name)!,
+  const deliverableFiles: DeliverableFile[] = gridDeliverables.map((d) => ({
+    key: gridKeyOf(d)!,
     name: d.file_name,
     open: async () => {
       const l = await signDocument(d.file_path, 300);
@@ -1602,6 +1625,32 @@ export function DossierDetail() {
                     busy={zipping}
                     onDownloadAll={() => downloadZip(deliverables, `documents-${dossier.title || dossier.id}.zip`)}
                   />
+
+                  {otherGenerated.length > 0 && (
+                    <div className="mt-8 border-t hairline pt-6">
+                      <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">
+                        Autres documents
+                      </p>
+                      <p className="mt-2 text-xs leading-relaxed text-slate-500">
+                        Documents générés pour ce dossier dont l'intitulé ne correspond pas au
+                        catalogue ci-dessus — conservés tels quels.
+                      </p>
+                      <ul className="mt-4 space-y-2">
+                        {otherGenerated.map((doc) => (
+                          <DocRow
+                            key={doc.id}
+                            doc={doc}
+                            link={links[doc.id]}
+                            onRefreshLink={() => refreshLink(doc)}
+                            onReimport={isAdmin ? (f) => void handleReimport(doc, f) : undefined}
+                            onDelete={isAdmin ? () => handleHardDelete(doc) : undefined}
+                            busy={busyId === doc.id}
+                            showCategory={false}
+                          />
+                        ))}
+                      </ul>
+                    </div>
+                  )}
 
                   <div className="mt-8 border-t hairline pt-6">
                   <div className="flex flex-wrap items-center justify-between gap-3">
