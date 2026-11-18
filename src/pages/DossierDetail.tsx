@@ -17,7 +17,6 @@ import {
   STATUS_LABELS,
   TYPOLOGY_LABELS,
   TIMELINE_STEPS as TIMELINE,
-  STEP_NEXT_ACTIONS,
   trackingStep,
   answerLabel as labelFor,
   isDateKey,
@@ -581,9 +580,6 @@ export function DossierDetail() {
   const pieces = documents.filter((d) => d.kind !== "deliverable" && !d.deleted_at);
   const trashed = documents.filter((d) => d.kind !== "deliverable" && Boolean(d.deleted_at));
   const deliverables = documents.filter((d) => d.kind === "deliverable" && !d.deleted_at);
-  // Livrables générés (« <Livrable>-r<n>.<ext> ») et livrables déposés à la main par l'équipe.
-  const aiDeliverables = deliverables.filter((d) => deliverableKeyOf(d.file_name));
-  const manualDeliverables = deliverables.filter((d) => !deliverableKeyOf(d.file_name));
   // Clôture = dernier événement de cycle de vie (journal), à défaut statut historique « archive ».
   const lifecycle = events.find((e) => e.type === "dossier_cloture" || e.type === "dossier_rouvert");
   const closed = lifecycle ? lifecycle.type === "dossier_cloture" : dossier?.status === "archive";
@@ -596,13 +592,21 @@ export function DossierDetail() {
         closed,
       })
     : 1;
-  const deliverableFiles: DeliverableFile[] = aiDeliverables.map((d) => ({
-    key: deliverableKeyOf(d.file_name)!,
+  const deliverableFiles: DeliverableFile[] = deliverables.map((d) => ({
+    id: d.id,
+    key: deliverableKeyOf(d.file_name, d.category, dossier?.title),
     name: d.file_name,
     open: async () => {
+      const tab = window.open("about:blank", "_blank");
+      if (tab) tab.opener = null;
       const l = await signDocument(d.file_path, 300);
-      if (l.status === "ok") window.open(l.url, "_blank", "noopener,noreferrer");
-      else setActionError("Ce fichier n'est pas accessible pour le moment. Réessayez.");
+      if (l.status === "ok") {
+        if (tab) tab.location.replace(l.url);
+        else window.location.assign(l.url);
+      } else {
+        tab?.close();
+        setActionError("Ce fichier n'est pas accessible pour le moment. Réessayez.");
+      }
     },
     download: async () => {
       const l = await signDocument(d.file_path, 300);
@@ -1042,14 +1046,11 @@ export function DossierDetail() {
 
   const TABS: { id: TabId; label: string }[] = [
     { id: "apercu", label: "Vue d'ensemble" },
-    { id: "pieces", label: `Pièces${pieces.length ? ` (${pieces.length})` : ""}` },
+    { id: "dashboard", label: `Vos résultats${deliverables.length ? ` (${deliverables.length})` : ""}` },
+    { id: "pieces", label: `Vos pièces${pieces.length ? ` (${pieces.length})` : ""}` },
     {
       id: "echeances",
       label: `Échéances${deadlinesOn && openDeadlines.length ? ` (${openDeadlines.length})` : ""}`,
-    },
-    {
-      id: "dashboard",
-      label: `Tableau de bord${deliverables.length ? ` (${deliverables.length})` : ""}`,
     },
     { id: "activite", label: "Activité" },
   ];
@@ -1241,48 +1242,26 @@ export function DossierDetail() {
 
               {activeTab === "apercu" && (
                 <>
-                  {/* Résumé express (statut et étape : déjà dans l'en-tête). */}
-                  <div className="mt-8 grid gap-3 sm:grid-cols-2">
-                    {[
-                      { k: "Pièces", v: `${pieces.length} déposée${pieces.length > 1 ? "s" : ""}` },
-                      {
-                        k: "Prochaine échéance",
-                        v: nextDeadline
-                          ? `${fmtShort(`${nextDeadline.due_date}T00:00:00`)} · ${nextDeadline.title}`
-                          : dateEntries[0]?.[1] ?? "Aucune",
-                      },
-                    ].map((c) => (
-                      <div key={c.k} className="rounded-xl border hairline bg-white p-4">
-                        <p className="font-mono text-[0.62rem] uppercase tracking-[0.14em] text-slate-500">
-                          {c.k}
-                        </p>
-                        <p className="mt-1.5 truncate text-sm font-medium text-navy-900" title={c.v}>
-                          {c.v}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Ce que vous devez faire maintenant + CTA contextuel. */}
-                  <div className="mt-6 rounded-2xl border hairline-gold bg-gold-500/10 p-7 shadow-card sm:p-9">
-                    <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">
-                      Ce que vous devez faire maintenant
+                  <div className="mt-6 rounded-2xl border hairline-gold bg-white p-6 shadow-card sm:p-8">
+                    <h2 className="font-display text-2xl font-semibold text-navy-900">Votre situation</h2>
+                    <p className="mt-3 text-base leading-relaxed text-navy-900">
+                      {closed ? "Votre dossier est clôturé." : aiProgress.processing ? "Vos pièces sont en cours de traitement." :
+                        deliverables.length ? "Vos résultats sont disponibles." : pieces.length ? "Vos pièces ont été reçues." : "Votre dossier est ouvert."}
+                      {" "}{nextDeadline ? `Échéance ouverte : ${fmtShort(`${nextDeadline.due_date}T00:00:00`)} · ${nextDeadline.title}.` :
+                        "Aucune échéance enregistrée dans le dossier."}
                     </p>
-                    <p className="mt-3 text-sm leading-relaxed text-navy-900">
-                      {STEP_NEXT_ACTIONS[step]}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => setActiveTab("pieces")}
-                      className="mt-5 inline-flex items-center gap-2 rounded-full bg-navy-900 px-5 py-2.5 text-sm font-semibold text-cream-50 transition-colors hover:bg-navy-800"
-                    >
-                      Ajouter des pièces
-                      <ArrowRightIcon width={14} height={14} strokeWidth={2} />
-                    </button>
+                    {!closed && deadlinesOn && nextDeadline ? (
+                      <button type="button" className="mt-4 rounded-full bg-navy-900 px-5 py-2.5 text-sm font-semibold text-white" onClick={() => setActiveTab("echeances")}>Vérifier la date</button>
+                    ) : deliverables.length ? (
+                      <button type="button" className="mt-4 rounded-full bg-navy-900 px-5 py-2.5 text-sm font-semibold text-white" onClick={() => setActiveTab("dashboard")}>
+                        {deliverableFiles.some(f => f.key === "resume") ? "Voir ma synthèse" : "Voir mes résultats"}
+                      </button>
+                    ) : !pieces.length && !closed ? (
+                      <button type="button" className="mt-4 rounded-full bg-navy-900 px-5 py-2.5 text-sm font-semibold text-white" onClick={() => setActiveTab("pieces")}>Joindre mes pièces</button>
+                    ) : <p className="mt-4 text-sm font-medium text-slate-600">Rien à faire pour le moment.</p>}
                   </div>
-
-                  {/* Suivi du dossier : 4 étapes fondées sur les événements réels. */}
-                  <div className="mt-6">
+                  <details className="mt-6">
+                    <summary className="cursor-pointer py-2 text-sm font-semibold text-navy-900">Suivi et clôture du dossier</summary>
                     <DossierTracker
                       step={step}
                       detail={aiProgress.detail}
@@ -1303,7 +1282,7 @@ export function DossierDetail() {
                         </button>
                       </div>
                     )}
-                  </div>
+                  </details>
                 </>
               )}
 
@@ -1579,9 +1558,9 @@ export function DossierDetail() {
                 </div>
               )}
 
-              {activeTab === "dashboard" && (
-                <div className="mt-6 space-y-6">
-                  {AI_ENGINE && <AiPanel
+              {AI_ENGINE && (
+                <div hidden={activeTab !== "dashboard"}>
+                  <AiPanel
                     dossierId={dossier.id}
                     ownerId={dossier.user_id}
                     canManage={isAdmin || dossier.user_id === user?.id}
@@ -1591,48 +1570,27 @@ export function DossierDetail() {
                     documentNames={Object.fromEntries(documents.map((d) => [d.id, d.file_name]))}
                     onProgress={setAiProgress}
                     onPublished={() => void refreshDocs()}
-                  />}
-
+                  />
+                </div>
+              )}
+              {activeTab === "dashboard" && (
+                <div className="mt-6 space-y-6">
                   <div className="rounded-2xl border hairline bg-white p-6 shadow-card sm:p-8">
                   <DeliverablesGrid
                     files={deliverableFiles}
-                    caption={aiDeliverables.length ? `Dernière version publiée le ${fmtDate(aiDeliverables[aiDeliverables.length - 1].created_at)}` : null}
+                    caption={deliverables.length ? `Dernière publication le ${fmtDate(deliverables[deliverables.length - 1].created_at)}` : null}
                     emptyLabel={aiProgress.processing ? "En préparation…" : "Pas encore disponible."}
                     busy={zipping}
                     onDownloadAll={() => downloadZip(deliverables, `documents-${dossier.title || dossier.id}.zip`)}
                   />
 
-                  <div className="mt-8 border-t hairline pt-6">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">
-                      Documents déposés par l'équipe ClairDossier
-                    </p>
-                  </div>
-
-                  {manualDeliverables.length === 0 ? (
-                    <p className="mt-4 text-sm leading-relaxed text-slate-500">
-                      {isAdmin
-                        ? "Aucun document déposé manuellement. Vous pouvez en ajouter ci-dessous : le client y accédera depuis son espace."
-                        : "Les documents déposés par l'équipe ClairDossier apparaîtront ici."}
-                    </p>
-                  ) : (
+                  {isAdmin && (<details className="mt-8 border-t hairline pt-6">
+                    <summary className="cursor-pointer text-sm font-semibold text-navy-900">Gérer les documents remis au client</summary>
                     <ul className="mt-5 space-y-2">
-                      {manualDeliverables.map((doc) => (
-                        <DocRow
-                          key={doc.id}
-                          doc={doc}
-                          link={links[doc.id]}
-                          onRefreshLink={() => refreshLink(doc)}
-                          onReimport={isAdmin ? (f) => void handleReimport(doc, f) : undefined}
-                          onDelete={isAdmin ? () => handleHardDelete(doc) : undefined}
-                          busy={busyId === doc.id}
-                          showCategory={false}
-                        />
-                      ))}
+                      {deliverables.map(doc => <DocRow key={doc.id} doc={doc} link={links[doc.id]}
+                        onRefreshLink={() => refreshLink(doc)} onReimport={f => void handleReimport(doc, f)}
+                        onDelete={() => handleHardDelete(doc)} busy={busyId === doc.id} showCategory={false} />)}
                     </ul>
-                  )}
-
-                  {isAdmin && (
                     <div className="mt-6 border-t hairline pt-5">
                       <label className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-gold-500 px-5 py-2.5 text-sm font-semibold text-navy-900 shadow-gold transition-transform hover:-translate-y-0.5">
                         {delivering ? "Envoi…" : "Déposer un document pour le client"}
@@ -1653,8 +1611,7 @@ export function DossierDetail() {
                         depuis son espace.
                       </p>
                     </div>
-                  )}
-                  </div>
+                  </details>)}
                   </div>
                 </div>
               )}
@@ -1667,6 +1624,10 @@ export function DossierDetail() {
 
                   {deadlinesOn ? (
                     <>
+                      <div className="mt-4 border-l-2 border-gold-500 pl-4 text-sm text-navy-900">
+                        {nextDeadline ? <><strong>{fmtShort(`${nextDeadline.due_date}T00:00:00`)} · {nextDeadline.title}</strong>
+                          {nextDeadline.description && <p className="mt-1">{nextDeadline.description}</p>}</> : "Aucune échéance ouverte enregistrée."}
+                      </div>
                       {/* Ajout / modification d'une échéance. */}
                       <form
                         className="mt-5 grid gap-3 rounded-xl bg-cream-50 p-5 sm:grid-cols-2"

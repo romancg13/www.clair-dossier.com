@@ -88,7 +88,9 @@ test('six livrables : 13 fichiers valides, noms reconnus, formats PDF/DOCX/XLSX/
   }
   for (const f of files.filter((x) => /\.(docx|xlsx)$/.test(x.name))) assert.ok(Object.keys(unzipSync(f.bytes)).length >= 4, f.name);
   const ics = strFromU8(files.find((f) => f.name.endsWith('.ics'))!.bytes);
-  assert.match(ics, /DTSTART;VALUE=DATE:20261109/);
+  assert.match(ics, /DTSTART;VALUE=DATE:20260930/, 'échéance mentionnée et sourcée');
+  assert.doesNotMatch(ics, /DTSTART;VALUE=DATE:20261109/, 'calcul à confirmer');
+  assert.doesNotMatch(ics, /DTSTART;VALUE=DATE:20261116/, 'hypothèse exclue');
   const relances = docxToText(files.find((f) => f.name === 'Relances-r2.docx')!.bytes);
   assert.match(relances, /aucun envoi automatique/i);
 });
@@ -103,6 +105,7 @@ test('échéances : correction humaine et ajout manuel reflétés dans les livra
   assert.match(xlsx, /12\/11\/2026;;Fin du délai \(corrigée\);Date calculée — corrigée par vous/);
   assert.match(xlsx, /20\/11\/2026;14:30;Rendez-vous expert;Ajoutée manuellement/);
   const ics = strFromU8(files.find((f) => f.name.endsWith('.ics'))!.bytes);
+  assert.match(ics, /DTSTART;VALUE=DATE:20261112/, 'date retenue par correction humaine');
   assert.match(ics, /DTSTART;TZID=Europe\/Paris:20261120T143000/);
 });
 

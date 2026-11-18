@@ -18,10 +18,35 @@ export const DELIVERABLE_CATALOG = [
 
 export type DeliverableKey = (typeof DELIVERABLE_CATALOG)[number]['key'];
 
-/** Livrable d'appartenance d'un fichier généré (`<slug>-r<révision>.<ext>`), sinon null. */
-export function deliverableKeyOf(fileName: string): DeliverableKey | null {
-  const hit = DELIVERABLE_CATALOG.find((d) => new RegExp(`^${d.slug}-r\\d+\\.[a-z]+$`, 'i').test(fileName));
-  return hit ? hit.key : null;
+const FILE_ALIASES: Record<string, DeliverableKey> = {
+  'tableau de bord': 'dashboard',
+  'resume': 'resume',
+  'synthese': 'resume',
+  'synthese du dossier': 'resume',
+  'chronologie du dossier': 'chronologie',
+  'dates modifiables': 'dates',
+  'echeances et calendrier': 'echeances',
+  'projets de relance': 'relances',
+  'relances emails': 'relances',
+};
+
+function normalizeTitle(value: string): string {
+  return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+    .replace(/[-_ ]+/g, ' ').trim();
+}
+
+/** À utiliser seulement sur les livrables visibles du dossier courant. */
+export function deliverableKeyOf(fileName: string, recordedType?: string | null, dossierTitle?: string | null): DeliverableKey | null {
+  const typed = DELIVERABLE_CATALOG.find(d => d.key === recordedType);
+  if (typed) return typed.key;
+  // Un intitulé libre ou composite reste dans « Autres documents ».
+  if (!/\.(?:pdf|docx?|xlsx?|csv|ics|odt|ods|txt)$/i.test(fileName)) return null;
+  let title = normalizeTitle(fileName.replace(/\.[^.]+$/, '').replace(/[-_ ](?:r|v)\d+$/i, ''));
+  const dossier = dossierTitle && normalizeTitle(dossierTitle);
+  if (dossier && title.endsWith(' ' + dossier)) title = title.slice(0, -(dossier.length + 1));
+  if (dossier && title.startsWith(dossier + ' ')) title = title.slice(dossier.length + 1);
+  const canonical = DELIVERABLE_CATALOG.find(d => normalizeTitle(d.slug) === title);
+  return canonical?.key ?? (Object.hasOwn(FILE_ALIASES, title) ? FILE_ALIASES[title] : null);
 }
 
 /* ── Modèle de données ──────────────────────────────────────────────────── */
@@ -38,11 +63,12 @@ export interface ChronoEvent extends Sourced {
 }
 
 export interface AnalysisData {
+  action_owner?: string;
   summary_short: string;
   summary_long: string;
   parties: ({ name: string; role: string } & Sourced)[];
   facts: ({ text: string; status: 'documented' | 'asserted_by_party' | 'inferred' | 'missing' } & Sourced)[];
-  deadlines: ({ title: string; date: string | null; kind: 'mentioned' | 'computed' | 'hypothesis'; basis: string; priority: 'haute' | 'normale' | 'basse' } & Sourced)[];
+  deadlines: ({ responsible?: string; title: string; date: string | null; kind: 'mentioned' | 'computed' | 'hypothesis'; basis: string; priority: 'haute' | 'normale' | 'basse' } & Sourced)[];
   contradictions: ({ text: string } & Sourced)[];
   missing_items: { text: string; why: string }[];
   attention_points: string[];

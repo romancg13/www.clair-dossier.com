@@ -405,7 +405,7 @@ async function publish(dossierId: string, userId: string, files: OutFile[], revi
     const path = `${prefix}${userId}/${dossierId}/deliverable-${Date.now()}-${safeFileName(f.name)}`;
     const up = await db.storage.from(BUCKET).upload(path, f.bytes, { contentType: f.mime, upsert: false });
     if (up.error) throw new Error(`stockage ${f.name} : ${up.error.message}`);
-    const ins = await db.from('dossier_documents').insert({ dossier_id: dossierId, user_id: userId, file_path: path, file_name: f.name, size_bytes: f.bytes.byteLength, kind: 'deliverable', generated_by: 'ai', ai_revision: revision, review_status: status }).select('id').single();
+    const ins = await db.from('dossier_documents').insert({ dossier_id: dossierId, user_id: userId, file_path: path, file_name: f.name, size_bytes: f.bytes.byteLength, kind: 'deliverable', category: f.key, generated_by: 'ai', ai_revision: revision, review_status: status }).select('id').single();
     if (ins.error) {
       await db.storage.from(BUCKET).remove([path]);
       throw new Error(`enregistrement ${f.name} : ${ins.error.message}`);
