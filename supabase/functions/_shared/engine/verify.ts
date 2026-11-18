@@ -3,7 +3,7 @@
 // garde-fous sur la sortie consolidée. Rien de ce que déclare le modèle n'est cru seul.
 import type { AnalysisOutput, ExtractionOutput } from './schemas.ts';
 import type { PreparedPiece } from './reading.ts';
-import { fold } from './text-rules.ts';
+import { findDates, fold } from './text-rules.ts';
 
 export type QuoteStatus = 'found' | 'not_found' | 'unknown';
 const norm = (s: string) => fold(s).replace(/[’'`´]/g, "'").replace(/[^a-z0-9€'%]+/g, ' ').trim();
@@ -49,7 +49,11 @@ export function verifyExtraction(x: ExtractionOutput, piece: PreparedPiece): Sto
 
 type DEv = AnalysisOutput['facts'][number]['evidence'][number] & { status?: QuoteStatus };
 
-/** Statut d'un extrait consolidé, retrouvé dans la preuve de l'extraction de la même pièce. */
+/**
+ * Statut d'un extrait consolidé, retrouvé DANS une preuve de l'extraction de la même pièce.
+ * Seul le sens « extrait consolidé contenu dans une preuve » vaut : un passage plus long qui
+ * contiendrait une preuve courte (un nom de partie, un montant) peut être inventé autour d'elle.
+ */
 export function consolidatedQuoteStatus(e: DEv, extractions: Map<string, { data: StoredExtraction; vision: boolean }>): QuoteStatus {
   const x = extractions.get(e.document_id);
   if (!x) return 'not_found';
@@ -57,7 +61,8 @@ export function consolidatedQuoteStatus(e: DEv, extractions: Map<string, { data:
     (x.data[k] as unknown as { evidence: VerifiedQuote[] }[]).flatMap((i) => i.evidence),
   );
   const q = norm(e.quote);
-  const hit = all.find((v) => norm(v.quote).includes(q) || q.includes(norm(v.quote)));
+  if (q.length < 3) return 'not_found'; // même seuil que quoteStatus : un extrait vide ne prouve rien
+  const hit = all.find((v) => norm(v.quote).includes(q));
   if (hit) return hit.status ?? 'unknown';
   return x.vision ? 'unknown' : 'not_found';
 }
@@ -97,7 +102,12 @@ export function guardAnalysis(
       stripped += it.evidence.length - kept.length;
       return { ...it, evidence: kept, unverified: !kept.some((e) => e.status === 'found') };
     });
-  const deadlines = clean(a.deadlines).map((d) => {
+  const deadlines = clean(a.deadlines).map((d0) => {
+    // Une « date écrite » doit figurer dans un extrait retrouvé : sinon (date mal lue, jour et
+    // mois inversés…), elle redevient une date à confirmer et ne peut pas fixer l'action.
+    const misread = d0.kind === 'mentioned' && Boolean(d0.date) && !d0.unverified && !(d0.evidence as DEv[]).some((e) => e.status === 'found' && findDates(e.quote).some((h) => h.iso === d0.date));
+    if (misread) notes.push(`date de « ${d0.title} » absente de l'extrait cité : ramenée à « à confirmer »`);
+    const d = misread ? { ...d0, kind: 'hypothesis' as const, unverified: true } : d0;
     if (d.kind === 'hypothesis' && d.priority === 'haute') {
       notes.push(`priorité ramenée à « normale » pour l'hypothèse « ${d.title} »`);
       return { ...d, priority: 'normale' as const };
