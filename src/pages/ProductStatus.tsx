@@ -140,13 +140,13 @@ export function ProductStatus() {
 
           <div className="mt-10 flex flex-wrap items-center gap-4">
             <Link
-              to="/rendez-vous"
+              to="/rendez-vous/"
               className="sheen inline-flex items-center gap-2 rounded-full bg-gold-500 px-6 py-3.5 text-sm font-semibold text-navy-900 shadow-gold transition-all duration-300 hover:-translate-y-0.5"
             >
               Voir le produit en démonstration
               <ArrowRightIcon width={14} height={14} strokeWidth={2} />
             </Link>
-            <Link to="/securite" className="text-sm font-medium text-navy-900 border-b hairline-gold hover:text-gold-700">
+            <Link to="/securite/" className="text-sm font-medium text-navy-900 border-b hairline-gold hover:text-gold-700">
               Centre de confiance & sécurité
             </Link>
           </div>

@@ -229,7 +229,7 @@ export function RendezVous() {
                         </button>
                         <p className="text-center text-xs text-slate-500">
                           Demande traitée selon la{' '}
-                          <a href="/politique-confidentialite" className="border-b hairline-gold text-navy-900 hover:text-gold-700">
+                          <a href="/politique-confidentialite/" className="border-b hairline-gold text-navy-900 hover:text-gold-700">
                             politique de confidentialité
                           </a>
                           . Sans engagement.

@@ -105,12 +105,12 @@ function generateHome(): void {
         ? 'Gratuit'
         : p.priceMonthly === null
           ? 'Sur devis'
-          : `${p.priceMonthly} €/mois HT`;
+          : `${p.priceMonthly} €/mois`;
     lines.push(`- **${p.name}** (${p.audience}) — ${price}. ${p.description}`);
   }
   lines.push('');
   lines.push(
-    'Facturation annuelle disponible sur tous les plans payants avec 10 % de réduction sur le cumul mensuel.'
+    'Facturation annuelle disponible sur tous les plans payants avec 10 % de réduction sur le cumul mensuel. TVA non applicable, article 293 B du CGI : le prix affiché est le prix payé (CGV).'
   );
   lines.push('');
   lines.push(`Détail complet : ${SITE}/tarifs`);
@@ -327,7 +327,7 @@ function generatePricing(): void {
     '',
     '# Tarifs ClairDossier',
     '',
-    "De l'indépendant à l'entreprise — sept niveaux de service couvrent tous les usages. Compte gratuit, abonnement sans engagement. Facturation mensuelle ou annuelle (−10 % en annuel).",
+    "De l'indépendant à l'entreprise — sept niveaux de service couvrent tous les usages. Compte gratuit, abonnement sans engagement. Facturation mensuelle ou annuelle (−10 % en annuel). TVA non applicable, article 293 B du CGI : le prix affiché est le prix payé.",
     '',
     '## Les sept formules',
     '',
@@ -342,7 +342,7 @@ function generatePricing(): void {
         ? 'Gratuit'
         : p.priceMonthly === null
           ? 'Sur devis'
-          : `${p.priceMonthly} € HT/mois`;
+          : `${p.priceMonthly} €/mois`;
     const variant = p.variant === 'dark' ? ' (mis en avant)' : '';
     lines.push(`### ${p.name}${variant} — ${price}`);
     lines.push('');
@@ -350,7 +350,7 @@ function generatePricing(): void {
     lines.push('');
     if (p.priceMonthly !== null && p.priceMonthly > 0) {
       lines.push(
-        `Facturation annuelle : ${euroFr(p.priceMonthly * 12 * 0.9)} HT/an, soit ${euroFr(p.priceMonthly * 0.9)} HT/mois (−10 %).`
+        `Facturation annuelle : ${euroFr(p.priceMonthly * 12 * 0.9)}/an, soit ${euroFr(p.priceMonthly * 0.9)}/mois (−10 %).`
       );
       lines.push('');
     }

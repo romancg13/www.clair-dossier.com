@@ -14,7 +14,11 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "tsx --test tests/*.test.ts",
     "ia:commission": "node scripts/mise-en-service-supabase.mjs --ia-seulement",
-    "ia:corpus": "node --import tsx scripts/ia-corpus-test.ts"
+    "ia:corpus": "node --import tsx scripts/ia-corpus-test.ts",
+    "seo:check": "node scripts/seo-check.mjs check --config seo/site.config.json",
+    "seo:check:dist": "node scripts/seo-check.mjs check --config seo/site.config.json --dist dist",
+    "seo:report": "node scripts/seo-check.mjs report",
+    "seo:indexnow": "node scripts/seo-check.mjs indexnow --config seo/site.config.json --ledger seo/state/indexnow.json"
   },
   "dependencies": {
     "@fontsource/cormorant-garamond": "^5.2.5",

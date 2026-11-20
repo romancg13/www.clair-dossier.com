@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Seo, breadcrumbSchema } from '../lib/seo';
+import { Seo, breadcrumbSchema, canonicalUrl } from '../lib/seo';
 import { Reveal, Stagger, StaggerItem } from '../components/primitives/Reveal';
 import { blogPosts } from '../data/blog';
 import { authors } from '../data/authors';
@@ -26,13 +26,13 @@ export function BlogIndex() {
             '@context': 'https://schema.org',
             '@type': 'Blog',
             name: 'Journal ClairDossier',
-            url: 'https://www.clair-dossier.com/blog',
+            url: canonicalUrl('/blog'),
             inLanguage: 'fr-FR',
             blogPost: blogPosts.map((p) => ({
               '@type': 'BlogPosting',
               headline: p.title,
               datePublished: p.date,
-              url: `https://www.clair-dossier.com/blog/${p.slug}`,
+              url: canonicalUrl(`/blog/${p.slug}`),
               author: { '@type': 'Person', name: authors[p.author]?.name ?? 'ClairDossier' },
             })),
           },
@@ -65,7 +65,7 @@ export function BlogIndex() {
               return (
                 <StaggerItem key={post.slug}>
                   <article className="flex h-full flex-col overflow-hidden rounded-2xl border hairline bg-white">
-                    <Link to={`/blog/${post.slug}`} className="group relative block overflow-hidden" tabIndex={-1} aria-hidden="true">
+                    <Link to={`/blog/${post.slug}/`} className="group relative block overflow-hidden" tabIndex={-1} aria-hidden="true">
                       <JournalIllustration kind={post.illustration} className="aspect-[16/6]" />
                       <span className="absolute left-4 top-4 inline-flex items-center rounded-full bg-cream-50/95 px-2.5 py-1 font-mono text-[0.65rem] font-medium uppercase tracking-[0.16em] text-navy-900">
                         {post.category}
@@ -77,7 +77,7 @@ export function BlogIndex() {
                         {post.updated ? `Mis à jour le ${formatDate(post.updated)}` : formatDate(post.date)} · {post.readMinutes} min
                       </p>
                       <h2 className="mt-3 font-display text-xl font-semibold leading-snug text-navy-900 sm:text-2xl">
-                        <Link to={`/blog/${post.slug}`} className="hover:text-navy-800">
+                        <Link to={`/blog/${post.slug}/`} className="hover:text-navy-800">
                           {post.title}
                         </Link>
                       </h2>
@@ -86,7 +86,7 @@ export function BlogIndex() {
                       </p>
                       <div className="mt-5 flex items-center justify-end border-t hairline pt-4">
                         <Link
-                          to={`/blog/${post.slug}`}
+                          to={`/blog/${post.slug}/`}
                           className="inline-flex items-center gap-1.5 text-sm font-medium text-navy-900 hover:text-gold-700"
                         >
                           Lire

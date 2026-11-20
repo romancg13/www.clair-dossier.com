@@ -46,14 +46,14 @@ export function TrustChapter() {
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <Link
-                to="/securite"
+                to="/securite/"
                 className="group inline-flex items-center gap-1.5 rounded-full bg-navy-900 px-5 py-3 text-sm font-medium text-cream-50 transition-colors hover:bg-navy-800"
               >
                 Centre de confiance
                 <ArrowRightIcon width={14} height={14} strokeWidth={2} className="transition-transform group-hover:translate-x-0.5" />
               </Link>
               <Link
-                to="/etat-du-produit"
+                to="/etat-du-produit/"
                 className="border-b hairline-gold text-sm font-medium text-navy-900 transition-colors hover:text-gold-700"
               >
                 État du produit, daté

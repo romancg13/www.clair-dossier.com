@@ -34,6 +34,22 @@ jobs:
           MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || (github.event.schedule == '40 7 1 * *' && 'mensuel' || 'hebdo') }}
         run: node scripts/maintenance.mjs "$MODE"
 
+  seo:
+    # Hebdomadaire : seo-check approfondi (liens internes cassés, chaînes de redirection).
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '10 7 * * 1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: seo-check --deep (production)
+        run: |
+          node scripts/seo-check.mjs check --config seo/site.config.json --deep --json seo-check.json --quiet || code=$?
+          node scripts/seo-check.mjs report --in seo-check.json >> "$GITHUB_STEP_SUMMARY"
+          exit ${code:-0}
+
   lighthouse:
     # Mesure de laboratoire sur le domaine réel (rapport seulement : la variance
     # des machines GitHub ne permet pas d'en faire un seuil bloquant).

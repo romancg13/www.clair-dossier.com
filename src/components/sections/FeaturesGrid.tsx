@@ -53,7 +53,7 @@ export function FeaturesGrid() {
                     return (
                       <li key={f.slug}>
                         <Link
-                          to={`/fonctionnalites/${f.slug}`}
+                          to={`/fonctionnalites/${f.slug}/`}
                           className="inline-flex items-center gap-2 text-sm font-medium text-navy-900 transition-colors hover:text-gold-700"
                         >
                           <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-cream-100 text-navy-900">

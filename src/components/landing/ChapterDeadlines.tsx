@@ -42,7 +42,7 @@ export function ChapterDeadlines() {
         footnote={
           <p>
             Rappels automatiques : à l’étude.{' '}
-            <Link to="/etat-du-produit" className="border-b cd-hairline-strong text-silver-200 transition-colors hover:text-gold-400">
+            <Link to="/etat-du-produit/" className="border-b cd-hairline-strong text-silver-200 transition-colors hover:text-gold-400">
               Voir l’état du produit
             </Link>
           </p>

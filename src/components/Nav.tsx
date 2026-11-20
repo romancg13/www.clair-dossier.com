@@ -8,9 +8,9 @@ import { useMediaQuery } from './primitives/useMediaQuery';
 
 // Journal, Contact, État du produit et parcours dédiés : pied de page.
 const NAV_ITEMS = [
-  { to: '/fonctionnalites', label: 'Fonctionnalités' },
-  { to: '/tarifs', label: 'Tarifs' },
-  { to: '/securite', label: 'Sécurité' },
+  { to: '/fonctionnalites/', label: 'Fonctionnalités' },
+  { to: '/tarifs/', label: 'Tarifs' },
+  { to: '/securite/', label: 'Sécurité' },
 ];
 
 export function Nav() {

@@ -1,4 +1,5 @@
-import { Seo, orgSchema, websiteSchema } from "../lib/seo";
+import { Seo, orgSchema, websiteSchema, softwareApplicationSchema } from "../lib/seo";
+import { plans } from "../data/pricing";
 import { Hero } from "../components/sections/Hero";
 import { AvantApres } from "../components/sections/AvantApres";
 import { FeaturesGrid } from "../components/sections/FeaturesGrid";
@@ -16,22 +17,9 @@ import { homeFaq } from "../data/faq";
 import { HOME_CINEMATIC } from "../lib/flags";
 import { HomeCinematic } from "../components/landing/HomeCinematic";
 
-const softwareSchema = {
-  "@context": "https://schema.org",
-  "@type": "SoftwareApplication",
-  name: "ClairDossier",
-  applicationCategory: "LegalService",
-  operatingSystem: "Web",
-  offers: {
-    "@type": "Offer",
-    price: "19",
-    priceCurrency: "EUR",
-    description:
-      "Création de compte gratuite, abonnement à partir de 19 €/mois HT.",
-  },
-  description:
-    "Plateforme legaltech française. Transforme les demandes juridiques en dossiers structurés, suivis et transmis par l'utilisateur.",
-};
+// Constructeur commun (src/lib/seo.tsx) : prix publics de src/data/pricing.ts, sans
+// « HT » (TVA non applicable, art. 293 B du CGI, CGV) ni catégorie LegalService.
+const softwareSchema = softwareApplicationSchema(plans.map((plan) => plan.priceMonthly));
 
 const faqSchema = {
   "@context": "https://schema.org",

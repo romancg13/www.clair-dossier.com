@@ -1,5 +1,5 @@
 import { Link, Navigate, useParams } from 'react-router-dom';
-import { Seo, breadcrumbSchema } from '../lib/seo';
+import { Seo, breadcrumbSchema, ORGANIZATION_ID } from '../lib/seo';
 import { Reveal } from '../components/primitives/Reveal';
 import { LEGACY_FEATURE_SLUGS, features, getFeatureBySlug, getFeatureGroup } from '../data/features';
 import { FEATURE_ICONS, ArrowRightIcon, CheckIcon } from '../components/icons';
@@ -14,7 +14,7 @@ export function FeatureDetail() {
 
   // Ancienne adresse → redirection client (le 301 serveur vit dans netlify.toml).
   if (!feature && slug && LEGACY_FEATURE_SLUGS[slug]) {
-    return <Navigate to={`/fonctionnalites/${LEGACY_FEATURE_SLUGS[slug]}`} replace />;
+    return <Navigate to={`/fonctionnalites/${LEGACY_FEATURE_SLUGS[slug]}/`} replace />;
   }
 
   if (!feature) return <NotFound />;
@@ -46,7 +46,7 @@ export function FeatureDetail() {
             serviceType: feature.title,
             name: feature.title,
             description: feature.blurb,
-            provider: { '@type': 'Organization', name: 'ClairDossier' },
+            provider: { '@type': 'Organization', '@id': ORGANIZATION_ID, name: 'ClairDossier' },
           },
         ]}
       />
@@ -56,7 +56,7 @@ export function FeatureDetail() {
         <div className="mx-auto flex max-w-7xl items-center gap-2 px-5 py-3 text-xs text-slate-500 sm:px-8 lg:px-12">
           <Link to="/" className="hover:text-navy-900">Accueil</Link>
           <span className="text-slate-300">/</span>
-          <Link to="/fonctionnalites" className="hover:text-navy-900">Fonctionnalités</Link>
+          <Link to="/fonctionnalites/" className="hover:text-navy-900">Fonctionnalités</Link>
           <span className="text-slate-300">/</span>
           <span className="text-navy-900">{feature.shortTitle}</span>
         </div>
@@ -132,7 +132,7 @@ export function FeatureDetail() {
             <h2 className="font-display text-3xl font-semibold text-navy-900 sm:text-4xl">
               Autres fonctionnalités utiles.
             </h2>
-            <Link to="/fonctionnalites" className="text-sm font-medium text-navy-900 border-b hairline-gold hover:text-gold-700">
+            <Link to="/fonctionnalites/" className="text-sm font-medium text-navy-900 border-b hairline-gold hover:text-gold-700">
               Toutes les fonctionnalités
             </Link>
           </div>
@@ -142,7 +142,7 @@ export function FeatureDetail() {
               return (
                 <Link
                   key={f.slug}
-                  to={`/fonctionnalites/${f.slug}`}
+                  to={`/fonctionnalites/${f.slug}/`}
                   className="group flex h-full flex-col rounded-xl border hairline bg-white p-6 transition-colors duration-300 hover:border-gold-500"
                 >
                   <span className="grid h-10 w-10 place-items-center rounded-lg bg-cream-100 text-navy-900 group-hover:bg-gold-500/15 group-hover:text-gold-700">

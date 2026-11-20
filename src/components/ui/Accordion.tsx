@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import { motion } from 'motion/react';
 
 export type AccordionItem = {
   id: string;
@@ -38,25 +38,24 @@ export function Accordion({ items }: { items: AccordionItem[] }) {
                 </svg>
               </span>
             </button>
-            <AnimatePresence initial={false}>
-              {isOpen && (
-                <motion.div
-                  key="content"
-                  id={`accordion-panel-${item.id}`}
-                  role="region"
-                  aria-labelledby={`accordion-trigger-${item.id}`}
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-                  className="overflow-hidden"
-                >
-                  <div className="pb-5 pr-2 text-sm text-slate-500 leading-relaxed sm:pb-6 sm:pr-10 sm:text-base">
-                    {item.answer}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {/* Toutes les réponses restent dans le DOM (et donc dans le HTML pré-rendu) :
+                le balisage FAQPage décrit des réponses réellement présentes sur la page.
+                Panneau fermé : hauteur 0, inert et aria-hidden (ni focus, ni lecture). */}
+            <motion.div
+              id={`accordion-panel-${item.id}`}
+              role="region"
+              aria-labelledby={`accordion-trigger-${item.id}`}
+              aria-hidden={!isOpen}
+              inert={!isOpen}
+              initial={false}
+              animate={isOpen ? { height: 'auto', opacity: 1 } : { height: 0, opacity: 0 }}
+              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+              className="overflow-hidden"
+            >
+              <div className="pb-5 pr-2 text-sm text-slate-500 leading-relaxed sm:pb-6 sm:pr-10 sm:text-base">
+                {item.answer}
+              </div>
+            </motion.div>
           </li>
         );
       })}

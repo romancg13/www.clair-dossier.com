@@ -81,7 +81,7 @@ export function Marseille() {
               Commencer
             </Link>
             <Link
-              to="/rendez-vous"
+              to="/rendez-vous/"
               className="rounded-full border hairline-strong bg-white px-6 py-3 text-sm font-medium text-navy-900 transition-colors hover:bg-cream-100"
             >
               Demander une démonstration
@@ -126,11 +126,11 @@ export function Marseille() {
             <p className="mt-5 text-sm leading-relaxed text-slate-500">
               ClairDossier est un outil documentaire : il ne remplace pas un avocat et ne délivre
               aucune consultation juridique. Pour l'étendue exacte du service,{' '}
-              <Link to="/etat-du-produit" className="font-medium text-navy-900 underline decoration-gold-500/60 underline-offset-2 hover:text-gold-700">
+              <Link to="/etat-du-produit/" className="font-medium text-navy-900 underline decoration-gold-500/60 underline-offset-2 hover:text-gold-700">
                 consultez l'état du produit
               </Link>
               {' '}et{' '}
-              <Link to="/securite" className="font-medium text-navy-900 underline decoration-gold-500/60 underline-offset-2 hover:text-gold-700">
+              <Link to="/securite/" className="font-medium text-navy-900 underline decoration-gold-500/60 underline-offset-2 hover:text-gold-700">
                 le centre de confiance
               </Link>
               .
@@ -159,13 +159,13 @@ export function Marseille() {
             <p className="mt-5 text-sm leading-relaxed text-silver-200/80">
               Service en ligne : l'accompagnement se fait à distance, pour Marseille comme pour
               toute la France. Siège publié dans les{' '}
-              <Link to="/mentions-legales" className="underline decoration-gold-400/50 underline-offset-2 transition-colors hover:text-cream-50">
+              <Link to="/mentions-legales/" className="underline decoration-gold-400/50 underline-offset-2 transition-colors hover:text-cream-50">
                 mentions légales
               </Link>
               .
             </p>
             <Link
-              to="/contact"
+              to="/contact/"
               className="group mt-6 inline-flex items-center gap-1.5 text-sm font-medium text-gold-400 transition-colors hover:text-cream-50"
             >
               Page contact et démonstration
@@ -181,11 +181,11 @@ export function Marseille() {
           </h2>
           <div className="mt-6 flex flex-wrap gap-3">
             {[
-              { to: '/fonctionnalites', label: 'Fonctionnalités' },
-              { to: '/tarifs', label: 'Tarifs' },
-              { to: '/cabinets-avocats', label: "Cabinets d'avocats" },
-              { to: '/experts-comptables', label: 'Experts-comptables' },
-              { to: '/blog', label: 'Journal' },
+              { to: '/fonctionnalites/', label: 'Fonctionnalités' },
+              { to: '/tarifs/', label: 'Tarifs' },
+              { to: '/cabinets-avocats/', label: "Cabinets d'avocats" },
+              { to: '/experts-comptables/', label: 'Experts-comptables' },
+              { to: '/blog/', label: 'Journal' },
             ].map((l) => (
               <Link
                 key={l.to}

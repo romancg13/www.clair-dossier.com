@@ -5,34 +5,34 @@ import { useAuth } from "../lib/auth";
 import { newDossierHref } from "../lib/cta";
 
 const PRODUIT = [
-  { to: "/fonctionnalites", label: "Fonctionnalités" },
-  { to: "/tarifs", label: "Tarifs" },
-  { to: "/securite", label: "Sécurité" },
-  { to: "/etat-du-produit", label: "État du produit" },
+  { to: "/fonctionnalites/", label: "Fonctionnalités" },
+  { to: "/tarifs/", label: "Tarifs" },
+  { to: "/securite/", label: "Sécurité" },
+  { to: "/etat-du-produit/", label: "État du produit" },
 ];
 
 const PARCOURS = [
-  { to: "/cabinets-avocats", label: "Cabinets d'avocats" },
-  { to: "/experts-comptables", label: "Experts-comptables" },
-  { to: "/grands-comptes", label: "Grands comptes" },
-  { to: "/artisans-btp", label: "Artisans du BTP" },
-  { to: "/professionnels-immobilier", label: "Immobilier" },
-  { to: "/rendez-vous", label: "Prendre rendez-vous" },
+  { to: "/cabinets-avocats/", label: "Cabinets d'avocats" },
+  { to: "/experts-comptables/", label: "Experts-comptables" },
+  { to: "/grands-comptes/", label: "Grands comptes" },
+  { to: "/artisans-btp/", label: "Artisans du BTP" },
+  { to: "/professionnels-immobilier/", label: "Immobilier" },
+  { to: "/rendez-vous/", label: "Prendre rendez-vous" },
 ];
 
 const RESSOURCES = [
-  { to: "/blog", label: "Journal" },
-  { to: "/contact", label: "Contact & démo" },
-  { to: "/marseille", label: "ClairDossier à Marseille" },
-  { to: "/securite#conformite", label: "Conformité" },
-  { to: "/securite#dpa", label: "DPA" },
+  { to: "/blog/", label: "Journal" },
+  { to: "/contact/", label: "Contact & démo" },
+  { to: "/marseille/", label: "ClairDossier à Marseille" },
+  { to: "/securite/#conformite", label: "Conformité" },
+  { to: "/securite/#dpa", label: "DPA" },
 ];
 
 const LEGAL = [
-  { to: "/mentions-legales", label: "Mentions légales" },
-  { to: "/cgv", label: "CGV" },
-  { to: "/politique-confidentialite", label: "Confidentialité" },
-  { to: "/cookies", label: "Cookies" },
+  { to: "/mentions-legales/", label: "Mentions légales" },
+  { to: "/cgv/", label: "CGV" },
+  { to: "/politique-confidentialite/", label: "Confidentialité" },
+  { to: "/cookies/", label: "Cookies" },
 ];
 
 export function Footer() {
@@ -101,7 +101,7 @@ export function Footer() {
           <span>
             Hébergeur conforme RGPD · Pièces chiffrées au repos ·{" "}
             <Link
-              to="/securite"
+              to="/securite/"
               className="border-b hairline-gold hover:text-navy-900"
             >
               Charte de sécurité

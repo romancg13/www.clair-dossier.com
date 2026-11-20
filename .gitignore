@@ -29,3 +29,4 @@ mobile/.easignore
 
 # Mise en service IA : état local reprenable (aucun secret)
 .ia-commission/
+seo/state/

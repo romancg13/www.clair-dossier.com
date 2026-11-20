@@ -57,7 +57,7 @@ export function SecurityBlock() {
             </h2>
           </div>
           <Link
-            to="/securite"
+            to="/securite/"
             className="inline-flex items-center gap-1.5 self-start rounded-full bg-navy-900 px-5 py-3 text-sm font-medium text-cream-50 transition-colors hover:bg-navy-800 lg:self-end"
           >
             Charte complète

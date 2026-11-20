@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Seo, breadcrumbSchema } from "../lib/seo";
+import { Seo, breadcrumbSchema, ORGANIZATION_ID } from "../lib/seo";
 import { useAuth } from "../lib/auth";
 import { newDossierHref } from "../lib/cta";
 import { Reveal } from "../components/primitives/Reveal";
@@ -21,7 +21,7 @@ const serviceSchemas = features.map((f) => ({
   serviceType: f.title,
   name: f.title,
   description: f.blurb,
-  provider: { "@type": "Organization", name: "ClairDossier" },
+  provider: { "@type": "Organization", "@id": ORGANIZATION_ID, name: "ClairDossier" },
 }));
 
 export function FeaturesIndex() {
@@ -121,7 +121,7 @@ export function FeaturesIndex() {
                 sur la page tarifs.
               </p>
               <Link
-                to="/tarifs"
+                to="/tarifs/"
                 className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-navy-900 hover:text-gold-700"
               >
                 Voir les tarifs
@@ -150,7 +150,7 @@ export function FeaturesIndex() {
             </div>
           </div>
           <Link
-            to="/etat-du-produit"
+            to="/etat-du-produit/"
             className="mt-6 inline-flex items-center gap-1.5 text-sm font-medium text-navy-900 border-b hairline-gold hover:text-gold-700"
           >
             État du produit détaillé : disponible, partiel, prévu
@@ -174,7 +174,7 @@ export function FeaturesIndex() {
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Link
-              to="/rendez-vous"
+              to="/rendez-vous/"
               className="sheen inline-flex items-center gap-2 rounded-full bg-gold-500 px-6 py-3.5 text-sm font-semibold text-navy-900 shadow-gold hover:-translate-y-0.5"
             >
               Demander une démo

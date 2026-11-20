@@ -115,7 +115,7 @@ export function LegalPage({ slug }: { slug: keyof typeof legalPages }) {
               .map((p) => (
                 <Link
                   key={p.slug}
-                  to={`/${p.slug}`}
+                  to={`/${p.slug}/`}
                   className="group flex flex-col rounded-xl border hairline bg-white p-5 transition-colors hover:border-gold-500"
                 >
                   <p className="font-mono text-[0.65rem] uppercase tracking-[0.16em] text-gold-700">

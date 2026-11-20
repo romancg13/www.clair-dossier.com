@@ -283,12 +283,12 @@ export function Signup() {
                     <input type="checkbox" name="cgv" required className="mt-1 h-4 w-4 shrink-0 accent-gold-500" />
                     <span>
                       J'accepte les{" "}
-                      <Link to="/cgv" target="_blank" className="font-medium underline decoration-gold-500 underline-offset-4">
+                      <Link to="/cgv/" target="_blank" className="font-medium underline decoration-gold-500 underline-offset-4">
                         CGV
                       </Link>{" "}
                       * — voir aussi la{" "}
                       <Link
-                        to="/politique-confidentialite"
+                        to="/politique-confidentialite/"
                         target="_blank"
                         className="font-medium underline decoration-gold-500 underline-offset-4"
                       >

@@ -111,7 +111,7 @@ export function AdminRequests({ onError }: { onError: (m: string | null) => void
                 <span className={`rounded-full px-2 py-0.5 font-mono text-[0.65rem] uppercase ${a.level === "overdue" ? "bg-red-100 text-red-800" : "bg-gold-500/15 text-navy-900"}`}>
                   {a.level === "overdue" ? "En retard" : `Dans ${a.daysLeft} j`}
                 </span>
-                <Link to={`/blog/${a.slug}`} className="text-navy-900 underline-offset-2 hover:underline">
+                <Link to={`/blog/${a.slug}/`} className="text-navy-900 underline-offset-2 hover:underline">
                   {a.title}
                 </Link>
                 <span className="text-xs text-slate-500">
