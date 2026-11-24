@@ -29,3 +29,6 @@ mobile/.easignore
 
 # Mise en service IA : état local reprenable (aucun secret)
 .ia-commission/
+
+# Analyses et documents commerciaux privés (contacts, marges, brouillons) : jamais versionnés.
+founder/
