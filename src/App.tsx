@@ -160,6 +160,16 @@ const DemoDossier =
   import.meta.env.VITE_DEMO === '1'
     ? lazy(() => import('./pages/DemoDossier').then((m) => ({ default: m.DemoDossier })))
     : null;
+// Démo assurance construction + fiche pilote : même garde (build VITE_DEMO=1 uniquement),
+// montées hors Layout (aucune navigation ni CTA du site : un seul CTA, « Consulter le pilote »).
+const DemoConstruction =
+  import.meta.env.VITE_DEMO === '1'
+    ? lazy(() => import('./pages/DemoConstruction').then((m) => ({ default: m.DemoConstruction })))
+    : null;
+const PiloteConstruction =
+  import.meta.env.VITE_DEMO === '1'
+    ? lazy(() => import('./pages/PiloteConstruction').then((m) => ({ default: m.PiloteConstruction })))
+    : null;
 
 export default function App() {
   return (
@@ -393,6 +403,26 @@ export default function App() {
           }
         />
       </Route>
+      {DemoConstruction && (
+        <Route
+          path="demo/assurance-construction"
+          element={
+            <Suspense fallback={<RouteFallback />}>
+              <DemoConstruction />
+            </Suspense>
+          }
+        />
+      )}
+      {PiloteConstruction && (
+        <Route
+          path="pilote-assurance-construction"
+          element={
+            <Suspense fallback={<RouteFallback />}>
+              <PiloteConstruction />
+            </Suspense>
+          }
+        />
+      )}
     </Routes>
   );
 }

@@ -160,7 +160,7 @@ export function buildNotFoundPage(shell: string): string {
  */
 export function appShellRoutes(env: Record<string, string | undefined> = process.env): string[] {
   const routes = ['/inscription', '/connexion', '/compte', '/dossier/nouveau', '/admin'];
-  return env.VITE_DEMO === '1' ? [...routes, '/demo'] : routes;
+  return env.VITE_DEMO === '1' ? [...routes, '/demo', '/demo/assurance-construction', '/pilote-assurance-construction'] : routes;
 }
 
 /**
