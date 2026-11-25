@@ -115,7 +115,13 @@ function partiesOf(units: Unit[], all: string): ExtractionOutput['parties'] {
   for (const u of units) {
     for (const m of u.text.matchAll(/\bSCI(?: des| de la| du| de)? [A-ZÉ][\wÀ-ÿ'-]+/g)) add(m[0], /bailleur|proprietaire/.test(fall) ? 'bailleur' : 'société civile immobilière', u, m[0]);
     for (const m of u.text.matchAll(/\bCabinet [A-ZÉ][\wÀ-ÿ-]+(?: [A-ZÉ][\wÀ-ÿ-]+){0,2}/g)) add(m[0], /gestion/.test(fold(m[0])) ? 'gestionnaire pour le bailleur' : 'cabinet', u, m[0]);
-    for (const m of u.text.matchAll(/\b([A-ZÉ][\wÀ-ÿ'-]+(?: [A-ZÉ][\wÀ-ÿ'-]+){0,2}) (SARL|SAS|SASU|EURL|EI)\b/g)) add(m[0], /(preneur|locataire)/.test(fall) ? 'locataire (preneur)' : 'société', u, m[0]);
+    // Fin de chaque nom de SCI de l'unité : « SCI des Tilleuls Atelier Lumen SARL » (colonnes accolées) = deux parties, pas une.
+    const finsSci = new Set([...u.text.matchAll(/\bSCI(?: des| de la| du| de)? [A-ZÉ][\wÀ-ÿ'-]+/g)].map((m) => m.index + m[0].length));
+    for (const m of u.text.matchAll(/\b([A-ZÉ][\wÀ-ÿ'-]+(?: [A-ZÉ][\wÀ-ÿ'-]+){0,2}) (SARL|SAS|SASU|EURL|EI)\b/g)) {
+      const premier = m[1].split(' ')[0];
+      const nom = finsSci.has(m.index + premier.length) && m[1].includes(' ') ? m[0].slice(premier.length + 1) : m[0];
+      add(nom, /(preneur|locataire)/.test(fall) ? 'locataire (preneur)' : 'société', u, nom);
+    }
     if (u.locator === 'en-tête De') {
       const m = /^"?([^"<]+?)"?\s*</.exec(u.text);
       if (m) add(m[1], 'expéditeur du courriel', u, m[1].trim());

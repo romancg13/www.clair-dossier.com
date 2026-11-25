@@ -223,6 +223,28 @@ await test('pièce : B ne peut ni rattacher ni déplacer une pièce vers le doss
   const [n] = await q('select count(*)::int as n from public.dossier_documents where dossier_id = $1 and user_id = $2', [dossierA, B]);
   assert.equal(n.n, 0);
 });
+await test('diagnostic lecture seule : distingue correctif absent / appliqué, sans rien écrire', async () => {
+  const kit = readFileSync(join(root, 'supabase', 'verification', '20261125_isolation_lecture_seule.sql'), 'utf8');
+  const blocs = kit.split(/\n(?=-- \[\d\])/).slice(1).map((b) => b.replace(/^--.*$/gm, '').trim().replace(/;$/, ''));
+  assert.equal(blocs.length, 8);
+  for (const b of blocs) assert.match(b, /^select\b/i, 'chaque bloc est un SELECT');
+  assert.doesNotMatch(kit.replace(/^--.*$/gm, ''), /\b(insert|update|delete|drop|alter|create|grant|truncate)\b/i);
+  await asSuperuser();
+  const verdict = async () => (await q(blocs[0])).map((r) => r.correctif_applique);
+  assert.deepEqual(await verdict(), [true, true, true]);
+  await db.exec(readFileSync(join(root, 'supabase', 'rollback', '20261125150000_pieces_dossier_proprietaire.down.sql'), 'utf8'));
+  assert.deepEqual(await verdict(), [false, false, false]);
+  // Sans le correctif, B rattache une pièce au dossier de A : le diagnostic le compte.
+  await asUser(B);
+  const [intrus] = await q(`insert into public.dossier_documents (dossier_id, user_id, file_path, file_name, kind) values ($1, $2, $3, 'intrus.pdf', 'piece') returning id`, [dossierA, B, `${B}/intrus.pdf`]);
+  await asSuperuser();
+  assert.equal(Number((await q(blocs[1]))[0].pieces_hors_proprietaire), 1);
+  await q('delete from public.dossier_documents where id = $1', [intrus.id]);
+  await db.exec(readFileSync(join(root, 'supabase', 'migrations', '20261125150000_pieces_dossier_proprietaire.sql'), 'utf8'));
+  assert.deepEqual(await verdict(), [true, true, true]);
+  assert.equal(Number((await q(blocs[1]))[0].pieces_hors_proprietaire), 0);
+  for (const b of blocs.slice(2)) await q(b);
+});
 await test('A voit son dossier et jamais celui de B', async () => {
   await asUser(A);
   const rows = await q('select id from public.dossiers');

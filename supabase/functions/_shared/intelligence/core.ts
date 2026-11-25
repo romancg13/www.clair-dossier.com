@@ -330,7 +330,8 @@ const DOC_MATCH: Record<DeliverableKey, RegExp> = {
   relances: /\b(relances?|courriers?|e-?mails?)\b/,
 };
 /** Actions de niveau 3 : jamais exécutées par l'assistant. */
-const FORBIDDEN = /^(envoie|envoyer|envoi|expedie|transmets?|supprime|supprimer|efface|effacer|detruis|paie|payer|regle la|regle le|effectue (un|le) (paiement|virement)|signe|signer|resilie|change (le|mon) mot de passe|donne (l')?acces|partage avec)\b/;
+// « Envoie-moi le point » s'adresse au titulaire lui-même : ce n'est pas une transmission à un tiers.
+const FORBIDDEN = /^(?!(?:envoie|envoyez|transmets|transmettez)[- ]moi\b)(envoie|envoyer|envoi|expedie|transmets?|supprime|supprimer|efface|effacer|detruis|paie|payer|regle la|regle le|effectue (un|le) (paiement|virement)|signe|signer|resilie|change (le|mon) mot de passe|donne (l')?acces|partage avec)\b/;
 const POLITE = /^(peux-tu|pourrais-tu|tu peux|merci de|veuillez|stp|s'il te plait|s'il vous plait|maintenant|ensuite|alors)\s+/;
 /** Un ordre sensible se reconnaît en TÊTE de proposition (« Supprime… »), pas à un mot croisé dans un nom de pièce (« devis signé.pdf »). */
 function forbidden(t: string): boolean {
@@ -360,7 +361,7 @@ export function toWorkflow(text: string): Workflow | null {
   else if (/\b(chaque jour|tous les jours|quotidien)/.test(t)) [declencheur, frequence] = ['chaque jour à 8 h (heure de Paris)', 'quotidienne'];
   else if (/\b(chaque mois|tous les mois|mensuel)/.test(t)) [declencheur, frequence] = ['le 1er de chaque mois à 8 h (heure de Paris)', 'mensuelle'];
   else if (/\b(chaque|a chaque|des qu'?|quand|lorsqu'?)\b.*\b(facture|piece|document|courrier|e-?mail|contrat)/.test(t)) [declencheur, frequence] = [`à chaque ${t.match(/\b(facture|piece|document|courrier|e-?mail|contrat)/)![1].replace('piece', 'pièce')} reçu(e)`, 'à l’événement'];
-  else if (/\bavant\b.*\b(renouvellement|echeance|expiration|fin)\b/.test(t)) [declencheur, frequence] = ['30, 7 et 1 jour(s) avant la date concernée', 'à l’approche d’une date'];
+  else if (/\bavant\b.*\b(renouvellement|echeance|expiration|fin)s?\b/.test(t)) [declencheur, frequence] = ['30, 7 et 1 jour(s) avant la date concernée', 'à l’approche d’une date'];
   else if (/\bautomatise|suivi\b/.test(t)) [declencheur, frequence] = ['chaque lundi à 8 h (heure de Paris)', 'hebdomadaire'];
   if (!declencheur) return null;
   const actions: string[] = [];

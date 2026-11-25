@@ -286,3 +286,47 @@ test('confirmation : un rappel devient une vraie échéance (une seule fois) ; u
   assert.equal(tick.ok, true);
   assert.ok(tick.automatisations && typeof tick.automatisations.executees === 'number');
 });
+
+test('coupe-circuit et pilotage par la route : modèle réellement coupé, réservé à l’administration, mémoire et centre d’actions isolés', async () => {
+  const { reglerCoupeCircuit } = await import('../recette/server/pilotage.ts');
+  const { sha } = await import('../recette/server/security.ts');
+  const f = fakeClient(() => ({ content: [text('Réponse du modèle.')] }));
+  const { e, user, store, settle } = api(f.client);
+  const a = user(), b = user();
+  await a('POST', '/api/demo/demarrer', { scenario: 'a' });
+  await b('POST', '/api/demo/demarrer', { scenario: 'b' });
+  const dA = (await (await a('GET', '/api/dossiers')).json()).dossiers[0].id;
+  // Un client ne voit ni ne règle le coupe-circuit.
+  assert.equal((await a('GET', '/api/admin/coupe-circuit')).status, 404);
+  assert.equal((await a('POST', '/api/admin/coupe-circuit', { ia: true })).status, 404);
+  // Préférence du titulaire : transmise au modèle, invisible pour un autre compte.
+  assert.equal((await a('POST', '/api/memoire', { texte: 'Signer « C. Roche »' })).status, 201);
+  assert.equal((await a('POST', '/api/memoire', { texte: '  ' })).status, 400);
+  assert.equal((await (await b('GET', '/api/memoire')).json()).preferences.length, 0);
+  const r1 = (await (await a('POST', `/api/dossiers/${dA}/assistant`, { message: 'Bonjour, où en est ce dossier ?' })).json()).reponse;
+  assert.equal(r1.mode, 'modele');
+  assert.match(JSON.stringify(f.calls[0].messages), /Mes préférences de travail : « Signer « C\. Roche » »/);
+  const avant = f.calls.length;
+  // Coupe-circuit IA : la même demande est servie par les règles, sans aucun appel de modèle.
+  await reglerCoupeCircuit(store, { ia: true, motif: 'essai' });
+  const r2 = (await (await a('POST', `/api/dossiers/${dA}/assistant`, { message: 'Bonjour, où en est ce dossier ?' })).json()).reponse;
+  assert.equal(r2.mode, 'regles');
+  assert.equal(f.calls.length, avant, 'aucun appel de modèle pendant la coupure');
+  // Suppression de la préférence par son titulaire uniquement.
+  const id = (await (await a('GET', '/api/memoire')).json()).preferences[0].id;
+  assert.equal((await b('DELETE', `/api/memoire/${id}`)).status, 200);
+  assert.equal((await (await a('GET', '/api/memoire')).json()).preferences.length, 1, 'B ne supprime pas la préférence de A');
+  await a('DELETE', `/api/memoire/${id}`);
+  assert.equal((await (await a('GET', '/api/memoire')).json()).preferences.length, 0);
+  // Centre d'actions et planificateur : réponses propres au compte, sans passage enregistré au départ.
+  assert.deepEqual((await (await a('GET', '/api/actions')).json()).priorites, []);
+  assert.equal((await (await a('GET', '/api/planificateur')).json()).dernier_passage, null);
+  // Coupe-circuit des automatisations : le passage est noté, rien n'est exécuté.
+  await reglerCoupeCircuit(store, { ia: false, automatisations: true });
+  const tick = await (await handle(e, new Request(`https://recette.test/api/cron?k=${sha('w:cron')}`, { headers: { 'user-agent': 'vercel-cron/1.0' } }))).json();
+  assert.equal(tick.automatisations, null);
+  const p = await (await a('GET', '/api/planificateur')).json();
+  assert.equal(p.suspendu, true);
+  assert.equal(p.dernier_passage_planifie.executees, null);
+  await settle();
+});

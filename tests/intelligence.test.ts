@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { MAX_ACTIONS, TOOLS, planDeterministic, runAssistant, suggestions, toWorkflow, type Context } from '../supabase/functions/_shared/intelligence/core.ts';
+import { MAX_ACTIONS, TOOLS, isForbiddenRequest, planDeterministic, runAssistant, suggestions, toWorkflow, type Context } from '../supabase/functions/_shared/intelligence/core.ts';
 import { buildAttention } from '../supabase/functions/_shared/attention.ts';
 import { DEMO_PIECES, demoAnalysis } from '../src/demo/fixture.ts';
 
@@ -129,4 +129,14 @@ test('recherche et comparaison : résultats sourcés, pas de « contradiction »
   const [p1, p2] = DEMO_PIECES;
   const c = runAssistant(`Compare ${p1.file_name} et ${p2.file_name}`, ctx());
   assert.ok(c.sources.length === 2 || c.ask, c.text);
+});
+
+test('automatisations en langage naturel : surveillance des renouvellements, « envoie-moi » adressé à soi-même', () => {
+  const w = toWorkflow('Surveille mes contrats et préviens-moi avant leurs renouvellements.');
+  assert.ok(w, 'la demande est comprise');
+  assert.match(w!.declencheur, /avant la date concernée/);
+  assert.deepEqual(w!.actions, ['vous prévenir']);
+  assert.equal(isForbiddenRequest('Tous les lundis, envoie-moi le point sur mes dossiers'), false);
+  assert.equal(isForbiddenRequest('Envoie le dossier à mon avocat'), true, 'une transmission à un tiers reste refusée');
+  assert.equal(isForbiddenRequest('Transmets-moi le bilan chaque vendredi'), false);
 });
