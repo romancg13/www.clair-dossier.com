@@ -200,12 +200,16 @@ returns text language sql stable security definer set search_path = public as $$
 $$;
 revoke execute on function public.trial_document_fingerprint(uuid) from public, anon, authenticated;
 
--- Titulaire abonné (ou sous dérogation) : même critère que enable_ai_processing.
--- Un prospect devenu client sort du périmètre de l'essai (quotas de son offre).
+-- Titulaire abonné (ou sous dérogation) : abonnement COURANT au sens de
+-- dossier_entitlement et des quotas de l'offre (ai_quota_state) — actif, essai
+-- Stripe, paiement en retard (période de grâce) ou résilié tant que la période
+-- payée court. Un prospect devenu client sort du périmètre de l'essai (quotas
+-- de son offre) et y revient seulement quand son abonnement est terminé.
+-- (L'ACTIVATION d'un nouveau dossier reste régie par enable_ai_processing.)
 create or replace function public.trial_account_entitled(p_user uuid)
 returns boolean language sql stable security definer set search_path = public as $$
   select coalesce((
-    select coalesce(e.subscription_status, '') in ('active', 'trialing') or e.override_mode is not null
+    select e.subscription_status is not null or e.override_mode is not null
       from public.dossier_entitlement(p_user) e), false)
 $$;
 revoke execute on function public.trial_account_entitled(uuid) from public, anon, authenticated;

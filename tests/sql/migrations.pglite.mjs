@@ -2016,6 +2016,34 @@ await test('Essai : abonnés strictement inchangés ; un prospect devenu abonné
   assert.ok((await q('select enabled_at from public.dossier_ai_settings where dossier_id = $1', [D3]))[0].enabled_at, 'troisième dossier : par abonnement uniquement');
 });
 
+await test('Essai : prospect devenu abonné — paiement en retard ou résiliation en période payée = toujours abonné ; abonnement terminé = essai de nouveau', async () => {
+  // Revue adverse : la garde ne retenait que « active / trialing ». Or l'abonnement
+  // courant (dossier_entitlement, quotas de l'offre) couvre aussi la période de grâce
+  // Stripe (past_due) et la résiliation tant que la période payée court : un client
+  // payant voyait ses deux premiers dossiers (ceux de l'essai) cesser d'être traités,
+  // en silence, alors que ses autres dossiers continuaient.
+  for (const [status, label] of [['past_due', 'paiement en retard'], ['canceled', 'résilié, période payée en cours']]) {
+    await subscribe(P3, 'essentiel', { status });
+    await asService();
+    assert.ok((await q('select pages_limit from public.ai_quota_state($1)', [P3]))[0].pages_limit > 0, `${label} : quota de l'offre toujours ouvert`);
+    const piece = await addPiece(P3, P3D2.id, `client-${status}.pdf`);
+    await asSuperuser();
+    assert.equal((await q(`select 1 from public.ai_jobs where document_id = $1 and status = 'queued'`, [piece])).length, 1, `${label} : dossier d'essai traité comme les autres dossiers du client`);
+    const j = await jobOf(P3D2.id, 'extract');
+    await asService();
+    assert.equal((await q('select public.trial_allows($1, 9999) as r', [j]))[0].r, null, `${label} : worker non bloqué par l'essai`);
+  }
+  // Abonnement réellement terminé (période payée échue) : la garde d'essai s'applique de nouveau.
+  await subscribe(P3, 'essentiel', { status: 'canceled', start: new Date(Date.now() - 40 * 86400000).toISOString(), end: new Date(Date.now() - 86400000).toISOString() });
+  const apres = await addPiece(P3, P3D2.id, 'apres-fin-abonnement.pdf');
+  await asSuperuser();
+  assert.equal((await q('select 1 from public.ai_jobs where document_id = $1', [apres])).length, 0, 'abonnement terminé : pièce hors manifeste refusée');
+  await asUser(P3);
+  await rejects(q('select public.enable_ai_processing($1, $2)', [P3D1.id, 'ia-2026-10']), /SUBSCRIPTION_REQUIRED/);
+  // État attendu par le test de retour arrière : P3 abonné actif.
+  await subscribe(P3, 'essentiel');
+});
+
 await test('Essai : retour arrière niveau 1 — garde retirée, dossiers d\'essai non abonnés désactivés, compteurs conservés', async () => {
   await asSuperuser();
   const slots = (await q('select count(*)::int n from public.trial_slots'))[0].n;

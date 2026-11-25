@@ -54,7 +54,10 @@ Aucune écriture possible par le client (aucune policy d'écriture) ; tout passe
 - **Immutabilité** : essais, emplacements et journal ne peuvent être ni supprimés ni réécrits, quel
   que soit le rôle (déclencheurs `trial_guard`).
 - **Abonnés inchangés** : la garde ne concerne que les dossiers porteurs d'un emplacement d'essai
-  dont le titulaire n'est pas abonné. Un prospect qui s'abonne passe aux règles de son offre.
+  dont le titulaire n'est pas abonné. Un prospect qui s'abonne passe aux règles de son offre,
+  y compris pendant un paiement en retard ou une résiliation dont la période payée court encore
+  (même définition de l'abonnement courant que `dossier_entitlement` et les quotas de l'offre) ;
+  la garde d'essai ne s'applique de nouveau qu'une fois l'abonnement terminé.
 - **Relecture** : le dossier d'essai garde le mode `manual` par défaut — rien n'est publié au
   prospect sans approbation de l'équipe.
 
