@@ -1,12 +1,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { strFromU8, unzipSync, zipSync, strToU8 } from 'fflate';
-import { PDFDocument } from 'pdf-lib';
+import { PDFArray, PDFDocument, PDFName, PDFRawStream, decodePDFRawStream } from 'pdf-lib';
 import { buildDocx, buildXlsx, docxToText, xlsxToText } from '../supabase/functions/_shared/office.ts';
 import {
   DELIVERABLE_CATALOG,
   applyOverrides,
   buildChronology,
+  buildDatesPdf,
   buildDeliverables,
   deliverableKeyFromName,
   deliverableKeyOf,
@@ -14,6 +15,7 @@ import {
 } from '../supabase/functions/_shared/deliverables.ts';
 import { trackingStep, TIMELINE_STEPS } from '../packages/core/src/dossiers.ts';
 import { bulkPieces, demoAnalysis, DEMO_PIECES } from '../src/demo/fixture.ts';
+import { LOGO_HEIGHT, LOGO_PNG_BASE64, LOGO_WIDTH } from '../supabase/functions/_shared/brand-logo.ts';
 
 const cov = { total: 11, extracted: 11, unsupported: 0, failed: 0, pending: 0, complete: true };
 const at = new Date('2026-10-23T10:00:00Z');
@@ -133,4 +135,117 @@ test('dossier de 190 pièces : chronologie et six livrables générés en moins 
   const chrono = await PDFDocument.load(files.find((f) => f.name === 'Chronologie-r1.pdf')!.bytes);
   assert.ok(chrono.getPageCount() > 3);
   assert.ok(Date.now() - t0 < 10_000, `${Date.now() - t0} ms`);
+});
+
+/* ── Charte PDF : logo, pagination, six compositions, texte sélectionnable ── */
+
+const win1252 = new TextDecoder('windows-1252');
+const squash = (s: string) => s.replace(/\s+/g, '');
+
+/** Texte réellement dessiné, page par page (opérateurs Tj des flux de contenu). */
+async function pdfInspect(bytes: Uint8Array) {
+  const pdf = await PDFDocument.load(bytes);
+  const pages = pdf.getPages().map((p) => {
+    const c = p.node.Contents();
+    const streams = c instanceof PDFArray ? c.asArray().map((r) => pdf.context.lookup(r)) : [c];
+    const ops = streams.map((s) => Buffer.from(decodePDFRawStream(s as PDFRawStream).decode()).toString('latin1')).join('\n');
+    return [...ops.matchAll(/<([0-9A-Fa-f]*)>\s*Tj/g)].map((m) => win1252.decode(Buffer.from(m[1], 'hex'))).join(' ');
+  });
+  const images = pdf.context.enumerateIndirectObjects().map(([, o]) => o).filter((o): o is PDFRawStream => o instanceof PDFRawStream && o.dict.get(PDFName.of('Subtype')) === PDFName.of('Image'));
+  return { pdf, pages, images, keywords: (pdf.getKeywords() ?? '').split(' ').filter(Boolean) };
+}
+
+const demoInput = () => ({ title: 'Dossier test', revision: 2, generatedAt: at, analysis: demoAnalysis(), coverage: cov, pieces: DEMO_PIECES });
+
+test('charte PDF : logo officiel incorporé une seule fois, pagination « Page x/y », poids maîtrisé', async () => {
+  assert.ok(LOGO_PNG_BASE64.length < 12_000, 'logo léger (edge function)');
+  assert.deepEqual([...Buffer.from(LOGO_PNG_BASE64, 'base64').subarray(0, 8)], [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a], 'PNG valide');
+  const files = (await buildDeliverables(demoInput())).filter((f) => f.name.endsWith('.pdf'));
+  assert.equal(files.length, 5);
+  for (const f of files) {
+    const { pages, images } = await pdfInspect(f.bytes);
+    const logo = images.filter((i) => String(i.dict.get(PDFName.of('Width'))) === String(LOGO_WIDTH) && String(i.dict.get(PDFName.of('Height'))) === String(LOGO_HEIGHT));
+    assert.ok(logo.length >= 1, `${f.name} : logo présent`);
+    assert.equal(images.length, 2, `${f.name} : une image (et son masque de transparence), réutilisée sur toutes les pages`);
+    pages.forEach((t, i) => assert.ok(t.includes(`Page ${i + 1}/${pages.length}`), `${f.name} : pagination de la page ${i + 1}`));
+    assert.ok(pages[0].includes('Dossier test') && /Révision 2/.test(pages[0]) && /Analyse complète/.test(pages[0]), `${f.name} : en-tête complet`);
+    assert.ok(pages.every((t) => /ne constitue pas un conseil juridique/.test(t)), `${f.name} : pied de page`);
+    assert.ok(f.bytes.byteLength < 60_000, `${f.name} : ${f.bytes.byteLength} octets`);
+  }
+});
+
+test('six compositions distinctes dans une même charte (structure réellement dessinée)', async () => {
+  const input = demoInput();
+  const files = await buildDeliverables(input);
+  const pdf = (n: string) => files.find((f) => f.name === n)!.bytes;
+  const docs = {
+    resume: await pdfInspect(pdf('Resume-IA-r2.pdf')),
+    dashboard: await pdfInspect(pdf('Dashboard-r2.pdf')),
+    chronologie: await pdfInspect(pdf('Chronologie-r2.pdf')),
+    dates: await pdfInspect(await buildDatesPdf(input)),
+    echeances: await pdfInspect(pdf('Echeances-r2.pdf')),
+    relances: await pdfInspect(pdf('Relances-r2.pdf')),
+  };
+  const signature: Record<keyof typeof docs, string> = { resume: 'encadre-action', dashboard: 'tuiles', chronologie: 'frise', dates: 'tableau-corrections', echeances: 'groupes-statut', relances: 'cartes-message' };
+  for (const [k, d] of Object.entries(docs) as [keyof typeof docs, (typeof docs)['resume']][]) {
+    assert.ok(d.keywords.includes('entete-logo') && d.keywords.includes('pied-pagination'), `${k} : charte commune`);
+    assert.ok(d.keywords.includes(signature[k]), `${k} : composition propre (${signature[k]})`);
+    for (const [other, s] of Object.entries(signature)) if (other !== k) assert.ok(!d.keywords.includes(s), `${k} n'emprunte pas la composition de ${other}`);
+  }
+  assert.equal(new Set(Object.values(docs).map((d) => d.keywords.join(' '))).size, 6, 'six signatures différentes');
+  assert.equal(files.length, 13, 'la composition « Dates » imprimable reste hors catalogue');
+});
+
+test('PDF : l’essentiel en première page, aucune information du modèle perdue, texte sélectionnable', async () => {
+  const a = demoAnalysis();
+  const overrides = [{ event_key: a.events[0].key, retained_date: '2026-01-15', label: null, hidden: false, reason: 'tampon dateur', author: 'Titulaire', created_at: '2026-10-20T09:00:00Z' }];
+  const files = await buildDeliverables({ ...demoInput(), overrides });
+  const text = async (n: string) => (await pdfInspect(files.find((f) => f.name === n)!.bytes)).pages.map(squash);
+  const has = (hay: string, needle: string, why: string) => assert.ok(hay.includes(squash(needle)), `${why} : « ${needle} »`);
+
+  const resume = await text('Resume-IA-r2.pdf');
+  for (const t of ['LA SITUATION EN BREF', a.summary_short, 'VIGILANCE', a.attention_points[0], 'PROCHAINE ACTION', a.next_actions[0], a.facts[0].text]) has(resume[0], t, 'Résumé, page 1');
+  const all = resume.join('');
+  for (const t of [a.summary_long, ...a.facts.map((f) => f.text), ...a.attention_points, ...a.next_actions, ...a.contradictions.map((c) => c.text), ...a.missing_items.flatMap((m) => [m.text, m.why]), ...a.parties.flatMap((p) => [p.name, p.role]), ...DEMO_PIECES.map((p) => p.file_name)]) has(all, t, 'Résumé');
+  has(all, 'Source : Devis D-2026-041 signé.pdf p.2', 'Résumé, source accessible');
+
+  const dash = (await text('Dashboard-r2.pdf')).join('');
+  for (const t of ['11/11', 'PIÈCES EXPLOITÉES', 'PROCHAINE ÉCHÉANCE', '09/11/2026', a.summary_short, ...a.missing_items.map((m) => m.text)]) has(dash, t, 'Dashboard');
+
+  const chrono = (await text('Chronologie-r2.pdf')).join('');
+  for (const e of a.events) has(chrono, e.label, 'Chronologie');
+  has(chrono, 'date corrigée (extraite : 01/2026 ; motif : tampon dateur)', 'Chronologie, correction visible');
+
+  const ech = (await text('Echeances-r2.pdf')).join('');
+  for (const d of a.deadlines) for (const t of [d.title, d.basis]) has(ech, t, 'Échéances');
+  for (const t of ['Dates mentionnées dans les pièces (2)', 'Dates calculées (1)', 'Hypothèses à confirmer par un professionnel (1)']) has(ech, t, 'Échéances, groupes');
+
+  const rel = (await text('Relances-r2.pdf')).join('');
+  has(rel, 'AUCUN ENVOI AUTOMATIQUE', 'Relances');
+  for (const r of a.reminder_drafts) for (const t of [r.subject, r.recipient_hint, ...r.body.split('\n').filter(Boolean)]) has(rel, t, 'Relances');
+
+  const dates = (await pdfInspect(await buildDatesPdf({ ...demoInput(), overrides }))).pages.map(squash).join('');
+  for (const t of ['15/01/2026', 'corrigée', 'tampon dateur', 'Titulaire', 'HISTORIQUE DES CORRECTIONS (1)']) has(dates, t, 'Dates modifiables');
+});
+
+test('dossier de 190 pièces : pagination continue, logo unique, gabarit robuste aux textes extrêmes', async () => {
+  const pieces = [...DEMO_PIECES, ...bulkPieces().pieces];
+  const analysis = demoAnalysis(true);
+  // Textes extrêmes : mot insécable très long, caractères hors WinAnsi, message de plusieurs pages.
+  analysis.attention_points.push(`Référence ${'X'.repeat(400)} → à vérifier ✓`);
+  analysis.reminder_drafts.push({ audience: 'third_party', subject: 'Long message', body: Array.from({ length: 160 }, (_, i) => `Paragraphe ${i + 1} du projet de courrier.`).join('\n'), suggested_date: null, recipient_hint: 'À définir' });
+  const t0 = Date.now();
+  const files = await buildDeliverables({ title: 'Dossier volumineux', revision: 1, generatedAt: at, analysis, coverage: { ...cov, total: 190, extracted: 190 }, pieces });
+  assert.ok(Date.now() - t0 < 10_000, `${Date.now() - t0} ms`);
+  for (const f of files.filter((x) => x.name.endsWith('.pdf'))) {
+    const { pages, images } = await pdfInspect(f.bytes);
+    assert.equal(images.length, 2, `${f.name} : logo incorporé une seule fois`);
+    pages.forEach((t, i) => assert.ok(t.includes(`Page ${i + 1}/${pages.length}`), `${f.name} p.${i + 1}`));
+  }
+  const rel = (await pdfInspect(files.find((f) => f.name === 'Relances-r1.pdf')!.bytes)).pages;
+  assert.ok(rel.length >= 4, 'message long réparti sur plusieurs pages');
+  assert.ok(rel.join(' ').includes('Paragraphe 160 du projet de courrier.'), 'aucune ligne perdue');
+  const resume = (await pdfInspect(files.find((f) => f.name === 'Resume-IA-r1.pdf')!.bytes)).pages.map(squash).join('');
+  assert.ok(resume.includes('X'.repeat(60)), 'mot insécable découpé, pas tronqué');
+  assert.ok(resume.includes(squash('Bon de livraison BL-0179.pdf')), 'toutes les pièces listées');
 });

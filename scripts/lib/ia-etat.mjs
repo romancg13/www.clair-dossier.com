@@ -17,6 +17,8 @@ export const PERIMETRE = [
   'supabase/functions/_shared/ai-pipeline.ts',
   'supabase/functions/_shared/analysis-model.ts',
   'supabase/functions/_shared/deliverables.ts',
+  'supabase/functions/_shared/pdf-charte.ts',
+  'supabase/functions/_shared/brand-logo.ts',
   'supabase/functions/_shared/office.ts',
 ];
 
