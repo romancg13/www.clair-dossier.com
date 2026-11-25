@@ -45,6 +45,7 @@ test('premiers résultats publiés sans aucun appel IA, puis remplacés par l’
   assert.equal(premier.coverage.complete, false);
   assert.match(premier.data.attention_points[0], /^Premiers résultats — analyse en cours/);
   assert.equal(premier.status, 'published');
+  assert.match(((await s.store.getView('d'))!.view as { dossier: { coverage_label: string } }).dossier.coverage_label, /^Premiers résultats — analyse en cours/);
   assert.equal(premier.cost_cents, 0);
   assert.equal((await s.store.mailbox('a')).length, 0, 'aucune notification pour des premiers résultats');
 

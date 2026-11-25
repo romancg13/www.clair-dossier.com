@@ -2,7 +2,8 @@
 
 Mis à jour : 2026-11-25 · PR #70 **fusionnée** (production `85bbb4e`) · travaux V6 : branche `claude/clairdossier-optimization-85z7y5`, PR brouillon #71, NON fusionnée · commit déployé : voir `ETAT_FONCTIONNALITES.md`.
 Source unique de l'état de chaque fonctionnalité : `ETAT_FONCTIONNALITES.md` (122 lignes, synthèse calculée). Sécurité de la production : `SECURITE_ISOLATION.md`.
-Production : inchangée depuis la fusion. Aucune migration appliquée, aucun paiement. Appels d'API payants : recette uniquement (clé installée le 25/11), environ 1 € de lecture (plafond mensuel atteint) et environ 0,2 USD d'assistant.
+Production : inchangée depuis la fusion. Aucune migration appliquée, aucun paiement. Appels d'API payants : recette uniquement (clé installée le 25/11), environ 1,41 € de lecture (plafond 1,50 €) et environ 0,2 USD d'assistant — total ≈ 1,75 USD sur 2 autorisés.
+Décisions du propriétaire (25/11, V12) : budget IA +0,60 USD accordé ; Supabase de recette : rester en local ; correctif de production 20261125150000 : PRÉ-AUTORISÉ s'il manque, après sauvegarde (accès à l'organisation toujours absent) ; Stripe bac à sable : différé.
 
 Légende : VÉRIFIÉ EN LOCAL · VÉRIFIÉ SUR RECETTE HÉBERGÉE · IMPLÉMENTÉ NON TESTÉ · SIMULÉ · BLOQUÉ · DIFFÉRÉ.
 
@@ -99,7 +100,7 @@ Le gain de latence réel sur la recette hébergée est à lire dans la remise (m
 | Rentabilité avec coûts mesurés | VÉRIFIÉ (petit échantillon) | `RENTABILITE.md` : usage normal 84–89 %, intensif 14–62 %, seuil 6 clients |
 | Unification sur Supabase (pages originales + IA + automatisations pg_cron) | VÉRIFIÉ SUR SUPABASE LOCAL | `UNIFICATION.md`, captures `v11-*` |
 
-V12 (25/11) — analyse progressive : avec l'IA, les règles publient des « Premiers résultats — analyse en cours » sans aucun appel payant, puis la lecture et la synthèse IA les remplacent (une notification, avec l'analyse complète ; jamais par-dessus une synthèse IA déjà publiée). `tests/moteur-progressif.test.ts` (3), drapeau `progressive` de la configuration du moteur, actif sur la recette seulement. Mesure réelle sur la recette hébergée : À FAIRE (plafond de lecture atteint, accord de budget requis).
+V12 (25/11) — analyse progressive : avec l'IA, les règles publient des « Premiers résultats — analyse en cours » sans aucun appel payant, puis la lecture et la synthèse IA les remplacent (une notification, avec l'analyse complète ; jamais par-dessus une synthèse IA déjà publiée). `tests/moteur-progressif.test.ts` (3), drapeau `progressive` de la configuration du moteur, actif sur la recette seulement. Mesure réelle sur la recette hébergée (accord du propriétaire : 0,60 USD ; plafond de lecture porté à 150 c€ par `RECETTE_BUDGET_GLOBAL_CENTIMES`) : 3 pièces, avant correctif d'ordre : premiers résultats 38 s, analyse IA 168 s, 26,6 c€ ; 2 pièces, après correctif (première synthèse avant toute lecture IA, 3 lectures de front) : premiers résultats **10 s**, analyse IA **86 s**, six rendus 93 s, 14,6 c€. Dépensé sur cet accord : 41,2 c€ (≈ 0,45 USD) ; reste ≈ 9 c€ sous le plafond : plus d'essai IA sans nouvel accord. Captures `v12-premiers-resultats.png`, `v12-analyse-complete.png`.
 
 Point faible : premier résultat avec IA 142–207 s (30 s par règles). Piste : publier d'abord l'aperçu par règles puis remplacer par la synthèse du modèle, effort réduit pour la consolidation.
 

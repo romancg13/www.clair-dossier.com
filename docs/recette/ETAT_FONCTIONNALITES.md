@@ -1,6 +1,6 @@
 # État des fonctionnalités — source unique de vérité
 
-Mis à jour : 2026-11-25 · commit de recette déployé : `74767fa` (V11, IA réelle) ; PWA `1f278f2` ; recette finale V8 jouée sur `5035ff5` (463 unitaires et 118 SQL verts sur ce code ; recette finale hébergée jouée en session neuve le 25/11 : premier résultat 12,9 s, six rendus 20 s, archive de 14 fichiers contrôlée, isolation A/B 404, 0 erreur JS) (branche `claude/clairdossier-optimization-85z7y5`, PR brouillon #71) · production : `85bbb4e`.
+Mis à jour : 2026-11-25 · commit de recette déployé : voir `version.json` de la recette (V12, analyse progressive) ; PWA `1f278f2` ; recette finale V8 jouée sur `5035ff5` (463 unitaires et 118 SQL verts sur ce code ; recette finale hébergée jouée en session neuve le 25/11 : premier résultat 12,9 s, six rendus 20 s, archive de 14 fichiers contrôlée, isolation A/B 404, 0 erreur JS) (branche `claude/clairdossier-optimization-85z7y5`, PR brouillon #71) · production : `85bbb4e`.
 
 Mise à jour 2026-11-25 (soir) : clé API Claude et `RECETTE_AI=direct` actifs sur `clairdossier-recette-20b5a2` (Production Vercel) ; lignes E-01, E-03, E-04, F-03 réévaluées d'après un essai réel sur la recette (comptes fictifs, pièces fictives). Coût réel NON mesuré (page `/admin` : `RECETTE_ADMIN_PASSWORD` absent).
 
@@ -73,13 +73,14 @@ Le détail fin de la vitrine historique (219 lignes F-001…) reste dans `FEATUR
 | E-01 | Clé API dans le coffre serveur | — | — | OK | DV | `ANTHROPIC_API_KEY` (sensible, Production) ajoutée le 25/11 à ~18 h 30 ; redéploiement ; l'assistant passe en mode `modele` | solde et limite de dépense du workspace à lire dans la Console (propriétaire) |
 | E-02 | Liste des modèles réellement accessibles (`GET /v1/models`) | — | SIM | BLQ | DV | code `runtime.ts`, page /admin | dépend de E-01 |
 | E-03 | Sélection automatique du modèle (simple / courant / avancé) | toutes | SIM | OK | DV | recette 25/11 (session V11, API réelle) : question simple → claude-haiku-5-5, courante → claude-sonnet-5-5, analyse avancée → claude-opus-5-5, tous observés | — |
-| E-04 | Lecture des pièces par modèle (extraction, consolidation) | toutes | SIM | OK | DV | recette 25/11 (session V11, API réelle) : 3 pièces lues par le modèle ET synthèse par le modèle (fournisseur « anthropic », plus de mention simulation) après 2 correctifs : grammaire refusée par l'API (400 « compiled grammar is too large ») → sortie par outil non strict validée strictement ; tableaux rendus en texte → relus. Analyse juste (3 480 € réclamés / 3 210 € au relevé, réponse avant le 15/01/2027, loyer T4 « paiement à vérifier ») | premier résultat 142 s avec IA (30 s par règles) : à réduire |
+| E-04 | Lecture des pièces par modèle (extraction, consolidation) | toutes | SIM | OK | DV | recette 25/11 (session V11, API réelle) : 3 pièces lues par le modèle ET synthèse par le modèle (fournisseur « anthropic », plus de mention simulation) après 2 correctifs : grammaire refusée par l'API (400 « compiled grammar is too large ») → sortie par outil non strict validée strictement ; tableaux rendus en texte → relus. Analyse juste (3 480 € réclamés / 3 210 € au relevé, réponse avant le 15/01/2027, loyer T4 « paiement à vérifier ») | délai complet encore long (86 s pour 2 pièces) : dominé par les appels au modèle |
 | E-05 | Lecture par règles déterministes (sans modèle) | toutes | OK | OK | DV | `evaluation-moteur.test.ts` : exactitude 100 %, 0 partie inventée | — |
 | E-06 | OCR / lecture de scans et photos | toutes | SIM | BLQ | DV | pièce marquée « lecture reportée » | dépend de E-01 |
 | E-07 | Fournisseur de secours | — | ND | ND | ND | — | à décider (licences, confidentialité) |
 | E-08 | Traitement différé (Batch), cache des consignes | — | PART | BLQ | DV | cache des consignes codé ; Batch ND | après E-01 |
 | E-09 | Évaluation continue (corpus de référence, anti-régression) | interne | OK | — | — | `npm run ia:evaluation`, `evaluation-moteur.test.ts` | lancer avec un modèle après E-01 |
 | E-10 | Sources juridiques officielles (Légifrance/PISTE, Judilibre, EUR-Lex) | — | ND | ND | ND | — | comptes PISTE à créer |
+| E-11 | Analyse progressive : « Premiers résultats — analyse en cours » puis analyse IA | toutes | OK | OK | DV | `tests/moteur-progressif.test.ts` (4) ; recette 25/11, IA réelle, 2 pièces : premiers résultats 10 s, analyse IA 86 s, une seule notification ; captures `v12-premiers-resultats.png`, `v12-analyse-complete.png` | mesurer sur un lot plus grand (budget) ; pièces numérisées : pas de premiers résultats |
 
 ## F — Assistant ClairDossier IA et outils
 
@@ -246,33 +247,33 @@ Référence : les pages client ORIGINALES, branchées sur Supabase. « Local » 
 <!-- SYNTHESE -->
 ## Synthèse (calculée par `node scripts/synthese-fonctionnalites.mjs`)
 
-Fonctionnalités recensées : **149**.
+Fonctionnalités recensées : **150**.
 
 ### Local
 
 | OK | ÉMU | PART | DNT | SIM | BLQ | ND | DV | — |
 |---|---|---|---|---|---|---|---|---|
-| 108 | 0 | 7 | 6 | 6 | 2 | 15 | 2 | 3 |
+| 109 | 0 | 7 | 6 | 6 | 2 | 15 | 2 | 3 |
 
-- Couverture de vérification : 143/149 = **96 %** (état établi par une preuve ; exclus : les 6 « développé mais non testé »).
-- Taux d'opérationnalité : 108/144 = **75 %** vérifié réellement, plus 0 vérifié par émulation (périmètre actif = recensées − sans objet − désactivées volontairement ; simulé, bloqué et non développé restent au dénominateur).
+- Couverture de vérification : 144/150 = **96 %** (état établi par une preuve ; exclus : les 6 « développé mais non testé »).
+- Taux d'opérationnalité : 109/145 = **75 %** vérifié réellement, plus 0 vérifié par émulation (périmètre actif = recensées − sans objet − désactivées volontairement ; simulé, bloqué et non développé restent au dénominateur).
 
 ### Recette
 
 | OK | ÉMU | PART | DNT | SIM | BLQ | ND | DV | — |
 |---|---|---|---|---|---|---|---|---|
-| 55 | 10 | 10 | 11 | 4 | 11 | 24 | 5 | 19 |
+| 56 | 10 | 10 | 11 | 4 | 11 | 24 | 5 | 19 |
 
-- Couverture de vérification : 138/149 = **93 %** (état établi par une preuve ; exclus : les 11 « développé mais non testé »).
-- Taux d'opérationnalité : 55/125 = **44 %** vérifié réellement, plus 10 vérifié par émulation (périmètre actif = recensées − sans objet − désactivées volontairement ; simulé, bloqué et non développé restent au dénominateur).
+- Couverture de vérification : 139/150 = **93 %** (état établi par une preuve ; exclus : les 11 « développé mais non testé »).
+- Taux d'opérationnalité : 56/126 = **44 %** vérifié réellement, plus 10 vérifié par émulation (périmètre actif = recensées − sans objet − désactivées volontairement ; simulé, bloqué et non développé restent au dénominateur).
 
 ### Production
 
 | OK | ÉMU | PART | DNT | SIM | BLQ | ND | DV | — |
 |---|---|---|---|---|---|---|---|---|
-| 11 | 0 | 5 | 14 | 0 | 7 | 41 | 55 | 16 |
+| 11 | 0 | 5 | 14 | 0 | 7 | 41 | 56 | 16 |
 
-- Couverture de vérification : 135/149 = **91 %** (état établi par une preuve ; exclus : les 14 « développé mais non testé »).
+- Couverture de vérification : 136/150 = **91 %** (état établi par une preuve ; exclus : les 14 « développé mais non testé »).
 - Taux d'opérationnalité : 11/78 = **14 %** vérifié réellement, plus 0 vérifié par émulation (périmètre actif = recensées − sans objet − désactivées volontairement ; simulé, bloqué et non développé restent au dénominateur).
 
 ### Par catégorie (colonne Recette)
@@ -283,7 +284,7 @@ Fonctionnalités recensées : **149**.
 | B | 8 | 3 | 0 | 1 | 0 | 2 | 0 | 0 | 1 | 1 |
 | C | 12 | 6 | 0 | 1 | 1 | 0 | 0 | 3 | 0 | 1 |
 | D | 9 | 8 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 1 |
-| E | 10 | 4 | 0 | 0 | 0 | 0 | 3 | 2 | 0 | 1 |
+| E | 11 | 5 | 0 | 0 | 0 | 0 | 3 | 2 | 0 | 1 |
 | F | 14 | 7 | 0 | 3 | 0 | 0 | 0 | 3 | 0 | 1 |
 | G | 10 | 5 | 0 | 1 | 2 | 0 | 0 | 1 | 1 | 0 |
 | H | 6 | 0 | 0 | 0 | 0 | 1 | 3 | 0 | 1 | 1 |

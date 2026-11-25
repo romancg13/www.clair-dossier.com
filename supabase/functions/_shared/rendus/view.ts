@@ -42,7 +42,7 @@ export interface ViewInput {
   revision: number;
   generatedAt: Date;
   analysis: ViewAnalysis;
-  coverage: { total: number; extracted: number; unsupported: number; failed: number; pending: number; complete: boolean; duplicates?: number; deferred?: number };
+  coverage: { total: number; extracted: number; unsupported: number; failed: number; pending: number; complete: boolean; duplicates?: number; deferred?: number; provisional?: boolean };
   pieces: PieceRef[];
   overrides: EventOverride[];
   deadlineRows: DeadlineRow[];
@@ -249,7 +249,9 @@ export function buildView(i: ViewInput): RenduView {
     const o = latest.get(key);
     return { key, label: o?.label ?? d.title, extracted: d.date!, retained: o?.retained_date ?? d.date!, status: o?.hidden ? 'masquee' : o ? 'corrigee' : 'extraite', flag: null, reason: o?.reason ?? null, author: o?.author ?? null, edited_at: o?.created_at ?? null, source: src(d.evidence) };
   });
-  const coverageLabel = i.coverage.complete
+  const coverageLabel = i.coverage.provisional
+    ? `Premiers résultats — analyse en cours (${i.coverage.extracted} pièce${i.coverage.extracted > 1 ? 's' : ''})`
+    : i.coverage.complete
     ? `Analyse complète — ${i.coverage.extracted} pièce${i.coverage.extracted > 1 ? 's' : ''} exploitée${i.coverage.extracted > 1 ? 's' : ''}`
     : `Analyse partielle — ${i.coverage.extracted}/${i.coverage.total} pièces exploitées${i.coverage.unsupported ? `, ${i.coverage.unsupported} non lisible(s)` : ''}${i.coverage.deferred ? `, ${i.coverage.deferred} en attente de lecture` : ''}${i.coverage.failed ? `, ${i.coverage.failed} en échec` : ''}${i.coverage.pending ? `, ${i.coverage.pending} en cours` : ''}`;
 

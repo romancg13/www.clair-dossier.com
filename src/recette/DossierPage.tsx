@@ -199,7 +199,7 @@ export function DossierPage() {
               {v.tableau.action.target ? <Primary onClick={() => geste(v)}>{v.tableau.action.label}</Primary> : <Chip>Rien à faire pour le moment</Chip>}
             </div>
             {v.tableau.cabinet && <p className="mt-4 text-[14px] text-navy-900"><strong>Votre cabinet :</strong> {v.tableau.cabinet}</p>}
-            {v.dossier.simulation && <p className="mt-4 text-[12.5px] text-slate-500">Analyse produite par règles déterministes (sans IA) : à vérifier.</p>}
+            {v.dossier.simulation && <p className="mt-4 text-[12.5px] text-slate-500">{/^Premiers résultats/.test(v.dossier.coverage_label) ? "Premiers résultats issus d’une lecture automatique des textes (sans IA) : l’analyse approfondie est en cours et les complétera d’elle-même." : "Analyse produite par règles déterministes (sans IA) : à vérifier."}</p>}
           </>
         ) : d.en_verification ? (
           <p className="text-[16px] text-navy-900">Vos résultats sont prêts et en cours de vérification avant mise à disposition.</p>
