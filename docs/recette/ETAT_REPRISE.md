@@ -104,6 +104,15 @@ V12 (25/11) — analyse progressive : avec l'IA, les règles publient des « Pre
 
 Point faible : premier résultat avec IA 142–207 s (30 s par règles). Piste : publier d'abord l'aperçu par règles puis remplacer par la synthèse du modèle, effort réduit pour la consolidation.
 
+## Travaux V13 (2026-11-25)
+
+| Lot | Statut | Preuve |
+|---|---|---|
+| Dossier unique pour Gérard (sauvegarde, diagnostic, correctif, contrôle, capacité) | PRÊT, en attente de Gérard | `DOSSIER_GERARD.md` |
+| Économie de l'IA : marge par client, projection, anomalies, recommandations (lecture seule) | VÉRIFIÉ EN LOCAL | `tests/economie-ia.test.ts`, `AdminEconomieIa.tsx` |
+| Budget IA : pas de budget mensuel définitif (décision du fondateur) ; plafonds actuels conservés | CONSIGNÉ | recette : 150 c€/mois lecture, 0,80 USD assistant |
+| Gmail / Outlook / Resend | BLOQUÉ : aucun outil de navigateur dans la session ; comptes à créer par le fondateur | `MESSAGERIE_DIRECTE.md`, `EMAIL_ENTRANT.md` |
+
 ## Blocages — action minimale du propriétaire
 
 1. **Supabase isolé hébergé** — BLOQUÉ : organisation à la limite gratuite (2 projets actifs, tous deux étrangers à ClairDossier ; les 2 projets ClairDossier sont en pause). Une action : autoriser la reprise de « ClairDossier's Projet » à la place d'un projet actif, ou un projet payant.

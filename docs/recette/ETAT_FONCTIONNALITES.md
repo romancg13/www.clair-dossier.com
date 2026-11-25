@@ -148,6 +148,7 @@ Le détail fin de la vitrine historique (219 lignes F-001…) reste dans `FEATUR
 | J-06 | Coupe-circuit des appels de modèle | interne | OK | DNT | — | `recette-assistant.test.ts` | — |
 | J-07 | Calculateur de rentabilité (offres, options, gros consommateur, seuil, croissance, avec/sans crédits) | interne | OK | — | — | `RENTABILITE.md`, `rentabilite.test.ts` ; toutes les consommations sont ESTIMÉES | remplacer par des mesures réelles |
 | J-08 | Coût réel mesuré par document, dossier, conversation | interne | BLQ | PART | — | MESURÉ 25/11 (petit échantillon) : ≈ 2,5 c€/pièce, ≈ 8 c€/synthèse, ≈ 1,5 c€/question ; `RENTABILITE.md` recalculé | mesurer sur un corpus plus large (accord de budget) |
+| J-09 | Économie de l'IA (console fondateur) : marge directe par client, projection du mois, anomalies, recommandations | interne | OK | — | BLQ | `tests/economie-ia.test.ts` (4) ; onglet Supervision → « Économie de l'IA » (`src/components/admin/AdminEconomieIa.tsx`) ; coûts mesurés + montants Stripe, frais Stripe ESTIMÉS | production : migration 20261125140000 (Gérard) puis moteur IA ; aucune action automatique (décision du fondateur) |
 
 ## K — Supervision et MCP
 
@@ -247,34 +248,34 @@ Référence : les pages client ORIGINALES, branchées sur Supabase. « Local » 
 <!-- SYNTHESE -->
 ## Synthèse (calculée par `node scripts/synthese-fonctionnalites.mjs`)
 
-Fonctionnalités recensées : **150**.
+Fonctionnalités recensées : **151**.
 
 ### Local
 
 | OK | ÉMU | PART | DNT | SIM | BLQ | ND | DV | — |
 |---|---|---|---|---|---|---|---|---|
-| 109 | 0 | 7 | 6 | 6 | 2 | 15 | 2 | 3 |
+| 110 | 0 | 7 | 6 | 6 | 2 | 15 | 2 | 3 |
 
-- Couverture de vérification : 144/150 = **96 %** (état établi par une preuve ; exclus : les 6 « développé mais non testé »).
-- Taux d'opérationnalité : 109/145 = **75 %** vérifié réellement, plus 0 vérifié par émulation (périmètre actif = recensées − sans objet − désactivées volontairement ; simulé, bloqué et non développé restent au dénominateur).
+- Couverture de vérification : 145/151 = **96 %** (état établi par une preuve ; exclus : les 6 « développé mais non testé »).
+- Taux d'opérationnalité : 110/146 = **75 %** vérifié réellement, plus 0 vérifié par émulation (périmètre actif = recensées − sans objet − désactivées volontairement ; simulé, bloqué et non développé restent au dénominateur).
 
 ### Recette
 
 | OK | ÉMU | PART | DNT | SIM | BLQ | ND | DV | — |
 |---|---|---|---|---|---|---|---|---|
-| 56 | 10 | 10 | 11 | 4 | 11 | 24 | 5 | 19 |
+| 56 | 10 | 10 | 11 | 4 | 11 | 24 | 5 | 20 |
 
-- Couverture de vérification : 139/150 = **93 %** (état établi par une preuve ; exclus : les 11 « développé mais non testé »).
+- Couverture de vérification : 140/151 = **93 %** (état établi par une preuve ; exclus : les 11 « développé mais non testé »).
 - Taux d'opérationnalité : 56/126 = **44 %** vérifié réellement, plus 10 vérifié par émulation (périmètre actif = recensées − sans objet − désactivées volontairement ; simulé, bloqué et non développé restent au dénominateur).
 
 ### Production
 
 | OK | ÉMU | PART | DNT | SIM | BLQ | ND | DV | — |
 |---|---|---|---|---|---|---|---|---|
-| 11 | 0 | 5 | 14 | 0 | 7 | 41 | 56 | 16 |
+| 11 | 0 | 5 | 14 | 0 | 8 | 41 | 56 | 16 |
 
-- Couverture de vérification : 136/150 = **91 %** (état établi par une preuve ; exclus : les 14 « développé mais non testé »).
-- Taux d'opérationnalité : 11/78 = **14 %** vérifié réellement, plus 0 vérifié par émulation (périmètre actif = recensées − sans objet − désactivées volontairement ; simulé, bloqué et non développé restent au dénominateur).
+- Couverture de vérification : 137/151 = **91 %** (état établi par une preuve ; exclus : les 14 « développé mais non testé »).
+- Taux d'opérationnalité : 11/79 = **14 %** vérifié réellement, plus 0 vérifié par émulation (périmètre actif = recensées − sans objet − désactivées volontairement ; simulé, bloqué et non développé restent au dénominateur).
 
 ### Par catégorie (colonne Recette)
 
@@ -289,7 +290,7 @@ Fonctionnalités recensées : **150**.
 | G | 10 | 5 | 0 | 1 | 2 | 0 | 0 | 1 | 1 | 0 |
 | H | 6 | 0 | 0 | 0 | 0 | 1 | 3 | 0 | 1 | 1 |
 | I | 4 | 1 | 0 | 0 | 0 | 1 | 1 | 1 | 0 | 0 |
-| J | 8 | 3 | 0 | 2 | 2 | 0 | 0 | 0 | 0 | 1 |
+| J | 9 | 3 | 0 | 2 | 2 | 0 | 0 | 0 | 0 | 2 |
 | K | 6 | 0 | 0 | 0 | 1 | 0 | 1 | 1 | 0 | 3 |
 | L | 5 | 1 | 0 | 0 | 0 | 0 | 0 | 3 | 1 | 0 |
 | M | 12 | 6 | 0 | 2 | 1 | 0 | 0 | 0 | 1 | 2 |

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { AdminEconomieIa } from "./AdminEconomieIa";
 import { supabase } from "../../lib/supabase";
 import { adminErrorMessage, formatCents } from "../../lib/ai-admin";
 import {
@@ -302,6 +303,9 @@ export function AdminSupervision({ emails, onError }: Props) {
           et toute modification restent dans « Abonnements » et dans Stripe.
         </p>
       </div>
+
+      {/* Économie de l'IA : marge, projection, anomalies (lecture seule) */}
+      <AdminEconomieIa comptes={comptes} emails={emails} />
 
       {/* Par compte : coût IA, quota, volume */}
       <div className="rounded-2xl border hairline bg-white p-6 shadow-card">
