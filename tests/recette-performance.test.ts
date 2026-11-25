@@ -336,6 +336,29 @@ test('exécuteur interrompu : ses travaux sont repris à la fin du bail, sans co
   assert.ok(pm.compteurs.relances <= 6, `${pm.compteurs.relances} relances (une veille, pas une boucle)`);
 });
 
+test('gros dossier : la comparaison des montants ne remet pas en forme chaque montant à chaque paire', async () => {
+  // 40 courriers réclamant chacun un montant différent pour le même objet : chaque paire est un écart à relever.
+  const N = 40;
+  const p = await pile(Array.from({ length: N }, (_, i) => ({ nom: `courrier-${i}.txt`, contenu: texte(`Courrier du bailleur du 12/10/2026.\n\nObjet : régularisation de charges 2025.\n\nMontant réclamé : ${1200 + i * 7},00 euros au titre des charges 2025.`) })));
+  const natif = Number.prototype.toLocaleString;
+  let misesEnForme = 0;
+  Number.prototype.toLocaleString = function (this: number, ...a: Parameters<typeof natif>) {
+    misesEnForme++;
+    return natif.apply(this, a);
+  } as typeof natif;
+  try {
+    await drain(engineDeps(new RecetteStore(p.kv, p.clock.now), { ai: null, config: { consolidateDelayMs: 0 } }), 120_000, 400);
+  } finally {
+    Number.prototype.toLocaleString = natif;
+  }
+  const a = await p.store.lastAnalysis('D1');
+  const ecarts = a!.data.contradictions.filter((c) => c.kind === 'amount').length;
+  console.log(`# mesure montants ${JSON.stringify({ pieces: N, ecarts, misesEnForme })}`);
+  assert.ok(ecarts > N, `${ecarts} écarts de montants relevés`);
+  // Avant : deux mises en forme par écart déjà relevé, pour chaque paire (croissance en N puissance 4).
+  assert.ok(misesEnForme < 40 * ecarts, `${misesEnForme} mises en forme de montants pour ${ecarts} écarts`);
+});
+
 test('lot de 250 fichiers : annoncé en entier, donc notifié seulement une fois complet (plafonné à 200 avant)', async () => {
   const pm = pileMesure({ config: { paused: true } });
   const { c, id, lot } = await deposeEnRafale(pm, 2, 250);

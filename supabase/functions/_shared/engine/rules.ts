@@ -279,6 +279,10 @@ export function consolidateByRules(input: ConsolidationInput): AnalysisOutput {
   // Les pièces émises par un tiers (courrier, facture, relevé) priment sur les déclarations du titulaire (courriel).
   const rank = (t: string) => ['courrier', 'facture', "avis d'échéance", 'relevé de charges', 'bail commercial', 'contrat', 'devis', 'document'].indexOf(t) + 1 || 9;
   const cmp = allAmounts.filter((a) => a.kind === 'claimed' || a.kind === 'due').sort((a, b) => rank(a.docType) - rank(b.docType));
+  // Mise en forme des montants gardée en mémoire le temps de la comparaison : chaque paire relit les écarts déjà
+  // relevés, et la mise en forme (Intl) dominait le calcul d'un gros dossier. Résultat strictement identique.
+  const euros = new Map<number, string>();
+  const euro = (v: number) => euros.get(v) ?? (euros.set(v, frEuro(v)), euros.get(v)!);
   for (let i = 0; i < cmp.length; i++) {
     for (let j = i + 1; j < cmp.length; j++) {
       const a = cmp[i], b = cmp[j];
@@ -289,7 +293,8 @@ export function consolidateByRules(input: ConsolidationInput): AnalysisOutput {
       const ya = yearsOf(`${a.label} ${a.evidence[0]?.quote ?? ''}`), yb = yearsOf(`${b.label} ${b.evidence[0]?.quote ?? ''}`);
       if (ya.length && yb.length && !ya.some((y) => yb.includes(y))) continue;
       const pair = [a.amount, b.amount].sort((x, y) => x - y).join('/');
-      const existing = contradictions.find((c) => c.kind === 'amount' && c.text.includes(frEuro(Math.max(a.amount, b.amount))) && c.text.includes(frEuro(Math.min(a.amount, b.amount))));
+      const haut = euro(Math.max(a.amount, b.amount)), bas = euro(Math.min(a.amount, b.amount));
+      const existing = contradictions.find((c) => c.kind === 'amount' && c.text.includes(haut) && c.text.includes(bas));
       if (existing) {
         for (const x of [a, b]) if (!existing.evidence.some((e) => e.document_id === x.id && e.quote === x.evidence[0].quote)) existing.evidence.push(dq(x.id, x.evidence[0]));
         continue;
