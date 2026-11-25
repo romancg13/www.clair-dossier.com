@@ -194,6 +194,7 @@ export type AssistantReply = Reply & { mode: 'modele' | 'regles'; model?: string
 const REPLI = {
   budget: 'Réponse établie par les règles automatiques : le budget d’analyse approfondie du mois est atteint.',
   indisponible: 'Réponse établie par les règles automatiques : le service d’analyse approfondie est momentanément indisponible.',
+  sans_modele: 'Réponse établie par les règles automatiques.',
   absent: undefined,
 } as const;
 
@@ -201,7 +202,8 @@ const REPLI = {
 export async function answer(deps: AssistantDeps, userId: string, message: string, ctx: Context, history: { from: 'vous' | 'ia'; text: string }[] = []): Promise<AssistantReply> {
   const regles = (why: keyof typeof REPLI): AssistantReply => ({ ...runAssistant(message, ctx), mode: 'regles', notice: REPLI[why] });
   // Refus et cas sans modèle : aucun appel payant.
-  if (!deps.client || !ctx.rights.owner || !ctx.rights.assistant || isForbiddenRequest(message) || !message.trim()) return regles('absent');
+  if (!ctx.rights.owner || !ctx.rights.assistant || isForbiddenRequest(message) || !message.trim()) return regles('absent');
+  if (!deps.client) return regles('sans_modele');
   const tier = qualify(message);
   const model = deps.models[tier];
   const maxOut = deps.maxOutputTokens ?? (tier === 'avance' ? 1800 : 900);
