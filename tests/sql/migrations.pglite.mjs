@@ -204,6 +204,25 @@ await test('client ne peut pas se lever une suspension', async () => {
 console.log('Cloisonnement RLS A/B');
 const dossierA = await insertDossier(A, { title: 'Recouvrement — Société X' });
 const dossierB = await insertDossier(B, { title: 'Dossier de B' });
+await test('pièce : B ne peut ni rattacher ni déplacer une pièce vers le dossier de A (20261125150000)', async () => {
+  await asUser(B);
+  await rejects(
+    q(`insert into public.dossier_documents (dossier_id, user_id, file_path, file_name, kind) values ($1, $2, $3, 'x.pdf', 'piece')`, [dossierA, B, `${B}/x.pdf`]),
+    /row-level security/,
+  );
+  const [own] = await q(`insert into public.dossier_documents (dossier_id, user_id, file_path, file_name, kind) values ($1, $2, $3, 'y.pdf', 'piece') returning id`, [dossierB, B, `${B}/y.pdf`]);
+  await rejects(q('update public.dossier_documents set dossier_id = $1 where id = $2', [dossierA, own.id]), /row-level security/);
+  await q(`update public.dossier_documents set file_name = 'z.pdf' where id = $1`, [own.id]);
+  await q('delete from public.dossier_documents where id = $1', [own.id]);
+  // Même règle pour le déplacement d'une échéance.
+  const [dl] = await q(`insert into public.dossier_deadlines (dossier_id, user_id, title, due_date) values ($1, $2, 'Isolation', current_date + 7) returning id`, [dossierB, B]);
+  await rejects(q('update public.dossier_deadlines set dossier_id = $1 where id = $2', [dossierA, dl.id]), /row-level security/);
+  await q(`update public.dossier_deadlines set title = 'Isolation 2' where id = $1`, [dl.id]);
+  await q('delete from public.dossier_deadlines where id = $1', [dl.id]);
+  await asSuperuser();
+  const [n] = await q('select count(*)::int as n from public.dossier_documents where dossier_id = $1 and user_id = $2', [dossierA, B]);
+  assert.equal(n.n, 0);
+});
 await test('A voit son dossier et jamais celui de B', async () => {
   await asUser(A);
   const rows = await q('select id from public.dossiers');
@@ -2061,6 +2080,8 @@ await test('Essai : retour arrière niveau 1 — garde retirée, dossiers d\'ess
   assert.equal(await openJobs(P2D1.id, 'extract'), 0);
   assert.ok((await q('select enabled_at from public.dossier_ai_settings where dossier_id = $1', [P3D2.id]))[0].enabled_at, 'prospect devenu abonné : dossier laissé actif');
   await rejects(q('delete from public.trial_slots'), /ESSAI_IMMUABLE/);
+});
+
 // ── Messagerie directe (migration 20261125130000) ───────────────────────────
 const MAIL_ENC = 'v1.' + 'A'.repeat(16) + '.' + 'B'.repeat(40);
 await test('Messagerie directe : droit par offre, cloisonnement, jetons inaccessibles et jamais en clair', async () => {
@@ -2246,6 +2267,8 @@ await test('Messagerie directe : retour arrière niveau 1 — jetons effacés, c
   // La migration est rejouable après le retour arrière (idempotente).
   await db.exec(readFileSync(join(root, 'supabase', 'migrations', '20261125130000_messagerie_directe.sql'), 'utf8'));
   assert.ok((await q(`select to_regprocedure('public.mail_connection_resume(uuid)') as r`))[0].r);
+});
+
 // ── Supervision fondateur (migration 20261125140000) ────────────────────────
 await test('Supervision : lecture agrégée — non-admin refusé, agrégats exacts, aucun contenu', async () => {
   const alerte = (o, code) => o.alertes.find((a) => a.code === code)?.valeur ?? 0;
@@ -2480,7 +2503,7 @@ await test('Supervision : installation sans le moteur IA — lecture disponible,
   const insert = async (email) =>
     (await db2.query(`insert into auth.users (email, email_confirmed_at) values ($1, now()) returning id`, [email])).rows[0].id;
   const admin2 = await insert('prestige.seller@icloud.com');
-  const sansIa = files.filter((f) => f < '20261023' || f.startsWith('20261103') || f.startsWith('20261125'));
+  const sansIa = files.filter((f) => f < '20261023' || f.startsWith('20261103') || f.startsWith('20261125140000') || f.startsWith('20261125150000'));
   assert.ok(sansIa.includes('20261125140000_supervision_fondateur.sql'));
   for (const f of sansIa) {
     await db2.exec(readFileSync(join(root, 'supabase', 'migrations', f), 'utf8').replace(/create extension if not exists pg_net;/gi, ''));

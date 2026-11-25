@@ -62,3 +62,7 @@ Observations (non bloquantes) : la détection de doublons n'existe que dans l'in
 - Limites de dossiers 10/20/50 : consommation préremplie côté serveur (limite – 1) pour rester sous l'anti-abus ; quotas d'actions au-delà de 50 : idem.
 - Débit d'import mesuré en local (même machine, fichiers de 155 octets) : ne préjuge pas du débit en production.
 - Non couverts : Stripe (gelé), envoi d'e-mails, arrêt d'urgence `AI_ENGINE_PAUSED`, interface web et mobile.
+
+## Mise à jour après correctif (2026-11-25)
+
+Le défaut RLS n° 1 est corrigé par la migration `20261125150000_pieces_dossier_proprietaire.sql` (pièces et échéances) et par un contrôle de chemin dans `ai-worker`. Nouveau passage sur la pile locale, 27 migrations : **63 tests en 149,2 s — 53 VÉRIFIÉ · 9 SIMULÉ · 1 BLOQUÉ · 0 ÉCHEC**. Correctif non appliqué en production.

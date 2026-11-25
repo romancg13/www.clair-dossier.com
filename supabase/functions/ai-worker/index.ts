@@ -223,6 +223,9 @@ async function runExtract(job: Job): Promise<void> {
     await finish(job, true);
   };
   if ((doc.size_bytes ?? 0) > MAX_FILE_BYTES) return unsupported('Fichier trop volumineux (> 30 Mo)');
+  // Défense en profondeur : le worker lit hors RLS Storage, il ne suit donc
+  // jamais un chemin situé hors de l'espace du titulaire de la ligne.
+  if (!doc.file_path.startsWith(`${doc.user_id}/`)) return unsupported('Chemin de fichier hors de l’espace du titulaire');
   const dl = await db.storage.from(BUCKET).download(doc.file_path);
   if (dl.error || !dl.data) return finish(job, false, `téléchargement : ${dl.error?.message ?? 'vide'}`);
   const bytes = new Uint8Array(await dl.data.arrayBuffer());
