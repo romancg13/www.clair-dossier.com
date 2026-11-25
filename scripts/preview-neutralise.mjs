@@ -37,11 +37,22 @@ function* fichiers(dir) {
   }
 }
 
+// Recette : chaque lien Stripe LIVE devient le paiement de recette (bac à sable interne) de LA MÊME formule ;
+// correspondance lue dans src/data/pricing.ts (fichier gelé, lu sans être modifié). Démonstration : lien inerte.
+const formules = new Map();
+if (process.argv.includes('--pwa=recette')) {
+  const pricing = readFileSync(new URL('../src/data/pricing.ts', import.meta.url), 'utf8');
+  for (const bloc of pricing.split(/\n\s*\{\s*\n/).slice(1)) {
+    const id = /id:\s*["']([^"']+)["']/.exec(bloc)?.[1];
+    if (id) for (const m of bloc.matchAll(/https:\/\/buy\.stripe\.com\/[A-Za-z0-9]+/g)) formules.set(m[0], id);
+  }
+}
+const versRecette = (lien) => (formules.has(lien) ? `/abonnement?formule=${formules.get(lien)}` : INERTE);
 let liens = 0;
 let pages = 0;
 for (const f of fichiers(DIST)) {
   const avant = readFileSync(f, 'utf8');
-  let apres = avant.replace(LIVE, () => (liens++, INERTE));
+  let apres = avant.replace(LIVE, (lien) => (liens++, versRecette(lien)));
   if (f.endsWith('.html')) {
     apres = apres
       .replace(/(<meta name="robots" content=")[^"]*(")/, '$1noindex, nofollow$2')

@@ -13,7 +13,8 @@ const out = join(root, '.vercel/output');
 const sh = (cmd, env = {}) => execSync(cmd, { cwd: root, stdio: 'inherit', env: { ...process.env, ...env } });
 
 rmSync(out, { recursive: true, force: true });
-const flags = { VITE_RECETTE: '1', VITE_HOME_CLARTE: '1', VITE_PARCOURS_CLAIR: '1', VITE_TARIFS_LISIBLES: '1', VITE_NOINDEX: '1', VITE_BASE_PATH: '/', NODE_ENV: 'production' };
+// Un seul ClairDossier : la recette sert l'accueil et les tarifs ORIGINAUX du site (aucune variante « clarté » ni tarifs de remplacement).
+const flags = { VITE_RECETTE: '1', VITE_NOINDEX: '1', VITE_BASE_PATH: '/', NODE_ENV: 'production' };
 if (process.env.SKIP_SITE !== '1') {
   sh('npx vite build', flags);
   sh('npx tsx scripts/prerender.ts', flags);

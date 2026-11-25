@@ -2550,5 +2550,104 @@ await test('Supervision : installation sans le moteur IA — lecture disponible,
   await db2.close();
 });
 
+console.log('\nClairDossier Intelligence dans l’espace client (20261126120000)');
+await test('intelligence : installable sans le moteur IA (même base que la production actuelle)', async () => {
+  const { PGlite } = await import('@electric-sql/pglite');
+  const db3 = new PGlite();
+  await db3.exec(STUBS);
+  const sansIa = files.filter((f) => f < '20261023' || f.startsWith('20261103') || f.startsWith('20261125140000') || f.startsWith('20261125150000') || f.startsWith('20261126120000'));
+  for (const f of sansIa) await db3.exec(readFileSync(join(root, 'supabase', 'migrations', f), 'utf8').replace(/create extension if not exists pg_net;/gi, ''));
+  const r = await db3.query(`select to_regclass('public.client_automations') as t, to_regclass('public.ai_jobs') as ia`);
+  assert.equal(r.rows[0].t, 'client_automations');
+  assert.equal(r.rows[0].ia, null, 'le moteur IA n’est pas installé');
+  await db3.close();
+});
+const IA = await newUser('ia.titulaire@test.fr');
+const IB = await newUser('ia.autre@test.fr');
+const IS = await newUser('ia.sans.abonnement@test.fr');
+await subscribe(IA, 'essentiel', { status: 'active' });
+await subscribe(IB, 'essentiel', { status: 'active' });
+const dIA = await insertDossier(IA, { title: 'Bail commercial' });
+const dIB = await insertDossier(IB, { title: 'Dossier de B' });
+await test('intelligence : historique et préférences privés, rattachement au dossier d’autrui refusé', async () => {
+  await asUser(IA);
+  await q(`insert into public.assistant_turns (user_id, dossier_id, author, body) values ($1, $2, 'vous', 'Résume ce dossier')`, [IA, dIA]);
+  await rejects(q(`insert into public.assistant_turns (user_id, dossier_id, author, body) values ($1, $2, 'vous', 'intrusion')`, [IA, dIB]), /row-level security/);
+  await q(`insert into public.assistant_preferences (user_id, body) values ($1, 'Vouvoyer mes interlocuteurs')`, [IA]);
+  await rejects(q(`insert into public.assistant_preferences (user_id, body) values ($1, 'VOUVOYER mes interlocuteurs')`, [IA]), /duplicate|unique/);
+  await rejects(q(`insert into public.assistant_preferences (user_id, body) values ($1, 'x')`, [IB]), /row-level security/);
+  for (let i = 0; i < 11; i++) await q(`insert into public.assistant_preferences (user_id, body) values ($1, $2)`, [IA, `Règle ${i}`]);
+  await rejects(q(`insert into public.assistant_preferences (user_id, body) values ($1, 'Règle de trop')`, [IA]), /PREFERENCES_PLEINES/);
+  await asUser(IB);
+  assert.equal((await q('select count(*)::int as n from public.assistant_turns')).at(0).n, 0);
+  assert.equal((await q('select count(*)::int as n from public.assistant_preferences')).at(0).n, 0);
+});
+await test('intelligence : automatisation créée seulement par un abonné, par fonction, rejouable sans doublon', async () => {
+  await asUser(IS);
+  await rejects(q(`select * from public.create_client_automation('bilan_dossiers', 'hebdo', 5::smallint, 8::smallint)`), /SUBSCRIPTION_REQUIRED/);
+  await asUser(IA);
+  await rejects(q(`insert into public.client_automations (user_id, action, frequence, title) values ($1, 'bilan_dossiers', 'quotidien', 'x')`, [IA]), /row-level security/);
+  const [a1] = await q(`select * from public.create_client_automation('bilan_dossiers', 'hebdo', 5::smallint, 8::smallint)`);
+  const [a2] = await q(`select * from public.create_client_automation('bilan_dossiers', 'hebdo', 5::smallint, 8::smallint)`);
+  assert.equal(a1.id, a2.id, 'même demande confirmée deux fois = une seule automatisation');
+  assert.ok(a1.next_run_at, 'prochaine échéance calculée');
+  const local = (await q(`select to_char($1::timestamptz at time zone 'Europe/Paris', 'ID HH24:MI') as l`, [a1.next_run_at]))[0].l;
+  assert.equal(local, '5 08:00', 'vendredi 8 h, heure de Paris');
+  await asUser(IB);
+  await rejects(q(`select * from public.set_client_automation_status($1, 'annuler')`, [a1.id]), /AUTOMATISATION_INTROUVABLE/);
+  assert.equal((await q('select count(*)::int as n from public.client_automations')).at(0).n, 0, 'B ne voit pas l’automatisation de A');
+  await rejects(q(`select public.run_client_automations()`), /permission denied/);
+});
+await test('intelligence : exécution par la base — une preuve par échéance, alertes sans doublon, bilan, arrêt sans abonnement', async () => {
+  await asSuperuser();
+  const auj = (await q(`select (now() at time zone 'Europe/Paris')::date as d`))[0].d;
+  await q(`insert into public.dossier_deadlines (dossier_id, user_id, title, due_date) values ($1, $2, 'Réponse au bailleur', $3::date + 6)`, [dIA, IA, auj]);
+  await q(`insert into public.dossier_deadlines (dossier_id, user_id, title, due_date) values ($1, $2, 'Lointaine', $3::date + 90)`, [dIA, IA, auj]);
+  await q(`insert into public.dossier_deadlines (dossier_id, user_id, title, due_date) values ($1, $2, 'Secret de B', $3::date + 2)`, [dIB, IB, auj]);
+  await asUser(IA);
+  const [al] = await q(`select * from public.create_client_automation('prevenir_echeances', 'quotidien', null, 8::smallint)`);
+  await asSuperuser();
+  await q(`update public.client_automations set next_run_at = now() - interval '1 minute'`);
+  const r1 = (await q(`select public.run_client_automations() as r`))[0].r;
+  assert.equal(r1.executees, 2, 'les deux automatisations dues de A');
+  const r2 = (await q(`select public.run_client_automations(now() + interval '1 second') as r`))[0].r;
+  assert.equal(r2.executees, 0, 'rien n’est refait avant la prochaine échéance');
+  await asUser(IA);
+  const notes = await q('select kind, title, body from public.client_notifications order by kind');
+  assert.deepEqual(notes.map((n) => n.kind), ['bilan', 'echeance']);
+  assert.match(notes[1].title, /dans 6 jours/);
+  assert.doesNotMatch(JSON.stringify(notes), /Secret de B|Lointaine/);
+  const runs = await q('select status from public.client_automation_runs where automation_id = $1', [al.id]);
+  assert.deepEqual(runs.map((x) => x.status), ['faite']);
+  // Rejouer la même échéance (deux passages simultanés) : aucune seconde exécution, aucune seconde alerte.
+  await asSuperuser();
+  const due = (await q('select due from public.client_automation_runs where automation_id = $1', [al.id]))[0].due;
+  await q(`update public.client_automations set next_run_at = $2 where id = $1`, [al.id, due]);
+  assert.equal((await q(`select public.run_client_automations() as r`))[0].r.ignorees, 1);
+  assert.equal((await q(`select count(*)::int as n from public.client_notifications where user_id = $1 and kind = 'echeance'`, [IA]))[0].n, 1);
+  // Abonnement terminé : arrêt avec motif, aucune exécution.
+  await q(`update public.client_automations set next_run_at = now() - interval '1 minute' where id = $1`, [al.id]);
+  await q(`update public.subscriptions set status = 'canceled' where user_id = $1`, [IA]);
+  await q(`select public.run_client_automations()`);
+  const [st] = await q('select status, motif from public.client_automations where id = $1', [al.id]);
+  assert.deepEqual([st.status, st.motif], ['arretee', 'Abonnement inactif']);
+  await q(`update public.subscriptions set status = 'active' where user_id = $1`, [IA]);
+});
+await test('intelligence : « à chaque pièce reçue » devient dû au dépôt d’une pièce', async () => {
+  await asUser(IA);
+  const [p] = await q(`select * from public.create_client_automation('bilan_dossiers', 'piece', null, 8::smallint)`);
+  assert.equal(p.next_run_at, null);
+  await q(`insert into public.dossier_documents (dossier_id, user_id, file_path, file_name, kind) values ($1, $2, $3, 'facture.pdf', 'piece')`, [dIA, IA, `${IA}/facture.pdf`]);
+  await asSuperuser();
+  assert.notEqual((await q('select next_run_at from public.client_automations where id = $1', [p.id]))[0].next_run_at, null);
+});
+await test('intelligence : retour arrière propre puis réinstallation', async () => {
+  await asSuperuser();
+  await db.exec(readFileSync(join(root, 'supabase', 'rollback', '20261126120000_intelligence_espace_client.down.sql'), 'utf8'));
+  assert.equal((await q(`select to_regclass('public.client_automations') as t`))[0].t, null);
+  await db.exec(readFileSync(join(root, 'supabase', 'migrations', '20261126120000_intelligence_espace_client.sql'), 'utf8'));
+  assert.equal((await q(`select to_regclass('public.client_automations') as t`))[0].t, 'client_automations');
+});
+
 console.log(`\n${passed} réussis, ${failed} échoués`);
 process.exit(failed ? 1 : 0);
