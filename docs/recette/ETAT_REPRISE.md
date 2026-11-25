@@ -1,4 +1,4 @@
-# État de reprise — recette ClairDossier (V3)
+# État de reprise — recette ClairDossier (V5)
 
 Mis à jour : 2026-11-25 · branche unique `claude/clairdossier-optimization-85z7y5` (PR brouillon #70, NON fusionnée) · base `main@6f8f788`.
 La PR #68 (`claude/clair-dossier-workflow-63mjz1@c9753d6`) y est fusionnée : #70 est la seule référence.
@@ -14,6 +14,27 @@ Légende : VÉRIFIÉ EN LOCAL · VÉRIFIÉ SUR RECETTE HÉBERGÉE · IMPLÉMENT�
 | https://clairdossier-recette-20b5a2.vercel.app/connexion | Parcours réel (lié depuis /demo) | Comptes fictifs isolés, dépôt → traitement serveur → résultats, stockage Vercel Blob privé (Paris) |
 
 Les deux sont non indexées et sans lien Stripe LIVE (`scripts/preview-neutralise.mjs`, build en échec s'il en reste un).
+
+## Travaux V5 (2026-11-25, déployés : `a5a152b`)
+
+| Jalon | Statut | Preuve |
+|---|---|---|
+| J1 — clé API, modèle réel | **BLOQUÉ** (une manipulation propriétaire) | `ACTIVATION_API.md` ; aucun outil de session ne peut ouvrir la Claude Console ; aucun appel payant lancé, coût constaté : 0 |
+| J2 — assistant exécutant des outils côté serveur | VÉRIFIÉ EN LOCAL (modèle SIMULÉ) · VÉRIFIÉ SUR RECETTE en mode règles | `tests/recette-assistant.test.ts` (15) ; `captures/v5-assistant-recette-*.png` ; réponse en 2,3 s |
+| J3 — analyse d'un nouveau document, six rendus | VÉRIFIÉ SUR RECETTE (lecture par règles) | lot de 4 pièces → premier résultat 37–39 s ; lecture par IA : BLOQUÉ (J1) |
+| J4 — automatisation réellement exécutée | VÉRIFIÉ EN LOCAL (horloge injectée, 14 tests) ; créée, mise en pause et isolée SUR RECETTE | `tests/recette-automatisations.test.ts` ; `captures/v5-automatisations.png` ; première exécution réelle par le planificateur hébergé : NON TESTÉ (cron quotidien 07:05 UTC, échéance vendredi) |
+| J5 — coûts, quotas, rentabilité | VÉRIFIÉ EN LOCAL | réservation avant appel, plafonds global/compte, concurrence ; `RENTABILITE.md` (hypothèses d'usage, rien de mesuré en réel) |
+| J6 — messagerie, Stripe bac à sable, options | BLOQUÉ / DIFFÉRÉ | inchangé : OAuth Google/Microsoft, Resend, compte Stripe de test |
+| J7 — simplification, recette finale | VÉRIFIÉ SUR RECETTE | preview et recette : 0 lien Stripe LIVE, noindex, 0 erreur JS, ordinateur + mobile |
+
+Nouveautés : `recette/server/assistant.ts` (modèle + outils, FinOps, historique), `recette/server/automations.ts`,
+`scripts/rentabilite.mjs`, page `/admin` (coûts IA, santé du fournisseur), planificateur sans secret à saisir
+(clé dérivée côté serveur, inscrite au build), rappel confirmé = vraie échéance du dossier.
+Tests : 433 unitaires verts, typecheck site + recette, build recette OK.
+
+Limites connues : heure d'exécution des automatisations = passage quotidien du planificateur (8 h 05 en hiver, 9 h 05 en été) ;
+déclencheur « à chaque pièce reçue » exécuté au passage suivant ; assistant non monté dans l'espace client de production
+(Supabase, moteur désactivé — CGV art. 6) ; recherche de l'assistant sur l'analyse, pas sur le texte intégral.
 
 ## Travaux V3
 
@@ -50,7 +71,7 @@ Le gain de latence réel sur la recette hébergée est à lire dans la remise (m
 ## Blocages — action minimale du propriétaire
 
 1. **Supabase isolé hébergé** — BLOQUÉ : organisation à la limite gratuite (2 projets actifs, tous deux étrangers à ClairDossier ; les 2 projets ClairDossier sont en pause). Une action : autoriser la reprise de « ClairDossier's Projet » à la place d'un projet actif, ou un projet payant.
-2. **Analyse IA réelle** — BLOQUÉ : aucune clé d'API de recette (passerelle Vercel : offre gratuite refusée ; aucune clé Anthropic). Une action : saisir `ANTHROPIC_API_KEY` comme secret du projet de recette (jamais dans le chat). Tant que ce n'est pas fait : lecture par règles déterministes (réel), chaîne IA SIMULÉE, assistant sans modèle.
+2. **Analyse IA réelle** — BLOQUÉ : aucune clé d'API dans le coffre de la recette. Une action, détaillée dans `ACTIVATION_API.md` : créer la clé (workspace dédié, limite 2 USD) et l'ajouter comme `ANTHROPIC_API_KEY` du projet Vercel de recette. Tout le reste est prêt.
 3. **Messagerie** — BLOQUÉ : applications OAuth Google Cloud et Microsoft Entra, compte Resend.
 4. **Stripe bac à sable** — DIFFÉRÉ : paiement simulé sur la recette ; aucune option n'est vendue.
 5. **Juridique** — CGV art. 6, confidentialité, AIPD : projets dans `MOTEUR_ET_CONFORMITE.md` et `REMISE.md` §6, rien publié.
@@ -63,7 +84,7 @@ MCP depuis l'interface ChatGPT/Claude, démonstration universelle (protections p
 
 - Tests : `npm run typecheck && npm run typecheck:recette && npm test` ; SQL : `npm install --no-save @electric-sql/pglite && node tests/sql/migrations.pglite.mjs`.
 - Recette Supabase locale : voir `RECETTE_LOCALE.md`.
-- Retour arrière : rien n'est fusionné. Preview : redéployer `6656df4` ; recette hébergée : redéployer `1d72ccb`. Chaque migration a son fichier dans `supabase/rollback/`.
+- Retour arrière : rien n'est fusionné. Preview : redéployer `0f4d057` (V3) sur les deux projets. Chaque migration a son fichier dans `supabase/rollback/`.
 
 ## Prochaine action
 
