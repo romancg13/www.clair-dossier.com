@@ -7,6 +7,8 @@ import { DeliverablesGrid, type DeliverableFile } from "../components/dossier/De
 import { ChronologyEditor } from "../components/dossier/ChronologyEditor";
 import { AnalysisView } from "../components/dossier/AnalysisView";
 import { AttentionBox } from "../components/dossier/AttentionBox";
+import { IntelligenceLauncher } from "../components/intelligence/IntelligencePanel";
+import { runAssistant, suggestions, type Context as IaContext } from "../../supabase/functions/_shared/intelligence/core.ts";
 import { buildAttention, visitMark, whatChanged } from "../../supabase/functions/_shared/attention.ts";
 import { applyOverrides, type CoverageInfo, type EventOverride, type PieceRef } from "../../supabase/functions/_shared/analysis-model.ts";
 import { DEMO_FAILED, DEMO_PIECES, DEMO_TITLE, DEMO_UNSUPPORTED, bulkPieces, demoAnalysis } from "../demo/fixture";
@@ -194,6 +196,27 @@ export function DemoDossier() {
         : "Analyse et préparation de vos documents…"
       : null;
 
+  // ClairDossier Intelligence — démonstration : mêmes règles que le service, exécutées
+  // dans le navigateur sur le dossier fictif (aucun modèle appelé, rien de conservé).
+  const iaContext: IaContext = useMemo(
+    () => ({
+      title: DEMO_TITLE,
+      today: DEMO_TODAY,
+      analysis: s.revision > 0 ? analysis : null,
+      pieces: s.pieces,
+      attention: s.revision > 0 ? attention : null,
+      available: [...new Set(files.map((f) => f.key))],
+      processing: processing ? { done: Math.min(s.read, s.pieces.length), total: s.pieces.length } : null,
+      rights: { owner: true, assistant: true, automations: true },
+    }),
+    [analysis, attention, files, processing, s.pieces, s.read, s.revision],
+  );
+  const openFile = (key: DeliverableFile["key"]) => {
+    const own = files.filter((f) => f.key === key);
+    const f = own.find((x) => x.name.endsWith(".pdf")) ?? own[0];
+    if (f) window.open(f.url, "_blank", "noopener");
+  };
+
   const addPiece = () =>
     setS((v) => ({
       ...v,
@@ -254,6 +277,18 @@ export function DemoDossier() {
             emptyLabel={processing ? "En préparation…" : s.enabled ? "Pas encore disponibles." : "Activez le traitement pour générer vos documents."}
             busy={generating}
             onDownloadAll={downloadAll}
+            actions={
+              <IntelligenceLauncher
+                transport={async (m) => runAssistant(m, iaContext)}
+                suggestions={suggestions(iaContext)}
+                onFile={openFile}
+                onConfirm={async (a) => {
+                  setS((v) => ({ ...v, journal: [{ at: now(), label: `${a.title} — confirmé (démonstration)` }, ...v.journal] }));
+                  return "Noté dans le journal de cette démonstration. Ici, rien n’est réellement planifié.";
+                }}
+                note="Démonstration — dossier fictif, rien n’est conservé"
+              />
+            }
           />
         </div>
 

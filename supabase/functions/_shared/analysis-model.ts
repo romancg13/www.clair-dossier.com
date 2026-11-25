@@ -9,7 +9,7 @@ import { deadlineKey, type Evidence } from './ai-pipeline.ts';
 
 export const DELIVERABLE_CATALOG = [
   { key: 'resume', label: 'Résumé IA', slug: 'Resume-IA', description: 'Synthèse courte et détaillée, faits sourcés, points d’attention et prochaines actions.' },
-  { key: 'dashboard', label: 'Dashboard', slug: 'Dashboard', description: 'Vue d’ensemble : couverture documentaire, échéances proches, contradictions, pièces manquantes.' },
+  { key: 'dashboard', label: 'Tableau de bord', slug: 'Dashboard', description: 'Vue d’ensemble : couverture documentaire, échéances proches, contradictions, pièces manquantes.' },
   { key: 'chronologie', label: 'Chronologie', slug: 'Chronologie', description: 'Événements datés et sourcés, date du document distinguée de la date de l’événement.' },
   { key: 'dates', label: 'Dates modifiables', slug: 'Dates-modifiables', description: 'Date extraite, date retenue, motif, source, auteur et historique des corrections.' },
   { key: 'echeances', label: 'Échéances et calendrier', slug: 'Echeances', description: 'Dates mentionnées, calculées ou à confirmer ; calendrier ICS à importer.' },
