@@ -49,15 +49,29 @@ test('forme filaire → forme stockée : vides et pages 0 redeviennent null, val
   assert.ok(validate(AnalysisOutputSchema, a).ok);
 });
 
-test('fournisseur : la synthèse demande la forme filaire et rend la forme stockée', async () => {
-  let schemaEnvoye: unknown = null;
-  const client = { messages: { parse: async (req: { output_config: { format: { schema: unknown } } }) => {
-    schemaEnvoye = req.output_config.format.schema;
-    return { model: 'claude-sonnet-5-5', stop_reason: 'end_turn', parsed_output: wire, usage: { input_tokens: 10, output_tokens: 10 } };
-  } } } as unknown as Anthropic;
+test('fournisseur : synthèse en JSON décrit, validée strictement, sans grammaire ; sortie illisible = nouvelle tentative', async () => {
+  const envois: { system: string; output_config?: unknown }[] = [];
+  let reponse = '```json\n' + JSON.stringify(wire) + '\n```';
+  const client = { messages: {
+    create: async (req: { system: string; output_config?: unknown }) => {
+      envois.push(req);
+      return { model: 'claude-sonnet-5-5', stop_reason: 'end_turn', content: [{ type: 'text', text: reponse }], usage: { input_tokens: 10, output_tokens: 10 } };
+    },
+    parse: async () => { throw new Error('la synthèse ne doit plus passer par une grammaire'); },
+  } } as unknown as Anthropic;
   const p = createAnthropicProvider({ client, modelExtract: 'claude-sonnet-5-5', modelConsolidate: 'claude-sonnet-5-5' });
-  const r = await p.consolidate({ today: '2026-11-25', title: 'D', typology: null, objective: null, pieces: [], events: [], total: 0, unreadable: [], others: [] } as never, 'B');
+  const entree = { today: '2026-11-25', title: 'D', typology: null, objective: null, pieces: [], events: [], total: 0, unreadable: [], others: [] } as never;
+  const r = await p.consolidate(entree, 'B');
   assert.ok(r.ok);
-  assert.equal(mesure(schemaEnvoye).unions, 0);
   if (r.ok) assert.equal(r.data.deadlines[0].date, null);
+  assert.equal(envois[0].output_config, undefined, 'aucune grammaire demandée');
+  assert.match(envois[0].system, /Réponds UNIQUEMENT par un objet JSON conforme/);
+  assert.match(envois[0].system, /"reminder_drafts"/, 'le schéma complet est dans la consigne');
+  reponse = '{"situation": 12}';
+  const r2 = await p.consolidate(entree, 'B');
+  assert.equal(r2.ok, false);
+  if (!r2.ok) assert.deepEqual([r2.kind, r2.retryable], ['invalid', true]);
+  reponse = 'désolé, pas de JSON';
+  const r3 = await p.consolidate(entree, 'B');
+  assert.equal(!r3.ok && r3.kind, 'invalid');
 });

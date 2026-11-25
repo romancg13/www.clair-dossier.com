@@ -54,6 +54,39 @@ export function createAnthropicProvider(o: AnthropicOptions): ModelProvider {
       return { ok: false, kind: t ? 'timeout' : 'unavailable', message: `${t ? 'délai dépassé' : `fournisseur indisponible (${status || 'réseau'}${type ? ` ${type}` : ''})`}${status === 400 ? ` : ${String((err.error as { error?: { message?: string } } | undefined)?.error?.message ?? '').slice(0, 200)}` : ''}`, retryable: t || status === 0 || status === 429 || status >= 500 };
     }
   }
+  /**
+   * Synthèse : sortie JSON décrite dans la consigne, puis validée STRICTEMENT ici (même schéma). Les sorties structurées
+   * à grammaire sont refusées pour ce schéma (« The compiled grammar is too large », 400, recette du 25/11/2026) ; une
+   * sortie non conforme est traitée comme « invalid » (nouvelle tentative, puis repli annoncé sur les règles).
+   */
+  async function callJson<T>(model: string, system: string, content: Anthropic.MessageParam['content'], schema: typeof AnalysisWireSchema): Promise<ModelResult<T>> {
+    const forme = JSON.stringify((zodOutputFormat(schema as never) as unknown as { schema: unknown }).schema);
+    try {
+      const res = await o.client.messages.create(
+        { model, max_tokens: 16000, system: `${system}\n\nRéponds UNIQUEMENT par un objet JSON conforme à ce schéma JSON (aucun texte autour, aucune balise de code) :\n${forme}`, messages: [{ role: 'user', content }] } as never,
+        { timeout },
+      ) as Anthropic.Message;
+      const usage = { input_tokens: res.usage?.input_tokens ?? 0, output_tokens: res.usage?.output_tokens ?? 0, model: res.model ?? model };
+      if (res.stop_reason === 'refusal') return { ok: false, kind: 'refusal', message: 'refus du modèle', retryable: false, ...usage };
+      if (res.stop_reason === 'max_tokens') return { ok: false, kind: 'invalid', message: 'sortie tronquée (limite de jetons)', retryable: true, ...usage };
+      const texte = res.content.flatMap((b) => (b.type === 'text' ? [b.text] : [])).join('').trim().replace(/^```(?:json)?\s*|\s*```$/g, '');
+      let brut: unknown;
+      try {
+        brut = JSON.parse(texte.slice(texte.indexOf('{'), texte.lastIndexOf('}') + 1));
+      } catch {
+        return { ok: false, kind: 'invalid', message: 'sortie non conforme : JSON illisible', retryable: true, ...usage };
+      }
+      const v = validate(schema as never, brut);
+      if (!v.ok) return { ok: false, kind: 'invalid', message: `sortie non conforme : ${v.error}`, retryable: true, ...usage };
+      return { ok: true, data: v.data as T, ...usage };
+    } catch (e) {
+      const err = e as { status?: number; name?: string; message?: string; error?: { error?: { type?: string; message?: string }; type?: string } };
+      const t = /timeout|timed out|aborted/i.test(`${err.name} ${err.message}`);
+      const status = err.status ?? 0;
+      const type = (err.error?.error?.type ?? err.error?.type ?? '').slice(0, 40);
+      return { ok: false, kind: t ? 'timeout' : 'unavailable', message: `${t ? 'délai dépassé' : `fournisseur indisponible (${status || 'réseau'}${type ? ` ${type}` : ''})`}${status === 400 ? ` : ${String(err.error?.error?.message ?? '').slice(0, 200)}` : ''}`, retryable: t || status === 0 || status === 429 || status >= 500 };
+    }
+  }
   return {
     name: 'anthropic',
     canReadImages: true,
@@ -76,8 +109,8 @@ export function createAnthropicProvider(o: AnthropicOptions): ModelProvider {
         evenements: input.events.map((e) => ({ cle: e.key, date: e.date, nature: e.kind, libelle: e.label })),
         pieces: corpus,
       };
-      // Forme filaire sans type multiple (grammaire compilable), convertie vers la forme stockée.
-      return call<AnalysisWire>(o.modelConsolidate, consolidationSystem(input.today), [{ type: 'text', text: wrapData(boundary, 'dossier', JSON.stringify(payload)) }], AnalysisWireSchema).then(
+      // Forme filaire (chaîne vide = absent), validée strictement puis convertie vers la forme stockée.
+      return callJson<AnalysisWire>(o.modelConsolidate, consolidationSystem(input.today), [{ type: 'text', text: wrapData(boundary, 'dossier', JSON.stringify(payload)) }], AnalysisWireSchema).then(
         (r): ModelResult<AnalysisOutput> => (r.ok ? { ...r, data: fromWire(r.data) } : r),
       );
     },
