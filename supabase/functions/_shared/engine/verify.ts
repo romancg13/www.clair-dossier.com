@@ -93,7 +93,8 @@ export function reliability(evidence: DEv[], opts: { contradicted?: boolean; hyp
   if (!evidence.length) reasons.push('non sourcé');
   else if (!evidence.some((e) => e.status === 'found')) reasons.push(evidence.some((e) => e.status === 'unknown') ? 'lecture visuelle (scan ou photo) à vérifier' : 'extrait non retrouvé dans la pièce');
   if (opts.contradicted) reasons.push('contredit par une autre pièce');
-  if (opts.hypothesis) reasons.push('date non écrite dans une pièce');
+  // Aligné sur rendus/view.ts reliabilityOf : une hypothèse est « à confirmer », pas forcément absente des pièces.
+  if (opts.hypothesis) reasons.push('date à confirmer');
   return { level: reasons.length ? 'a_verifier' : 'elevee', reasons };
 }
 
