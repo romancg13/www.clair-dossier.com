@@ -6,6 +6,8 @@ import { DossierTracker } from "../components/dossier/DossierTracker";
 import { DeliverablesGrid, type DeliverableFile } from "../components/dossier/DeliverablesGrid";
 import { ChronologyEditor } from "../components/dossier/ChronologyEditor";
 import { AnalysisView } from "../components/dossier/AnalysisView";
+import { AttentionBox } from "../components/dossier/AttentionBox";
+import { buildAttention, visitMark, whatChanged } from "../../supabase/functions/_shared/attention.ts";
 import { applyOverrides, type CoverageInfo, type EventOverride, type PieceRef } from "../../supabase/functions/_shared/analysis-model.ts";
 import { DEMO_FAILED, DEMO_PIECES, DEMO_TITLE, DEMO_UNSUPPORTED, bulkPieces, demoAnalysis } from "../demo/fixture";
 
@@ -44,6 +46,12 @@ type State = {
 };
 
 const now = () => new Date().toISOString();
+
+// Boîte d'attention de la démo : date de référence et dernière visite FICTIVES
+// (affichage stable, cohérent avec les dates du dossier fictif) ; rien n'est
+// lu ni écrit dans le stockage du navigateur.
+const DEMO_TODAY = "2026-11-06";
+const DEMO_LAST_VISIT = "2026-10-05T08:00:00Z";
 
 function initial(s: Scenario): State {
   const base: State = { enabled: true, pieces: DEMO_PIECES, read: DEMO_PIECES.length, consolidating: false, revision: 1, closed: false, paused: false, partial: false, bulk: false, overrides: [], journal: [] };
@@ -167,6 +175,14 @@ export function DemoDossier() {
 
   const names = useMemo(() => Object.fromEntries(s.pieces.map((p) => [p.id, p.file_name])), [s.pieces]);
   const events = useMemo(() => applyOverrides(analysis.events, s.overrides), [analysis, s.overrides]);
+  // Mêmes règles déterministes que l'espace client, appliquées au dossier fictif.
+  const attention = useMemo(() => buildAttention({ analysis, coverage, today: DEMO_TODAY, documentNames: names }), [analysis, coverage, names]);
+  const changes = useMemo(() => {
+    const dated = analysis.deadlines.flatMap((d) => (d.date ? [{ title: d.title, due_date: d.date }] : []));
+    // Visite simulée : les deux premières échéances étaient déjà connues, aucune révision n'était publiée.
+    const last = { ...visitMark({ documents: [], deadlines: dated.slice(0, 2), corrections: [], revision: null }, DEMO_LAST_VISIT), revision: 0 };
+    return whatChanged({ documents: s.pieces, deadlines: dated, corrections: s.overrides, revision: s.revision ? { number: s.revision, created_at: DEMO_LAST_VISIT } : null }, last);
+  }, [analysis, s.pieces, s.overrides, s.revision]);
   const step = trackingStep({ status: s.enabled ? "en-cours" : "brouillon", hasDeliverables: s.revision > 0, processing, closed: s.closed });
   const detail = s.paused
     ? "Traitement en pause : plafond mensuel atteint — la nouvelle pièce sera lue à la reprise."
@@ -247,6 +263,13 @@ export function DemoDossier() {
             </button>
           </div>
         </div>
+
+        {s.revision > 0 && (
+          <div className="mt-8">
+            <AttentionBox attention={attention} changes={changes} sinceNote="visite simulée" />
+            <p className="mt-2 text-xs text-slate-500">Démonstration : points calculés à la date fictive du 06/11/2026.</p>
+          </div>
+        )}
 
         {s.revision > 0 && (
           <section className="mt-8 rounded-2xl border hairline bg-white p-5 shadow-card sm:p-6">

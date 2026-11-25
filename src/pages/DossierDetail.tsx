@@ -8,6 +8,7 @@ import { ArrowRightIcon } from "../components/icons";
 import { hasDossierTrash, logAudit } from "../lib/admin";
 import { hasQuotaEngine } from "../lib/dossier-workspace";
 import { AiPanel, type AiProgress } from "../components/dossier/AiPanel";
+import { DossierAttention } from "../components/dossier/DossierAttention";
 import { EmailInbox } from "../components/dossier/EmailInbox";
 import { DossierTracker } from "../components/dossier/DossierTracker";
 import { DeliverablesGrid, type DeliverableFile } from "../components/dossier/DeliverablesGrid";
@@ -1241,6 +1242,13 @@ export function DossierDetail() {
                 <p role="alert" className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                   {actionError}
                 </p>
+              )}
+
+              {/* Boîte d'attention (règles fixes, sans IA) : n'apparaît que si une analyse existe. */}
+              {AI_ENGINE && (
+                <div className="mt-6 empty:hidden">
+                  <DossierAttention dossierId={dossier.id} documents={[...pieces, ...deliverables]} deadlines={deadlines} refreshKey={deliverables.length} />
+                </div>
               )}
 
               {/* ── Onglets (boutons de section : aria-pressed, pattern du
