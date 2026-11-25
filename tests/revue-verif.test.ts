@@ -201,7 +201,8 @@ test('C08 : un extrait consolidé trop pauvre (« 2027 », un seul nombre) n’e
   assert.equal(consolidatedQuoteStatus(q('15'), ex), 'not_found');
   const g = guard(analysis({ facts: [{ text: 'Le délai expire en 2027', status: 'documented', evidence: [q('2027')] }] as never }), attente());
   assert.equal(chk(g.facts[0]).unverified, true);
-  // Témoins : deux mots, ou un mot de quatre lettres au moins.
+  // Témoin : un passage de deux mots significatifs. Un mot isolé, même long et présent, ne suffit plus
+  // (limite levée : voir tests/moteur-citations.test.ts).
   assert.equal(consolidatedQuoteStatus(q('janvier 2027'), ex), 'found');
-  assert.equal(consolidatedQuoteStatus(q('réponse'), ex), 'found');
+  assert.equal(consolidatedQuoteStatus(q('réponse'), ex), 'not_found');
 });

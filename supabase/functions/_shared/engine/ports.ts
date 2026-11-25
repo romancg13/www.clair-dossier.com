@@ -12,7 +12,9 @@ export interface Job {
   id: string;
   /**
    * Clé d'idempotence : x:<pièce>, c:<dossier>, r:<dossier> (une seule clé par pièce, quel que soit l'appelant) ;
-   * n:<dossier>:<lot> = rendu différé qui clôt un lot dont l'envoi s'est interrompu (aucun traitement de pièce).
+   * n:<dossier>:<lot> = rendu différé qui clôt un lot dont l'envoi s'est interrompu (aucun traitement de pièce) ;
+   * cr:<dossier> = reprise différée d'une consolidation rendue par les règles faute de budget IA ;
+   * xr:<pièce> = relecture automatique différée d'une pièce en échec définitif (créée une fois le travail x: terminé).
    */
   key: string;
   kind: JobKind;
@@ -60,6 +62,9 @@ export interface PieceRec {
   deleted_at: string | null;
 }
 
+/** Plafond de dépense IA atteint : compte (mois), service (mois) ou dépôt. */
+export type BudgetScope = 'user' | 'global' | 'lot';
+
 export interface ExtractionRec {
   piece_id: string;
   dossier_id: string;
@@ -69,6 +74,10 @@ export interface ExtractionRec {
   reason: string | null;
   /** Lecture reportée (lecture visuelle indisponible, budget du lot) : ce n'est pas au client d'agir. */
   deferred?: boolean;
+  /** Pièce lue par les règles déterministes faute de budget IA (résultat partiel) ; la lecture IA reprend au cycle suivant. */
+  fallback?: BudgetScope;
+  /** Relectures automatiques déjà tentées après un échec définitif (plafonnées, attente croissante). */
+  rereads?: number;
   data: StoredExtraction | null;
   vision: boolean;
   provider: string;
@@ -91,6 +100,10 @@ export interface CoverageRec {
   /** Pièces dont la lecture est reportée (service), sans action du client. */
   deferred: number;
   duplicates: number;
+  /** Pièces lues par les règles seules faute de budget IA (comptées dans `extracted`). */
+  fallback?: number;
+  /** Motif lisible d'un résultat partiel pour cause de budget IA (pièces ou consolidation en repli). */
+  partial_reason?: string;
   complete: boolean;
 }
 
@@ -109,6 +122,8 @@ export interface AnalysisRec {
   provider: string;
   model: string | null;
   status: 'pending' | 'published';
+  /** Consolidation rendue par les règles faute de budget IA : recalculée par l'IA dès que le budget le permet. */
+  budget_fallback?: BudgetScope;
   input_tokens: number;
   output_tokens: number;
   cost_cents: number;
@@ -154,6 +169,8 @@ export interface EngineStore {
   findReusableExtraction(userId: string, sha256: string): Promise<ExtractionRec | null>;
 
   lastAnalysis(dossierId: string): Promise<AnalysisRec | null>;
+  /** Numéro de la dernière révision, sans charger son contenu (facultatif : à défaut, lastAnalysis). */
+  lastRevision?(dossierId: string): Promise<number | null>;
   /** Crée la révision ; refuse si elle existe déjà (retourne false). */
   insertAnalysis(rec: AnalysisRec): Promise<boolean>;
   setAnalysisStatus(dossierId: string, revision: number, status: AnalysisRec['status']): Promise<void>;
@@ -169,7 +186,12 @@ export interface EngineStore {
   /** Jeu de données d'affichage (web) de la révision publiée. */
   putView(dossierId: string, revision: number, view: unknown, status: 'approved' | 'pending'): Promise<void>;
 
-  enqueue(job: Pick<Job, 'key' | 'kind' | 'user_id' | 'dossier_id' | 'piece_id'> & { delayMs?: number }): Promise<'created' | 'rearmed' | 'exists'>;
+  /** keepFailed : le travail en échec que celui-ci remplace reste signalé (relecture automatique d'une pièce illisible). */
+  enqueue(job: Pick<Job, 'key' | 'kind' | 'user_id' | 'dossier_id' | 'piece_id'> & { delayMs?: number; keepFailed?: boolean }): Promise<'created' | 'rearmed' | 'exists'>;
+  /**
+   * Prend un travail prêt. Équité attendue de toute mise en œuvre : à tour de rôle entre les comptes (un travail
+   * par compte et par tour), nombre de travaux simultanés borné par compte.
+   */
   claim(workerId: string, leaseMs: number): Promise<Job | null>;
   complete(job: Job, outcome: { status: 'done' | 'failed' | 'cancelled'; error?: string | null } | { status: 'queued'; delayMs: number; countAttempt: boolean; error?: string | null }): Promise<void>;
   openJobs(dossierId: string): Promise<Job[]>;
@@ -202,6 +224,8 @@ export interface EngineConfig {
   extractionWaitMs?: number;
   now: () => Date;
   workerId: string;
+  /** Attentes successives avant relecture automatique d'une pièce en échec définitif (défaut : 1 h, 6 h, 24 h ; [] = aucune). */
+  rereadDelaysMs?: number[];
   /** Lien vers l'espace du dossier (notification). */
   dossierLink: (dossierId: string) => string;
 }
