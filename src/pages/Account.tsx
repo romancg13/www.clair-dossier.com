@@ -22,6 +22,8 @@ import { supabase } from '../lib/supabase';
 import { ArrowRightIcon } from '../components/icons';
 import { useMyProfile } from '../lib/profile';
 import { DraftsPanel, ProfilePanel, SubscriptionPanel } from '../components/account/AccountPanels';
+import { MailConnect } from '../components/account/MailConnect';
+import { PersonalizeSpace } from '../components/account/PersonalizeSpace';
 import { greeting } from '../../packages/core/src/index';
 
 type DossierRow = {
@@ -304,6 +306,10 @@ export function Account() {
           {profile && extended && (
             <ProfilePanel profile={profile} accountEmail={user?.email ?? null} onSaved={() => void reloadProfile()} />
           )}
+          {/* Inerte sans VITE_MAIL_CONNECT=1 et sans la migration 20261125130000. */}
+          {profile && extended && <MailConnect />}
+          {/* Aperçu des options : inerte sans VITE_OPTIONS_PREVIEW=1. */}
+          <PersonalizeSpace />
 
           <SubscriptionPanel paidReturn={Boolean(paidPlan)} />
 

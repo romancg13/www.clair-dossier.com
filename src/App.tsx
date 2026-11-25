@@ -5,6 +5,7 @@ import { RequireAuth } from './components/RequireAuth';
 
 // Keep Home eager so the first paint is immediate on the most visited route.
 import { Home } from './pages/Home';
+import { recetteRoutes } from './recette/routes';
 
 // Lazy-load the rest — each route ships its own chunk so the initial bundle
 // stays tight and visits to /tarifs, /blog, /securite, etc. only load what
@@ -144,7 +145,7 @@ const Marseille = named(() => import('./pages/Marseille'), 'Marseille');
 function RouteFallback() {
   return (
     <div
-      className="mx-auto flex max-w-7xl items-center justify-center px-5 py-32"
+      className="mx-auto flex min-h-screen max-w-7xl items-start justify-center px-5 py-32"
       role="status"
       aria-live="polite"
     >
@@ -165,6 +166,7 @@ export default function App() {
   return (
     <Routes>
       <Route element={<Layout />}>
+        {import.meta.env.VITE_RECETTE === '1' && recetteRoutes()}
         <Route index element={<Home />} />
         {DemoDossier && (
           <Route

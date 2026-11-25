@@ -8,91 +8,123 @@ type Props = {
   documentNames: Record<string, string>;
   /** Coût de la révision (administration uniquement). */
   costLabel?: string | null;
+  /** Date de référence des calculs (AAAA-MM-JJ). Par défaut : la date de l'analyse. */
+  today?: string;
 };
 
 const KIND = { mentioned: "date mentionnée", computed: "date calculée", hypothesis: "hypothèse à confirmer" } as const;
 
-/** Dashboard interactif : synthèse sourcée, échéances, contradictions et manques. */
-export function AnalysisView({ analysis: a, coverage, revision, createdAt, documentNames, costLabel }: Props) {
+/**
+ * Tableau de bord : la situation, la prochaine échéance réelle et la prochaine
+ * action. Les listes complètes (échéances, écarts, éléments manquants) restent
+ * accessibles au clic — rien n'est retiré, seul l'ordre de lecture change. Les
+ * points à traiter sont portés par la boîte d'attention, pas répétés ici.
+ */
+export function AnalysisView({ analysis: a, coverage, revision, createdAt, documentNames, costLabel, today }: Props) {
   const src = (ev: { document_id: string; page: number | null }[]) => ev.map((e) => `${documentNames[e.document_id] ?? "pièce"}${e.page ? ` p.${e.page}` : ""}`).join(" · ") || "non sourcé";
-  const today = new Date().toISOString().slice(0, 10);
-  const upcoming = a.deadlines.filter((d) => d.date && d.date >= today);
-  const kpis = [
-    { v: `${coverage.extracted}/${coverage.total}`, l: "pièces exploitées" },
-    { v: String(upcoming.length), l: "échéances à venir" },
-    { v: String(a.contradictions.length), l: "contradictions" },
-    { v: String(a.missing_items.length), l: "éléments manquants" },
-  ];
+  const ref = today ?? createdAt.slice(0, 10);
+  const dated = a.deadlines.filter((d) => d.date).sort((x, y) => (x.date! < y.date! ? -1 : 1));
+  const upcoming = dated.filter((d) => d.date! >= ref);
+  const past = dated.filter((d) => d.date! < ref);
+  const next = upcoming[0];
+  const details = upcoming.length + past.length + a.contradictions.length + a.missing_items.length + a.attention_points.length + a.next_actions.length;
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">
-          Analyse — révision {revision} · {new Date(createdAt).toLocaleDateString("fr-FR")}
-        </p>
+        <h2 className="font-display text-xl text-navy-900">La situation</h2>
         <p className={`rounded-full px-2.5 py-1 text-xs ${coverage.complete ? "bg-cream-100 text-slate-600" : "bg-amber-100 font-semibold text-amber-800"}`}>{coverageLabel(coverage)}</p>
       </div>
 
-      <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        {kpis.map((k) => (
-          <div key={k.l} className="rounded-xl border hairline bg-cream-50 p-3">
-            <dt className="text-[0.68rem] uppercase tracking-wide text-slate-500">{k.l}</dt>
-            <dd className="mt-1 font-display text-2xl text-navy-900">{k.v}</dd>
-          </div>
-        ))}
-      </dl>
+      <p className="text-[0.95rem] leading-relaxed text-navy-900">{a.summary_short}</p>
 
-      <p className="text-sm leading-relaxed text-navy-900">{a.summary_short}</p>
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        {upcoming.length > 0 && (
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Prochaines échéances</p>
-            <ul className="mt-1.5 space-y-1.5 text-sm text-slate-700">
-              {upcoming.slice(0, 6).map((d, i) => (
-                <li key={i}>
-                  <span className="font-semibold text-navy-900">{frDate(d.date)}</span> — {d.title}
-                  <span className="block text-xs text-slate-500">{KIND[d.kind]} · {src(d.evidence)}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-        {a.attention_points.length > 0 && (
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Points d'attention</p>
-            <ul className="mt-1.5 list-disc space-y-1 pl-5 text-sm text-slate-700">
-              {a.attention_points.map((t, i) => <li key={i}>{t}</li>)}
-            </ul>
-          </div>
-        )}
-        {a.contradictions.length > 0 && (
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Contradictions entre pièces</p>
-            <ul className="mt-1.5 list-disc space-y-1 pl-5 text-sm text-slate-700">
-              {a.contradictions.map((c, i) => <li key={i}>{c.text} <span className="text-xs text-slate-500">({src(c.evidence)})</span></li>)}
-            </ul>
-          </div>
-        )}
-        {a.missing_items.length > 0 && (
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Pièces ou informations manquantes</p>
-            <ul className="mt-1.5 list-disc space-y-1 pl-5 text-sm text-slate-700">
-              {a.missing_items.map((m, i) => <li key={i}>{m.text} <span className="text-xs text-slate-500">— {m.why}</span></li>)}
-            </ul>
-          </div>
-        )}
-      </div>
-
-      {a.next_actions.length > 0 && (
-        <div className="rounded-xl border hairline-gold bg-gold-500/10 p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-gold-700">Prochaines actions proposées</p>
-          <ul className="mt-1.5 list-disc space-y-1 pl-5 text-sm text-navy-900">
-            {a.next_actions.map((t, i) => <li key={i}>{t}</li>)}
-          </ul>
-        </div>
+      {(next || a.next_actions.length > 0) && (
+        <dl className="grid gap-3 border-t hairline pt-4 sm:grid-cols-2">
+          {next && (
+            <div>
+              <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Prochaine échéance</dt>
+              <dd className="mt-1 text-sm text-navy-900">
+                <strong className="font-semibold">{frDate(next.date)}</strong> — {next.title}
+                <span className="block text-xs text-slate-500">{KIND[next.kind]}</span>
+              </dd>
+            </div>
+          )}
+          {a.next_actions.length > 0 && (
+            <div>
+              <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Prochaine action</dt>
+              <dd className="mt-1 text-sm text-navy-900">{a.next_actions[0]}</dd>
+            </div>
+          )}
+        </dl>
       )}
+
+      {details > 0 && (
+        <details className="border-t hairline pt-3 text-sm text-slate-700">
+          <summary className="cursor-pointer rounded py-1 font-medium text-slate-600 hover:text-navy-900">Voir le détail de l’analyse</summary>
+          <div className="mt-3 grid gap-4 lg:grid-cols-2">
+            {upcoming.length > 0 && (
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Échéances à venir</p>
+                <ul className="mt-1.5 space-y-1.5">
+                  {upcoming.map((d, i) => (
+                    <li key={i}>
+                      <span className="font-semibold text-navy-900">{frDate(d.date)}</span> — {d.title}
+                      <span className="block text-xs text-slate-500">{KIND[d.kind]} · {src(d.evidence)}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {past.length > 0 && (
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Dates passées</p>
+                <ul className="mt-1.5 space-y-1.5">
+                  {past.map((d, i) => (
+                    <li key={i}>
+                      <span className="font-semibold text-navy-900">{frDate(d.date)}</span> — {d.title}
+                      <span className="block text-xs text-slate-500">{KIND[d.kind]} · {src(d.evidence)}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {a.next_actions.length > 1 && (
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Actions proposées ensuite</p>
+                <ul className="mt-1.5 list-disc space-y-1 pl-5">
+                  {a.next_actions.slice(1).map((t, i) => <li key={i}>{t}</li>)}
+                </ul>
+              </div>
+            )}
+            {a.attention_points.length > 0 && (
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">À retenir</p>
+                <ul className="mt-1.5 list-disc space-y-1 pl-5">
+                  {a.attention_points.map((t, i) => <li key={i}>{t}</li>)}
+                </ul>
+              </div>
+            )}
+            {a.contradictions.length > 0 && (
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Écarts relevés entre pièces</p>
+                <ul className="mt-1.5 list-disc space-y-1 pl-5">
+                  {a.contradictions.map((c, i) => <li key={i}>{c.text} <span className="text-xs text-slate-500">({src(c.evidence)})</span></li>)}
+                </ul>
+              </div>
+            )}
+            {a.missing_items.length > 0 && (
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Pièces ou informations manquantes</p>
+                <ul className="mt-1.5 list-disc space-y-1 pl-5">
+                  {a.missing_items.map((m, i) => <li key={i}>{m.text} <span className="text-xs text-slate-500">— {m.why}</span></li>)}
+                </ul>
+              </div>
+            )}
+          </div>
+        </details>
+      )}
+
       <p className="text-xs leading-relaxed text-slate-500">
-        Documents générés automatiquement à partir de vos pièces, à vérifier ; ils ne constituent pas un conseil juridique.
+        Révision {revision} · calculé au {frDate(ref)} · généré automatiquement à partir de vos pièces, à vérifier ; ne constitue pas un conseil juridique.
         {costLabel ? ` ${costLabel}` : ""}
       </p>
     </div>

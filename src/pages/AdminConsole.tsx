@@ -25,6 +25,7 @@ import { AdminRequests } from "../components/admin/AdminRequests";
 import { AdminRevenue } from "../components/admin/AdminRevenue";
 import { AdminCampaign } from "../components/admin/AdminCampaign";
 import { AdminPrivateAi } from "../components/admin/AdminPrivateAi";
+import { AdminSupervision } from "../components/admin/AdminSupervision";
 import { CATEGORY_LABELS, effectiveCategory, formatBytes, hasDocExtras, isGenericTitle } from "../lib/dossier-workspace";
 
 /**
@@ -101,6 +102,7 @@ const SECTIONS = [
   { id: "notifications", label: "Notifications" },
   { id: "demandes", label: "Demandes & Journal" },
   { id: "ia", label: "IA privée" },
+  { id: "supervision", label: "Supervision" },
   { id: "abonnements", label: "Abonnements" },
   { id: "diagnostic", label: "Diagnostic" },
 ] as const;
@@ -711,6 +713,7 @@ export function AdminConsole() {
 
               {section === "demandes" && <AdminRequests onError={setError} />}
               {section === "ia" && <AdminPrivateAi emails={emails} onError={setError} />}
+              {section === "supervision" && <AdminSupervision emails={emails} onError={setError} />}
 
               {section === "clients" && (
                 <div className="mt-8 space-y-3">

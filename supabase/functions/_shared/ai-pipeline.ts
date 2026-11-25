@@ -76,6 +76,7 @@ export const MODEL_PRICES_USD_PER_MTOK: Record<string, { input: number; output: 
   'claude-opus-5-5': { input: 4, output: 20 },
   'claude-sonnet-5-5': { input: 2, output: 10 },
   'claude-haiku-5-5': { input: 0.1, output: 0.5 },
+  'claude-fable-5-2': { input: 8, output: 40 },
 };
 
 /** Coût en centimes d'euro (approximation 1 USD ≈ 0,92 EUR, arrondi au 1/100 de centime). */

@@ -14,7 +14,9 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "tsx --test tests/*.test.ts",
     "ia:commission": "node scripts/mise-en-service-supabase.mjs --ia-seulement",
-    "ia:corpus": "node --import tsx scripts/ia-corpus-test.ts"
+    "ia:corpus": "node --import tsx scripts/ia-corpus-test.ts",
+    "recette:vercel": "node scripts/recette/vercel-build.mjs",
+    "typecheck:recette": "tsc -p tsconfig.recette.json --noEmit"
   },
   "dependencies": {
     "@fontsource/cormorant-garamond": "^5.2.5",
@@ -32,16 +34,27 @@
     "three": "^0.186.0"
   },
   "devDependencies": {
+    "@anthropic-ai/sdk": "1.1.0",
+    "@pdf-lib/fontkit": "1.1.1",
     "@tailwindcss/vite": "^4.0.0",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@types/three": "^0.186.0",
+    "@vercel/blob": "2.9.0",
+    "@vercel/functions": "3.11.3",
     "@vitejs/plugin-react": "^4.3.4",
     "stripe": "^22.6.2",
     "tailwindcss": "^4.0.0",
     "tsx": "^4.19.0",
     "typescript": "^5.7.0",
-    "vite": "^6.0.0"
+    "unpdf": "1.9.1",
+    "vite": "^6.0.0",
+    "zod": "4.6.7"
+  },
+  "overrides": {
+    "@vercel/cli-config": {
+      "zod": "$zod"
+    }
   }
 }

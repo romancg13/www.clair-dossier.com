@@ -8,6 +8,7 @@ import { ArrowRightIcon } from "../components/icons";
 import { hasDossierTrash, logAudit } from "../lib/admin";
 import { hasQuotaEngine } from "../lib/dossier-workspace";
 import { AiPanel, type AiProgress } from "../components/dossier/AiPanel";
+import { DossierAttention } from "../components/dossier/DossierAttention";
 import { EmailInbox } from "../components/dossier/EmailInbox";
 import { DossierTracker } from "../components/dossier/DossierTracker";
 import { DeliverablesGrid, type DeliverableFile } from "../components/dossier/DeliverablesGrid";
@@ -611,11 +612,13 @@ export function DossierDetail() {
   // Clôture = dernier événement de cycle de vie (journal), à défaut statut historique « archive ».
   const lifecycle = events.find((e) => e.type === "dossier_cloture" || e.type === "dossier_rouvert");
   const closed = lifecycle ? lifecycle.type === "dossier_cloture" : dossier?.status === "archive";
+  // Moteur éteint (production) : les seuls documents livrés sont ceux que l'équipe dépose
+  // sous leur nom d'origine ; ils annoncent « Documents disponibles », comme avant.
   const step = dossier
     ? trackingStep({
         status: dossier.status,
         forcedStep: dossier.current_step,
-        hasDeliverables: deliverables.length > 0,
+        hasDeliverables: (AI_ENGINE ? aiDeliverables : deliverables).length > 0,
         processing: aiProgress.processing,
         closed,
       })
@@ -1243,6 +1246,13 @@ export function DossierDetail() {
                 </p>
               )}
 
+              {/* Boîte d'attention (règles fixes, sans IA) : n'apparaît que si une analyse existe. */}
+              {AI_ENGINE && (
+                <div className="mt-6 empty:hidden">
+                  <DossierAttention dossierId={dossier.id} documents={[...pieces, ...deliverables]} deadlines={deadlines} refreshKey={deliverables.length} />
+                </div>
+              )}
+
               {/* ── Onglets (boutons de section : aria-pressed, pattern du
                      filtre de src/pages/Account.tsx — pas de role="tab" sans
                      tabpanel associé) ─────────────────────────────────── */}
@@ -1311,7 +1321,7 @@ export function DossierDetail() {
                     <DossierTracker
                       step={step}
                       detail={aiProgress.detail}
-                      updating={aiProgress.processing && deliverables.length > 0}
+                      updating={aiProgress.processing && aiDeliverables.length > 0}
                     />
                     {eventsOn && (isAdmin || dossier.user_id === user?.id) && (
                       <div className="mt-3 flex flex-wrap items-center justify-end gap-3">
@@ -1624,7 +1634,8 @@ export function DossierDetail() {
                   <DeliverablesGrid
                     files={deliverableFiles}
                     caption={aiDeliverables.length ? `Dernière version publiée le ${fmtDate(aiDeliverables[aiDeliverables.length - 1].created_at)}` : null}
-                    emptyLabel={aiProgress.processing ? "En préparation…" : "Pas encore disponible."}
+                    emptyLabel={aiProgress.processing ? "En préparation…" : "Pas encore disponibles."}
+                    catalogHint={AI_ENGINE}
                     busy={zipping}
                     onDownloadAll={() => downloadZip(deliverables, `documents-${dossier.title || dossier.id}.zip`)}
                   />
@@ -1658,7 +1669,7 @@ export function DossierDetail() {
                   <div className="mt-8 border-t hairline pt-6">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">
-                      Documents déposés par l'équipe ClairDossier
+                      {AI_ENGINE ? "Autres documents" : "Documents déposés par l'équipe ClairDossier"}
                     </p>
                   </div>
 

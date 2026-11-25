@@ -10,6 +10,7 @@ type Props = {
 };
 
 type Filter = "tous" | "evenements" | "documents" | "corrigees";
+const ESSENTIAL = 5;
 
 /**
  * Chronologie éditable et tracée : chaque correction (date retenue, masquage)
@@ -25,6 +26,8 @@ export function ChronologyEditor({ events, history, documentNames, canEdit, onSa
   const [reason, setReason] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Premier niveau : les jalons essentiels. Recherche, filtres et corrections au second niveau.
+  const [full, setFull] = useState(false);
 
   const shown = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -34,6 +37,13 @@ export function ChronologyEditor({ events, history, documentNames, canEdit, onSa
         (!q || e.retained_label.toLowerCase().includes(q)),
     );
   }, [events, filter, query]);
+  // Jalons essentiels : les événements (pas les simples dates d'édition des documents), les 5 plus récents.
+  const essential = useMemo(() => {
+    const visible = events.filter((e) => !e.hidden);
+    const facts = visible.filter((e) => e.kind === "event_date");
+    return (facts.length >= 3 ? facts : visible).slice(-ESSENTIAL);
+  }, [events]);
+  const list = full ? shown : essential;
 
   const start = (e: RetainedEvent) => {
     setEditing(e.key);
@@ -59,34 +69,36 @@ export function ChronologyEditor({ events, history, documentNames, canEdit, onSa
 
   return (
     <section aria-labelledby="chrono-title" className="rounded-2xl border hairline bg-white p-5 shadow-card sm:p-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 id="chrono-title" className="font-display text-lg text-navy-900">
-            Chronologie et dates modifiables
+          <h3 id="chrono-title" className="font-display text-xl text-navy-900">
+            Chronologie
           </h3>
-          <p className="mt-1 text-xs text-slate-500">
-            {events.length} événement{events.length > 1 ? "s" : ""} daté{events.length > 1 ? "s" : ""} et sourcé{events.length > 1 ? "s" : ""} · {events.filter((e) => e.edited).length} corrigé(s)
+          <p className="mt-0.5 text-xs text-slate-500">
+            {full ? `${events.length} événement${events.length > 1 ? "s" : ""} daté${events.length > 1 ? "s" : ""} et sourcé${events.length > 1 ? "s" : ""} · ${events.filter((e) => e.edited).length} corrigé(s)` : `Les ${essential.length} jalons essentiels`}
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <label className="sr-only" htmlFor="chrono-q">Rechercher un événement</label>
-          <input id="chrono-q" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Rechercher…" className="w-40 rounded-full border hairline-strong bg-white px-3 py-1.5 text-xs text-navy-900" />
-          <label className="sr-only" htmlFor="chrono-f">Filtrer</label>
-          <select id="chrono-f" value={filter} onChange={(e) => setFilter(e.target.value as Filter)} className="rounded-full border hairline-strong bg-white px-3 py-1.5 text-xs text-navy-900">
-            <option value="tous">Tous</option>
-            <option value="evenements">Événements</option>
-            <option value="documents">Dates des documents</option>
-            <option value="corrigees">Corrigés</option>
-          </select>
-        </div>
+        {full && (
+          <div className="flex flex-wrap gap-2">
+            <label className="sr-only" htmlFor="chrono-q">Rechercher un événement</label>
+            <input id="chrono-q" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Rechercher…" className="w-40 rounded-full border hairline-strong bg-white px-3 py-1.5 text-xs text-navy-900" />
+            <label className="sr-only" htmlFor="chrono-f">Filtrer</label>
+            <select id="chrono-f" value={filter} onChange={(e) => setFilter(e.target.value as Filter)} className="rounded-full border hairline-strong bg-white px-3 py-1.5 text-xs text-navy-900">
+              <option value="tous">Tous</option>
+              <option value="evenements">Événements</option>
+              <option value="documents">Dates des documents</option>
+              <option value="corrigees">Corrigés</option>
+            </select>
+          </div>
+        )}
       </div>
 
-      <ol className="mt-5 space-y-2">
-        {shown.map((e) => {
+      <ol className="mt-4 divide-y divide-slate-200/70 border-y hairline">
+        {list.map((e) => {
           const past = history.filter((h) => h.event_key === e.key);
           return (
-            <li key={e.key} className={`rounded-xl border p-3.5 ${e.hidden ? "border-dashed hairline opacity-60" : "hairline"}`}>
-              <div className="flex flex-wrap items-start gap-x-4 gap-y-1">
+            <li key={e.key} className={`py-2.5 ${e.hidden ? "opacity-60" : ""}`}>
+              <div className="flex flex-wrap items-baseline gap-x-4 gap-y-0.5">
                 <div className="w-28 shrink-0">
                   <p className="font-mono text-sm font-semibold text-navy-900">{frDate(e.retained_date)}</p>
                   {e.edited && e.retained_date !== e.date && <p className="font-mono text-[0.68rem] text-slate-400 line-through">{frDate(e.date)}</p>}
@@ -95,12 +107,12 @@ export function ChronologyEditor({ events, history, documentNames, canEdit, onSa
                 <div className="min-w-0 flex-1">
                   <p className="text-sm text-navy-900">
                     {e.retained_label}
-                    <span className="ml-2 rounded-full bg-cream-100 px-2 py-0.5 text-[0.65rem] text-slate-600">{e.kind === "document_date" ? "date du document" : "événement"}</span>
+                    {full && e.kind === "document_date" && <span className="ml-2 rounded-full bg-cream-100 px-2 py-0.5 text-[0.65rem] text-slate-600">date du document</span>}
                     {e.edited && <span className="ml-1 rounded-full bg-gold-500/15 px-2 py-0.5 text-[0.65rem] font-semibold text-gold-700">{e.hidden ? "masqué" : "corrigé"}</span>}
                   </p>
-                  <p className="mt-0.5 text-xs text-slate-500">Sources : {src(e)}</p>
+                  <p className="text-xs text-slate-500">{src(e)}</p>
                 </div>
-                {canEdit && editing !== e.key && (
+                {full && canEdit && editing !== e.key && (
                   <button type="button" onClick={() => start(e)} className="rounded-full border hairline-strong px-3 py-1 text-xs font-semibold text-navy-900 hover:bg-cream-100">
                     Corriger
                   </button>
@@ -147,8 +159,13 @@ export function ChronologyEditor({ events, history, documentNames, canEdit, onSa
             </li>
           );
         })}
-        {shown.length === 0 && <li className="text-sm text-slate-500">Aucun événement pour ce filtre.</li>}
+        {list.length === 0 && <li className="py-3 text-sm text-slate-500">{full ? "Aucun événement pour ce filtre." : "Aucun événement daté pour le moment."}</li>}
       </ol>
+      {events.length > 0 && (
+        <button type="button" onClick={() => setFull((v) => !v)} aria-expanded={full} className="mt-3 rounded-full border hairline-strong px-4 py-1.5 text-xs font-semibold text-navy-900 hover:bg-cream-100">
+          {full ? "Revenir aux jalons essentiels" : `Voir toute la chronologie (${events.length})${canEdit ? " et corriger une date" : ""}`}
+        </button>
+      )}
     </section>
   );
 }

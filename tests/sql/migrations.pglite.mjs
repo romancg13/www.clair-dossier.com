@@ -204,6 +204,25 @@ await test('client ne peut pas se lever une suspension', async () => {
 console.log('Cloisonnement RLS A/B');
 const dossierA = await insertDossier(A, { title: 'Recouvrement — Société X' });
 const dossierB = await insertDossier(B, { title: 'Dossier de B' });
+await test('pièce : B ne peut ni rattacher ni déplacer une pièce vers le dossier de A (20261125150000)', async () => {
+  await asUser(B);
+  await rejects(
+    q(`insert into public.dossier_documents (dossier_id, user_id, file_path, file_name, kind) values ($1, $2, $3, 'x.pdf', 'piece')`, [dossierA, B, `${B}/x.pdf`]),
+    /row-level security/,
+  );
+  const [own] = await q(`insert into public.dossier_documents (dossier_id, user_id, file_path, file_name, kind) values ($1, $2, $3, 'y.pdf', 'piece') returning id`, [dossierB, B, `${B}/y.pdf`]);
+  await rejects(q('update public.dossier_documents set dossier_id = $1 where id = $2', [dossierA, own.id]), /row-level security/);
+  await q(`update public.dossier_documents set file_name = 'z.pdf' where id = $1`, [own.id]);
+  await q('delete from public.dossier_documents where id = $1', [own.id]);
+  // Même règle pour le déplacement d'une échéance.
+  const [dl] = await q(`insert into public.dossier_deadlines (dossier_id, user_id, title, due_date) values ($1, $2, 'Isolation', current_date + 7) returning id`, [dossierB, B]);
+  await rejects(q('update public.dossier_deadlines set dossier_id = $1 where id = $2', [dossierA, dl.id]), /row-level security/);
+  await q(`update public.dossier_deadlines set title = 'Isolation 2' where id = $1`, [dl.id]);
+  await q('delete from public.dossier_deadlines where id = $1', [dl.id]);
+  await asSuperuser();
+  const [n] = await q('select count(*)::int as n from public.dossier_documents where dossier_id = $1 and user_id = $2', [dossierA, B]);
+  assert.equal(n.n, 0);
+});
 await test('A voit son dossier et jamais celui de B', async () => {
   await asUser(A);
   const rows = await q('select id from public.dossiers');
@@ -1595,6 +1614,840 @@ await test('E-mail entrant : adresse par dossier — offre, format, idempotence,
   await rejects(q('select * from public.create_inbound_address($1)', [DA]), /DOSSIER_CLOTURE/);
 });
 
+// ── Essai prospect (migration 20261125120000) ───────────────────────────────
+const CGU_ESSAI = 'essai-2026-11';
+async function trialOpen(userId) {
+  await asService();
+  return (await q('select * from public.trial_open($1)', [userId]))[0];
+}
+async function trialClaim(userId, dossierId, key, terms = CGU_ESSAI) {
+  await asService();
+  return (await q('select * from public.trial_claim_slot($1, $2, $3, $4)', [userId, dossierId, key, terms]))[0];
+}
+async function trialDossier(userId, title, pieces = 1) {
+  const id = await insertDossier(userId, { status: 'brouillon', title });
+  const docs = [];
+  for (let i = 0; i < pieces; i++) docs.push(await addPiece(userId, id, `piece-${i + 1}.pdf`));
+  return { id, docs };
+}
+async function trialRow(userId) {
+  await asSuperuser();
+  return (await q('select * from public.trial_accounts where user_id = $1', [userId]))[0];
+}
+async function trialSlots(userId) {
+  await asSuperuser();
+  return q('select s.* from public.trial_slots s join public.trial_accounts a on a.id = s.trial_id where a.user_id = $1 order by s.slot_no', [userId]);
+}
+async function trialMotifs(kind) {
+  await asSuperuser();
+  return (await q(`select detail ->> 'motif' as m from public.trial_events where kind = $1 order by created_at`, [kind])).map((r) => r.m);
+}
+const jobOf = async (dossierId, kind) => {
+  await asSuperuser();
+  return (await q(`select id from public.ai_jobs where dossier_id = $1 and kind = $2 order by created_at desc limit 1`, [dossierId, kind]))[0]?.id;
+};
+const P1 = await newUser('Prospect.Un+promo@GoogleMail.com');
+const P2 = await newUser('prospect-deux@test.local');
+const P3 = await newUser('prospect-trois@test.local');
+const P1D1 = await trialDossier(P1, 'Essai P1 — dossier 1', 2);
+const P1D2 = await trialDossier(P1, 'Essai P1 — dossier 2');
+const P1D3 = await trialDossier(P1, 'Essai P1 — dossier 3');
+
+await test('Essai : inactif par défaut — rien ne s\'ouvre, aucune RPC serveur accessible au client', async () => {
+  await asSuperuser();
+  const [s] = await q('select enabled, max_trials, budget_cents from public.trial_settings');
+  assert.deepEqual([s.enabled, s.max_trials, s.budget_cents], [false, 0, 0], 'fermé, plafond 0, budget 0');
+  assert.equal((await q('select count(*)::int n from public.trial_settings'))[0].n, 1, 'rejeu de la migration : une seule ligne');
+  assert.equal((await trialOpen(P1)).reason, 'ESSAIS_FERMES');
+  assert.equal((await trialClaim(P1, P1D1.id, 'cle-essai-0001')).reason, 'ESSAI_ABSENT');
+  for (const as of [() => asUser(P1), asAnon]) {
+    await as();
+    await rejects(q('select * from public.trial_open($1)', [P1]), /FORBIDDEN|permission denied/);
+    await as();
+    await rejects(q('select * from public.trial_claim_slot($1, $2, $3, $4)', [P1, P1D1.id, 'cle-essai-0001', CGU_ESSAI]), /permission denied/);
+    await as();
+    await rejects(q('select public.trial_allows($1, 1)', [P1D1.id]), /permission denied/);
+    await as();
+    await rejects(q(`select public.trial_check($1, 'extract', null, 1)`, [P1D1.id]), /permission denied/);
+    await as();
+    await rejects(q('select public.trial_admin_configure(true, 100, 14, 500)'), /FORBIDDEN|AUTH_REQUIRED|permission denied/);
+    await as();
+    await rejects(q(`select public.trial_admin_suspend($1, 'motif')`, [P1]), /FORBIDDEN|AUTH_REQUIRED|permission denied/);
+  }
+  await asSuperuser();
+  assert.equal((await q('select enabled from public.trial_settings'))[0].enabled, false);
+  assert.equal((await q('select count(*)::int n from public.trial_accounts'))[0].n, 0);
+});
+
+await test('Essai : ouverture — réglages propriétaire exigés, e-mail vérifié, empreinte normalisée (casse, +tag, points Gmail)', async () => {
+  await asUser(ADMIN);
+  await q('select public.trial_admin_configure(true, null, null, null)');
+  assert.equal((await trialOpen(P1)).reason, 'BUDGET_NON_FIXE', 'aucune dépense sans budget fixé');
+  await asUser(ADMIN);
+  await q('select public.trial_admin_configure(null, null, null, 500)');
+  assert.equal((await trialOpen(P1)).reason, 'PLAFOND_GLOBAL_ATTEINT', 'plafond global 0');
+  await asUser(ADMIN);
+  await q('select public.trial_admin_configure(null, 3, 14, null)');
+  assert.equal((await trialOpen(UNVERIFIED)).reason, 'EMAIL_NON_VERIFIE');
+  const o = await trialOpen(P1);
+  assert.deepEqual([o.ok, o.reason], [true, 'OUVERT']);
+  const again = await trialOpen(P1);
+  assert.deepEqual([again.ok, again.reason, again.trial_id], [true, 'DEJA_OUVERT', o.trial_id], 'un seul essai par compte');
+  // Alias du même titulaire (points, +tag, casse, googlemail) : refusé.
+  for (const alias of ['prospectun@gmail.com', 'P.r.o.s.p.e.c.t.u.n+autre@gmail.com']) {
+    const twin = await newUser(alias);
+    const r = await trialOpen(twin);
+    assert.deepEqual([r.ok, r.reason], [false, 'EMAIL_DEJA_UTILISE'], alias);
+  }
+  await asSuperuser();
+  const [f] = await q(`select public.trial_email_fingerprint('a.b+x@test.fr') = public.trial_email_fingerprint('A.B@test.fr') as tag,
+                              public.trial_email_fingerprint('a.b@test.fr') = public.trial_email_fingerprint('ab@test.fr') as points,
+                              public.trial_email_fingerprint('sans-arobase') as invalide`);
+  assert.deepEqual([f.tag, f.points, f.invalide], [true, false, null], 'points significatifs hors Gmail');
+  const t = await trialRow(P1);
+  assert.match(t.email_fingerprint, /^[0-9a-f]{64}$/, 'adresse jamais conservée en clair');
+  assert.equal(t.budget_cents, 500);
+  assert.ok(new Date(t.expires_at) > new Date(Date.now() + 13 * 86400000), 'expiration à 14 jours');
+  assert.equal((await q('select count(*)::int n from public.trial_accounts'))[0].n, 1);
+});
+
+await test('Essai : 2 analyses OK, 3e refusée (y compris via API) ; idempotence ; manifeste figé au lancement', async () => {
+  const r1 = await trialClaim(P1, P1D1.id, 'cle-essai-0001');
+  assert.deepEqual([r1.ok, r1.reason, r1.slot, r1.replayed], [true, 'RESERVE', 1, false]);
+  const [s1] = await trialSlots(P1);
+  assert.equal(s1.piece_count, 2);
+  assert.deepEqual(s1.manifest.map((m) => m.id).sort(), [...P1D1.docs].sort(), 'manifeste = pièces présentes au lancement');
+  assert.ok(s1.manifest.every((m) => /^[0-9a-f]{64}$/.test(m.empreinte)));
+  const [set] = await q('select enabled_at, enabled_by, terms_version from public.dossier_ai_settings where dossier_id = $1', [P1D1.id]);
+  assert.ok(set.enabled_at);
+  assert.equal(set.terms_version, CGU_ESSAI, 'consentement tracé');
+  assert.equal(await openJobs(P1D1.id, 'extract'), 2);
+  assert.equal(await openJobs(P1D1.id, 'consolidate'), 1);
+  // Reprise technique : même clé → même emplacement, aucun décompte, aucun travail en double.
+  const replay = await trialClaim(P1, P1D1.id, 'cle-essai-0001');
+  assert.deepEqual([replay.ok, replay.reason, replay.slot, replay.replayed], [true, 'REJEU', 1, true]);
+  const other = await trialClaim(P1, P1D1.id, 'cle-essai-autre');
+  assert.deepEqual([other.ok, other.reason, other.slot, other.replayed], [true, 'DOSSIER_DEJA_RESERVE', 1, true]);
+  const conflict = await trialClaim(P1, P1D2.id, 'cle-essai-0001');
+  assert.deepEqual([conflict.ok, conflict.reason], [false, 'CLE_IDEMPOTENCE_CONFLIT']);
+  assert.equal((await trialClaim(P1, P1D2.id, 'court')).reason, 'CLE_IDEMPOTENCE_INVALIDE');
+  assert.equal((await trialSlots(P1)).length, 1, 'un seul emplacement consommé');
+  assert.equal(await openJobs(P1D1.id, 'extract'), 2);
+  // Conditions exigées ; dossier d'autrui refusé.
+  assert.equal((await trialClaim(P1, P1D2.id, 'cle-essai-0002', ' ')).reason, 'CONDITIONS_REQUISES');
+  assert.equal((await trialClaim(P1, dossierA, 'cle-essai-0002')).reason, 'DOSSIER_INTROUVABLE');
+  const r2 = await trialClaim(P1, P1D2.id, 'cle-essai-0002');
+  assert.deepEqual([r2.ok, r2.slot], [true, 2]);
+  // Troisième : refusée, rien n'est activé ni mis en file.
+  const r3 = await trialClaim(P1, P1D3.id, 'cle-essai-0003');
+  assert.deepEqual([r3.ok, r3.reason, r3.slot], [false, 'EMPLACEMENTS_EPUISES', null]);
+  assert.equal((await trialSlots(P1)).length, 2);
+  assert.equal((await q('select 1 from public.dossier_ai_settings where dossier_id = $1', [P1D3.id])).length, 0);
+  assert.equal((await q('select 1 from public.ai_jobs where dossier_id = $1', [P1D3.id])).length, 0);
+  // Via l'API, en tant que prospect : aucune voie.
+  await asUser(P1);
+  await rejects(q('select public.enable_ai_processing($1, $2)', [P1D3.id, CGU_ESSAI]), /SUBSCRIPTION_REQUIRED/);
+  await asUser(P1);
+  await rejects(q('select * from public.trial_claim_slot($1, $2, $3, $4)', [P1, P1D3.id, 'cle-essai-0004', CGU_ESSAI]), /permission denied/);
+  await asUser(P1);
+  await rejects(q(`insert into public.trial_slots (trial_id, slot_no, idempotency_key, dossier_id, manifest, manifest_hash, piece_count)
+                   values ($1, 1, 'cle-directe-01', $2, '[]', 'x', 1)`, [s1.trial_id, P1D3.id]), /row-level security/);
+  await asUser(P1);
+  await rejects(q(`insert into public.ai_jobs (dossier_id, user_id, kind) values ($1, $2, 'consolidate')`, [P1D3.id, P1]), /row-level security/);
+  await asUser(P1);
+  await rejects(q('insert into public.dossier_ai_settings (dossier_id, user_id, enabled_at) values ($1, $2, now())', [P1D3.id, P1]), /row-level security/);
+  await asUser(P1);
+  await q(`update public.trial_accounts set budget_cents = 999999, expires_at = now() + interval '10 years' where user_id = $1`, [P1]);
+  await q('update public.trial_slots set analysis_done_at = null, pages_used = 0');
+  assert.equal((await trialRow(P1)).budget_cents, 500, 'écriture client sans effet (RLS)');
+  const motifs = await trialMotifs('emplacement_refuse');
+  assert.ok(motifs.includes('EMPLACEMENTS_EPUISES') && motifs.includes('CLE_IDEMPOTENCE_CONFLIT'), 'refus journalisés');
+});
+
+await test('Essai : concurrence simulée — la contrainte interdit tout 3e emplacement ou doublon, même hors RPC', async () => {
+  // PGlite n'a qu'une connexion : on rejoue ce que tenterait une transaction
+  // concurrente ayant franchi le contrôle (insertion directe, rôle serveur).
+  const [s1, s2] = await trialSlots(P1);
+  const ins = (no, key, dossier) => q(
+    `insert into public.trial_slots (trial_id, slot_no, idempotency_key, dossier_id, manifest, manifest_hash, piece_count)
+     values ($1, $2, $3, $4, '[]', 'x', 1)`, [s1.trial_id, no, key, dossier]);
+  await asService();
+  await rejects(ins(3, 'cle-course-0003', P1D3.id), /check constraint/);
+  await rejects(ins(2, 'cle-course-0002', P1D3.id), /unique|duplicate/);
+  await rejects(ins(1, 'cle-course-0001', P1D3.id), /unique|duplicate/);
+  await rejects(ins(0, 'cle-course-0000', P1D3.id), /check constraint/);
+  // Consommation jamais effacée ni réécrite, quel que soit le rôle.
+  await rejects(q('delete from public.trial_slots where id = $1', [s2.id]), /ESSAI_IMMUABLE/);
+  await rejects(q('update public.trial_slots set dossier_id = $1 where id = $2', [P1D3.id, s2.id]), /ESSAI_IMMUABLE/);
+  await rejects(q(`update public.trial_slots set manifest = '[]' where id = $1`, [s1.id]), /ESSAI_IMMUABLE/);
+  await rejects(q('delete from public.trial_accounts where id = $1', [s1.trial_id]), /ESSAI_IMMUABLE/);
+  await rejects(q('truncate public.trial_slots'), /ESSAI_IMMUABLE|permission denied/);
+  await asSuperuser();
+  await rejects(q('truncate public.trial_slots, public.trial_events, public.trial_accounts cascade'), /ESSAI_IMMUABLE/);
+  await rejects(q(`update public.trial_events set kind = 'efface'`), /ESSAI_JOURNAL_IMMUABLE/);
+  await rejects(q('delete from public.trial_events'), /ESSAI_JOURNAL_IMMUABLE/);
+  assert.equal((await trialSlots(P1)).length, 2);
+});
+
+await test('Essai : garde de mise en file et du worker — manifeste seul, pages, reprise sans double décompte, une analyse par emplacement', async () => {
+  // Pièce ajoutée APRÈS le lancement : jamais mise en file.
+  const late = await addPiece(P1, P1D1.id, 'ajout-tardif.pdf');
+  await asSuperuser();
+  assert.equal((await q('select 1 from public.ai_jobs where document_id = $1', [late])).length, 0, 'pièce hors manifeste : aucun travail');
+  assert.ok((await trialMotifs('mise_en_file_refusee')).includes('PIECE_HORS_MANIFESTE'));
+  assert.equal((await trialSlots(P1))[0].piece_count, 2, 'manifeste inchangé');
+  await asService();
+  const check = async (kind, doc, pages = null) => (await q('select public.trial_check($1, $2, $3, $4) as r', [P1D1.id, kind, doc, pages]))[0].r;
+  assert.equal(await check('extract', late), 'PIECE_HORS_MANIFESTE');
+  assert.equal(await check('extract', P1D1.docs[0], 5), null);
+  assert.equal(await check('extract', P1D1.docs[0], 61), 'PAGES_ESSAI_EPUISEES', 'plafond de pages par analyse (60)');
+  assert.equal(await check('render', null), null, 'rendu : aucun appel IA');
+  assert.equal(await check('publish', null), null);
+  // Worker : travail d'extraction du manifeste permis ; rien n'est décompté par le contrôle.
+  const jx = await jobOf(P1D1.id, 'extract');
+  const jc = await jobOf(P1D1.id, 'consolidate');
+  await asService();
+  assert.equal((await q('select public.trial_allows($1, 3) as r', [jx]))[0].r, null);
+  assert.equal((await q('select public.trial_allows($1, 61) as r', [jx]))[0].r, 'PAGES_ESSAI_EPUISEES');
+  // Consolidation : reprise du MÊME travail (tentatives 2, 3…) = un seul décompte.
+  for (let i = 0; i < 3; i++) assert.equal((await q('select public.trial_allows($1, null) as r', [jc]))[0].r, null);
+  let [s1] = await trialSlots(P1);
+  assert.deepEqual([s1.analysis_job_id, s1.analysis_job_count], [jc, 1], 'reprise technique : pas de double décompte');
+  // Résultats réels (écrits par le worker) : pages et dépense reportées sur l'essai.
+  await asService();
+  const ext = (doc, pages, cost) => q(
+    `insert into public.ai_extractions (dossier_id, user_id, document_id, status, pages, cost_cents, created_at)
+     values ($1, $2, $3, 'ok', $4, $5, clock_timestamp())
+     on conflict (document_id) do update set status = 'ok', pages = excluded.pages, cost_cents = excluded.cost_cents, created_at = excluded.created_at`,
+    [P1D1.id, P1, doc, pages, cost]);
+  await ext(P1D1.docs[0], 4, 12.5);
+  await ext(P1D1.docs[1], null, 7.5);
+  await q(`update public.ai_extractions set data = '{}' where document_id = $1`, [P1D1.docs[0]]);
+  [s1] = await trialSlots(P1);
+  assert.equal(s1.pages_used, 5, '4 pages + 1 pièce sans pagination ; mise à jour sans relecture non comptée');
+  assert.equal(Number((await trialRow(P1)).spent_cents), 20);
+  // « Aucune pièce exploitable » (model null) n'est pas une analyse ; l'analyse réelle clôt l'emplacement.
+  await asService();
+  await q(`insert into public.ai_analyses (dossier_id, user_id, revision, model, data) values ($1, $2, 1, null, '{}')`, [P1D1.id, P1]);
+  assert.equal((await trialSlots(P1))[0].analysis_done_at, null);
+  await asService();
+  await q(`insert into public.ai_analyses (dossier_id, user_id, revision, model, data, cost_cents) values ($1, $2, 2, 'modele-test', '{"summary_short":"x"}', 30)`, [P1D1.id, P1]);
+  [s1] = await trialSlots(P1);
+  assert.ok(s1.analysis_done_at, 'analyse livrée');
+  assert.equal(Number((await trialRow(P1)).spent_cents), 50);
+  await asService();
+  assert.equal((await q('select public.trial_allows($1, null) as r', [jc]))[0].r, 'ANALYSE_DEJA_LIVREE');
+  // Aucune nouvelle consolidation en file (corbeille / restauration d'une pièce, réouverture…).
+  await asSuperuser();
+  await q(`update public.ai_jobs set status = 'done', finished_at = now() where dossier_id = $1 and status in ('queued', 'running')`, [P1D1.id]);
+  await q(`select public.ai_enqueue($1, 'consolidate', null)`, [P1D1.id]);
+  await q(`select public.ai_enqueue($1, 'extract', $2)`, [P1D1.id, late]);
+  assert.equal(await openJobs(P1D1.id, 'consolidate'), 0, 'analyse déjà livrée : pas de seconde');
+  assert.equal(await openJobs(P1D1.id, 'extract'), 0);
+  await q(`select public.ai_enqueue($1, 'render', null)`, [P1D1.id]);
+  assert.equal(await openJobs(P1D1.id, 'render'), 1, 'rendu après correction toujours possible');
+  // Pièce du manifeste modifiée après coup (chemin / taille) : refusée.
+  await q(`update public.dossier_documents set size_bytes = 424242 where id = $1`, [P1D2.docs[0]]);
+  await asService();
+  assert.equal((await q(`select public.trial_check($1, 'extract', $2, 1) as r`, [P1D2.id, P1D2.docs[0]]))[0].r, 'PIECE_MODIFIEE');
+  await asSuperuser();
+  await q(`update public.dossier_documents set size_bytes = null where id = $1`, [P1D2.docs[0]]);
+  // Au plus trois travaux de consolidation distincts par emplacement (échecs compris).
+  for (let i = 1; i <= 4; i++) {
+    const j = await jobOf(P1D2.id, 'consolidate');
+    await asService();
+    const r = (await q('select public.trial_allows($1, null) as r', [j]))[0].r;
+    assert.equal(r, i <= 3 ? null : 'TENTATIVES_ANALYSE_EPUISEES', `travail distinct n° ${i}`);
+    await asSuperuser();
+    await q(`update public.ai_jobs set status = 'failed', finished_at = now() where id = $1`, [j]);
+    await q(`select public.ai_enqueue($1, 'consolidate', null)`, [P1D2.id]);
+  }
+  assert.equal((await trialSlots(P1))[1].analysis_job_count, 3);
+  assert.ok((await trialMotifs('controle_refuse')).includes('TENTATIVES_ANALYSE_EPUISEES'));
+});
+
+await test('Essai : suppression (pièces, dossier, compte) puis nouvelle tentative — toujours refusée, dépense conservée', async () => {
+  await asSuperuser();
+  await q('delete from public.dossier_documents where dossier_id = $1', [P1D1.id]);
+  await q('delete from public.dossiers where id = $1', [P1D1.id]);
+  await q('update public.dossiers set deleted_at = now() where id = $1', [P1D2.id]);
+  assert.equal((await q('select 1 from public.ai_extractions where dossier_id = $1', [P1D1.id])).length, 0, 'résultats partis avec le dossier');
+  assert.equal((await trialSlots(P1)).length, 2, 'emplacements conservés');
+  assert.equal(Number((await trialRow(P1)).spent_cents), 50, 'dépense conservée');
+  const D4 = await trialDossier(P1, 'Essai P1 — dossier 4');
+  const r = await trialClaim(P1, D4.id, 'cle-essai-0005');
+  assert.deepEqual([r.ok, r.reason], [false, 'EMPLACEMENTS_EPUISES']);
+  // Nouvelle session / réémission d'accès : rien n'est lié à la session.
+  assert.equal((await trialOpen(P1)).reason, 'DEJA_OUVERT');
+  // Compte supprimé puis recréé (alias de la même adresse) : l'essai existant est rattaché.
+  const before = await trialRow(P1);
+  await asSuperuser();
+  await q('delete from auth.users where id = $1', [P1]);
+  assert.equal((await q('select count(*)::int n from public.trial_accounts where id = $1', [before.id]))[0].n, 1, 'essai conservé sans le compte');
+  const P1BIS = await newUser('p.rospect.un+retour@gmail.com');
+  const o = await trialOpen(P1BIS);
+  assert.deepEqual([o.ok, o.reason, o.trial_id], [true, 'RATTACHE', before.id]);
+  assert.equal((await trialSlots(P1BIS)).length, 2);
+  const D5 = await trialDossier(P1BIS, 'Essai P1 bis');
+  assert.equal((await trialClaim(P1BIS, D5.id, 'cle-essai-0006')).reason, 'EMPLACEMENTS_EPUISES');
+  assert.equal((await q('select count(*)::int n from public.trial_accounts'))[0].n, 1);
+});
+
+const P2D1 = await trialDossier(P2, 'Essai P2 — dossier 1');
+const P2D2 = await trialDossier(P2, 'Essai P2 — dossier 2');
+await test('Essai : expiration — plus aucune réservation ni lecture, résultats conservés', async () => {
+  assert.equal((await trialOpen(P2)).reason, 'OUVERT');
+  assert.equal((await trialClaim(P2, P2D1.id, 'cle-p2-0001')).slot, 1);
+  const jx = await jobOf(P2D1.id, 'extract');
+  await asSuperuser();
+  await q(`update public.trial_accounts set expires_at = now() - interval '1 minute' where user_id = $1`, [P2]);
+  const r = await trialClaim(P2, P2D2.id, 'cle-p2-0002');
+  assert.deepEqual([r.ok, r.reason], [false, 'ESSAI_EXPIRE']);
+  await asService();
+  assert.equal((await q('select public.trial_allows($1, 1) as r', [jx]))[0].r, 'ESSAI_EXPIRE');
+  assert.equal((await q(`select public.trial_check($1, 'consolidate', null, null) as r`, [P2D1.id]))[0].r, 'ESSAI_EXPIRE');
+  assert.equal((await q(`select public.trial_check($1, 'render', null, null) as r`, [P2D1.id]))[0].r, null);
+  // Reprise d'une réservation déjà faite : toujours reconnue, sans rien relancer.
+  assert.equal((await trialClaim(P2, P2D1.id, 'cle-p2-0001')).reason, 'REJEU');
+  assert.equal((await trialSlots(P2)).length, 1);
+});
+
+const P3D1 = await trialDossier(P3, 'Essai P3 — dossier 1');
+const P3D2 = await trialDossier(P3, 'Essai P3 — dossier 2');
+await test('Essai : suspension par un administrateur, budget individuel, plafond global', async () => {
+  assert.equal((await trialOpen(P3)).reason, 'OUVERT');
+  const P4 = await newUser('prospect-quatre@test.local');
+  assert.equal((await trialOpen(P4)).reason, 'PLAFOND_GLOBAL_ATTEINT', '3 essais ouverts, plafond 3');
+  assert.equal((await trialClaim(P3, P3D1.id, 'cle-p3-0001')).slot, 1);
+  assert.equal(await openJobs(P3D1.id, 'extract'), 1);
+  await asUser(P3);
+  await rejects(q(`select public.trial_admin_suspend($1, 'auto-suspension')`, [P3]), /FORBIDDEN/);
+  await asUser(P3);
+  await rejects(q('select public.trial_admin_resume($1)', [P3]), /FORBIDDEN/);
+  await asUser(P3);
+  await rejects(q('select public.trial_admin_set_budget($1, 99999)', [P3]), /FORBIDDEN/);
+  await asUser(ADMIN);
+  await rejects(q(`select public.trial_admin_suspend($1, ' ')`, [P3]), /MOTIF_REQUIS/);
+  await asUser(ADMIN);
+  await q(`select public.trial_admin_suspend($1, 'usage abusif présumé')`, [P3]);
+  const jx = await jobOf(P3D1.id, 'extract');
+  assert.equal(await openJobs(P3D1.id, 'extract'), 0, 'travaux en attente annulés');
+  assert.equal(await openJobs(P3D1.id, 'consolidate'), 0);
+  assert.equal((await trialClaim(P3, P3D2.id, 'cle-p3-0002')).reason, 'ESSAI_SUSPENDU');
+  await asService();
+  assert.equal((await q('select public.trial_allows($1, 1) as r', [jx]))[0].r, 'ESSAI_SUSPENDU');
+  await asSuperuser();
+  await q(`select public.ai_enqueue($1, 'extract', $2)`, [P3D1.id, P3D1.docs[0]]);
+  assert.equal(await openJobs(P3D1.id, 'extract'), 0, 'suspendu : rien n\'est remis en file');
+  // Reprise, puis budget individuel épuisé.
+  await asUser(ADMIN);
+  await q('select public.trial_admin_resume($1)', [P3]);
+  await asUser(ADMIN);
+  await q('select public.trial_admin_set_budget($1, 0)', [P3]);
+  assert.equal((await trialClaim(P3, P3D2.id, 'cle-p3-0002')).reason, 'BUDGET_ESSAI_EPUISE');
+  await asService();
+  assert.equal((await q(`select public.trial_check($1, 'extract', $2, 1) as r`, [P3D1.id, P3D1.docs[0]]))[0].r, 'BUDGET_ESSAI_EPUISE');
+  await asUser(ADMIN);
+  await q('select public.trial_admin_set_budget($1, 500)', [P3]);
+  assert.equal((await trialClaim(P3, P3D2.id, 'cle-p3-0002')).slot, 2);
+  // Interrupteur global : fermeture = arrêt immédiat des lectures d'essai.
+  await asUser(ADMIN);
+  await q('select public.trial_admin_configure(false, null, null, null)');
+  await asService();
+  assert.equal((await q(`select public.trial_check($1, 'extract', $2, 1) as r`, [P3D2.id, P3D2.docs[0]]))[0].r, 'ESSAIS_FERMES');
+  await asUser(ADMIN);
+  await q('select public.trial_admin_configure(true, null, null, null)');
+  await asSuperuser();
+  const kinds = (await q(`select kind from public.trial_events where user_id = $1`, [P3])).map((e) => e.kind);
+  for (const k of ['ouverture', 'suspension', 'reprise', 'budget_modifie', 'emplacement_reserve', 'emplacement_refuse']) assert.ok(kinds.includes(k), `journal : ${k}`);
+});
+
+await test('Essai : isolation RLS — un prospect ne voit que son essai ; journal et réglages réservés à l\'administration', async () => {
+  await asUser(P2);
+  const mine = await q('select user_id from public.trial_accounts');
+  assert.deepEqual(mine.map((r) => r.user_id), [P2]);
+  const slots = await q('select dossier_id from public.trial_slots');
+  assert.deepEqual(slots.map((r) => r.dossier_id), [P2D1.id]);
+  assert.equal((await q('select 1 from public.trial_events')).length, 0, 'journal privé');
+  assert.equal((await q('select 1 from public.trial_settings')).length, 0);
+  await asUser(P3);
+  assert.deepEqual((await q('select user_id from public.trial_accounts')).map((r) => r.user_id), [P3]);
+  assert.equal((await q('select 1 from public.trial_slots where dossier_id = $1', [P2D1.id])).length, 0, 'P3 ne voit pas l\'emplacement de P2');
+  assert.equal((await q('select 1 from public.trial_events')).length, 0, 'motif de suspension invisible du prospect');
+  await asUser(A);
+  assert.equal((await q('select 1 from public.trial_accounts')).length, 0);
+  assert.equal((await q('select 1 from public.trial_slots')).length, 0);
+  await asAnon();
+  assert.equal((await q('select 1 from public.trial_accounts').catch(() => [])).length, 0);
+  assert.equal((await q('select 1 from public.trial_slots').catch(() => [])).length, 0);
+  await asUser(P3);
+  await rejects(q(`insert into public.trial_events (kind) values ('faux')`), /row-level security/);
+  await asUser(P3);
+  await rejects(q(`insert into public.trial_accounts (user_id, email_fingerprint, expires_at, budget_cents) values ($1, 'x', now() + interval '1 day', 1)`, [A]), /row-level security/);
+  await asUser(ADMIN);
+  assert.equal((await q('select 1 from public.trial_accounts')).length, 3);
+  assert.ok((await q('select 1 from public.trial_events')).length > 10);
+  assert.equal((await q('select 1 from public.trial_settings')).length, 1);
+});
+
+await test('Essai : abonnés strictement inchangés ; un prospect devenu abonné sort du périmètre de l\'essai', async () => {
+  // Abonné sans essai : même mise en file qu'avant, aucun passage par le journal d'essai.
+  await asSuperuser();
+  const events = (await q('select count(*)::int n from public.trial_events'))[0].n;
+  const SUB = await newUser('abonne-sans-essai@test.local');
+  await subscribe(SUB, 'essentiel');
+  const D = await insertDossier(SUB, { title: 'Abonné — dossier' });
+  await addPiece(SUB, D, 'avant.pdf');
+  await asUser(SUB);
+  await q('select public.enable_ai_processing($1, $2)', [D, 'ia-2026-10']);
+  const second = await addPiece(SUB, D, 'apres.pdf');
+  assert.equal(await openJobs(D, 'extract'), 2, 'pièce ajoutée après activation : mise en file (pas de manifeste)');
+  assert.equal(await openJobs(D, 'consolidate'), 1);
+  const jx = await jobOf(D, 'extract');
+  const jc = await jobOf(D, 'consolidate');
+  await asService();
+  assert.equal((await q('select public.trial_allows($1, 9999) as r', [jx]))[0].r, null);
+  assert.equal((await q('select public.trial_allows($1, null) as r', [jc]))[0].r, null);
+  assert.equal((await q(`select public.trial_check($1, 'extract', $2, 9999) as r`, [D, second]))[0].r, null);
+  assert.equal((await q('select public.ai_quota_allows_pages($1, 51) as a', [SUB]))[0].a, false, 'quota de l\'offre toujours appliqué');
+  await q(`insert into public.ai_extractions (dossier_id, user_id, document_id, status, pages, cost_cents) values ($1, $2, $3, 'ok', 2, 5)`, [D, SUB, second]);
+  await asSuperuser();
+  assert.equal((await q('select count(*)::int n from public.trial_events'))[0].n, events, 'aucune trace d\'essai pour un abonné');
+  assert.equal((await q('select count(*)::int n from public.trial_accounts where user_id = $1', [SUB]))[0].n, 0);
+  // Une fermeture des essais n'affecte pas l'abonné.
+  await asUser(ADMIN);
+  await q('select public.trial_admin_configure(false, null, null, null)');
+  await addPiece(SUB, D, 'encore.pdf');
+  assert.equal(await openJobs(D, 'extract'), 3);
+  await asUser(ADMIN);
+  await q('select public.trial_admin_configure(true, null, null, null)');
+  // Prospect P3 (2 emplacements pris) : pièce tardive refusée, puis il s'abonne → règles de l'offre.
+  const late = await addPiece(P3, P3D2.id, 'tardive.pdf');
+  await asSuperuser();
+  assert.equal((await q('select 1 from public.ai_jobs where document_id = $1', [late])).length, 0);
+  await subscribe(P3, 'essentiel');
+  const after = await addPiece(P3, P3D2.id, 'apres-abonnement.pdf');
+  await asSuperuser();
+  assert.equal((await q(`select 1 from public.ai_jobs where document_id = $1 and status = 'queued'`, [after])).length, 1, 'abonné : plus de manifeste');
+  const D3 = await insertDossier(P3, { title: 'P3 abonné — 3e dossier' });
+  await asUser(P3);
+  await q('select public.enable_ai_processing($1, $2)', [D3, 'ia-2026-10']);
+  assert.ok((await q('select enabled_at from public.dossier_ai_settings where dossier_id = $1', [D3]))[0].enabled_at, 'troisième dossier : par abonnement uniquement');
+});
+
+await test('Essai : prospect devenu abonné — paiement en retard ou résiliation en période payée = toujours abonné ; abonnement terminé = essai de nouveau', async () => {
+  // Revue adverse : la garde ne retenait que « active / trialing ». Or l'abonnement
+  // courant (dossier_entitlement, quotas de l'offre) couvre aussi la période de grâce
+  // Stripe (past_due) et la résiliation tant que la période payée court : un client
+  // payant voyait ses deux premiers dossiers (ceux de l'essai) cesser d'être traités,
+  // en silence, alors que ses autres dossiers continuaient.
+  for (const [status, label] of [['past_due', 'paiement en retard'], ['canceled', 'résilié, période payée en cours']]) {
+    await subscribe(P3, 'essentiel', { status });
+    await asService();
+    assert.ok((await q('select pages_limit from public.ai_quota_state($1)', [P3]))[0].pages_limit > 0, `${label} : quota de l'offre toujours ouvert`);
+    const piece = await addPiece(P3, P3D2.id, `client-${status}.pdf`);
+    await asSuperuser();
+    assert.equal((await q(`select 1 from public.ai_jobs where document_id = $1 and status = 'queued'`, [piece])).length, 1, `${label} : dossier d'essai traité comme les autres dossiers du client`);
+    const j = await jobOf(P3D2.id, 'extract');
+    await asService();
+    assert.equal((await q('select public.trial_allows($1, 9999) as r', [j]))[0].r, null, `${label} : worker non bloqué par l'essai`);
+  }
+  // Abonnement réellement terminé (période payée échue) : la garde d'essai s'applique de nouveau.
+  await subscribe(P3, 'essentiel', { status: 'canceled', start: new Date(Date.now() - 40 * 86400000).toISOString(), end: new Date(Date.now() - 86400000).toISOString() });
+  const apres = await addPiece(P3, P3D2.id, 'apres-fin-abonnement.pdf');
+  await asSuperuser();
+  assert.equal((await q('select 1 from public.ai_jobs where document_id = $1', [apres])).length, 0, 'abonnement terminé : pièce hors manifeste refusée');
+  await asUser(P3);
+  await rejects(q('select public.enable_ai_processing($1, $2)', [P3D1.id, 'ia-2026-10']), /SUBSCRIPTION_REQUIRED/);
+  // État attendu par le test de retour arrière : P3 abonné actif.
+  await subscribe(P3, 'essentiel');
+});
+
+await test('Essai : retour arrière niveau 1 — garde retirée, dossiers d\'essai non abonnés désactivés, compteurs conservés', async () => {
+  await asSuperuser();
+  const slots = (await q('select count(*)::int n from public.trial_slots'))[0].n;
+  const journal = (await q('select count(*)::int n from public.trial_events'))[0].n;
+  await db.exec(readFileSync(join(root, 'supabase', 'rollback', '20261125120000_essai_prospect.down.sql'), 'utf8'));
+  const [r] = await q(`select to_regprocedure('public.trial_claim_slot(uuid, uuid, text, text)') as c, to_regprocedure('public.trial_allows(uuid, integer)') as a,
+                              to_regclass('public.trial_slots') as t,
+                              (select count(*)::int from pg_trigger where tgname = 'ai_jobs_trial_gate') as g`);
+  assert.deepEqual([r.c, r.a, r.g], [null, null, 0]);
+  assert.ok(r.t, 'tables conservées');
+  assert.equal((await q('select count(*)::int n from public.trial_slots'))[0].n, slots);
+  assert.equal((await q('select count(*)::int n from public.trial_events'))[0].n, journal);
+  assert.equal((await q('select enabled from public.trial_settings'))[0].enabled, false);
+  assert.equal((await q('select enabled_at from public.dossier_ai_settings where dossier_id = $1', [P2D1.id]))[0].enabled_at, null, 'dossier d\'essai (non abonné) désactivé');
+  assert.equal(await openJobs(P2D1.id, 'extract'), 0);
+  assert.ok((await q('select enabled_at from public.dossier_ai_settings where dossier_id = $1', [P3D2.id]))[0].enabled_at, 'prospect devenu abonné : dossier laissé actif');
+  await rejects(q('delete from public.trial_slots'), /ESSAI_IMMUABLE/);
+});
+
+// ── Messagerie directe (migration 20261125130000) ───────────────────────────
+const MAIL_ENC = 'v1.' + 'A'.repeat(16) + '.' + 'B'.repeat(40);
+await test('Messagerie directe : droit par offre, cloisonnement, jetons inaccessibles et jamais en clair', async () => {
+  const MA = await newUser('mail-a@test.local');
+  const MB = await newUser('mail-b@test.local');
+  await subscribe(MA, 'essentiel');
+  await asUser(MA);
+  assert.equal((await q('select public.mail_connect_access() as ok'))[0].ok, false, 'Essentiel : non inclus');
+  await rejects(q('select public.mail_connect_included($1)', [MA]), /permission denied/);
+  await rejects(q('select public.mail_connection_has_reception($1)', [MA]), /permission denied/);
+  await subscribe(MA, 'entrepreneur');
+  await asUser(MA);
+  assert.equal((await q('select public.mail_connect_access() as ok'))[0].ok, true, 'Entrepreneur : inclus');
+  await asAnon();
+  await rejects(q('select public.mail_connect_access()'), /permission denied/);
+
+  // Aucune écriture directe par un client : ni connexion, ni message, ni jeton.
+  await asUser(MA);
+  await rejects(q(`insert into public.mail_connections (user_id, provider) values ($1, 'gmail')`, [MA]), /row-level security/);
+  await asSuperuser();
+  const [c] = await q(`insert into public.mail_connections (user_id, provider, address) values ($1, 'gmail', 'a@example.com') returning id, status, history_import, import_since`, [MA]);
+  assert.equal(c.status, 'pending');
+  assert.equal(c.history_import, false, 'historique global désactivé par défaut');
+  assert.ok(Math.abs(Date.now() - new Date(c.import_since).getTime()) < 60_000, 'périmètre : à partir de la connexion');
+  await rejects(q(`insert into public.mail_connections (user_id, provider) values ($1, 'yahoo')`, [MB]), /check/);
+
+  // Jetons : format chiffré imposé par la base, table sans aucun accès client.
+  await rejects(q(`insert into public.mail_connection_tokens (connection_id, refresh_token_enc) values ($1, '1//jeton-en-clair')`, [c.id]), /check/);
+  await rejects(q(`insert into public.mail_connection_tokens (connection_id, refresh_token_enc, access_token_enc) values ($1, $2, 'ya29.en-clair')`, [c.id, MAIL_ENC]), /check/);
+  await q(`insert into public.mail_connection_tokens (connection_id, refresh_token_enc, access_token_enc) values ($1, $2, $2)`, [c.id, MAIL_ENC]);
+  for (const who of [MA, MB]) {
+    await asUser(who);
+    await rejects(q('select * from public.mail_connection_tokens'), /permission denied/);
+    await rejects(q(`insert into public.mail_connection_tokens (connection_id, refresh_token_enc) values ($1, $2)`, [c.id, MAIL_ENC]), /permission denied/);
+    await rejects(q('delete from public.mail_connection_tokens'), /permission denied/);
+  }
+  await asAnon();
+  await rejects(q('select * from public.mail_connection_tokens'), /permission denied/);
+  await asSuperuser();
+  const [rls] = await (q(`select relrowsecurity as on, (select count(*)::int from pg_policies where tablename = 'mail_connection_tokens') as policies from pg_class where oid = 'public.mail_connection_tokens'::regclass`));
+  assert.equal(rls.on, true);
+  assert.equal(rls.policies, 0, 'aucune policy : rôle serveur seul');
+
+  // Cloisonnement : le titulaire lit sa connexion, pas un autre compte.
+  await asUser(MA);
+  assert.equal((await q('select count(*)::int n from public.mail_connections'))[0].n, 1);
+  await q(`update public.mail_connections set status = 'connected', address = 'pirate@example.com'`);
+  await asUser(MB);
+  assert.equal((await q('select count(*)::int n from public.mail_connections'))[0].n, 0, 'B ne voit pas la connexion de A');
+  await asSuperuser();
+  const [still] = await q('select status, address from public.mail_connections where id = $1', [c.id]);
+  assert.deepEqual([still.status, still.address], ['pending', 'a@example.com'], 'aucune mise à jour directe par le client');
+
+  // Une boîte n'est reliée qu'à un compte ; une connexion active par fournisseur.
+  await rejects(q(`insert into public.mail_connections (user_id, provider, address) values ($1, 'gmail', 'A@Example.com')`, [MB]), /mail_connections_mailbox_once/);
+  await rejects(q(`insert into public.mail_connections (user_id, provider, address) values ($1, 'gmail', 'autre@example.com')`, [MA]), /mail_connections_one_active/);
+});
+
+await test('Messagerie directe : « connected » après réception réelle, dédup, classement, pause/reprise, déconnexion', async () => {
+  const MA = await newUser('mail-c@test.local');
+  const MB = await newUser('mail-d@test.local');
+  await subscribe(MA, 'entrepreneur');
+  await subscribe(MB, 'entrepreneur');
+  const DA = await insertDossier(MA, { title: 'Dossier messagerie' });
+  const DB = await insertDossier(MB, { title: 'Dossier de B' });
+  await asSuperuser();
+  const [c] = await q(`insert into public.mail_connections (user_id, provider, address, sync_cursor, subscription_id, watch_expires_at) values ($1, 'microsoft', 'c@contoso.com', 'https://graph.microsoft.com/v1.0/x', 'sub-1', now() + interval '3 days') returning id`, [MA]);
+  await q(`insert into public.mail_connection_tokens (connection_id, refresh_token_enc) values ($1, $2)`, [c.id, MAIL_ENC]);
+
+  // « connected » refusé tant qu'aucun message réel n'est enregistré.
+  await rejects(q(`update public.mail_connections set status = 'connected' where id = $1`, [c.id]), /MAIL_CONNECTED_REQUIRES_RECEPTION/);
+  await rejects(q(`insert into public.mail_connections (user_id, provider, status) values ($1, 'gmail', 'connected')`, [MA]), /MAIL_CONNECTED_REQUIRES_RECEPTION/);
+  // Un message hors périmètre (filtered) ou en cours (received) ne confirme rien.
+  await q(`insert into public.mail_messages (connection_id, user_id, provider, message_id, status) values ($1, $2, 'microsoft', 'hors-perimetre', 'filtered'), ($1, $2, 'microsoft', 'en-cours', 'received')`, [c.id, MA]);
+  await rejects(q(`update public.mail_connections set status = 'connected' where id = $1`, [c.id]), /MAIL_CONNECTED_REQUIRES_RECEPTION/);
+  const [m1] = await q(`insert into public.mail_messages (connection_id, user_id, provider, message_id, from_addr, subject, status, suggested_dossier_id) values ($1, $2, 'microsoft', 'M1', 'f@example.org', 'Contrat', 'a_classer', $3) returning id`, [c.id, MA, DA]);
+  await q(`update public.mail_connections set status = 'connected' where id = $1`, [c.id]);
+
+  // Dédup : fournisseur + identifiant, par compte.
+  await rejects(q(`insert into public.mail_messages (connection_id, user_id, provider, message_id) values ($1, $2, 'microsoft', 'M1')`, [c.id, MA]), /mail_messages_dedup/);
+  const [cb] = await q(`insert into public.mail_connections (user_id, provider, address) values ($1, 'microsoft', 'd@contoso.com') returning id`, [MB]);
+  await q(`insert into public.mail_messages (connection_id, user_id, provider, message_id, status) values ($1, $2, 'microsoft', 'M1', 'a_classer')`, [cb.id, MB]);
+
+  // Cloisonnement des messages et du journal ; aucune écriture directe.
+  await asUser(MB);
+  assert.equal((await q(`select count(*)::int n from public.mail_messages where user_id = $1`, [MA]))[0].n, 0, 'B ne voit pas les messages de A');
+  await rejects(q('select public.mail_message_assign($1, $2)', [m1.id, DB]), /FORBIDDEN/);
+  await rejects(q('select public.mail_message_ignore($1)', [m1.id]), /FORBIDDEN/);
+  await rejects(q('select public.mail_connection_pause($1)', [c.id]), /FORBIDDEN/);
+  await rejects(q('select public.mail_connection_resume($1)', [c.id]), /FORBIDDEN/);
+  await rejects(q('select public.mail_connection_disconnect($1)', [c.id]), /FORBIDDEN/);
+  await asUser(MA);
+  assert.equal((await q('select count(*)::int n from public.mail_messages'))[0].n, 3);
+  await q(`update public.mail_messages set status = 'stored', dossier_id = $1`, [DA]);
+  await rejects(q(`insert into public.mail_messages (connection_id, user_id, provider, message_id) values ($1, $2, 'microsoft', 'faux')`, [c.id, MA]), /row-level security/);
+  await rejects(q(`insert into public.mail_connection_events (connection_id, user_id, type) values ($1, $2, 'faux')`, [c.id, MA]), /row-level security/);
+  assert.equal((await q(`select status from public.mail_messages where id = $1`, [m1.id]))[0].status, 'a_classer', 'aucune mise à jour directe');
+  // Aucune remise à zéro par suppression directe (dédup, réception, journal).
+  await q('delete from public.mail_messages');
+  await q('delete from public.mail_connection_events');
+  await q('delete from public.mail_connections');
+  assert.equal((await q('select count(*)::int n from public.mail_messages'))[0].n, 3, 'aucune suppression directe');
+  assert.equal((await q('select count(*)::int n from public.mail_connections'))[0].n, 1, 'aucune suppression directe');
+  // Le classement ne vaut que pour SON message : celui d'un autre compte, même
+  // vers le dossier de ce compte, est refusé (paramètres d'un autre utilisateur).
+  await asUser(MB);
+  await rejects(q('select public.mail_message_assign($1, $2)', [m1.id, DA]), /FORBIDDEN/);
+  await asUser(MA);
+
+  // Classement par le titulaire : dossier d'un autre refusé, puis mise en file.
+  await rejects(q('select public.mail_message_assign($1, $2)', [m1.id, DB]), /FORBIDDEN/);
+  await q('select public.mail_message_assign($1, $2)', [m1.id, DA]);
+  const [queued] = await q('select status, dossier_id, classified_at from public.mail_messages where id = $1', [m1.id]);
+  assert.deepEqual([queued.status, queued.dossier_id], ['queued', DA]);
+  assert.ok(queued.classified_at);
+  await rejects(q('select public.mail_message_assign($1, $2)', [m1.id, DA]), /MAIL_MESSAGE_NOT_PENDING/);
+  await rejects(q('select public.mail_message_ignore($1)', [m1.id]), /MAIL_MESSAGE_NOT_PENDING/);
+  await asSuperuser();
+  const [m2] = await q(`insert into public.mail_messages (connection_id, user_id, provider, message_id, status) values ($1, $2, 'microsoft', 'M2', 'a_classer') returning id`, [c.id, MA]);
+  await q(`insert into public.dossier_events (dossier_id, user_id, type, label) values ($1, $2, 'dossier_cloture', 'Dossier clôturé')`, [DA, MA]);
+  await asUser(MA);
+  await rejects(q('select public.mail_message_assign($1, $2)', [m2.id, DA]), /DOSSIER_CLOTURE/);
+  await q('select public.mail_message_ignore($1)', [m2.id]);
+  assert.equal((await q('select status from public.mail_messages where id = $1', [m2.id]))[0].status, 'ignored');
+
+  // Pause puis reprise : le périmètre repart de maintenant, curseur remis à zéro.
+  await asSuperuser();
+  await q(`update public.mail_connections set import_since = now() - interval '10 days' where id = $1`, [c.id]);
+  await asUser(MA);
+  await q('select public.mail_connection_pause($1)', [c.id]);
+  await q('select public.mail_connection_pause($1)', [c.id]);
+  assert.equal((await q('select status from public.mail_connections where id = $1', [c.id]))[0].status, 'paused');
+  await subscribe(MA, 'essentiel');
+  await asUser(MA);
+  await rejects(q('select public.mail_connection_resume($1)', [c.id]), /FEATURE_NOT_INCLUDED/);
+  await subscribe(MA, 'entrepreneur');
+  await asUser(MA);
+  await q('select public.mail_connection_resume($1)', [c.id]);
+  const [res] = await q('select status, sync_cursor, watch_expires_at, import_since from public.mail_connections where id = $1', [c.id]);
+  assert.equal(res.status, 'connected', 'déjà confirmée par une réception réelle');
+  assert.equal(res.sync_cursor, null);
+  assert.equal(res.watch_expires_at, null);
+  assert.ok(Date.now() - new Date(res.import_since).getTime() < 60_000, 'rien de la pause n’est importé');
+  assert.equal((await q(`select count(*)::int n from public.mail_connection_events where connection_id = $1 and type in ('pause', 'reprise')`, [c.id]))[0].n, 2);
+  // Reprise d'une connexion jamais confirmée : retour à « pending », pas « connected ».
+  await asSuperuser();
+  await q(`delete from public.mail_messages where connection_id = $1`, [cb.id]);
+  await asUser(MB);
+  await q('select public.mail_connection_pause($1)', [cb.id]);
+  await q('select public.mail_connection_resume($1)', [cb.id]);
+  assert.equal((await q('select status from public.mail_connections where id = $1', [cb.id]))[0].status, 'pending');
+
+  // Déconnexion : statut révoqué ET jetons effacés ; historique conservé ; terminal.
+  await asUser(MA);
+  await q('select public.mail_connection_disconnect($1)', [c.id]);
+  const [rev] = await q('select status, revoked_at, sync_cursor, subscription_id from public.mail_connections where id = $1', [c.id]);
+  assert.equal(rev.status, 'revoked');
+  assert.ok(rev.revoked_at);
+  assert.deepEqual([rev.sync_cursor, rev.subscription_id], [null, null]);
+  assert.equal((await q('select count(*)::int n from public.mail_messages where connection_id = $1', [c.id]))[0].n, 4, 'historique conservé');
+  await rejects(q('select public.mail_connection_resume($1)', [c.id]), /MAIL_CONNECTION_REVOKED/);
+  await rejects(q('select public.mail_connection_pause($1)', [c.id]), /MAIL_CONNECTION_REVOKED/);
+  await q('select public.mail_connection_disconnect($1)', [c.id]);
+  await asSuperuser();
+  assert.equal((await q('select count(*)::int n from public.mail_connection_tokens where connection_id = $1', [c.id]))[0].n, 0, 'jetons effacés');
+  await rejects(q(`update public.mail_connections set status = 'pending' where id = $1`, [c.id]), /MAIL_CONNECTION_REVOKED/);
+  // Reconnecter = nouvelle connexion (nouvelle autorisation), même boîte possible.
+  await q(`insert into public.mail_connections (user_id, provider, address) values ($1, 'microsoft', 'c@contoso.com')`, [MA]);
+});
+
+await test('Messagerie directe : retour arrière niveau 1 — jetons effacés, connexions révoquées, historique conservé', async () => {
+  await asSuperuser();
+  const messages = (await q('select count(*)::int n from public.mail_messages'))[0].n;
+  assert.ok((await q(`select count(*)::int n from public.mail_connections where status <> 'revoked'`))[0].n > 0);
+  await db.exec(readFileSync(join(root, 'supabase', 'rollback', '20261125130000_messagerie_directe.down.sql'), 'utf8'));
+  assert.equal((await q('select count(*)::int n from public.mail_connection_tokens'))[0].n, 0);
+  assert.equal((await q(`select count(*)::int n from public.mail_connections where status <> 'revoked'`))[0].n, 0);
+  assert.equal((await q('select count(*)::int n from public.mail_messages'))[0].n, messages, 'historique conservé');
+  const [r] = await q(`select to_regprocedure('public.mail_connection_resume(uuid)') as r, to_regprocedure('public.mail_connect_access()') as a, to_regclass('public.mail_connections') as t`);
+  assert.equal(r.r, null);
+  assert.equal(r.a, null);
+  assert.ok(r.t, 'tables conservées');
+  // La migration est rejouable après le retour arrière (idempotente).
+  await db.exec(readFileSync(join(root, 'supabase', 'migrations', '20261125130000_messagerie_directe.sql'), 'utf8'));
+  assert.ok((await q(`select to_regprocedure('public.mail_connection_resume(uuid)') as r`))[0].r);
+});
+
+// ── Supervision fondateur (migration 20261125140000) ────────────────────────
+await test('Supervision : lecture agrégée — non-admin refusé, agrégats exacts, aucun contenu', async () => {
+  const alerte = (o, code) => o.alertes.find((a) => a.code === code)?.valeur ?? 0;
+  const overview = async () => (await q('select public.admin_supervision_overview() as o'))[0].o;
+  // Refus : anonyme, client, écriture directe des réglages.
+  await asAnon();
+  await rejects(q('select public.admin_supervision_overview()'), /permission denied/);
+  await asUser(A);
+  await rejects(q('select public.admin_supervision_overview()'), /FORBIDDEN/);
+  await rejects(q(`select public.ai_admin_set_pause(true, 'tentative client')`), /FORBIDDEN/);
+  await rejects(q('select public.ai_admin_set_budget_alert(100)'), /FORBIDDEN/);
+  assert.equal((await q('select * from public.ai_engine_control')).length, 0, 'client : réglages illisibles');
+  await asUser(ADMIN);
+  await q('update public.ai_engine_control set paused_at = now()');
+  await asSuperuser();
+  assert.equal((await q('select paused_at from public.ai_engine_control'))[0].paused_at, null, 'aucune écriture directe, même admin');
+
+  await asUser(ADMIN);
+  const before = await overview();
+  assert.equal(before.version, 1);
+  assert.equal(before.moteur.installe, true);
+  assert.equal(before.moteur.en_pause, false);
+
+  // Données fictives : deux comptes, pièces, extractions, travaux, e-mails.
+  const S1 = await newUser('supervision-1@test.local');
+  const S2 = await newUser('supervision-2@test.local');
+  await subscribe(S1, 'essentiel'); // 50 pages, 0 action
+  await subscribe(S2, 'entrepreneur'); // 150 pages, 20 actions
+  const D1 = await insertDossier(S1, { title: 'Titre confidentiel S1' });
+  const D2 = await insertDossier(S2, { title: 'Titre confidentiel S2' });
+  await asSuperuser();
+  const doc = async (d, u, name, size, deleted = false) => (await q(
+    `insert into public.dossier_documents (dossier_id, user_id, file_path, file_name, kind, size_bytes, deleted_at)
+     values ($1::uuid, $2::uuid, $2::text || '/' || $1::text || '/' || $3::text, $3::text, 'piece', $4::bigint,
+             case when $5::boolean then now() end) returning id`,
+    [d, u, name, size, deleted],
+  ))[0].id;
+  const d1a = await doc(D1, S1, 'secret-contrat.pdf', 1000);
+  await doc(D1, S1, 'secret-corbeille.pdf', 2500, true);
+  await doc(D1, S1, 'secret-sans-taille.pdf', null);
+  const d2a = await doc(D2, S2, 'secret-facture.pdf', 4000);
+  await q(`insert into public.ai_extractions (dossier_id, user_id, document_id, status, pages, cost_cents, data)
+           values ($1, $2, $3, 'ok', 45, 12.5, '{"texte":"contenu extrait confidentiel"}')`, [D1, S1, d1a]);
+  await q(`insert into public.ai_extractions (dossier_id, user_id, document_id, status, pages, cost_cents)
+           values ($1, $2, $3, 'ok', 150, 30)`, [D2, S2, d2a]);
+  await q(`insert into public.ai_analyses (dossier_id, user_id, revision, data, cost_cents)
+           values ($1, $2, 1, '{"resume":"synthèse confidentielle"}', 7.5)`, [D1, S1]);
+  const job = async (kind, status, attempts, runAfter, lastError, finished) => (await q(
+    `insert into public.ai_jobs (dossier_id, user_id, kind, status, attempts, run_after, last_error, finished_at)
+     values ($1, $2, $3, $4, $5, now() - $6::interval, $7, case when $8::boolean then now() end) returning id`,
+    [D1, S1, kind, status, attempts, runAfter, lastError, finished],
+  ))[0].id;
+  const stuck = await job('consolidate', 'queued', 1, '2 hours', 'erreur passagère boom', false);
+  await job('extract', 'failed', 3, '0 seconds', 'erreur définitive boom', true);
+  await job('render', 'failed', 3, '0 seconds', 'erreur définitive boom', true);
+  await job('extract', 'failed', 3, '0 seconds', 'traitement interrompu (délai dépassé ou panne du worker)', true);
+  await job('extract', 'failed', 1, '0 seconds', 'BUDGET: plafond mensuel atteint — traitement en pause', true);
+  await job('publish', 'done', 1, '0 seconds', null, true);
+  await q(`insert into public.inbound_emails (user_id, dossier_id, provider_email_id, from_addr, subject, status)
+           values ($1, $2, 'sup_err', 'exp@externe.fr', 'Objet confidentiel', 'error'),
+                  ($1, $2, 'sup_ok', 'exp@externe.fr', 'Objet confidentiel', 'stored')`, [S1, D1]);
+
+  await asUser(ADMIN);
+  const o = await overview();
+  const at = (obj, path) => path.split('.').reduce((v, k) => v?.[k], obj) ?? 0;
+  const delta = (path) => at(o, path) - at(before, path);
+  // File : états, reprises, blocages, échecs par catégorie.
+  assert.equal(delta('file.par_statut.queued'), 1);
+  assert.equal(delta('file.par_statut.failed'), 4);
+  assert.equal(delta('file.par_statut.done'), 1);
+  assert.equal(delta('file.bloques'), 1);
+  assert.equal(delta('file.reprises_en_cours'), 1);
+  assert.equal(delta('file.termines_24h'), 1);
+  assert.equal(delta('file.echecs_24h'), 4);
+  assert.equal(delta('file.echecs_definitifs_7j'), 3, 'hors pauses budget');
+  assert.equal(delta('file.pauses_budget_mois'), 1);
+  assert.equal(delta('file.erreurs_30j.budget_ou_quota'), 1);
+  assert.equal(delta('file.erreurs_30j.interruption'), 1);
+  assert.equal(delta('file.erreurs_30j.autre'), 2);
+  assert.equal(delta('file.dossiers_multi_echecs_7j'), 1);
+  assert.equal(delta('file.ouverts_par_type.consolidate'), 1);
+  // Traitements, coût global, e-mails, stockage, abonnements.
+  assert.equal(delta('traitements_mois.extractions_ok'), 2);
+  assert.equal(delta('traitements_mois.pages_lues'), 195);
+  assert.equal(delta('traitements_mois.analyses'), 1);
+  assert.equal(delta('budget.cout_global_mois_cents'), 50);
+  assert.equal(delta('emails_entrants.recus_30j'), 2);
+  assert.equal(delta('emails_entrants.stockes_30j'), 1);
+  assert.equal(delta('emails_entrants.en_erreur_7j'), 1);
+  assert.equal(delta('stockage.octets'), 7500);
+  assert.equal(delta('stockage.documents'), 4);
+  assert.equal(delta('stockage.documents_sans_taille'), 1);
+  assert.equal(delta('stockage.octets_corbeille'), 2500);
+  assert.equal(delta('abonnements.par_statut.active'), 2);
+  assert.equal(delta('abonnements.en_cours_par_offre.essentiel'), 1);
+  assert.equal(delta('abonnements.en_cours_par_offre.entrepreneur'), 1);
+  assert.equal(delta('comptes_total'), 2);
+  // Par compte : valeurs exactes.
+  const c1 = o.comptes.find((c) => c.user_id === S1);
+  const c2 = o.comptes.find((c) => c.user_id === S2);
+  assert.deepEqual(c1, {
+    user_id: S1, offre: 'essentiel', statut_abonnement: 'active', cout_ia_mois_cents: 20,
+    pages_utilisees: 45, pages_limite: 50, actions_utilisees: 0, actions_limite: 0, quota_pct: 90,
+    octets: 3500, documents: 3, dossiers: 1,
+  });
+  assert.equal(c2.cout_ia_mois_cents, 30);
+  assert.equal(c2.quota_pct, 100);
+  assert.equal(c2.pages_limite, 150);
+  assert.equal(c2.actions_limite, 20);
+  assert.equal(c2.octets, 4000);
+  assert.ok(o.comptes.indexOf(c2) < o.comptes.indexOf(c1), 'tri : coût décroissant');
+  // Alertes de saturation.
+  assert.equal(alerte(o, 'QUOTA_80') - alerte(before, 'QUOTA_80'), 1);
+  assert.equal(alerte(o, 'QUOTA_ATTEINT') - alerte(before, 'QUOTA_ATTEINT'), 1);
+  assert.equal(alerte(o, 'FILE_BLOQUEE'), o.file.bloques);
+  assert.equal(alerte(o, 'ECHECS_REPETES'), o.file.echecs_definitifs_7j);
+  assert.equal(alerte(o, 'PAUSES_BUDGET'), o.file.pauses_budget_mois);
+  assert.equal(alerte(o, 'EMAILS_EN_ERREUR'), o.emails_entrants.en_erreur_7j);
+  assert.equal(alerte(o, 'BUDGET_GLOBAL_80') + alerte(o, 'BUDGET_GLOBAL_ATTEINT'), 0, 'sans repère : aucune alerte budget');
+  // Repère d'alerte du budget global : 80 % puis atteint ; valeur invalide refusée.
+  const G = o.budget.cout_global_mois_cents;
+  await rejects(q('select public.ai_admin_set_budget_alert(0)'), /PARAMETRE_INVALIDE/);
+  await q('select public.ai_admin_set_budget_alert($1)', [Math.ceil(G / 0.9)]);
+  const o80 = await overview();
+  assert.ok(alerte(o80, 'BUDGET_GLOBAL_80') >= 80 && alerte(o80, 'BUDGET_GLOBAL_80') < 100);
+  assert.equal(o80.budget.repere_alerte_cents, Math.ceil(G / 0.9));
+  await q('select public.ai_admin_set_budget_alert($1)', [Math.max(1, Math.floor(G))]);
+  assert.ok(alerte(await overview(), 'BUDGET_GLOBAL_ATTEINT') >= 100);
+  await q('select public.ai_admin_set_budget_alert(null)');
+  assert.equal((await overview()).budget.repere_alerte_cents, null);
+  // Aucun contenu : ni nom de fichier, ni titre, ni texte extrait, ni libellé d'erreur, ni e-mail.
+  const brut = JSON.stringify(o);
+  for (const interdit of ['secret-', 'onfidentiel', 'boom', 'plafond mensuel', '@']) {
+    assert.ok(!brut.includes(interdit), `fuite : ${interdit}`);
+  }
+  // Historique des actions : super admin seul ; l'admin support lit le reste.
+  assert.equal(o.actions_admin.visible, true);
+  assert.ok(o.actions_admin.dernieres.length <= 30);
+  await asUser(SUPPORT);
+  const os = await overview();
+  assert.equal(os.actions_admin.visible, false);
+  assert.equal(os.actions_admin.dernieres, undefined);
+  assert.equal(os.abonnements.derogations_actives, null);
+  assert.equal(os.file.par_statut.failed, o.file.par_statut.failed);
+
+  // Pause sécurisée : motif obligatoire, plus rien n'est réclamé, journalisée, réversible.
+  await asUser(ADMIN);
+  await rejects(q(`select public.ai_admin_set_pause(true, ' ')`), /MOTIF_REQUIS/);
+  await q(`select public.ai_admin_set_pause(true, 'maintenance de recette')`);
+  const op = await overview();
+  assert.equal(op.moteur.en_pause, true);
+  assert.equal(alerte(op, 'MOTEUR_EN_PAUSE'), 1);
+  assert.equal(alerte(op, 'FILE_BLOQUEE'), 0, 'en pause : l’attente en file n’est pas une alerte');
+  assert.ok(!JSON.stringify(op).includes('maintenance de recette'), 'le motif reste hors de la lecture agrégée');
+  const depuis = op.moteur.en_pause_depuis;
+  await q(`select public.ai_admin_set_pause(true, 'second appel')`);
+  assert.equal((await overview()).moteur.en_pause_depuis, depuis, 'pause idempotente : date d’origine conservée');
+  await asService();
+  assert.equal((await q(`select id from public.ai_claim_jobs('pause', 20)`)).length, 0, 'en pause : rien n’est réclamé');
+  await asUser(A);
+  await rejects(q(`select * from public.ai_claim_jobs('client', 1)`), /FORBIDDEN|permission denied/);
+  await asSuperuser();
+  const [still] = await q('select status, attempts from public.ai_jobs where id = $1', [stuck]);
+  assert.deepEqual(still, { status: 'queued', attempts: 1 }, 'travail intact pendant la pause');
+  await asUser(ADMIN);
+  await q('select public.ai_admin_set_pause(false)');
+  assert.equal((await overview()).moteur.en_pause, false);
+  await asService();
+  const repris = await q(`select id from public.ai_claim_jobs('reprise', 20)`);
+  assert.ok(repris.some((j) => j.id === stuck), 'reprise : le travail en attente est réclamé');
+  await asSuperuser();
+  const journal = await q(`select action, actor_id, metadata from public.audit_logs where action like 'ia_moteur_%' order by created_at, action`);
+  assert.deepEqual(journal.map((j) => j.action).sort(), ['ia_moteur_pause', 'ia_moteur_pause', 'ia_moteur_reprise']);
+  assert.ok(journal.every((j) => j.actor_id === ADMIN));
+  assert.ok(journal.some((j) => j.metadata.motif === 'maintenance de recette'));
+  await asUser(ADMIN);
+  assert.ok((await overview()).actions_admin.par_action_30j.ia_moteur_reprise >= 1);
+});
+
 // Dernier test : le retour arrière modifie le schéma pour la suite.
 await test('IA : retour arrière niveau 1 — moteur neutralisé, données conservées', async () => {
   const D = await insertDossier(IA_C, { title: 'Avant retour arrière' });
@@ -1622,6 +2475,57 @@ await test('IA : retour arrière 20261104 — fonctions retirées, bilans conser
   assert.equal(r.g, null);
   assert.equal(r.h, null);
   assert.ok(r.t, 'table des bilans conservée');
+});
+
+await test('Supervision : retour arrière 20261125 — lecture retirée, file restaurée, réglages conservés', async () => {
+  await asSuperuser();
+  await q('update public.ai_engine_control set paused_at = now()');
+  await db.exec(readFileSync(join(root, 'supabase', 'rollback', '20261125140000_supervision_fondateur.down.sql'), 'utf8'));
+  const [r] = await q(`select to_regprocedure('public.admin_supervision_overview()') as o,
+                              to_regprocedure('public.ai_admin_set_pause(boolean, text)') as p,
+                              to_regclass('public.ai_engine_control') as t,
+                              pg_get_functiondef('public.ai_claim_jobs(text, integer)'::regprocedure) as def`);
+  assert.equal(r.o, null);
+  assert.equal(r.p, null);
+  assert.ok(r.t, 'réglages conservés');
+  assert.ok(!r.def.includes('ai_engine_control'), 'ai_claim_jobs : corps d’origine');
+  await asService();
+  await q(`select id from public.ai_claim_jobs('apres-retour', 1)`);
+  await asUser(A);
+  await rejects(q(`select * from public.ai_claim_jobs('client', 1)`), /FORBIDDEN|permission denied/);
+});
+
+// Production au 2026-11-25 : moteur IA non installé (20261023 → 20261118 absentes).
+// La supervision doit s'installer et répondre quand même (blocs IA à null).
+await test('Supervision : installation sans le moteur IA — lecture disponible, blocs IA à null', async () => {
+  const db2 = new PGlite();
+  await db2.exec(STUBS);
+  const insert = async (email) =>
+    (await db2.query(`insert into auth.users (email, email_confirmed_at) values ($1, now()) returning id`, [email])).rows[0].id;
+  const admin2 = await insert('prestige.seller@icloud.com');
+  const sansIa = files.filter((f) => f < '20261023' || f.startsWith('20261103') || f.startsWith('20261125140000') || f.startsWith('20261125150000'));
+  assert.ok(sansIa.includes('20261125140000_supervision_fondateur.sql'));
+  for (const f of sansIa) {
+    await db2.exec(readFileSync(join(root, 'supabase', 'migrations', f), 'utf8').replace(/create extension if not exists pg_net;/gi, ''));
+  }
+  const client2 = await insert('client@test.local');
+  const as = (id) => db2.exec(`set role authenticated; set request.jwt.claims = '${JSON.stringify({ sub: id, role: 'authenticated' })}';`);
+  const overview = async () => (await db2.query('select public.admin_supervision_overview() as o')).rows[0].o;
+  await as(client2);
+  await rejects(overview(), /FORBIDDEN/);
+  await as(admin2);
+  const o = await overview();
+  assert.equal(o.moteur.installe, false);
+  assert.equal(o.file, null);
+  assert.equal(o.traitements_mois, null);
+  assert.equal(o.emails_entrants, null);
+  assert.equal(o.budget.cout_global_mois_cents, 0);
+  assert.deepEqual(o.alertes, []);
+  assert.equal(o.stockage.documents, 0);
+  assert.equal(o.actions_admin.visible, true);
+  await db2.query(`select public.ai_admin_set_pause(true, 'pause sans moteur')`);
+  assert.equal((await overview()).moteur.en_pause, true);
+  await db2.close();
 });
 
 console.log(`\n${passed} réussis, ${failed} échoués`);

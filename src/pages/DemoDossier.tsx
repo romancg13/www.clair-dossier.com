@@ -6,6 +6,11 @@ import { DossierTracker } from "../components/dossier/DossierTracker";
 import { DeliverablesGrid, type DeliverableFile } from "../components/dossier/DeliverablesGrid";
 import { ChronologyEditor } from "../components/dossier/ChronologyEditor";
 import { AnalysisView } from "../components/dossier/AnalysisView";
+import { AttentionBox } from "../components/dossier/AttentionBox";
+import { PersonalizeSpace } from "../components/account/PersonalizeSpace";
+import { IntelligenceLauncher } from "../components/intelligence/IntelligencePanel";
+import { runAssistant, suggestions, type Context as IaContext } from "../../supabase/functions/_shared/intelligence/core.ts";
+import { buildAttention, visitMark, whatChanged } from "../../supabase/functions/_shared/attention.ts";
 import { applyOverrides, type CoverageInfo, type EventOverride, type PieceRef } from "../../supabase/functions/_shared/analysis-model.ts";
 import { DEMO_FAILED, DEMO_PIECES, DEMO_TITLE, DEMO_UNSUPPORTED, bulkPieces, demoAnalysis } from "../demo/fixture";
 
@@ -44,6 +49,14 @@ type State = {
 };
 
 const now = () => new Date().toISOString();
+
+// Boîte d'attention de la démo : date de référence et dernière visite FICTIVES
+// (affichage stable, cohérent avec les dates du dossier fictif) ; rien n'est
+// lu ni écrit dans le stockage du navigateur.
+const DEMO_TODAY = "2026-11-06";
+const DEMO_LAST_VISIT = "2026-10-05T08:00:00Z";
+// Une seule date de référence pour l'écran ET les fichiers générés (date fictive du dossier).
+const DEMO_NOW = new Date(`${DEMO_TODAY}T09:00:00Z`);
 
 function initial(s: Scenario): State {
   const base: State = { enabled: true, pieces: DEMO_PIECES, read: DEMO_PIECES.length, consolidating: false, revision: 1, closed: false, paused: false, partial: false, bulk: false, overrides: [], journal: [] };
@@ -136,7 +149,7 @@ export function DemoDossier() {
     const exploited = s.pieces.filter((p) => p.id !== DEMO_UNSUPPORTED.id && p.id !== DEMO_FAILED.id);
     // Génération des fichiers : module chargé à la demande (pdf-lib et fflate
     // restent hors du bundle initial de la page démo).
-    void import("../../supabase/functions/_shared/deliverables.ts").then(({ buildDeliverables }) => buildDeliverables({ title: DEMO_TITLE, revision: s.revision, generatedAt: new Date(), analysis, coverage: { ...coverage, pending: 0 }, pieces: exploited, overrides: s.overrides, demo: true }).then((out) => {
+    void import("../../supabase/functions/_shared/deliverables.ts").then(({ buildDeliverables }) => buildDeliverables({ title: DEMO_TITLE, revision: s.revision, generatedAt: DEMO_NOW, analysis, coverage: { ...coverage, pending: 0 }, pieces: exploited, overrides: s.overrides, demo: true }).then((out) => {
       if (!live) return;
       urls.current.forEach((u) => URL.revokeObjectURL(u));
       const next = out.map((f) => ({ name: f.name, key: f.key, bytes: f.bytes, url: URL.createObjectURL(new Blob([f.bytes as BlobPart], { type: f.mime })) }));
@@ -167,6 +180,14 @@ export function DemoDossier() {
 
   const names = useMemo(() => Object.fromEntries(s.pieces.map((p) => [p.id, p.file_name])), [s.pieces]);
   const events = useMemo(() => applyOverrides(analysis.events, s.overrides), [analysis, s.overrides]);
+  // Mêmes règles déterministes que l'espace client, appliquées au dossier fictif.
+  const attention = useMemo(() => buildAttention({ analysis, coverage, today: DEMO_TODAY, documentNames: names }), [analysis, coverage, names]);
+  const changes = useMemo(() => {
+    const dated = analysis.deadlines.flatMap((d) => (d.date ? [{ title: d.title, due_date: d.date }] : []));
+    // Visite simulée : les deux premières échéances étaient déjà connues, aucune révision n'était publiée.
+    const last = { ...visitMark({ documents: [], deadlines: dated.slice(0, 2), corrections: [], revision: null }, DEMO_LAST_VISIT), revision: 0 };
+    return whatChanged({ documents: s.pieces, deadlines: dated, corrections: s.overrides, revision: s.revision ? { number: s.revision, created_at: DEMO_LAST_VISIT } : null }, last);
+  }, [analysis, s.pieces, s.overrides, s.revision]);
   const step = trackingStep({ status: s.enabled ? "en-cours" : "brouillon", hasDeliverables: s.revision > 0, processing, closed: s.closed });
   const detail = s.paused
     ? "Traitement en pause : plafond mensuel atteint — la nouvelle pièce sera lue à la reprise."
@@ -175,6 +196,27 @@ export function DemoDossier() {
         ? `${s.read}/${s.pieces.length} pièces lues — consolidation à suivre`
         : "Analyse et préparation de vos documents…"
       : null;
+
+  // ClairDossier Intelligence — démonstration : mêmes règles que le service, exécutées
+  // dans le navigateur sur le dossier fictif (aucun modèle appelé, rien de conservé).
+  const iaContext: IaContext = useMemo(
+    () => ({
+      title: DEMO_TITLE,
+      today: DEMO_TODAY,
+      analysis: s.revision > 0 ? analysis : null,
+      pieces: s.pieces,
+      attention: s.revision > 0 ? attention : null,
+      available: [...new Set(files.map((f) => f.key))],
+      processing: processing ? { done: Math.min(s.read, s.pieces.length), total: s.pieces.length } : null,
+      rights: { owner: true, assistant: true, automations: true },
+    }),
+    [analysis, attention, files, processing, s.pieces, s.read, s.revision],
+  );
+  const openFile = (key: DeliverableFile["key"]) => {
+    const own = files.filter((f) => f.key === key);
+    const f = own.find((x) => x.name.endsWith(".pdf")) ?? own[0];
+    if (f) window.open(f.url, "_blank", "noopener");
+  };
 
   const addPiece = () =>
     setS((v) => ({
@@ -203,19 +245,76 @@ export function DemoDossier() {
             Aucun dossier client, aucune IA appelée, aucun e-mail envoyé : les étapes du traitement sont simulées (accélérées), jamais une
             véritable analyse. Les documents téléchargeables sont en revanche de vrais fichiers, générés dans votre navigateur par le même
             code que le moteur de production.
+            <span className="mt-1 block">
+              Pour essayer le parcours complet (dépôt d’une pièce fictive, traitement côté serveur, résultats) :{" "}
+              <a className="font-semibold text-navy-900 underline" href="https://clairdossier-recette-20b5a2.vercel.app/connexion" rel="noopener noreferrer">
+                ouvrir la recette
+              </a>
+              .
+            </span>
           </details>
         </div>
 
         <header className="mt-8">
-          <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">Espace client · /compte/dossier/demo</p>
-          <h1 className="mt-2 font-display text-3xl leading-tight text-navy-900 sm:text-4xl">{DEMO_TITLE}</h1>
+                    <h1 className="mt-2 font-display text-3xl leading-tight text-navy-900 sm:text-4xl">{DEMO_TITLE}</h1>
           <p className="mt-2 text-sm text-slate-500">
             {s.pieces.length} pièce{s.pieces.length > 1 ? "s" : ""} · {s.revision ? `révision ${s.revision}` : "aucun document encore"} · {s.closed ? "clôturé" : "ouvert"}
           </p>
         </header>
 
-        <nav aria-label="Simuler un état" className="mt-6">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Simuler un état</p>
+        <div className="mt-6">
+          <DossierTracker step={step} detail={detail} updating={processing && s.revision > 0} progress={s.enabled ? { done: Math.min(s.read, s.pieces.length), total: s.pieces.length } : null} toCheck={coverage.unsupported + coverage.failed} />
+        </div>
+
+        {s.revision > 0 && (
+          <div className="mt-8">
+            <AttentionBox attention={attention} changes={changes} sinceNote="visite simulée" />
+          </div>
+        )}
+
+        {s.revision > 0 && (
+          <section className="mt-8 rounded-2xl border hairline bg-white p-5 shadow-card sm:p-6">
+            <AnalysisView analysis={analysis} coverage={coverage} revision={s.revision} createdAt={DEMO_NOW.toISOString()} today={DEMO_TODAY} documentNames={names} />
+          </section>
+        )}
+
+        <div className="mt-8 rounded-2xl border hairline bg-white p-6 shadow-card sm:p-8">
+          <DeliverablesGrid
+            files={deliverableFiles}
+            caption={s.revision ? `Six documents · révision ${s.revision}${generating ? " · préparation en cours…" : ""}` : null}
+            emptyLabel={processing ? "En préparation…" : s.enabled ? "Pas encore disponibles." : "Activez le traitement pour générer vos documents."}
+            busy={generating}
+            onDownloadAll={downloadAll}
+            actions={
+              <IntelligenceLauncher
+                transport={async (m) => runAssistant(m, iaContext)}
+                suggestions={suggestions(iaContext)}
+                onFile={openFile}
+                onConfirm={async (a) => {
+                  setS((v) => ({ ...v, journal: [{ at: now(), label: `${a.title} — confirmé (démonstration)` }, ...v.journal] }));
+                  return "Noté dans le journal de cette démonstration. Ici, rien n’est réellement planifié.";
+                }}
+                note="Démonstration — dossier fictif, rien n’est conservé"
+              />
+            }
+          />
+        </div>
+
+        {s.revision > 0 && (
+          <div className="mt-8">
+            <ChronologyEditor events={events} history={s.overrides} documentNames={names} canEdit={!s.closed} onSave={saveOverride} />
+          </div>
+        )}
+
+        <div className="mt-8">
+          <PersonalizeSpace force />
+        </div>
+
+        {/* Réservé à la démonstration fictive : jamais présent dans l'espace client réel. */}
+        <details className="mt-8 rounded-2xl border border-dashed hairline bg-cream-50/60 px-5 py-3 text-sm">
+          <summary className="cursor-pointer font-medium text-slate-600 hover:text-navy-900">Outils de démonstration (simuler un état)</summary>
+          <div className="mt-3 space-y-3">
+        <nav aria-label="Simuler un état">
           <div className="mt-2 flex flex-wrap gap-2">
             {SCENARIOS.map((x) => (
               <button
@@ -230,10 +329,7 @@ export function DemoDossier() {
             ))}
           </div>
         </nav>
-
-        <div className="mt-6">
-          <DossierTracker step={step} detail={detail} updating={processing && s.revision > 0} />
-          <div className="mt-3 flex flex-wrap justify-end gap-2">
+          <div className="flex flex-wrap gap-2">
             {!s.enabled && !s.closed && (
               <button type="button" onClick={activate} className="rounded-full bg-navy-900 px-4 py-2 text-xs font-semibold text-cream-50 hover:bg-navy-800">
                 Activer le traitement automatique (simulé)
@@ -246,34 +342,11 @@ export function DemoDossier() {
               {s.closed ? "Rouvrir le dossier" : "Clôturer le dossier"}
             </button>
           </div>
-        </div>
-
-        {s.revision > 0 && (
-          <section className="mt-8 rounded-2xl border hairline bg-white p-5 shadow-card sm:p-6">
-            <AnalysisView analysis={analysis} coverage={coverage} revision={s.revision} createdAt={now()} documentNames={names} />
-          </section>
-        )}
-
-        <div className="mt-8 rounded-2xl border hairline bg-white p-6 shadow-card sm:p-8">
-          <DeliverablesGrid
-            files={deliverableFiles}
-            caption={s.revision ? `Révision ${s.revision} · générée dans votre navigateur${generating ? " · génération en cours…" : ""}` : null}
-            emptyLabel={processing ? "En préparation…" : s.enabled ? "Pas encore disponible." : "Activez le traitement pour générer ce document."}
-            busy={generating}
-            onDownloadAll={downloadAll}
-          />
-        </div>
-
-        {s.revision > 0 && (
-          <div className="mt-8">
-            <ChronologyEditor events={events} history={s.overrides} documentNames={names} canEdit={!s.closed} onSave={saveOverride} />
           </div>
-        )}
+        </details>
 
-        <section aria-labelledby="journal-title" className="mt-8 rounded-2xl border hairline bg-white p-5 shadow-card sm:p-6">
-          <h3 id="journal-title" className="font-display text-lg text-navy-900">
-            Journal du dossier
-          </h3>
+        <details className="mt-4 rounded-2xl border hairline bg-white px-5 py-3 text-sm">
+          <summary className="cursor-pointer font-medium text-slate-600 hover:text-navy-900">Journal du dossier</summary>
           <ol className="mt-3 space-y-1.5 text-sm text-slate-700">
             {s.journal.map((j, i) => (
               <li key={i} className="flex gap-3">
@@ -282,7 +355,7 @@ export function DemoDossier() {
               </li>
             ))}
           </ol>
-        </section>
+        </details>
       </div>
     </>
   );

@@ -1,3 +1,5 @@
 {
-  "rewrites": [{ "source": "/compte/dossier/:id", "destination": "/compte/index.html" }]
+  "buildCommand": "node scripts/vercel-build.mjs",
+  "rewrites": [{ "source": "/compte/dossier/:id", "destination": "/compte/index.html" }],
+  "headers": [{ "source": "/(.*)", "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }] }]
 }

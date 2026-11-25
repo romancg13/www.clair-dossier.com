@@ -9,7 +9,7 @@ import { deadlineKey, type Evidence } from './ai-pipeline.ts';
 
 export const DELIVERABLE_CATALOG = [
   { key: 'resume', label: 'Résumé IA', slug: 'Resume-IA', description: 'Synthèse courte et détaillée, faits sourcés, points d’attention et prochaines actions.' },
-  { key: 'dashboard', label: 'Dashboard', slug: 'Dashboard', description: 'Vue d’ensemble : couverture documentaire, échéances proches, contradictions, pièces manquantes.' },
+  { key: 'dashboard', label: 'Tableau de bord', slug: 'Dashboard', description: 'Vue d’ensemble : couverture documentaire, échéances proches, contradictions, pièces manquantes.' },
   { key: 'chronologie', label: 'Chronologie', slug: 'Chronologie', description: 'Événements datés et sourcés, date du document distinguée de la date de l’événement.' },
   { key: 'dates', label: 'Dates modifiables', slug: 'Dates-modifiables', description: 'Date extraite, date retenue, motif, source, auteur et historique des corrections.' },
   { key: 'echeances', label: 'Échéances et calendrier', slug: 'Echeances', description: 'Dates mentionnées, calculées ou à confirmer ; calendrier ICS à importer.' },
@@ -112,7 +112,14 @@ export interface DeadlineRow {
 
 /* ── Chronologie déterministe ───────────────────────────────────────────── */
 
-type ExtractedDate = { date: string; precision: Precision; label: string; kind: 'document_date' | 'event_date' | 'deadline'; evidence: { page: number | null; quote: string }[] };
+type ExtractedDate = {
+  date: string;
+  precision: Precision;
+  label: string;
+  kind: 'document_date' | 'event_date' | 'deadline';
+  /** `locator` et `status` (extrait retrouvé ou non dans la pièce) : posés par le moteur de recette, absents ailleurs. */
+  evidence: { page: number | null; quote: string; locator?: string | null; status?: 'found' | 'not_found' | 'unknown' }[];
+};
 
 /**
  * Chronologie construite SANS modèle à partir des extractions par pièce :
@@ -125,7 +132,15 @@ export function buildChronology(extractions: { document_id: string; data: { date
     for (const d of x.data?.dates ?? []) {
       if (d.kind === 'deadline' || !/^\d{4}(-\d{2}){0,2}$/.test(d.date)) continue;
       const key = deadlineKey(d.label, d.date);
-      const evidence = d.evidence.map((e) => ({ document_id: x.document_id, page: e.page, quote: e.quote }));
+      // Statut et repère conservés quand l'extraction les porte : sans eux, chaque jalon s'afficherait
+      // « extrait non retrouvé dans la pièce ». Forme inchangée pour les extractions qui ne les ont pas.
+      const evidence = d.evidence.map((e) => ({
+        document_id: x.document_id,
+        page: e.page,
+        ...(e.locator != null ? { locator: e.locator } : {}),
+        quote: e.quote,
+        ...(e.status ? { status: e.status } : {}),
+      }));
       const prev = byKey.get(key);
       if (prev) prev.evidence.push(...evidence);
       else byKey.set(key, { key, date: d.date, precision: d.precision, kind: d.kind, label: d.label, evidence });

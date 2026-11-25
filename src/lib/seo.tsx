@@ -106,7 +106,7 @@ export function Seo({
   const url = canonicalUrl(path);
   // Garde-fou : une route privée n'est jamais indexable, même si la page
   // oublie de le demander (ex. /dossier/nouveau).
-  const noindex = noindexProp || isPrivatePath(path);
+  const noindex = noindexProp || isPrivatePath(path) || import.meta.env.VITE_NOINDEX === '1';
   const absImage = image.startsWith('http') ? image : `${SITE_URL}${image}`;
   const jsonLdKey = jsonLd ? JSON.stringify(jsonLd) : '';
 

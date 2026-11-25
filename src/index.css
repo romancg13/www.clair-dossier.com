@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+/* Code sous drapeau de build : ses classes ne sont générées que dans les builds qui
+   l'activent ; la feuille de production (inlinée dans chaque page prérendue) n'en
+   porte aucune. Le greffon « sources-sous-drapeau » (vite.config.ts) retire une
+   exclusion quand le drapeau noté en fin de ligne vaut « 1 ». */
+@source not "./recette"; /* VITE_RECETTE */
+@source not "../recette"; /* VITE_RECETTE */
+@source not "./components/clarte"; /* VITE_HOME_CLARTE */
+
 /* Sous-ensembles latins uniquement (Phase 4b, perf) : couvrent le français (accents, œ, €) ;
    10 @font-face au lieu de 65 dans la CSS bloquante (Inter 300 retiré : aucun
    font-light / font-weight:300 dans src/). */

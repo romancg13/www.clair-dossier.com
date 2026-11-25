@@ -3,6 +3,7 @@ import { Outlet, useLocation } from "react-router-dom";
 import { Nav } from "./Nav";
 import { Footer } from "./Footer";
 import { AppErrorBoundary } from "./AppErrorBoundary";
+import { RecetteBandeau } from "../recette/Bandeau";
 
 export function Layout() {
   const location = useLocation();
@@ -27,6 +28,7 @@ export function Layout() {
       <a className="skip-nav" href="#main">
         Aller au contenu principal
       </a>
+      {import.meta.env.VITE_RECETTE === "1" && <RecetteBandeau />}
       <Nav />
       <main
         id="main"
