@@ -1692,6 +1692,17 @@ await test('Messagerie directe : « connected » après réception réelle, déd
   await rejects(q(`insert into public.mail_messages (connection_id, user_id, provider, message_id) values ($1, $2, 'microsoft', 'faux')`, [c.id, MA]), /row-level security/);
   await rejects(q(`insert into public.mail_connection_events (connection_id, user_id, type) values ($1, $2, 'faux')`, [c.id, MA]), /row-level security/);
   assert.equal((await q(`select status from public.mail_messages where id = $1`, [m1.id]))[0].status, 'a_classer', 'aucune mise à jour directe');
+  // Aucune remise à zéro par suppression directe (dédup, réception, journal).
+  await q('delete from public.mail_messages');
+  await q('delete from public.mail_connection_events');
+  await q('delete from public.mail_connections');
+  assert.equal((await q('select count(*)::int n from public.mail_messages'))[0].n, 3, 'aucune suppression directe');
+  assert.equal((await q('select count(*)::int n from public.mail_connections'))[0].n, 1, 'aucune suppression directe');
+  // Le classement ne vaut que pour SON message : celui d'un autre compte, même
+  // vers le dossier de ce compte, est refusé (paramètres d'un autre utilisateur).
+  await asUser(MB);
+  await rejects(q('select public.mail_message_assign($1, $2)', [m1.id, DA]), /FORBIDDEN/);
+  await asUser(MA);
 
   // Classement par le titulaire : dossier d'un autre refusé, puis mise en file.
   await rejects(q('select public.mail_message_assign($1, $2)', [m1.id, DB]), /FORBIDDEN/);

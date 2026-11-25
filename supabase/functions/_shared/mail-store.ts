@@ -90,9 +90,23 @@ export function createMailStore(db: Db, env: { tokenKey: string; inboundDomain: 
         .update({ status: 'received', attempts: row.attempts + 1, updated_at: new Date().toISOString() })
         .eq('id', row.id)
         .eq('attempts', row.attempts)
+        // statut LU inchangé : un classement fait entre-temps par le titulaire
+        // (error → queued) n'est jamais écrasé.
+        .eq('status', row.status)
         .select('id')
         .maybeSingle();
       return upd.data ? (upd.data.id as string) : null;
+    },
+
+    async claimQueued(rowId: string): Promise<boolean> {
+      const upd = await db
+        .from('mail_messages')
+        .update({ status: 'received', updated_at: new Date().toISOString() })
+        .eq('id', rowId)
+        .eq('status', 'queued')
+        .select('id')
+        .maybeSingle();
+      return !upd.error && !!upd.data;
     },
 
     async finishMessage(rowId: string, outcome: MessageOutcome): Promise<void> {

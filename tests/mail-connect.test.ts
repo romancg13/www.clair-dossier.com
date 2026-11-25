@@ -395,6 +395,16 @@ class MemoryStore implements MailStore {
   async finishMessage(rowId: string, outcome: MessageOutcome) {
     for (const r of this.rows.values()) if (r.id === rowId) Object.assign(r, outcome);
   }
+  /** Comme la base : passage atomique queued → received, un seul gagnant. */
+  async claimQueued(rowId: string) {
+    for (const r of this.rows.values()) {
+      if (r.id === rowId && (r.status as string) === 'queued') {
+        (r as { status: string }).status = 'received';
+        return true;
+      }
+    }
+    return false;
+  }
   async hasReception() {
     return [...this.rows.values()].some((r) => ['a_classer', 'stored', 'rejected'].includes(r.status));
   }
@@ -683,11 +693,50 @@ test('messagerie : pas de dossier certain — « à classer » avec proposition,
   assert.equal(store.pieces.length, 0);
   assert.equal(calls.some((c) => c.url.includes('/attachments/')), false, 'aucune pièce téléchargée avant le choix du titulaire');
   // Le titulaire classe (RPC mail_message_assign → queued) : import réel.
+  (row as { status: string }).status = 'queued';
   const out = await importQueuedMessage(live(store, conn), deps(store, fn), { id: row.id, message_id: 'm1', dossier_id: 'D2' });
   assert.equal(out, 'stored');
   assert.deepEqual(store.pieces.map((p) => [p.dossierId, p.name]), [['D2', 'F.pdf']]);
   assert.equal(row.status, 'stored');
   assertReadOnly(calls);
+});
+
+test('messagerie : imports simultanés du même message classé — les pièces ne sont déposées qu’une fois', async () => {
+  const store = new MemoryStore();
+  store.ctx = { ...ctxBase };
+  const box = { history: { '100': { ids: ['m1'], historyId: '120' } }, messages: { m1: gmailMessage('m1', { attachments: [{ name: 'F.pdf', size: 9 }] }) } };
+  const { fn } = fakeFetch(gmailRoutes(box));
+  const conn = connection({ dossier_id: null });
+  await syncConnection(conn, deps(store, fn));
+  const row = store.rows.get('m1')!;
+  assert.equal(row.status, 'a_classer');
+  (row as { status: string }).status = 'queued'; // RPC mail_message_assign
+  // Double clic, ou « action=import » pendant le passage planifié : deux
+  // imports lisent la même ligne « queued » au même instant.
+  const d = deps(store, fn);
+  const queued = { id: row.id, message_id: 'm1', dossier_id: 'D2' };
+  const results = await Promise.all([importQueuedMessage(live(store, conn), d, queued), importQueuedMessage(live(store, conn), d, queued), importQueuedMessage(live(store, conn), d, queued)]);
+  assert.deepEqual([...results].sort(), ['duplicate', 'duplicate', 'stored']);
+  assert.deepEqual(store.pieces.map((p) => [p.dossierId, p.name]), [['D2', 'F.pdf']], 'une seule pièce déposée');
+  assert.equal(store.dossierEvents.length, 1);
+  assert.equal(row.status, 'stored');
+  // Un message déjà importé (ou jamais classé) n'est pas réimporté sur simple appel.
+  assert.equal(await importQueuedMessage(live(store, conn), d, queued), 'duplicate');
+  assert.equal(store.pieces.length, 1);
+});
+
+test('messagerie : import à la demande — droit par offre revérifié ; reprise d’un message conditionnée à son statut', () => {
+  const read = (p: string) => readFileSync(new URL(`../${p}`, import.meta.url), 'utf8');
+  const sync = read('supabase/functions/mail-sync/index.ts');
+  const body = sync.slice(sync.indexOf('async function importQueued('), sync.indexOf('async function tick('));
+  assert.match(body, /await entitled\(conn\)/, 'importQueued revérifie le droit par offre avant tout import');
+  // Reprise (error/received → received) : comparaison-échange sur le statut LU,
+  // pour ne pas écraser un classement fait entre-temps par le titulaire.
+  const st = read('supabase/functions/_shared/mail-store.ts');
+  const claim = st.slice(st.indexOf('async claimMessage('), st.indexOf('async finishMessage('));
+  assert.match(claim, /\.eq\('status', row\.status\)/);
+  const cq = st.slice(st.indexOf('async claimQueued('), st.indexOf('async finishMessage('));
+  assert.match(cq, /\.eq\('status', 'queued'\)/, 'prise en charge atomique d’un message classé');
 });
 
 test('messagerie : sans pièce jointe, le texte devient une pièce .txt ; au-delà de la limite, le surplus est signalé', async () => {

@@ -89,6 +89,10 @@ export interface MailStore {
    *  Une ligne restée en « error » (tentatives < 3) ou en « received » depuis
    *  plus de 10 minutes peut être reprise ; tout autre état est définitif. */
   claimMessage(conn: MailConnection, messageId: string): Promise<string | null>;
+  /** Prend en charge l'import d'un message classé par le titulaire : passage
+   *  ATOMIQUE queued → received. false = déjà pris par un autre import (ou plus
+   *  en file) : ne rien déposer. */
+  claimQueued(rowId: string): Promise<boolean>;
   finishMessage(rowId: string, outcome: MessageOutcome): Promise<void>;
   /** Une réception réelle existe-t-elle pour cette connexion ? */
   hasReception(conn: MailConnection): Promise<boolean>;
@@ -503,7 +507,11 @@ export async function importQueuedMessage(
   conn: MailConnection,
   deps: MailDeps,
   row: { id: string; message_id: string; dossier_id: string },
-): Promise<'stored' | 'rejected' | 'error'> {
+): Promise<'stored' | 'rejected' | 'error' | 'duplicate'> {
+  // Deux imports simultanés (double clic, « action=import » pendant le passage
+  // planifié) lisent la même ligne « queued » : un seul la prend en charge,
+  // sinon les pièces seraient déposées en double.
+  if (!(await deps.store.claimQueued(row.id))) return 'duplicate';
   try {
     const msg = await fetchMessage(conn, deps, row.message_id);
     if (!msg) {

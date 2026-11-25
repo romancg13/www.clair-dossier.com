@@ -69,6 +69,8 @@ const FALLBACK_SYNC_MS = 6 * 3_600_000;
 /** Autorisation commencée mais jamais terminée : nettoyée après ce délai. */
 const ABANDONED_MS = 3_600_000;
 const TICK_BATCH = 25;
+/** Import d'un message classé resté en suspens (fonction interrompue) : remis en file. */
+const STALE_IMPORT_MS = 10 * 60_000;
 
 const db = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
 const store = createMailStore(db, { tokenKey: TOKEN_KEY, inboundDomain: env('INBOUND_EMAIL_DOMAIN') });
@@ -135,6 +137,11 @@ async function syncOne(conn: MailConnection): Promise<void> {
 }
 
 async function importQueued(filter: { userId?: string }): Promise<number> {
+  // Passage planifié : un import pris en charge (queued → received) puis
+  // interrompu avant sa fin est remis en file, pour ne pas rester bloqué.
+  if (!filter.userId) {
+    await db.from('mail_messages').update({ status: 'queued' }).eq('status', 'received').not('classified_at', 'is', null).not('dossier_id', 'is', null).lt('updated_at', new Date(Date.now() - STALE_IMPORT_MS).toISOString());
+  }
   let q = db.from('mail_messages').select('id,message_id,dossier_id,connection_id').eq('status', 'queued').not('dossier_id', 'is', null).order('classified_at', { ascending: true }).limit(TICK_BATCH);
   if (filter.userId) q = q.eq('user_id', filter.userId);
   const { data: rows } = await q;
@@ -142,7 +149,9 @@ async function importQueued(filter: { userId?: string }): Promise<number> {
   for (const r of (rows ?? []) as { id: string; message_id: string; dossier_id: string; connection_id: string }[]) {
     const { data: c } = await db.from('mail_connections').select(CONNECTION_COLUMNS).eq('id', r.connection_id).maybeSingle();
     const conn = c as MailConnection | null;
-    if (!conn || !isSyncable(conn.status)) {
+    // Droit par offre revérifié ici aussi : « action=import » est appelable à
+    // volonté par le titulaire (offre perdue → connexion mise en pause, aucun import).
+    if (!conn || !isSyncable(conn.status) || !(await entitled(conn))) {
       await store.finishMessage(r.id, { status: 'error', dossier_id: r.dossier_id, error: 'connexion en pause ou révoquée : import impossible' });
       continue;
     }
