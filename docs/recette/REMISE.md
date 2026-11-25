@@ -47,13 +47,13 @@ Contrôle des citations (limite connue) : un extrait n'est « retrouvé » que s
 
 ## 4. Mesures (session neuve, Playwright, mobile 390 px, client hors UE)
 
-Commit testé : `493bead` (trois parcours complets + MCP distant).
+Commits testés : `493bead` (trois parcours complets + MCP distant) ; après corrections de la revue, `1d72ccb` (un parcours complet + MCP distant, 25/11/2026).
 
 | Étape | Démo Vercel | Local |
 |---|---|---|
-| Dépôt de 4 pièces dont un scan (réponse) | 11 – 12 s | 0,2 s |
-| Premier résultat après dépôt (onglet fermé) | 41 – 50 s | 6 s |
-| Complément (bail + doublon) | 34 – 40 s | 6 s |
+| Dépôt de 4 pièces dont un scan (réponse) | 11 – 12 s (`1d72ccb` : 15 s) | 0,2 s |
+| Premier résultat après dépôt (onglet fermé) | 41 – 50 s (`1d72ccb` : 53 s) | 6 s |
+| Complément (bail + doublon) | 34 – 40 s (`1d72ccb` : 36 s) | 6 s |
 
 Écart : latence du stockage Blob (≈ 0,25 s par accès) et démarrages à froid. Corrigés pendant la recette : ETag faible renvoyé par le CDN Blob (consolidation jamais publiée), conflit d'écriture concurrente non rejoué (un essai à 295 s : travail verrouillé jusqu'à la fin du bail ; bail ramené à 60 s), attente fixe de 20 s avant consolidation, relances en rafale, écritures du dépôt en série. Cible production (Supabase) non mesurée.
 
@@ -112,3 +112,24 @@ Observation : une erreur transitoire « module script … text/html » au premie
 
 - Votre accord explicite sur cette version avant toute fusion vers `main` (= mise en production GitHub Pages).
 - Accords séparés pour : webhook Stripe live, dépense IA, migration RLS, publication des textes CGV / État du produit.
+
+## 11. Revue adversariale de la branche (25/11/2026)
+
+36 constats (5 angles : moteur, analyse, rendus, sécurité, production), chacun contre-vérifié : 28 confirmés, 0 réfuté, 8 mineurs. Corrigés en 7 lots isolés, chacun avec test de non-régression (échoue sans le correctif), contre-revue indépendante puis réparation des points bloquants. Suite : 296 tests verts, typecheck site + recette, build de production sans aucun code de recette.
+
+Principaux défauts corrigés :
+- **File de travaux** : travail orphelin si l'écriture de la file échouait (dossier jamais publié) ; doublons sous concurrence ; consultation d'un dossier qui lisait les travaux des autres clients ; échecs invisibles.
+- **Exécuteur** : révision créée sans publication ; extraction en échec définitif qui bouclait sans fin (la pièce est désormais signalée illisible et le reste du dossier livré) ; budget atteint en cours de lot ; double appel pour une même pièce ; notification envoyée avant la fin du lot.
+- **Analyse** : délai de paiement écrit ignoré ; « 25 480 € » au lieu de 480 € après une année ; solde en faveur du locataire pris pour une somme réclamée ; date imposée par le client prise pour une échéance ; incise « X, le <date> » prise pour la date du document.
+- **Vérification** : citation inventée acceptée dès qu'elle contenait un mot déjà vérifié ; échéance non comparée à son extrait ; jalons tous marqués « extrait non retrouvé ».
+- **Rendus** : date corrigée non reprise dans Échéances / ICS / prochaine date ; formulaire PDF qui écrasait les corrections en ligne ; UID ICS non unique ; pied de page PDF tronqué (mentions « pas un conseil juridique » perdues).
+- **Sécurité (démo)** : consentement OAuth contournable par un paramètre d'URL ; révocation MCP non durable ; `resource` (RFC 8707) non vérifié ; comptes de démonstration et stockage illimités ; adresse admin préemptable ; limitation des tentatives contournable en parallèle ; secrets comparés en temps non constant.
+- **Production** : suivi bloqué sur « Traitement en cours » quand le moteur est éteint (régression introduite par cette branche, corrigée) ; 43 ko de code de recette et 4,4 ko de CSS embarqués dans le build public (retirés).
+
+Restent ouverts (documentés, hors correction ciblée) :
+- Équité de la file entre clients : l'exécuteur parcourt toute la file ; un très gros volume d'un compte retarde les autres (consultation non affectée). À traiter dans l'architecture Supabase de production.
+- Vérification de citation : un mot isolé de ≥ 4 lettres déjà vérifié (ex. « janvier ») suffit encore à marquer une citation « trouvée » ; durcir ferait régresser les noms de partie courts.
+- Budget IA global épuisé : pas de repli automatique sur les règles (sans objet tant que l'IA est désactivée).
+- Lisibilité : après un échec définitif, un autre dépôt ne relit pas la pièce en échec ; redéposer la même pièce la fait lire (vérifié par test).
+- Mesures : +3 à +4 s au dépôt et au premier résultat sur la démo depuis les corrections (lectures d'autorité du stockage) ; non optimisé.
+
