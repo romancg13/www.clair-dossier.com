@@ -307,7 +307,10 @@ export async function handle(env: ApiEnv, req: Request): Promise<Response> {
   }
 
   /* ── Dossiers ───────────────────────────────────────────────────────── */
-  const ent = entitlementView(await store.getSub(user.id), now);
+  // Abonnement et dossier visé : deux lectures indépendantes, menées de front (droits vérifiés ensuite, comme avant).
+  const dm = /^\/api\/dossiers\/([0-9a-f-]{36})(\/.*)?$/.exec(path);
+  const [abonnement, dossierVise] = await Promise.all([store.getSub(user.id), dm ? store.getDossierRec(dm[1]) : null]);
+  const ent = entitlementView(abonnement, now);
 
   /* ── Automatisations du compte (création après confirmation, suspension, annulation, preuves d'exécution) ── */
   if (path.startsWith('/api/automatisations')) {
@@ -364,9 +367,8 @@ export async function handle(env: ApiEnv, req: Request): Promise<Response> {
     });
   }
 
-  const dm = /^\/api\/dossiers\/([0-9a-f-]{36})(\/.*)?$/.exec(path);
   if (dm) {
-    const d = await store.getDossierRec(dm[1]);
+    const d = dossierVise;
     // Isolement : un dossier d'un autre titulaire est INTROUVABLE (même réponse qu'un identifiant inexistant).
     if (!d || d.deleted || (d.user_id !== user.id && user.role !== 'admin')) return err(404, 'Dossier introuvable.');
     const sub = dm[2] ?? '';
@@ -406,17 +408,18 @@ export async function handle(env: ApiEnv, req: Request): Promise<Response> {
       // Volume total par compte : réservé avant tout stockage (écriture conditionnelle).
       if (!(await consume(store, `limites/stockage/${d.user_id}.json`, LIMITES.octetsParCompte, Infinity, files.reduce((n, f) => n + f.size, 0)))) return err(413, `Espace de stockage plein : un compte de recette conserve au plus ${Math.round(LIMITES.octetsParCompte / 1048576)} Mo de pièces.`);
       // Lot envoyé fichier par fichier : nombre annoncé, pour notifier une seule fois, sur le lot complet.
-      await store.declareLot(d.id, lot, Math.min(MAX_LOT, Math.max(files.length, Math.floor(Number(form.get('total')) || 0))));
-      // Stockage des pièces en parallèle, puis mise en file (durable avant la réponse).
-      const added = await Promise.all(
-        files.map(async (f) => {
+      // Déclaration du lot et stockage des pièces de front (clés distinctes) ; la mise en file ne vient qu'ensuite,
+      // si bien qu'aucune pièce n'est traitée avant que son lot soit déclaré (durable avant la réponse).
+      const [, added] = await Promise.all([
+        store.declareLot(d.id, lot, Math.min(MAX_LOT, Math.max(files.length, Math.floor(Number(form.get('total')) || 0)))),
+        Promise.all(files.map(async (f) => {
           const bytes = new Uint8Array(await f.arrayBuffer());
           const id = uuid();
           const name = f.name.replace(/[\u0000-\u001f\\/]/g, '_').slice(0, 160) || 'piece';
           await store.addPiece({ id, dossier_id: d.id, user_id: d.user_id, lot_id: lot, file_name: name, mime: f.type || null, size_bytes: bytes.byteLength, sha256: await sha256(bytes), duplicate_of: null, created_at: store.now().toISOString(), deleted_at: null }, bytes);
           return { id, nom: name };
-        }),
-      );
+        })),
+      ]);
       for (const a of added) await store.enqueue({ key: `x:${a.id}`, kind: 'extract', user_id: d.user_id, dossier_id: d.id, piece_id: a.id });
       env.waitUntil(store.addEvent(d.id, user.id, 'pieces_deposees', `${added.length} pièce${added.length > 1 ? 's' : ''} déposée${added.length > 1 ? 's' : ''}`));
       env.waitUntil(onPieceRecue(store, d.user_id));

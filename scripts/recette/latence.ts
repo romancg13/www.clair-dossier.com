@@ -1,6 +1,7 @@
 // Diagnostic de latence « dépôt de 4 pièces → premier résultat » sur la pile de recette EN MÉMOIRE, avec une
 // latence simulée par accès au stockage (reproduction locale de Vercel Blob). Aucun réseau, aucun modèle.
-// Usage : npx tsx scripts/recette/latence.ts [--min=60] [--max=120] [--sondage=4000|adaptatif] [--json]
+// Usage : npx tsx scripts/recette/latence.ts [--min=60] [--max=120] [--ecriture=250-450] [--sondage=4000|adaptatif] [--json]
+// --min/--max : latence de chaque accès ; --ecriture : latence propre aux écritures et aux listes (sinon la même).
 // Le client simulé suit src/recette/DossierPage.tsx : 4 envois en parallèle (un fichier par requête), puis
 // consultation du dossier et sondage tant que le dossier est « en cours ».
 import { readFileSync } from 'node:fs';
@@ -16,14 +17,14 @@ const sondage = arg('sondage', 'adaptatif');
 const PIECES = ['Courrier-bailleur-2026-10-12.pdf', 'Avis-echeance-T4-2026.pdf', 'Releve-charges-2025.xlsx', 'Courriel-2026-10-20.eml'];
 const fixture = (n: string) => new Uint8Array(readFileSync(new URL(`../../recette/fixtures/pieces/${encodeURIComponent(n)}`, import.meta.url)));
 
-export async function mesurerLatence(o: { minMs: number; maxMs: number; sondage: string; config?: Partial<EngineConfig> }) {
+export async function mesurerLatence(o: { minMs: number; maxMs: number; ecriture?: { minMs: number; maxMs: number }; sondage: string; config?: Partial<EngineConfig> }) {
   const pile = pileMesure({ latence: null, config: o.config });
   const c = pile.client();
   await c.call('POST', '/api/demo/demarrer', { scenario: 'a' });
   const id = (await c.json('GET', '/api/dossiers')).dossiers[0].id as string;
   await pile.repos();
   pile.kv.raz();
-  pile.kv.latence = { minMs: o.minMs, maxMs: o.maxMs };
+  pile.kv.latence = { minMs: o.minMs, maxMs: o.maxMs, ecriture: o.ecriture };
 
   const t0 = Date.now();
   const depuis = () => Date.now() - t0;
@@ -97,7 +98,7 @@ export async function mesurerLatence(o: { minMs: number; maxMs: number; sondage:
   }
   await pile.repos();
   clearInterval(sonde);
-  return { latence_ms: [o.minMs, o.maxMs], sondage: o.sondage, jalons_ms: jalons, sans_acces_en_vol_avant_vue_ms: inactif, acces_depot: apresDepot, acces_total: pile.kv.instantane(), operations: pile.kv.operations, parallelisme_max: pile.kv.maxEnVol, executeur: pile.compteurs, acces_par_cle: Object.fromEntries(Object.entries(parPrefixe).sort((x, y) => y[1] - x[1]).slice(0, 24)), consultations, ...(trace.length ? { trace } : {}) };
+  return { latence_ms: [o.minMs, o.maxMs], latence_ecriture_ms: o.ecriture ? [o.ecriture.minMs, o.ecriture.maxMs] : null, sondage: o.sondage, jalons_ms: jalons, sans_acces_en_vol_avant_vue_ms: inactif, acces_depot: apresDepot, acces_total: pile.kv.instantane(), operations: pile.kv.operations, parallelisme_max: pile.kv.maxEnVol, executeur: pile.compteurs, acces_par_cle: Object.fromEntries(Object.entries(parPrefixe).sort((x, y) => y[1] - x[1]).slice(0, 24)), consultations, ...(trace.length ? { trace } : {}) };
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
@@ -105,6 +106,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const config: Partial<EngineConfig> = {};
   if (arg('anti-rebond', '')) config.consolidateDelayMs = Number(arg('anti-rebond', ''));
   if (arg('attente', '')) config.extractionWaitMs = Number(arg('attente', ''));
-  const r = await mesurerLatence({ minMs, maxMs, sondage, config });
+  const [eMin, eMax] = arg('ecriture', '').split('-').map(Number);
+  const r = await mesurerLatence({ minMs, maxMs, ecriture: eMin > 0 ? { minMs: eMin, maxMs: eMax || eMin } : undefined, sondage, config });
   console.log(JSON.stringify(r, null, process.argv.includes('--json') ? 0 : 2));
 }

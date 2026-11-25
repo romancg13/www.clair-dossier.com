@@ -10,6 +10,8 @@ export interface Latence {
   /** Bornes de la latence ajoutée à CHAQUE accès, en millisecondes (tirage uniforme, graine fixe). */
   minMs: number;
   maxMs: number;
+  /** Latence propre aux écritures et aux listes (souvent bien plus lentes que les lectures) ; absente : la même. */
+  ecriture?: { minMs: number; maxMs: number };
 }
 
 /** Générateur pseudo-aléatoire à graine fixe (mesures reproductibles). */
@@ -57,7 +59,8 @@ export class MesureKv implements Kv {
     if (!this.latence) return fn();
     this.maxEnVol = Math.max(this.maxEnVol, ++this.enVol);
     try {
-      await new Promise((r) => setTimeout(r, this.latence!.minMs + this.rnd() * (this.latence!.maxMs - this.latence!.minMs)));
+      const l = (nature === 'ecriture' || nature === 'octetsEcrits' || nature === 'liste' || nature === 'suppression' ? this.latence.ecriture : undefined) ?? this.latence;
+      await new Promise((r) => setTimeout(r, l.minMs + this.rnd() * (l.maxMs - l.minMs)));
       return await fn();
     } finally {
       this.enVol--;
