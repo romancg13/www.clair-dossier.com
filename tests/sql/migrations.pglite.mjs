@@ -1595,6 +1595,185 @@ await test('E-mail entrant : adresse par dossier — offre, format, idempotence,
   await rejects(q('select * from public.create_inbound_address($1)', [DA]), /DOSSIER_CLOTURE/);
 });
 
+// ── Supervision fondateur (migration 20261125140000) ────────────────────────
+await test('Supervision : lecture agrégée — non-admin refusé, agrégats exacts, aucun contenu', async () => {
+  const alerte = (o, code) => o.alertes.find((a) => a.code === code)?.valeur ?? 0;
+  const overview = async () => (await q('select public.admin_supervision_overview() as o'))[0].o;
+  // Refus : anonyme, client, écriture directe des réglages.
+  await asAnon();
+  await rejects(q('select public.admin_supervision_overview()'), /permission denied/);
+  await asUser(A);
+  await rejects(q('select public.admin_supervision_overview()'), /FORBIDDEN/);
+  await rejects(q(`select public.ai_admin_set_pause(true, 'tentative client')`), /FORBIDDEN/);
+  await rejects(q('select public.ai_admin_set_budget_alert(100)'), /FORBIDDEN/);
+  assert.equal((await q('select * from public.ai_engine_control')).length, 0, 'client : réglages illisibles');
+  await asUser(ADMIN);
+  await q('update public.ai_engine_control set paused_at = now()');
+  await asSuperuser();
+  assert.equal((await q('select paused_at from public.ai_engine_control'))[0].paused_at, null, 'aucune écriture directe, même admin');
+
+  await asUser(ADMIN);
+  const before = await overview();
+  assert.equal(before.version, 1);
+  assert.equal(before.moteur.installe, true);
+  assert.equal(before.moteur.en_pause, false);
+
+  // Données fictives : deux comptes, pièces, extractions, travaux, e-mails.
+  const S1 = await newUser('supervision-1@test.local');
+  const S2 = await newUser('supervision-2@test.local');
+  await subscribe(S1, 'essentiel'); // 50 pages, 0 action
+  await subscribe(S2, 'entrepreneur'); // 150 pages, 20 actions
+  const D1 = await insertDossier(S1, { title: 'Titre confidentiel S1' });
+  const D2 = await insertDossier(S2, { title: 'Titre confidentiel S2' });
+  await asSuperuser();
+  const doc = async (d, u, name, size, deleted = false) => (await q(
+    `insert into public.dossier_documents (dossier_id, user_id, file_path, file_name, kind, size_bytes, deleted_at)
+     values ($1::uuid, $2::uuid, $2::text || '/' || $1::text || '/' || $3::text, $3::text, 'piece', $4::bigint,
+             case when $5::boolean then now() end) returning id`,
+    [d, u, name, size, deleted],
+  ))[0].id;
+  const d1a = await doc(D1, S1, 'secret-contrat.pdf', 1000);
+  await doc(D1, S1, 'secret-corbeille.pdf', 2500, true);
+  await doc(D1, S1, 'secret-sans-taille.pdf', null);
+  const d2a = await doc(D2, S2, 'secret-facture.pdf', 4000);
+  await q(`insert into public.ai_extractions (dossier_id, user_id, document_id, status, pages, cost_cents, data)
+           values ($1, $2, $3, 'ok', 45, 12.5, '{"texte":"contenu extrait confidentiel"}')`, [D1, S1, d1a]);
+  await q(`insert into public.ai_extractions (dossier_id, user_id, document_id, status, pages, cost_cents)
+           values ($1, $2, $3, 'ok', 150, 30)`, [D2, S2, d2a]);
+  await q(`insert into public.ai_analyses (dossier_id, user_id, revision, data, cost_cents)
+           values ($1, $2, 1, '{"resume":"synthèse confidentielle"}', 7.5)`, [D1, S1]);
+  const job = async (kind, status, attempts, runAfter, lastError, finished) => (await q(
+    `insert into public.ai_jobs (dossier_id, user_id, kind, status, attempts, run_after, last_error, finished_at)
+     values ($1, $2, $3, $4, $5, now() - $6::interval, $7, case when $8::boolean then now() end) returning id`,
+    [D1, S1, kind, status, attempts, runAfter, lastError, finished],
+  ))[0].id;
+  const stuck = await job('consolidate', 'queued', 1, '2 hours', 'erreur passagère boom', false);
+  await job('extract', 'failed', 3, '0 seconds', 'erreur définitive boom', true);
+  await job('render', 'failed', 3, '0 seconds', 'erreur définitive boom', true);
+  await job('extract', 'failed', 3, '0 seconds', 'traitement interrompu (délai dépassé ou panne du worker)', true);
+  await job('extract', 'failed', 1, '0 seconds', 'BUDGET: plafond mensuel atteint — traitement en pause', true);
+  await job('publish', 'done', 1, '0 seconds', null, true);
+  await q(`insert into public.inbound_emails (user_id, dossier_id, provider_email_id, from_addr, subject, status)
+           values ($1, $2, 'sup_err', 'exp@externe.fr', 'Objet confidentiel', 'error'),
+                  ($1, $2, 'sup_ok', 'exp@externe.fr', 'Objet confidentiel', 'stored')`, [S1, D1]);
+
+  await asUser(ADMIN);
+  const o = await overview();
+  const at = (obj, path) => path.split('.').reduce((v, k) => v?.[k], obj) ?? 0;
+  const delta = (path) => at(o, path) - at(before, path);
+  // File : états, reprises, blocages, échecs par catégorie.
+  assert.equal(delta('file.par_statut.queued'), 1);
+  assert.equal(delta('file.par_statut.failed'), 4);
+  assert.equal(delta('file.par_statut.done'), 1);
+  assert.equal(delta('file.bloques'), 1);
+  assert.equal(delta('file.reprises_en_cours'), 1);
+  assert.equal(delta('file.termines_24h'), 1);
+  assert.equal(delta('file.echecs_24h'), 4);
+  assert.equal(delta('file.echecs_definitifs_7j'), 3, 'hors pauses budget');
+  assert.equal(delta('file.pauses_budget_mois'), 1);
+  assert.equal(delta('file.erreurs_30j.budget_ou_quota'), 1);
+  assert.equal(delta('file.erreurs_30j.interruption'), 1);
+  assert.equal(delta('file.erreurs_30j.autre'), 2);
+  assert.equal(delta('file.dossiers_multi_echecs_7j'), 1);
+  assert.equal(delta('file.ouverts_par_type.consolidate'), 1);
+  // Traitements, coût global, e-mails, stockage, abonnements.
+  assert.equal(delta('traitements_mois.extractions_ok'), 2);
+  assert.equal(delta('traitements_mois.pages_lues'), 195);
+  assert.equal(delta('traitements_mois.analyses'), 1);
+  assert.equal(delta('budget.cout_global_mois_cents'), 50);
+  assert.equal(delta('emails_entrants.recus_30j'), 2);
+  assert.equal(delta('emails_entrants.stockes_30j'), 1);
+  assert.equal(delta('emails_entrants.en_erreur_7j'), 1);
+  assert.equal(delta('stockage.octets'), 7500);
+  assert.equal(delta('stockage.documents'), 4);
+  assert.equal(delta('stockage.documents_sans_taille'), 1);
+  assert.equal(delta('stockage.octets_corbeille'), 2500);
+  assert.equal(delta('abonnements.par_statut.active'), 2);
+  assert.equal(delta('abonnements.en_cours_par_offre.essentiel'), 1);
+  assert.equal(delta('abonnements.en_cours_par_offre.entrepreneur'), 1);
+  assert.equal(delta('comptes_total'), 2);
+  // Par compte : valeurs exactes.
+  const c1 = o.comptes.find((c) => c.user_id === S1);
+  const c2 = o.comptes.find((c) => c.user_id === S2);
+  assert.deepEqual(c1, {
+    user_id: S1, offre: 'essentiel', statut_abonnement: 'active', cout_ia_mois_cents: 20,
+    pages_utilisees: 45, pages_limite: 50, actions_utilisees: 0, actions_limite: 0, quota_pct: 90,
+    octets: 3500, documents: 3, dossiers: 1,
+  });
+  assert.equal(c2.cout_ia_mois_cents, 30);
+  assert.equal(c2.quota_pct, 100);
+  assert.equal(c2.pages_limite, 150);
+  assert.equal(c2.actions_limite, 20);
+  assert.equal(c2.octets, 4000);
+  assert.ok(o.comptes.indexOf(c2) < o.comptes.indexOf(c1), 'tri : coût décroissant');
+  // Alertes de saturation.
+  assert.equal(alerte(o, 'QUOTA_80') - alerte(before, 'QUOTA_80'), 1);
+  assert.equal(alerte(o, 'QUOTA_ATTEINT') - alerte(before, 'QUOTA_ATTEINT'), 1);
+  assert.equal(alerte(o, 'FILE_BLOQUEE'), o.file.bloques);
+  assert.equal(alerte(o, 'ECHECS_REPETES'), o.file.echecs_definitifs_7j);
+  assert.equal(alerte(o, 'PAUSES_BUDGET'), o.file.pauses_budget_mois);
+  assert.equal(alerte(o, 'EMAILS_EN_ERREUR'), o.emails_entrants.en_erreur_7j);
+  assert.equal(alerte(o, 'BUDGET_GLOBAL_80') + alerte(o, 'BUDGET_GLOBAL_ATTEINT'), 0, 'sans repère : aucune alerte budget');
+  // Repère d'alerte du budget global : 80 % puis atteint ; valeur invalide refusée.
+  const G = o.budget.cout_global_mois_cents;
+  await rejects(q('select public.ai_admin_set_budget_alert(0)'), /PARAMETRE_INVALIDE/);
+  await q('select public.ai_admin_set_budget_alert($1)', [Math.ceil(G / 0.9)]);
+  const o80 = await overview();
+  assert.ok(alerte(o80, 'BUDGET_GLOBAL_80') >= 80 && alerte(o80, 'BUDGET_GLOBAL_80') < 100);
+  assert.equal(o80.budget.repere_alerte_cents, Math.ceil(G / 0.9));
+  await q('select public.ai_admin_set_budget_alert($1)', [Math.max(1, Math.floor(G))]);
+  assert.ok(alerte(await overview(), 'BUDGET_GLOBAL_ATTEINT') >= 100);
+  await q('select public.ai_admin_set_budget_alert(null)');
+  assert.equal((await overview()).budget.repere_alerte_cents, null);
+  // Aucun contenu : ni nom de fichier, ni titre, ni texte extrait, ni libellé d'erreur, ni e-mail.
+  const brut = JSON.stringify(o);
+  for (const interdit of ['secret-', 'onfidentiel', 'boom', 'plafond mensuel', '@']) {
+    assert.ok(!brut.includes(interdit), `fuite : ${interdit}`);
+  }
+  // Historique des actions : super admin seul ; l'admin support lit le reste.
+  assert.equal(o.actions_admin.visible, true);
+  assert.ok(o.actions_admin.dernieres.length <= 30);
+  await asUser(SUPPORT);
+  const os = await overview();
+  assert.equal(os.actions_admin.visible, false);
+  assert.equal(os.actions_admin.dernieres, undefined);
+  assert.equal(os.abonnements.derogations_actives, null);
+  assert.equal(os.file.par_statut.failed, o.file.par_statut.failed);
+
+  // Pause sécurisée : motif obligatoire, plus rien n'est réclamé, journalisée, réversible.
+  await asUser(ADMIN);
+  await rejects(q(`select public.ai_admin_set_pause(true, ' ')`), /MOTIF_REQUIS/);
+  await q(`select public.ai_admin_set_pause(true, 'maintenance de recette')`);
+  const op = await overview();
+  assert.equal(op.moteur.en_pause, true);
+  assert.equal(alerte(op, 'MOTEUR_EN_PAUSE'), 1);
+  assert.equal(alerte(op, 'FILE_BLOQUEE'), 0, 'en pause : l’attente en file n’est pas une alerte');
+  assert.ok(!JSON.stringify(op).includes('maintenance de recette'), 'le motif reste hors de la lecture agrégée');
+  const depuis = op.moteur.en_pause_depuis;
+  await q(`select public.ai_admin_set_pause(true, 'second appel')`);
+  assert.equal((await overview()).moteur.en_pause_depuis, depuis, 'pause idempotente : date d’origine conservée');
+  await asService();
+  assert.equal((await q(`select id from public.ai_claim_jobs('pause', 20)`)).length, 0, 'en pause : rien n’est réclamé');
+  await asUser(A);
+  await rejects(q(`select * from public.ai_claim_jobs('client', 1)`), /FORBIDDEN|permission denied/);
+  await asSuperuser();
+  const [still] = await q('select status, attempts from public.ai_jobs where id = $1', [stuck]);
+  assert.deepEqual(still, { status: 'queued', attempts: 1 }, 'travail intact pendant la pause');
+  await asUser(ADMIN);
+  await q('select public.ai_admin_set_pause(false)');
+  assert.equal((await overview()).moteur.en_pause, false);
+  await asService();
+  const repris = await q(`select id from public.ai_claim_jobs('reprise', 20)`);
+  assert.ok(repris.some((j) => j.id === stuck), 'reprise : le travail en attente est réclamé');
+  await asSuperuser();
+  const journal = await q(`select action, actor_id, metadata from public.audit_logs where action like 'ia_moteur_%' order by created_at, action`);
+  assert.deepEqual(journal.map((j) => j.action).sort(), ['ia_moteur_pause', 'ia_moteur_pause', 'ia_moteur_reprise']);
+  assert.ok(journal.every((j) => j.actor_id === ADMIN));
+  assert.ok(journal.some((j) => j.metadata.motif === 'maintenance de recette'));
+  await asUser(ADMIN);
+  assert.ok((await overview()).actions_admin.par_action_30j.ia_moteur_reprise >= 1);
+});
+
 // Dernier test : le retour arrière modifie le schéma pour la suite.
 await test('IA : retour arrière niveau 1 — moteur neutralisé, données conservées', async () => {
   const D = await insertDossier(IA_C, { title: 'Avant retour arrière' });
@@ -1622,6 +1801,57 @@ await test('IA : retour arrière 20261104 — fonctions retirées, bilans conser
   assert.equal(r.g, null);
   assert.equal(r.h, null);
   assert.ok(r.t, 'table des bilans conservée');
+});
+
+await test('Supervision : retour arrière 20261125 — lecture retirée, file restaurée, réglages conservés', async () => {
+  await asSuperuser();
+  await q('update public.ai_engine_control set paused_at = now()');
+  await db.exec(readFileSync(join(root, 'supabase', 'rollback', '20261125140000_supervision_fondateur.down.sql'), 'utf8'));
+  const [r] = await q(`select to_regprocedure('public.admin_supervision_overview()') as o,
+                              to_regprocedure('public.ai_admin_set_pause(boolean, text)') as p,
+                              to_regclass('public.ai_engine_control') as t,
+                              pg_get_functiondef('public.ai_claim_jobs(text, integer)'::regprocedure) as def`);
+  assert.equal(r.o, null);
+  assert.equal(r.p, null);
+  assert.ok(r.t, 'réglages conservés');
+  assert.ok(!r.def.includes('ai_engine_control'), 'ai_claim_jobs : corps d’origine');
+  await asService();
+  await q(`select id from public.ai_claim_jobs('apres-retour', 1)`);
+  await asUser(A);
+  await rejects(q(`select * from public.ai_claim_jobs('client', 1)`), /FORBIDDEN|permission denied/);
+});
+
+// Production au 2026-11-25 : moteur IA non installé (20261023 → 20261118 absentes).
+// La supervision doit s'installer et répondre quand même (blocs IA à null).
+await test('Supervision : installation sans le moteur IA — lecture disponible, blocs IA à null', async () => {
+  const db2 = new PGlite();
+  await db2.exec(STUBS);
+  const insert = async (email) =>
+    (await db2.query(`insert into auth.users (email, email_confirmed_at) values ($1, now()) returning id`, [email])).rows[0].id;
+  const admin2 = await insert('prestige.seller@icloud.com');
+  const sansIa = files.filter((f) => f < '20261023' || f.startsWith('20261103') || f.startsWith('20261125'));
+  assert.ok(sansIa.includes('20261125140000_supervision_fondateur.sql'));
+  for (const f of sansIa) {
+    await db2.exec(readFileSync(join(root, 'supabase', 'migrations', f), 'utf8').replace(/create extension if not exists pg_net;/gi, ''));
+  }
+  const client2 = await insert('client@test.local');
+  const as = (id) => db2.exec(`set role authenticated; set request.jwt.claims = '${JSON.stringify({ sub: id, role: 'authenticated' })}';`);
+  const overview = async () => (await db2.query('select public.admin_supervision_overview() as o')).rows[0].o;
+  await as(client2);
+  await rejects(overview(), /FORBIDDEN/);
+  await as(admin2);
+  const o = await overview();
+  assert.equal(o.moteur.installe, false);
+  assert.equal(o.file, null);
+  assert.equal(o.traitements_mois, null);
+  assert.equal(o.emails_entrants, null);
+  assert.equal(o.budget.cout_global_mois_cents, 0);
+  assert.deepEqual(o.alertes, []);
+  assert.equal(o.stockage.documents, 0);
+  assert.equal(o.actions_admin.visible, true);
+  await db2.query(`select public.ai_admin_set_pause(true, 'pause sans moteur')`);
+  assert.equal((await overview()).moteur.en_pause, true);
+  await db2.close();
 });
 
 console.log(`\n${passed} réussis, ${failed} échoués`);
