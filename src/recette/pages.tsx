@@ -9,7 +9,12 @@ import { Alert, Card, Chip, Field, Kicker, Page, Primary, Secondary, inputCls } 
 import { InstallApp } from '../components/pwa/InstallApp';
 import { CentreActions, CoupeCircuitAdmin, DernierPassage, Preferences } from './Pilotage';
 
-const safeNext = (n: string | null) => (n && n.startsWith('/') && !n.startsWith('//') ? n : null);
+// Page de tarifs ORIGINALE : après connexion elle renvoie vers /tarifs?formule=… ; en recette, le paiement de la même formule.
+const safeNext = (n: string | null) => {
+  if (!n || !n.startsWith('/') || n.startsWith('//')) return null;
+  const f = /^\/tarifs\?formule=([a-z0-9-]+)$/.exec(n)?.[1];
+  return f ? `/abonnement?formule=${f}` : n;
+};
 
 export function RecetteConnexion() {
   const [q] = useSearchParams();
