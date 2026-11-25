@@ -165,6 +165,11 @@ async function runExtract(deps: EngineDeps, job: Job): Promise<RunReport['outcom
     await consolidate();
     return 'done';
   }
+  // Analyse progressive : la lecture IA laisse d'abord passer la première synthèse par règles (attente bornée), quel
+  // que soit l'ordre de la file — sinon un appel de 30 s retarderait d'autant les premiers résultats.
+  if (config.progressive && deps.ai && existing?.fallback === 'progressif' && config.now().getTime() - Date.parse(existing.created_at) < (config.progressiveMaxWaitMs ?? 15_000) && !(await store.lastAnalysis(piece.dossier_id))) {
+    throw Object.assign(new Retry('premiers résultats en cours de publication'), { delayMs: 1_000, countAttempt: false });
+  }
   // Échec définitif déjà enregistré : ce passage est une relecture automatique (comptée, plafonnée).
   const rereads = existing && existing.status === 'error' && !existing.deferred ? (existing.rereads ?? 0) + 1 : 0;
   const base = { piece_id: piece.id, dossier_id: piece.dossier_id, user_id: piece.user_id, sha256: piece.sha256, created_at: iso(config.now()) };
@@ -558,13 +563,18 @@ export async function runOnce(deps: EngineDeps): Promise<RunReport> {
 }
 
 /** Traite des travaux tant que le budget de temps le permet. */
-export async function drain(deps: EngineDeps, timeBudgetMs: number, maxJobs = 200): Promise<RunReport[]> {
+export async function drain(deps: EngineDeps, timeBudgetMs: number, maxJobs = 200, concurrency = 1): Promise<RunReport[]> {
   const t0 = deps.config.now().getTime();
   const out: RunReport[] = [];
-  while (out.length < maxJobs && deps.config.now().getTime() - t0 < timeBudgetMs) {
-    const r = await runOnce(deps);
-    if (r.outcome === 'idle' || r.outcome === 'paused') break;
-    out.push(r);
-  }
+  // Concurrence bornée : plusieurs travaux menés de front (lectures IA de pièces différentes). Chaque travail est
+  // réservé par un bail (claim) : deux boucles ne traitent jamais le même.
+  const boucle = async () => {
+    while (out.length < maxJobs && deps.config.now().getTime() - t0 < timeBudgetMs) {
+      const r = await runOnce(deps);
+      if (r.outcome === 'idle' || r.outcome === 'paused') break;
+      out.push(r);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.max(1, Math.min(4, concurrency)) }, boucle));
   return out;
 }

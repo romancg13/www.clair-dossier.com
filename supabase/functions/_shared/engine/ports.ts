@@ -239,6 +239,8 @@ export interface EngineConfig {
   progressive?: boolean;
   /** Attente avant la lecture IA qui suit les premiers résultats (laisse passer la première synthèse). */
   progressiveDelayMs?: number;
+  /** Attente maximale de la première synthèse avant de lancer la lecture IA d'une pièce. */
+  progressiveMaxWaitMs?: number;
   now: () => Date;
   workerId: string;
   /** Attentes successives avant relecture automatique d'une pièce en échec définitif (défaut : 1 h, 6 h, 24 h ; [] = aucune). */

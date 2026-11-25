@@ -712,7 +712,7 @@ export async function applyEvent(store: RecetteStore, ev: { id: string; type: st
 async function runNow(env: ApiEnv) {
   try {
     const deps = await env.deps();
-    const reports = await drain(deps, 200_000, 120);
+    const reports = await drain(deps, 200_000, 120, deps.ai ? 3 : 1); // avec l'IA : trois lectures de front (appels longs, indépendants)
     // Journal technique (sans contenu de pièce) : type de travail, issue, motif d'erreur.
     for (const r of reports) {
       if (r.outcome !== 'requeued' && r.outcome !== 'failed') continue;

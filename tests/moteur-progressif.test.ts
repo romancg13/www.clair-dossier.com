@@ -102,3 +102,22 @@ test('sans IA : aucun passage provisoire', async () => {
   assert.equal(a.revision, 1);
   assert.ok(!a.coverage.provisional);
 });
+
+test('lectures IA menées de front (concurrence 3) : toujours un seul appel par pièce et une seule synthèse', async () => {
+  const { provider, appels } = ia();
+  const lent: ModelProvider = { ...provider, extract: async (p, f, b) => { await new Promise((r) => setTimeout(r, 20)); return provider.extract(p, f, b); } };
+  const s = stack({ ai: lent });
+  await s.user('a');
+  await s.dossier('d', 'a');
+  await s.depose('d', 'a', LOT, FICHIERS);
+  for (let i = 0; i < 25; i++) {
+    await drain(s.deps, 60_000, 50, 3);
+    s.clock.advance(2_000);
+  }
+  assert.deepEqual([...appels.extract].sort(), [...FICHIERS].sort());
+  assert.equal(appels.consolidate, 1);
+  const fin = (await s.store.lastAnalysis('d'))!;
+  assert.equal(fin.provider, 'anthropic');
+  assert.equal(fin.coverage.complete, true);
+  assert.equal((await s.store.mailbox('a')).length, 1);
+});
