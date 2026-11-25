@@ -14,6 +14,7 @@ import { update } from './kv.ts';
 import { RecetteStore, jobEnCours, type DossierRec, type Subscription, type UserRec } from './store.ts';
 import { sha256 } from './engine-deps.ts';
 import { handleMcp, handleOAuth, listConnections } from './mcp.ts';
+import { handleAutomations, onPieceRecue, tickAutomations } from './automations.ts';
 import { answer, forget, history, remember, viewToContext, type AssistantDeps } from './assistant.ts';
 import { DOMAINE_RECETTE, seedDemo } from './seed.ts';
 
@@ -182,8 +183,13 @@ export async function handle(env: ApiEnv, req: Request): Promise<Response> {
     const parCle = Boolean(env.workerToken) && safeEqual(url.searchParams.get('k') ?? '', sha(`${env.workerToken}:cron`));
     if (!parSecret && !parCle) return err(401, 'non autorisé');
     await reconcile(env);
+    // Automatisations dues (navigateur fermé) : exécution bornée, idempotente, équitable entre comptes.
+    const automatisations = await tickAutomations(store).catch(async (e) => {
+      await store.alert('AUTOMATISATIONS_INTERROMPUES', { erreur: String(e instanceof Error ? e.message : e).slice(0, 200) });
+      return null;
+    });
     env.waitUntil(runNow(env));
-    return json({ ok: true });
+    return json({ ok: true, automatisations });
   }
 
   /* ── Démonstration : compte fictif isolé par visiteur ───────────────── */
@@ -295,9 +301,35 @@ export async function handle(env: ApiEnv, req: Request): Promise<Response> {
 
   /* ── Dossiers ───────────────────────────────────────────────────────── */
   const ent = entitlementView(await store.getSub(user.id), now);
-  if (path === '/api/dossiers' && m === 'GET') {
-    const list = await store.listUserDossiers(user.id);
-    return json({ dossiers: await Promise.all(list.map(async (d) => ({ id: d.id, titre: d.title, objectif: d.objective, cree_le: d.created_at, ...(await dossierStatus(env, d)), action: ((await store.getView(d.id))?.view as RenduView | undefined)?.tableau.action.label ?? null }))) });
+
+  /* ── Automatisations du compte (création après confirmation, suspension, annulation, preuves d'exécution) ── */
+  if (path.startsWith('/api/automatisations')) {
+    const payload = m === 'POST' ? await body<Record<string, unknown>>(req) : null;
+    // Rappel préparé par l'assistant : devient, après confirmation, une vraie échéance du dossier (preuve : la ligne créée).
+    const act = payload?.action as { kind?: string; id?: string; detail?: string } | undefined;
+    if (path === '/api/automatisations' && m === 'POST' && act?.kind === 'rappel') {
+      if (!ent.active) return err(402, 'Un abonnement actif est nécessaire.', { redirect: '/tarifs' });
+      const dos = typeof payload?.dossier === 'string' ? await store.getDossierRec(payload.dossier) : null;
+      if (!dos || dos.deleted || dos.user_id !== user.id) return err(404, 'Dossier introuvable.');
+      if (dos.closed) return err(409, 'Ce dossier est clôturé.');
+      const date = /^rappel:(\d{4}-\d{2}-\d{2})$/.exec(String(act.id ?? ''))?.[1];
+      if (!date || !isCalendarDate(date) || date < now.toISOString().slice(0, 10)) return err(400, 'Date de rappel invalide ou passée.');
+      const title = String(act.detail ?? 'Rappel').replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, 120) || 'Rappel';
+      let cree = false;
+      await store.updateDeadlines(dos.id, (rows) => {
+        if (rows.some((r) => !r.ai_key && r.due_date === date && r.title === title)) return rows; // rejeu : pas de doublon
+        cree = true;
+        return [...rows, { ai_key: null, title, due_date: date, due_time: null, priority: 'normale', done: false, user_edited: true, description: 'Rappel créé depuis l’assistant, après votre confirmation.' }];
+      });
+      if (cree) await store.addEvent(dos.id, user.id, 'rappel_cree', `Rappel ajouté pour le ${frJour(date)}`);
+      return json({ message: `Enregistré : rappel du ${frJour(date)} ajouté aux échéances de ce dossier.`, deja_existant: !cree }, cree ? 201 : 200);
+    }
+    const r = await handleAutomations({ store, user, sub: await store.getSub(user.id), method: m, path, body: payload });
+    if (r) {
+      const b = r.body as { automatisation?: { titre?: string; quand?: string } };
+      // Message lisible pour la confirmation dans l'assistant (preuve : la fiche enregistrée).
+      return json(r.status < 300 && b?.automatisation ? { ...b, message: `Enregistré : ${b.automatisation.titre ?? 'automatisation'}${b.automatisation.quand ? ` — ${b.automatisation.quand}` : ''}. Vous pouvez la suspendre ou l’annuler à tout moment.` } : r.body, r.status);
+    }
   }
   if (path === '/api/dossiers' && m === 'POST') {
     if (!ent.active) return err(402, 'Un abonnement actif est nécessaire pour créer un dossier.', { redirect: '/tarifs' });
@@ -310,6 +342,11 @@ export async function handle(env: ApiEnv, req: Request): Promise<Response> {
     await store.createDossier(d);
     await store.addEvent(d.id, user.id, 'dossier_cree', 'Dossier créé');
     return json({ id: d.id }, 201);
+  }
+
+  if (path === '/api/dossiers' && m === 'GET') {
+    const list = await store.listUserDossiers(user.id);
+    return json({ dossiers: await Promise.all(list.map(async (d) => ({ id: d.id, titre: d.title, objectif: d.objective, cree_le: d.created_at, ...(await dossierStatus(env, d)), action: ((await store.getView(d.id))?.view as RenduView | undefined)?.tableau.action.label ?? null }))) });
   }
 
   const dm = /^\/api\/dossiers\/([0-9a-f-]{36})(\/.*)?$/.exec(path);
@@ -367,6 +404,7 @@ export async function handle(env: ApiEnv, req: Request): Promise<Response> {
       );
       for (const a of added) await store.enqueue({ key: `x:${a.id}`, kind: 'extract', user_id: d.user_id, dossier_id: d.id, piece_id: a.id });
       env.waitUntil(store.addEvent(d.id, user.id, 'pieces_deposees', `${added.length} pièce${added.length > 1 ? 's' : ''} déposée${added.length > 1 ? 's' : ''}`));
+      env.waitUntil(onPieceRecue(store, d.user_id));
       env.waitUntil(runNow(env));
       return json({ lot, pieces: added }, 201);
     }
@@ -454,6 +492,7 @@ export async function handle(env: ApiEnv, req: Request): Promise<Response> {
       await store.kv.delete(att.cle);
       await store.kv.delete(`depots-attente/${att.id}.json`);
       env.waitUntil(store.addEvent(d.id, user.id, 'pieces_deposees', '1 pièce déposée'));
+      env.waitUntil(onPieceRecue(store, d.user_id));
       env.waitUntil(runNow(env));
       return json({ lot: att.lot, pieces: [{ id: att.id, nom: att.nom }] }, 201);
     }
@@ -598,6 +637,8 @@ export async function handle(env: ApiEnv, req: Request): Promise<Response> {
   }
   return err(404, 'introuvable');
 }
+
+const frJour = (iso: string) => iso.split('-').reverse().join('/');
 
 function publicUser(u: UserRec) {
   return { id: u.id, email: u.email, prenom: u.first_name, nom: u.last_name, societe: u.company, role: u.role, demo: Boolean(u.fixture) };

@@ -447,7 +447,7 @@ async function avancer(store: RecetteStore, a: Automation, due: string, echec: b
     suspendue = false;
     if (!cur || cur.next_run_at !== due) return null; // déjà avancée (passage concurrent) ou état changé par le titulaire
     const failures = echec ? (cur.failures ?? 0) + 1 : 0;
-    const next: Automation = { ...cur, runs: cur.runs + 1, last_run_at: now.toISOString(), month: { mois, n: (cur.month?.mois === mois ? cur.month.n : 0) + 1 }, failures, next_run_at: cur.status === 'active' ? nextRun(cur.schedule, now) : null };
+    const next: Automation = { ...cur, runs: cur.runs + 1, last_run_at: echec ? cur.last_run_at : now.toISOString(), month: { mois, n: (cur.month?.mois === mois ? cur.month.n : 0) + 1 }, failures, next_run_at: cur.status === 'active' ? nextRun(cur.schedule, now) : null };
     if (failures >= MAX_ECHECS && cur.status === 'active') (suspendue = true), Object.assign(next, { status: 'suspendue', stop_reason: MOTIF_ECHECS, next_run_at: null });
     return next;
   });
@@ -457,9 +457,12 @@ async function avancer(store: RecetteStore, a: Automation, due: string, echec: b
   }
 }
 
-async function executer(store: RecetteStore, a: Automation): Promise<'faite' | 'echec' | 'arretee' | 'ignoree'> {
+async function executer(store: RecetteStore, lue: Automation): Promise<'faite' | 'echec' | 'arretee' | 'ignoree'> {
   const now = store.now();
-  const due = a.next_run_at!;
+  const due = lue.next_run_at!;
+  // Fiche RELUE juste avant d'agir : une suspension ou une annulation faite pendant le passage est respectée.
+  const a = (await store.kv.getJson<Automation>(cleFiche(lue.user_id, lue.id), { fresh: true }))?.value;
+  if (!a || a.status !== 'active' || a.next_run_at !== due) return 'ignoree';
   // Droits revérifiés à CHAQUE exécution, avant toute lecture de dossier.
   if (!RecetteStore.active(await store.getSub(a.user_id), now)) return await arreter(store, a, due, MOTIF_ABONNEMENT), 'arretee';
   const mois = jourParis(now).slice(0, 7);

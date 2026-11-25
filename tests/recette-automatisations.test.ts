@@ -354,7 +354,7 @@ test('alertes d’échéance : 30, 7 et 1 jour(s), une seule fois par échéance
   assert.equal((await alertes()).length, 3);
 });
 
-test('bilan réel après dépôt : compteurs et situation, sans aucun texte ni nom de pièce', async () => {
+test('bilan réel après dépôt : compteurs et situation, sans nom de fichier ni extrait brut de pièce (la situation du tableau de bord y figure)', async () => {
   const m = await monde();
   await m.abonne('a');
   await m.dossier('d1', 'a');
@@ -415,4 +415,11 @@ test('routes : liste, création, états, exécutions ; réponses en français si
   assert.equal((await appel('a', 'GET', '/api/automatisations/../../users/a/executions'))!.status, 404);
   assert.equal((await appel('a', 'DELETE', `/api/automatisations/${auto.id}`))!.status, 404);
   assert.equal(((await appel('a', 'POST', `/api/automatisations/${auto.id}/annuler`))!.body as { automatisation: { statut: string } }).automatisation.statut, 'annulee');
+});
+
+test('suspension pendant le passage du planificateur : la fiche est relue, rien ne s’exécute', async () => {
+  const src = await import('node:fs').then((f) => f.readFileSync(new URL('../recette/server/automations.ts', import.meta.url), 'utf8'));
+  // Garde structurelle : l'exécution relit la fiche (lecture d'autorité) et s'arrête si elle n'est plus active ou a changé d'échéance.
+  assert.match(src, /getJson<Automation>\(cleFiche\(lue\.user_id, lue\.id\), \{ fresh: true \}\)/);
+  assert.match(src, /a\.status !== 'active' \|\| a\.next_run_at !== due\) return 'ignoree'/);
 });

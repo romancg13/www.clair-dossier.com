@@ -257,3 +257,32 @@ test('planificateur : refusé sans preuve, accepté par la clé dérivée du sec
   assert.equal((await call(`?k=${sha('w:cron')}`)).status, 200);
   assert.equal((await call('', { authorization: 'Bearer c' })).status, 200);
 });
+
+test('confirmation : un rappel devient une vraie échéance (une seule fois) ; une automatisation devient une fiche persistante exécutée par le planificateur', async () => {
+  const { e, store, user } = api(null);
+  const a = user(), b = user();
+  await a('POST', '/api/demo/demarrer', { scenario: 'a' });
+  await b('POST', '/api/demo/demarrer', { scenario: 'b' });
+  const dA = (await (await a('GET', '/api/dossiers')).json()).dossiers[0].id;
+  const rappel = { id: 'rappel:2099-03-12', kind: 'rappel', title: 'Rappel du 12/03/2099', detail: 'Vérifier le virement' };
+  const r1 = await a('POST', '/api/automatisations', { action: rappel, dossier: dA });
+  assert.equal(r1.status, 201);
+  assert.match((await r1.json()).message, /12\/03\/2099/);
+  assert.equal((await a('POST', '/api/automatisations', { action: rappel, dossier: dA })).status, 200, 'rejeu sans doublon');
+  assert.equal((await store.listDeadlines(dA)).filter((d) => d.title === 'Vérifier le virement').length, 1);
+  // B ne peut pas créer de rappel dans le dossier de A ; une date passée est refusée.
+  assert.equal((await b('POST', '/api/automatisations', { action: rappel, dossier: dA })).status, 404);
+  assert.equal((await a('POST', '/api/automatisations', { action: { ...rappel, id: 'rappel:2001-01-01' }, dossier: dA })).status, 400);
+  // Automatisation en langage naturel → fiche réelle, visible du seul titulaire.
+  const auto = await a('POST', '/api/automatisations', { texte: 'Chaque vendredi, analyse mes nouveaux documents, prépare un bilan et indique les actions nécessaires.' });
+  assert.equal(auto.status, 201);
+  const fiche = await auto.json();
+  assert.match(fiche.message, /Enregistré/);
+  assert.equal((await (await a('GET', '/api/automatisations')).json()).automatisations.length, 1);
+  assert.equal((await (await b('GET', '/api/automatisations')).json()).automatisations.length, 0);
+  // Le planificateur (navigateur fermé) répond et rend son rapport ; rien n'est dû avant vendredi.
+  const { sha } = await import('../recette/server/security.ts');
+  const tick = await (await handle(e, new Request(`https://recette.test/api/cron?k=${sha('w:cron')}`))).json();
+  assert.equal(tick.ok, true);
+  assert.ok(tick.automatisations && typeof tick.automatisations.executees === 'number');
+});

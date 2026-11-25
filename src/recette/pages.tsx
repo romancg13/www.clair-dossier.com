@@ -1,6 +1,6 @@
 // Pages du parcours privé de recette : connexion, inscription, compte, nouveau dossier,
 // offres et paiement simulé, boîte de recette, exceptions d'administration.
-import { useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Seo } from '../lib/seo';
 import { api, ApiError, ETAT_LABEL, frDate, type DossierListe } from './api';
@@ -158,7 +158,8 @@ export function RecetteCompte() {
         ))}
         {list && !list.length && <li className="text-[15px] text-slate-500">Aucun dossier pour le moment.</li>}
       </ul>
-      <details className="mt-10 rounded-2xl border border-cream-200 bg-white p-5">
+      <Automatisations />
+      <details className="mt-4 rounded-2xl border border-cream-200 bg-white p-5">
         <summary className="cursor-pointer text-[15px] font-medium text-navy-900">Suivi depuis ChatGPT ou Claude (lecture seule)</summary>
         <p className="mt-3 text-[14px] text-slate-500">Adresse du serveur : <code className="rounded bg-cream-100 px-1.5 py-0.5">{window.location.origin}/mcp</code>. Accès en lecture seule à l’état de vos dossiers, sans les pièces ; vous l’autorisez à la première connexion et pouvez le retirer ici.</p>
         <ul className="mt-3 space-y-2">
@@ -215,6 +216,46 @@ export function RecetteBoite() {
         {m && !m.length && <li className="text-[14px] text-slate-500">Aucun message.</li>}
       </ul>
     </Page>
+  );
+}
+
+/** Automatisations du compte : ce qui tourne, quand, et comment l'arrêter. Rien ne s'affiche s'il n'y en a aucune. */
+function Automatisations() {
+  type A = { id: string; titre: string; quand: string; statut: string; motif: string | null; prochaine_execution: string | null; derniere_execution: string | null; executions: number };
+  const [list, setList] = useState<A[]>([]);
+  const load = useCallback(() => void api<{ automatisations: A[] }>('/api/automatisations').then((r) => setList(r.automatisations)).catch(() => setList([])), []);
+  useEffect(load, [load]);
+  const act = async (id: string, op: string) => {
+    await api(`/api/automatisations/${id}/${op}`, { body: {} }).catch(() => undefined);
+    load();
+  };
+  const visibles = list.filter((a) => a.statut !== 'annulee');
+  if (!visibles.length) return null;
+  const LIB: Record<string, string> = { active: 'Active', suspendue: 'En pause', arretee: 'Arrêtée' };
+  return (
+    <section className="mt-10 rounded-2xl border border-cream-200 bg-white p-5">
+      <h2 className="text-[15px] font-medium text-navy-900">Ce que ClairDossier fait pour vous</h2>
+      <ul className="mt-3 divide-y divide-cream-200">
+        {visibles.map((a) => (
+          <li key={a.id} className="flex flex-wrap items-center justify-between gap-3 py-2.5 text-[14px]">
+            <span>
+              <strong className="font-semibold text-navy-900">{a.titre}</strong> — {a.quand}
+              <span className="block text-[12.5px] text-slate-500">
+                {LIB[a.statut] ?? a.statut}
+                {a.motif ? ` : ${a.motif}` : ''}
+                {a.derniere_execution ? ` · dernière exécution le ${frDate(a.derniere_execution)}` : ' · pas encore exécutée'}
+                {a.statut === 'active' && a.prochaine_execution ? ` · prochaine le ${frDate(a.prochaine_execution)}` : ''}
+              </span>
+            </span>
+            <span className="flex gap-2">
+              {a.statut === 'active' && <Secondary onClick={() => void act(a.id, 'suspendre')}>Mettre en pause</Secondary>}
+              {a.statut === 'suspendue' && <Secondary onClick={() => void act(a.id, 'reprendre')}>Reprendre</Secondary>}
+              <Secondary onClick={() => void act(a.id, 'annuler')}>Annuler</Secondary>
+            </span>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 

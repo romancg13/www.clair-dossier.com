@@ -82,7 +82,7 @@ writeFileSync(
         { src: '^/compte/dossier/.*$', dest: '/compte/index.html' },
         { src: '^/(.*)$', dest: existsSync(join(st, 'spa-shell.html')) ? '/spa-shell.html' : '/index.html' },
       ],
-      crons: [{ path: cronPath, schedule: '17 6 * * *' }],
+      crons: [{ path: cronPath, schedule: '5 7 * * *' }],
     },
     null,
     2,
