@@ -2,6 +2,7 @@
 // Les secrets serveur (signature des liens, jeton d'exécuteur) sont GÉNÉRÉS côté
 // serveur au premier usage et conservés dans le stockage privé : ils ne transitent
 // ni par le dépôt, ni par une variable saisie à la main, ni par un journal.
+import { coupeCircuit } from './pilotage.ts';
 import { DEFAULT_MODELS, Finops } from './assistant.ts';
 import Anthropic from '@anthropic-ai/sdk';
 import { createAnthropicProvider, type ModelProvider } from '../../supabase/functions/_shared/engine/anthropic.ts';
@@ -94,7 +95,8 @@ export async function apiEnv(siteUrl: string, waitUntil: (p: Promise<unknown>) =
     },
     deps: async () =>
       engineDeps(store, {
-        ai: await aiProvider(),
+        // Coupe-circuit de l'exploitant : lecture par les règles, aucun appel de modèle.
+        ai: (await coupeCircuit(store)).ia ? null : await aiProvider(),
         siteUrl,
         demo: true,
         config: { budgetCentsPerUserMonth: budget('RECETTE_BUDGET_COMPTE_CENTIMES', process.env.RECETTE_AI === 'direct' ? 40 : 150), budgetCentsGlobalMonth: budget('RECETTE_BUDGET_GLOBAL_CENTIMES', process.env.RECETTE_AI === 'direct' ? 100 : 800), budgetCentsPerLot: budget('RECETTE_BUDGET_LOT_CENTIMES', 80), paused: process.env.RECETTE_PAUSE === '1' },

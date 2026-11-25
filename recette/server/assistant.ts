@@ -144,6 +144,13 @@ export class Finops {
     await fix(g);
     if (!o.globalOnly) await fix(u);
   }
+  /** Part du plafond global consommée (dépensé + réservé) : une seule lecture, pour les alertes à 70, 90 et 100 %. */
+  async palier(): Promise<{ mois: string; ratio: number; seuil: 'ok' | '70' | '90' | '100' }> {
+    const m = month(this.now());
+    const g = (await this.kv.getJson<Pot>(`finops/${m}/_global.json`))?.value ?? { reserved: 0, spent: 0 };
+    const ratio = (g.spent + g.reserved) / (this.budget.globalUsd * MICRO);
+    return { mois: m, ratio, seuil: ratio >= 1 ? '100' : ratio >= 0.9 ? '90' : ratio >= 0.7 ? '70' : 'ok' };
+  }
   async record(e: LedgerEntry): Promise<void> {
     await this.kv.putJson(`finops/journal/${month(this.now())}/${e.at.replace(/[:.]/g, '-')}-${crypto.randomUUID().slice(0, 8)}.json`, e).catch(() => undefined);
   }
@@ -199,7 +206,7 @@ const REPLI = {
 } as const;
 
 /** Répond à une demande. Droits déjà vérifiés par la route (ctx.rights en est le reflet). */
-export async function answer(deps: AssistantDeps, userId: string, message: string, ctx: Context, history: { from: 'vous' | 'ia'; text: string }[] = []): Promise<AssistantReply> {
+export async function answer(deps: AssistantDeps, userId: string, message: string, ctx: Context, history: { from: 'vous' | 'ia'; text: string }[] = [], opts: { preferences?: string[] } = {}): Promise<AssistantReply> {
   const regles = (why: keyof typeof REPLI): AssistantReply => ({ ...runAssistant(message, ctx), mode: 'regles', notice: REPLI[why] });
   // Refus et cas sans modèle : aucun appel payant.
   if (!ctx.rights.owner || !ctx.rights.assistant || isForbiddenRequest(message) || !message.trim()) return regles('absent');
@@ -211,7 +218,8 @@ export async function answer(deps: AssistantDeps, userId: string, message: strin
   const out: AssistantReply = { text: '', steps: [], sources: [], files: [], confirm: [], mode: 'modele', model };
   const messages: Anthropic.MessageParam[] = [
     ...history.slice(-6).map((h): Anthropic.MessageParam => ({ role: h.from === 'vous' ? 'user' : 'assistant', content: h.text.slice(0, 1500) })),
-    { role: 'user', content: `Dossier : « ${ctx.title} ». Date de référence : ${ctx.today}.\n\n${message}` },
+    // Préférences enregistrées par le titulaire lui-même (ton, signature, habitudes) : jamais issues d'une pièce.
+    { role: 'user', content: `Dossier : « ${ctx.title} ». Date de référence : ${ctx.today}.${opts.preferences?.length ? `\nMes préférences de travail : ${opts.preferences.map((x) => `« ${x} »`).join(' ; ')}.` : ''}\n\n${message}` },
   ];
   let calls = 0;
   for (let turn = 0; turn < 4; turn++) {
@@ -297,4 +305,31 @@ export async function remember(kv: Kv, userId: string, dossierId: string, turns:
 }
 export async function forget(kv: Kv, userId: string, dossierId: string): Promise<void> {
   await kv.delete(hkey(userId, dossierId));
+}
+
+/* ── Mémoire professionnelle privée : préférences écrites par le titulaire, consultables et supprimables ── */
+
+export type Preference = { id: string; text: string; at: string };
+export const MAX_PREFERENCES = 12;
+const prefKey = (userId: string) => `memoire/${userId}.json`;
+export async function preferences(kv: Kv, userId: string): Promise<Preference[]> {
+  return (await kv.getJson<{ items: Preference[] }>(prefKey(userId)))?.value.items ?? [];
+}
+/** Ajoute une préférence (texte court, sans caractère de contrôle). null = texte vide ou mémoire pleine. */
+export async function addPreference(kv: Kv, userId: string, raw: string, now: Date): Promise<Preference | null> {
+  const text = raw.replace(/[\u0000-\u001f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 200);
+  if (!text) return null;
+  let made: Preference | null = null;
+  await update<{ items: Preference[] }>(kv, prefKey(userId), (cur) => {
+    const items = cur?.items ?? [];
+    const same = items.find((i) => i.text.toLowerCase() === text.toLowerCase());
+    if (same) return (made = same), null;
+    if (items.length >= MAX_PREFERENCES) return null;
+    made = { id: crypto.randomUUID().slice(0, 8), text, at: now.toISOString() };
+    return { items: [...items, made] };
+  });
+  return made;
+}
+export async function removePreference(kv: Kv, userId: string, id: string): Promise<void> {
+  await update<{ items: Preference[] }>(kv, prefKey(userId), (cur) => (cur ? { items: cur.items.filter((i) => i.id !== id) } : null));
 }

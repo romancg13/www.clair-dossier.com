@@ -15,7 +15,8 @@ import { RecetteStore, jobEnCours, type DossierRec, type Subscription, type User
 import { sha256 } from './engine-deps.ts';
 import { handleMcp, handleOAuth, listConnections } from './mcp.ts';
 import { handleAutomations, onPieceRecue, tickAutomations } from './automations.ts';
-import { answer, forget, history, remember, viewToContext, type AssistantDeps } from './assistant.ts';
+import { addPreference, answer, forget, history, preferences, remember, removePreference, viewToContext, type AssistantDeps } from './assistant.ts';
+import { alerteBudget, centreActions, coupeCircuit, noterPassage, passages, reglerCoupeCircuit } from './pilotage.ts';
 import { DOMAINE_RECETTE, seedDemo } from './seed.ts';
 
 export interface ApiEnv {
@@ -184,10 +185,13 @@ export async function handle(env: ApiEnv, req: Request): Promise<Response> {
     if (!parSecret && !parCle) return err(401, 'non autorisé');
     await reconcile(env);
     // Automatisations dues (navigateur fermé) : exécution bornée, idempotente, équitable entre comptes.
-    const automatisations = await tickAutomations(store).catch(async (e) => {
+    const coupe = await coupeCircuit(store);
+    const automatisations = coupe.automatisations ? null : await tickAutomations(store).catch(async (e) => {
       await store.alert('AUTOMATISATIONS_INTERROMPUES', { erreur: String(e instanceof Error ? e.message : e).slice(0, 200) });
       return null;
     });
+    // Preuve de passage (navigateur fermé) : « planificateur » = appel de l'hébergeur, « manuel » = tout autre appel autorisé.
+    await noterPassage(store, { executees: automatisations ? automatisations.executees : null, source: (req.headers.get('user-agent') ?? '').startsWith('vercel-cron') ? 'planificateur' : 'manuel' });
     env.waitUntil(runNow(env));
     return json({ ok: true, automatisations });
   }
@@ -435,7 +439,10 @@ export async function handle(env: ApiEnv, req: Request): Promise<Response> {
             ? viewToContext(v.view as RenduView, { rights, available })
             : { title: d.title, today: now.toISOString().slice(0, 10), analysis: null, pieces: pieces.map((x) => ({ id: x.id, file_name: x.file_name })), attention: null, available, processing: null, rights };
           const past = await history(store.kv, user.id, d.id);
-          const r = await answer(env.assistant, user.id, message, ctx, past);
+          // Coupe-circuit de l'exploitant : réponse par les règles, sans appel de modèle.
+          const deps = env.assistant.client && (await coupeCircuit(store)).ia ? { ...env.assistant, client: null } : env.assistant;
+          const r = await answer(deps, user.id, message, ctx, past, { preferences: (await preferences(store.kv, user.id)).map((x) => x.text) });
+          if (r.mode === 'modele') env.waitUntil(env.assistant.finops.palier().then((p) => alerteBudget(store, p)).then(() => undefined, () => undefined));
           await remember(store.kv, user.id, d.id, [{ from: 'vous', text: message, at: now.toISOString() }, { from: 'ia', text: r.text.slice(0, 4000), at: store.now().toISOString() }]);
           return json({ reponse: r });
         } finally {
@@ -616,6 +623,24 @@ export async function handle(env: ApiEnv, req: Request): Promise<Response> {
     return new Response(new Uint8Array(bytes), { headers: { "content-type": type, 'content-disposition': `${inline ? 'inline' : 'attachment'}; filename*=UTF-8''${encodeURIComponent(p.name)}`, 'cache-control': 'private, no-store', 'x-content-type-options': 'nosniff', 'x-robots-tag': 'noindex' } });
   }
 
+  /* ── Centre d'actions : trois priorités, ce qui a changé, ce qui a été fait ; preuve de passage du planificateur ── */
+  if (path === '/api/actions' && m === 'GET') return json(await centreActions(store, user.id));
+  if (path === '/api/planificateur' && m === 'GET') {
+    const p = await passages(store);
+    return json({ dernier_passage: p[0] ?? null, dernier_passage_planifie: p.find((x) => x.source === 'planificateur') ?? null, suspendu: (await coupeCircuit(store)).automatisations });
+  }
+  /* ── Mémoire professionnelle : préférences du titulaire, consultables et supprimables ── */
+  if (path === '/api/memoire' && m === 'GET') return json({ preferences: await preferences(store.kv, user.id) });
+  if (path === '/api/memoire' && m === 'POST') {
+    const b = await body<{ texte?: string }>(req);
+    const p = await addPreference(store.kv, user.id, typeof b.texte === 'string' ? b.texte : '', now);
+    return p ? json({ preference: p }, 201) : err(400, 'Préférence vide, ou mémoire pleine (12 au plus) : supprimez-en une.');
+  }
+  const mp = /^\/api\/memoire\/([0-9a-f]{8})$/.exec(path);
+  if (mp && m === 'DELETE') {
+    await removePreference(store.kv, user.id, mp[1]);
+    return json({ ok: true });
+  }
   if (path === '/api/boite' && m === 'GET') return json({ messages: await store.mailbox(user.id) });
   if (path === '/api/connexions' && m === 'GET') return json({ connexions: await listConnections(store, user.id) });
   const cx = /^\/api\/connexions\/(cd_[A-Za-z0-9_-]+)$/.exec(path);
@@ -628,6 +653,11 @@ export async function handle(env: ApiEnv, req: Request): Promise<Response> {
   if (path === '/api/admin/ia' && m === 'GET') {
     if (user.role !== 'admin') return err(404, 'introuvable');
     return json({ couts: env.assistant ? await env.assistant.finops.overview() : null, sante: env.aiHealth ? await env.aiHealth() : { configure: false }, modeles: env.assistant?.models ?? null });
+  }
+  if (path === '/api/admin/coupe-circuit') {
+    if (user.role !== 'admin') return err(404, 'introuvable');
+    if (m === 'GET') return json(await coupeCircuit(store));
+    if (m === 'POST') return json(await reglerCoupeCircuit(store, await body<Record<string, unknown>>(req)));
   }
   /* ── Exceptions (administration de la recette : métadonnées uniquement) ── */
   if (path === '/api/admin/exceptions' && m === 'GET') {

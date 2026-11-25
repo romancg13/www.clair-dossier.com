@@ -6,6 +6,7 @@ import { Seo } from '../lib/seo';
 import { api, ApiError, ETAT_LABEL, frDate, type DossierListe } from './api';
 import { useMoi } from './useMoi';
 import { Alert, Card, Chip, Field, Kicker, Page, Primary, Secondary, inputCls } from './ui';
+import { CentreActions, DernierPassage, Preferences } from './Pilotage';
 
 const safeNext = (n: string | null) => (n && n.startsWith('/') && !n.startsWith('//') ? n : null);
 
@@ -147,6 +148,7 @@ export function RecetteCompte() {
         {ab?.active ? <Primary to="/dossier/nouveau">Nouveau dossier</Primary> : <Primary to="/tarifs">Choisir une formule</Primary>}
         <span className="text-[13.5px] text-slate-500">{ab?.active ? `Formule ${ab.plan_name}${ab.period_end ? ` · jusqu’au ${frDate(ab.period_end)}` : ''}${ab.cancel_at_period_end || ab.status === 'canceled' ? ' (résiliée à terme)' : ''}` : 'Aucun abonnement actif : le dépôt de pièces est réservé aux abonnés.'}</span>
       </div>
+      <CentreActions />
       <ul className="mt-6 grid gap-3">
         {list?.map((d) => (
           <li key={d.id}>
@@ -159,6 +161,7 @@ export function RecetteCompte() {
         {list && !list.length && <li className="text-[15px] text-slate-500">Aucun dossier pour le moment.</li>}
       </ul>
       <Automatisations />
+      <Preferences />
       <details className="mt-4 rounded-2xl border border-cream-200 bg-white p-5">
         <summary className="cursor-pointer text-[15px] font-medium text-navy-900">Suivi depuis ChatGPT ou Claude (lecture seule)</summary>
         <p className="mt-3 text-[14px] text-slate-500">Adresse du serveur : <code className="rounded bg-cream-100 px-1.5 py-0.5">{window.location.origin}/mcp</code>. Accès en lecture seule à l’état de vos dossiers, sans les pièces ; vous l’autorisez à la première connexion et pouvez le retirer ici.</p>
@@ -255,6 +258,7 @@ function Automatisations() {
           </li>
         ))}
       </ul>
+      <DernierPassage />
     </section>
   );
 }
