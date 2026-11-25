@@ -7,6 +7,7 @@ import { preparePiece, type PreparedPiece } from '../supabase/functions/_shared/
 import { consolidateByRules, extractByRules } from '../supabase/functions/_shared/engine/rules.ts';
 import { findAmounts } from '../supabase/functions/_shared/engine/text-rules.ts';
 import { buildChronology } from '../supabase/functions/_shared/analysis-model.ts';
+import { buildView } from '../supabase/functions/_shared/rendus/view.ts';
 import type { ExtractionOutput } from '../supabase/functions/_shared/engine/schemas.ts';
 
 const TODAY = '2026-11-18';
@@ -223,4 +224,115 @@ test('C22 (témoin) — un vrai écart de date reste signalé', () => {
   const a = consolider([{ id: 'courrier', data: extractByRules(pdf(COURRIER_CITE), 'courrier.pdf') }, { id: 'bail', data: bail }]);
   assert.ok(a.contradictions.some((x) => x.kind === 'date' && /5 mars 2021.*3 mars 2021/.test(x.text)));
   assert.equal(a.primary_action.label, 'Vérifier la date');
+});
+
+/* ── Contre-revue (2e passage) ───────────────────────────────────────────── */
+
+// Régression de C01 : un tiret ne relie deux dates en plage que pour une paire isolée,
+// dans une phrase qui annonce une période. Une liste d'échéances garde toutes ses dates.
+test('C01 (contre-revue) — une liste d’échéances séparées par des tirets garde ses dates', () => {
+  const x = extractByRules(pdf(courrier('Échéancier – sommes à payer : 05/01/2027 - 05/02/2027 - 05/03/2027.')), 'courrier.pdf');
+  assert.deepEqual(datesOf(x, 'deadline'), ['2027-01-05', '2027-02-05', '2027-03-05']);
+  const a = consolider([{ id: 'courrier', data: x }]);
+  assert.equal(a.primary_action.label, 'Préparer votre réponse');
+  assert.equal(a.primary_action.due_date, '2027-01-05');
+  const y = extractByRules(pdf(courrier('Dates à payer : 05/01/2027 - 05/04/2027.')), 'courrier.pdf');
+  assert.deepEqual(datesOf(y, 'deadline'), ['2027-01-05', '2027-04-05']);
+  const z = extractByRules(pdf(courrier('Échéances de paiement : 01/01/2027 – 01/04/2027 – 01/07/2027.')), 'courrier.pdf');
+  assert.deepEqual(datesOf(z).filter((d) => d !== '2026-10-12'), ['2027-01-01', '2027-04-01', '2027-07-01']);
+  // Témoins : une période annoncée reste une plage.
+  for (const s of ['Période : 01/10/2026 – 31/12/2026', 'Exercice 2025 : 01/01/2025 - 31/12/2025.']) {
+    assert.deepEqual(datesOf(extractByRules(pdf(courrier(s)), 'courrier.pdf')), ['2026-10-12'], s);
+  }
+});
+
+test('C10 (contre-revue) — crédit du client cité après le montant ou suivi d’un mot de contexte', () => {
+  for (const s of [
+    'La régularisation des charges 2025 fait apparaître un solde de 270,00 € en votre faveur.',
+    'La régularisation des charges 2025 fait apparaître un solde de 270,00 € en faveur du locataire.',
+    'Régularisation des charges 2025 : 270,00 € en votre faveur.',
+    'Solde en votre faveur après régularisation : 270,00 €.',
+    'Solde créditeur après régularisation : 270,00 €.',
+    'Trop-perçu au titre de la régularisation des charges 2025 : 270,00 €.',
+    'La régularisation fait apparaître un trop-perçu de provisions de 270,00 €.',
+    'La régularisation des charges 2025 fait apparaître un solde en faveur de votre société de 270,00 €.',
+  ]) {
+    const x = extractByRules(pdf(courrier(s)), 'courrier.pdf');
+    assert.deepEqual(x.amounts.map((m) => [m.amount, m.kind]), [[270, 'other']], s);
+    const a = consolider([{ id: 'courrier', data: x }]);
+    assert.doesNotMatch(a.situation, /réclame/, s);
+    assert.ok(!a.key_facts.some((f) => /Somme réclamée/.test(f.text)), s);
+  }
+});
+
+test('C10 (contre-revue, témoin) — un crédit cité plus loin dans la phrase ne change pas une somme due', () => {
+  const kinds = (s: string) => extractByRules(pdf(courrier(s)), 'c.pdf').amounts.map((a) => [a.amount, a.kind]);
+  assert.deepEqual(kinds('Nous vous réclamons 3 480,00 € ; le trop-perçu de 2024 avait été porté en votre faveur.'), [[3480, 'claimed']]);
+  assert.deepEqual(kinds('La régularisation des charges 2025 : 3 480,00 €.'), [[3480, 'claimed']]);
+  assert.deepEqual(kinds('Trop-perçu 2024 de 120,00 € ; régularisation des charges 2025 : 3 480,00 €.'), [[120, 'other'], [3480, 'claimed']]);
+});
+
+const COURRIEL_VERS = (to: string, phrase: string) => COURRIEL_TITULAIRE(phrase).replace(/^To: .*$/m, `To: ${to}`);
+const COURRIER_15_JANVIER = courrier('Nous vous remercions de bien vouloir nous faire parvenir votre règlement ou vos observations. Une réponse de votre part est attendue avant le 15 janvier 2027.');
+
+test('C21 (contre-revue) — demande au tiers : connecteur en tête de phrase, destinataire nommé ou simple adresse', async () => {
+  const c = extractByRules(pdf(COURRIER_15_JANVIER), 'courrier.pdf');
+  for (const [to, phrase] of [
+    ['Cabinet Verdier Gestion <gestion@verdier-gestion.example>', 'Par conséquent, je vous demande les justificatifs avant le 30 novembre 2026.'],
+    ['Hélène Verdier <h.verdier@verdier-gestion.example>', "Je conteste l'écart et vous demande les justificatifs de la taxe foncière avant le 30 novembre 2026."],
+    ['gestion@verdier-gestion.example', "Je conteste l'écart et vous demande les justificatifs de la taxe foncière avant le 30 novembre 2026."],
+    ['Cabinet Verdier Gestion <gestion@verdier-gestion.example>', 'Je vous saurais gré de me transmettre les justificatifs avant le 30 novembre 2026.'],
+  ]) {
+    const m = extractByRules(await eml(COURRIEL_VERS(to, phrase)), 'courriel.eml');
+    const a = consolider([{ id: 'courrier', data: c }, { id: 'courriel', data: m }]);
+    const cas = `${to} / ${phrase}`;
+    assert.match(a.situation, /réponse attendue avant le 15 janvier 2027/i, cas);
+    assert.doesNotMatch(a.situation, /30 novembre 2026/, cas);
+    assert.equal(a.primary_action.due_date, '2027-01-15', cas);
+    assert.equal(a.primary_action.owner, 'client', cas);
+    assert.equal(a.deadlines.find((d) => d.date === '2026-11-30')?.owner, 'tiers', cas);
+  }
+});
+
+test('C21 (contre-revue, témoin) — une gestionnaire qui écrit au titulaire lui fixe bien son échéance', async () => {
+  const raw = `From: Hélène Verdier <h.verdier@verdier-gestion.example>
+To: Camille Roche <camille.roche@atelier-lumen.example>
+Date: Tue, 20 Oct 2026 09:42:00 +0200
+Subject: Charges 2025
+Content-Type: text/plain; charset=UTF-8
+
+Madame,
+
+Je vous demande de régler le solde avant le 30 novembre 2026.
+
+Cordialement,
+Hélène Verdier
+`;
+  const c = extractByRules(pdf(COURRIER_15_JANVIER), 'courrier.pdf');
+  const a = consolider([{ id: 'courrier', data: c }, { id: 'courriel', data: extractByRules(await eml(raw), 'courriel.eml') }]);
+  assert.equal(a.deadlines.find((d) => d.date === '2026-11-30')?.owner, 'client');
+  assert.equal(a.primary_action.due_date, '2026-11-30');
+});
+
+test('C21 (contre-revue) — tableau de bord : la « prochaine date » n’est pas une date fixée à un tiers', async () => {
+  const c = extractByRules(pdf(COURRIER_15_JANVIER), 'courrier.pdf');
+  const m = extractByRules(await eml(COURRIEL_TITULAIRE("Je conteste l'écart et vous demande les justificatifs de la taxe foncière avant le 30 novembre 2026.")), 'courriel.eml');
+  const a = consolider([{ id: 'courrier', data: c }, { id: 'courriel', data: m }]);
+  const found = <T extends { evidence: object[] }>(xs: T[]) => xs.map((x) => ({ ...x, evidence: x.evidence.map((e) => ({ ...e, status: 'found' as const })) }));
+  const v = buildView({
+    title: 'Dossier fictif', revision: 1, generatedAt: new Date('2026-11-18T10:00:00Z'), provider: 'regles',
+    analysis: { ...a, deadlines: found(a.deadlines), events: [] } as never,
+    coverage: { total: 2, extracted: 2, unsupported: 0, failed: 0, pending: 0, complete: true },
+    pieces: [], overrides: [], deadlineRows: [],
+  });
+  assert.equal(v.tableau.next_date?.date, '2027-01-15');
+  assert.ok(v.echeances.confirmed.some((d) => d.date === '2026-11-30' && d.owner === 'Un tiers'), 'la date du tiers reste listée dans les échéances');
+});
+
+test('C09 (contre-revue) — une référence « 2026-001 » n’est pas lue comme des milliers', () => {
+  const v = (s: string) => findAmounts(s).map((a) => a.value);
+  assert.deepEqual(v('Facture 2026-001 480,00 €'), [480]);
+  assert.deepEqual(v('Réf. 26/015 250,00 €'), [250]);
+  assert.deepEqual(v('Avoir : -270,00 €'), [270], 'le signe moins d’un avoir reste lisible');
+  assert.deepEqual(v('Total 3 480,00 €'), [3480]);
 });
