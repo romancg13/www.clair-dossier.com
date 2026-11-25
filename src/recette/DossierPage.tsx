@@ -6,6 +6,8 @@ import { Link, useParams } from 'react-router-dom';
 import { Seo } from '../lib/seo';
 import { api, ApiError, ETAT_LABEL, frDate, type DossierDetail, type RenduView } from './api';
 import { Alert, Card, Chip, Kicker, Page, Primary, Secondary, inputCls } from './ui';
+import { IntelligenceLauncher } from '../components/intelligence/IntelligencePanel';
+import type { PendingAction, Reply } from '../../supabase/functions/_shared/intelligence/core';
 
 type Section = 'resume' | 'chronologie' | 'dates' | 'echeances' | 'relances' | 'dashboard';
 const EXEMPLES = {
@@ -46,6 +48,12 @@ export function DossierPage() {
   useEffect(() => {
     void load();
   }, [load]);
+  // Historique privé de l'assistant (titulaire uniquement) ; absent si l'assistant n'est pas servi.
+  const [iaHist, setIaHist] = useState<{ from: 'vous' | 'ia'; text: string }[] | null>(null);
+  useEffect(() => {
+    if (!id) return;
+    api<{ historique: { from: 'vous' | 'ia'; text: string }[] }>(`/api/dossiers/${id}/assistant`).then((r) => setIaHist(r.historique)).catch(() => setIaHist(null));
+  }, [id]);
   // Lecture en cours : actualisation automatique (le traitement continue même si la page est fermée).
   useEffect(() => {
     if (!d || d.statut.etat !== 'en_cours') return;
@@ -111,6 +119,16 @@ export function DossierPage() {
   async function exemples(kind: keyof typeof EXEMPLES) {
     const files = await Promise.all(EXEMPLES[kind].map(async (n) => new File([await (await fetch(`/recette/pieces/${encodeURIComponent(n)}`)).blob()], n)));
     await deposer(files);
+  }
+
+  // Action préparée par l'assistant : enregistrée seulement après confirmation explicite, côté serveur.
+  async function confirmerAction(a: PendingAction): Promise<string> {
+    try {
+      const r = await api<{ message: string }>('/api/automatisations', { body: { action: a, dossier: id } });
+      return r.message;
+    } catch (e) {
+      return e instanceof ApiError ? e.message : 'L’enregistrement a échoué : rien n’a été modifié.';
+    }
   }
 
   async function ouvrir(categorie: string, nom: string, telecharger = false) {
@@ -189,7 +207,23 @@ export function DossierPage() {
       <div ref={resultsRef} className="scroll-mt-24" />
       <div className="mt-10 flex flex-wrap items-end justify-between gap-3">
         <h2 className="font-display text-[26px] text-navy-900">Vos résultats</h2>
-        {disponibles.length > 0 && <Secondary href={`/api/dossiers/${id}/archive`} download>Tout télécharger (.zip)</Secondary>}
+        <div className="flex flex-wrap items-center gap-2">
+          {d.abonnement.active && (
+            <IntelligenceLauncher
+              key={iaHist ? 'h' : 'v'}
+              initial={iaHist ?? undefined}
+              transport={async (message) => (await api<{ reponse: Reply & { notice?: string } }>(`/api/dossiers/${id}/assistant`, { body: { message } })).reponse}
+              suggestions={v ? ['Résume ce dossier.', 'Prépare mes prochaines démarches.', 'Quelles sont mes échéances ?', 'Chaque vendredi, prépare le bilan de mes dossiers.'] : ['Où en est mon dossier ?']}
+              onFile={(cle) => {
+                const r = d.rendus.find((x) => x.cle === cle);
+                const f = r?.fichiers.find((x) => x.nom.endsWith('.pdf')) ?? r?.fichiers[0];
+                if (f) void ouvrir(cle, f.nom);
+              }}
+              onConfirm={confirmerAction}
+            />
+          )}
+          {disponibles.length > 0 && <Secondary href={`/api/dossiers/${id}/archive`} download>Tout télécharger (.zip)</Secondary>}
+        </div>
       </div>
       {!v || !disponibles.length ? (
         <p className="mt-3 text-[15px] text-slate-500">{etat === 'en_cours' ? 'En préparation : ils apparaîtront ici dès la fin de la lecture.' : 'Aucun résultat pour le moment.'}</p>

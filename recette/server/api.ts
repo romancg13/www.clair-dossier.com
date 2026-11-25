@@ -14,6 +14,7 @@ import { update } from './kv.ts';
 import { RecetteStore, jobEnCours, type DossierRec, type Subscription, type UserRec } from './store.ts';
 import { sha256 } from './engine-deps.ts';
 import { handleMcp, handleOAuth, listConnections } from './mcp.ts';
+import { answer, forget, history, remember, viewToContext, type AssistantDeps } from './assistant.ts';
 import { DOMAINE_RECETTE, seedDemo } from './seed.ts';
 
 export interface ApiEnv {
@@ -29,6 +30,10 @@ export interface ApiEnv {
   /** Relance une invocation de l'exécuteur (chaînage au-delà de la durée d'une fonction). */
   kickWorker: () => Promise<void>;
   aiLabel: string;
+  /** ClairDossier Intelligence : modèle (ou null = règles), carte des modèles, registre des coûts. Absent : assistant non servi. */
+  assistant?: AssistantDeps;
+  /** Contrôle privé du fournisseur IA (authentification, modèles accessibles) : aucun jeton consommé. */
+  aiHealth?: () => Promise<unknown>;
 }
 
 const MAX_UPLOAD = 4 * 1024 * 1024;
@@ -171,7 +176,11 @@ export async function handle(env: ApiEnv, req: Request): Promise<Response> {
     return json({ accepte: true }, 202);
   }
   if (path === '/api/cron') {
-    if (!env.cronSecret || !safeEqual(req.headers.get('authorization') ?? '', `Bearer ${env.cronSecret}`)) return err(401, 'non autorisé');
+    // Planificateur : secret CRON_SECRET (en-tête), ou clé dérivée du jeton d'exécuteur généré côté serveur
+    // (inscrite dans la configuration de déploiement au build, jamais dans le dépôt ni dans un journal).
+    const parSecret = Boolean(env.cronSecret) && safeEqual(req.headers.get('authorization') ?? '', `Bearer ${env.cronSecret}`);
+    const parCle = Boolean(env.workerToken) && safeEqual(url.searchParams.get('k') ?? '', sha(`${env.workerToken}:cron`));
+    if (!parSecret && !parCle) return err(401, 'non autorisé');
     await reconcile(env);
     env.waitUntil(runNow(env));
     return json({ ok: true });
@@ -361,6 +370,42 @@ export async function handle(env: ApiEnv, req: Request): Promise<Response> {
       env.waitUntil(runNow(env));
       return json({ lot, pieces: added }, 201);
     }
+    // ── ClairDossier Intelligence : conversation privée du titulaire sur SON dossier ──
+    if (sub.startsWith('/assistant')) {
+      // Titulaire uniquement (même un administrateur ne converse pas à sa place) ; assistant servi seulement si configuré.
+      if (d.user_id !== user.id || !env.assistant) return err(404, 'Dossier introuvable.');
+      if (sub === '/assistant' && m === 'GET') return json({ historique: await history(store.kv, user.id, d.id), actif: ent.active, mode: env.assistant.client ? 'modele' : 'regles' });
+      if (sub === '/assistant/effacer' && m === 'POST') {
+        await forget(store.kv, user.id, d.id);
+        return json({ ok: true });
+      }
+      if (sub === '/assistant' && m === 'POST') {
+        if (!ent.active) return err(402, 'Un abonnement actif est nécessaire pour utiliser l’assistant.', { redirect: '/tarifs' });
+        const b = await body<{ message?: string }>(req);
+        const message = typeof b.message === 'string' ? b.message.trim().slice(0, 2000) : '';
+        if (!message) return err(400, 'Message vide.');
+        if (!(await consume(store, `limites/ia-msg/${user.id}.json`, 40, 60 * MINUTE))) return err(429, 'Trop de demandes en peu de temps : réessayez dans quelques minutes.');
+        // Une demande à la fois par compte (verrou court) : pas de dépenses simultanées.
+        if (!(await consume(store, `limites/ia-verrou/${user.id}.json`, 1, 50_000))) return err(429, 'Une demande est déjà en cours : patientez un instant.');
+        try {
+          const v = await store.getView(d.id);
+          const published = await store.getPublished(d.id);
+          const available = DELIVERABLE_CATALOG.filter((c) => published[c.key]?.status === 'approved' && published[c.key]!.files.length).map((c) => c.key);
+          const pieces = (await store.listPieces(d.id)).filter((p) => !p.deleted_at);
+          const rights = { owner: true, assistant: true, automations: true };
+          const ctx = v && v.status === 'approved'
+            ? viewToContext(v.view as RenduView, { rights, available })
+            : { title: d.title, today: now.toISOString().slice(0, 10), analysis: null, pieces: pieces.map((x) => ({ id: x.id, file_name: x.file_name })), attention: null, available, processing: null, rights };
+          const past = await history(store.kv, user.id, d.id);
+          const r = await answer(env.assistant, user.id, message, ctx, past);
+          await remember(store.kv, user.id, d.id, [{ from: 'vous', text: message, at: now.toISOString() }, { from: 'ia', text: r.text.slice(0, 4000), at: store.now().toISOString() }]);
+          return json({ reponse: r });
+        } finally {
+          await store.kv.delete(`limites/ia-verrou/${user.id}.json`);
+        }
+      }
+      return err(404, 'introuvable');
+    }
     // ── Dépôt direct (gros fichiers) : autorisation courte, puis confirmation idempotente ──
     if (sub === '/pieces/autoriser' && m === 'POST') {
       // Droits vérifiés AVANT toute autorisation : rien n'est stocké en cas de refus.
@@ -540,6 +585,11 @@ export async function handle(env: ApiEnv, req: Request): Promise<Response> {
     return json({ ok: true });
   }
 
+  /* ── Supervision des coûts IA et santé du fournisseur (administration : aucun contenu client) ── */
+  if (path === '/api/admin/ia' && m === 'GET') {
+    if (user.role !== 'admin') return err(404, 'introuvable');
+    return json({ couts: env.assistant ? await env.assistant.finops.overview() : null, sante: env.aiHealth ? await env.aiHealth() : { configure: false }, modeles: env.assistant?.models ?? null });
+  }
   /* ── Exceptions (administration de la recette : métadonnées uniquement) ── */
   if (path === '/api/admin/exceptions' && m === 'GET') {
     if (user.role !== 'admin') return err(404, 'introuvable');

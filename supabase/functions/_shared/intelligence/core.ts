@@ -445,6 +445,47 @@ export function runAssistant(message: string, ctx: Context, planner: Planner = p
   return out;
 }
 
+/** Description des outils pour un modèle (tool-use) : mêmes outils, même registre fermé. */
+const TOOL_HELP: Record<ToolName, string> = {
+  resumer: 'Résumé du dossier et faits établis par les pièces, avec leurs sources.',
+  prochaines_demarches: 'Les priorités du dossier, dans l’ordre, avec l’action concrète attendue.',
+  echeances: 'Échéances à venir et dates passées, à la date de référence du dossier.',
+  rechercher: 'Recherche d’une information (nom, montant, date, mot) dans l’analyse du dossier. requete = ce qu’il faut retrouver.',
+  comparer: 'Compare deux pièces nommées dans requete, ou liste les écarts relevés entre pièces.',
+  preparer_relance: 'Brouillon de relance ou de courrier. Jamais envoyé.',
+  generer_document: 'Met à disposition un ou plusieurs des six documents du dossier. requete = le(s) document(s) voulu(s).',
+  creer_rappel: 'Prépare un rappel (à confirmer par le client). requete = la date et l’objet.',
+  automatiser: 'Prépare une automatisation récurrente (à confirmer par le client). requete = la demande en langage naturel.',
+  etat: 'État du traitement du dossier.',
+};
+export interface ToolSpec {
+  name: ToolName;
+  description: string;
+  strict: true;
+  input_schema: { type: 'object'; properties: { requete: { type: 'string'; description: string } }; required: ['requete']; additionalProperties: false };
+}
+export function toolSpecs(): ToolSpec[] {
+  return TOOLS.map((t) => ({ name: t.name, description: TOOL_HELP[t.name], strict: true, input_schema: { type: 'object', properties: { requete: { type: 'string', description: 'Demande du client, reformulée si utile.' } }, required: ['requete'], additionalProperties: false } }));
+}
+
+/**
+ * Exécution d'UN outil demandé par un planificateur (règles ou modèle) : registre
+ * fermé, droits revérifiés, aucun outil de niveau 3. Le serveur exécute ; le
+ * modèle ne fait que proposer. Rend null pour un nom inconnu.
+ */
+export function executeTool(ctx: Context, name: string, arg: string): { step: Step; result: (Partial<Pick<Reply, 'sources' | 'files' | 'confirm' | 'ask'>> & { text: string }) | null } | null {
+  const tool = TOOLS.find((t) => t.name === name);
+  if (!tool || tool.level === 3) return null;
+  if (!ctx.rights.owner || !ctx.rights.assistant || !tool.allowed(ctx.rights)) return { step: { tool: tool.name, label: tool.label, ok: false }, result: null };
+  const r = tool.run(ctx, String(arg ?? '').slice(0, MAX_MESSAGE), new Map(ctx.pieces.map((p) => [p.id, p.file_name])));
+  return { step: { tool: tool.name, label: tool.label, ok: !r.ask }, result: r };
+}
+
+/** Une demande d'acte sensible (envoi, suppression, paiement, signature, accès) : refusée avant tout appel au modèle. */
+export function isForbiddenRequest(message: string): boolean {
+  return forbidden(norm(message));
+}
+
 /** Suggestions contextualisées (jamais de nom d'outil, de modèle ou d'agent). */
 export function suggestions(ctx: Context): string[] {
   if (!ctx.analysis) return ['Où en est mon dossier ?'];

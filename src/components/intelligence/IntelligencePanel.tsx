@@ -4,7 +4,7 @@ import type { PendingAction, Reply } from "../../../supabase/functions/_shared/i
 import type { DeliverableKey } from "../../../supabase/functions/_shared/analysis-model.ts";
 
 /** Transport de l'assistant : exécution locale (démonstration) ou appel serveur (service réel). */
-export type IntelligenceTransport = (message: string) => Promise<Reply>;
+export type IntelligenceTransport = (message: string) => Promise<Reply & { notice?: string }>;
 
 type Props = {
   /** Envoie une demande et rend la réponse réellement produite. */
@@ -14,11 +14,13 @@ type Props = {
   onFile: (key: DeliverableKey) => void;
   /** Enregistre une action de niveau 2 après confirmation explicite. Absent : confirmation indisponible. */
   onConfirm?: (action: PendingAction) => Promise<string>;
+  /** Échanges précédents (historique privé du titulaire). */
+  initial?: { from: "vous" | "ia"; text: string }[];
   /** Mention affichée sous le titre (ex. « Démonstration — rien n'est conservé »). */
   note?: string;
 };
 
-type Turn = { from: "vous" | "ia"; text: string; reply?: Reply; done?: Record<string, string> };
+type Turn = { from: "vous" | "ia"; text: string; reply?: Reply & { notice?: string }; done?: Record<string, string> };
 
 /** Bouton discret + panneau latéral rétractable (feuille plein écran sur mobile). Pas de bulle flottante. */
 export function IntelligenceLauncher(props: Props) {
@@ -50,8 +52,8 @@ export function IntelligenceLauncher(props: Props) {
   );
 }
 
-function IntelligencePanel({ transport, suggestions, onFile, onConfirm, note, onClose }: Props & { onClose: () => void }) {
-  const [turns, setTurns] = useState<Turn[]>([]);
+function IntelligencePanel({ transport, suggestions, onFile, onConfirm, note, initial, onClose }: Props & { onClose: () => void }) {
+  const [turns, setTurns] = useState<Turn[]>(() => initial ?? []);
   const [value, setValue] = useState("");
   const [busy, setBusy] = useState(false);
   const panel = useRef<HTMLDivElement>(null);
@@ -144,6 +146,7 @@ function IntelligencePanel({ transport, suggestions, onFile, onConfirm, note, on
               <div key={i} className="mr-4 rounded-2xl rounded-bl-sm border hairline bg-white px-3.5 py-3 text-sm leading-relaxed text-navy-900">
                 {t.reply && t.reply.steps.length > 0 && <p className="mb-1.5 text-[0.7rem] text-slate-500">{t.reply.steps.map((s) => s.label).join(" · ")}</p>}
                 <p className="whitespace-pre-line break-words">{t.text}</p>
+                {t.reply?.notice && <p className="mt-1.5 text-[0.7rem] text-slate-500">{t.reply.notice}</p>}
                 {t.reply && t.reply.files.length > 0 && (
                   <p className="mt-2.5 flex flex-wrap gap-2">
                     {t.reply.files.map((f) => (

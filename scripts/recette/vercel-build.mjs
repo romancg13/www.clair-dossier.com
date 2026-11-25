@@ -56,6 +56,18 @@ await build({
 });
 writeFileSync(join(fn, '.vc-config.json'), JSON.stringify({ runtime: 'nodejs22.x', handler: 'index.mjs', launcherType: 'Nodejs', shouldAddHelpers: false, supportsResponseStreaming: false, maxDuration: 300, regions: ['cdg1'] }, null, 2));
 
+// Planificateur : sans CRON_SECRET, l'URL du cron porte une clé dérivée d'un secret serveur (stockage privé).
+// La clé est capturée sans être affichée ; config.json n'est pas servi publiquement.
+let cronPath = '/api/cron';
+if (!process.env.CRON_SECRET && process.env.BLOB_READ_WRITE_TOKEN && process.env.VERCEL) {
+  try {
+    const k = execSync('npx tsx recette/outils/cle-cron.ts', { cwd: root, stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
+    if (/^[0-9a-f]{64}$/.test(k)) cronPath = `/api/cron?k=${k}`;
+  } catch {
+    console.warn('recette : clé du planificateur indisponible — le cron exigera CRON_SECRET.');
+  }
+}
+
 const headers = { 'x-robots-tag': 'noindex, nofollow, noarchive', 'x-content-type-options': 'nosniff', 'referrer-policy': 'strict-origin-when-cross-origin', 'x-frame-options': 'DENY', 'permissions-policy': 'geolocation=(), microphone=(), camera=()' };
 writeFileSync(
   join(out, 'config.json'),
@@ -70,7 +82,7 @@ writeFileSync(
         { src: '^/compte/dossier/.*$', dest: '/compte/index.html' },
         { src: '^/(.*)$', dest: existsSync(join(st, 'spa-shell.html')) ? '/spa-shell.html' : '/index.html' },
       ],
-      crons: [{ path: '/api/cron', schedule: '17 6 * * *' }],
+      crons: [{ path: cronPath, schedule: '17 6 * * *' }],
     },
     null,
     2,
