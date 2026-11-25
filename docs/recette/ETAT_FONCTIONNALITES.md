@@ -1,6 +1,6 @@
 # État des fonctionnalités — source unique de vérité
 
-Mis à jour : 2026-11-25 · commit de recette déployé : `1f278f2` (PWA) ; recette finale V8 jouée sur `5035ff5` (463 unitaires et 118 SQL verts sur ce code ; recette finale hébergée jouée en session neuve le 25/11 : premier résultat 12,9 s, six rendus 20 s, archive de 14 fichiers contrôlée, isolation A/B 404, 0 erreur JS) (branche `claude/clairdossier-optimization-85z7y5`, PR brouillon #71) · production : `85bbb4e`.
+Mis à jour : 2026-11-25 · commit de recette déployé : `7542c12` (V11, unification) ; PWA `1f278f2` ; recette finale V8 jouée sur `5035ff5` (463 unitaires et 118 SQL verts sur ce code ; recette finale hébergée jouée en session neuve le 25/11 : premier résultat 12,9 s, six rendus 20 s, archive de 14 fichiers contrôlée, isolation A/B 404, 0 erreur JS) (branche `claude/clairdossier-optimization-85z7y5`, PR brouillon #71) · production : `85bbb4e`.
 
 Statuts : **OK** = OPÉRATIONNEL ET VÉRIFIÉ · **PART** = PARTIELLEMENT OPÉRATIONNEL · **DNT** = DÉVELOPPÉ MAIS NON TESTÉ · **ÉMU** = VÉRIFIÉ PAR ÉMULATION (navigateur automatisé, aucun appareil physique) · **SIM** = SIMULÉ · **BLQ** = BLOQUÉ · **ND** = NON DÉVELOPPÉ · **DV** = VOLONTAIREMENT DIFFÉRÉ OU DÉSACTIVÉ · **—** = sans objet dans cet environnement.
 
@@ -225,37 +225,53 @@ Même site, mêmes comptes, même serveur : l'application installée est le site
 | O-17 | Partage d'un document vers ClairDossier depuis une autre application | toutes | ND | ND | ND | — | Android/Chrome uniquement ; à développer |
 | O-18 | Retour OAuth et paiement dans l'application installée | Entrepreneur → | BLQ | BLQ | ND | dépend de H-01/H-02 et I-03 | — |
 
+## P — Un seul ClairDossier (unification V11, décision « tout sur Supabase »)
+
+Référence : les pages client ORIGINALES, branchées sur Supabase. « Local » = Supabase local (docker) + navigateur automatisé, le 25/11. Détail : `UNIFICATION.md`.
+
+| ID | Fonction | Offres | Local | Recette | Production | Preuve | Reste à faire |
+|---|---|---|---|---|---|---|---|
+| P-01 | Accueil, tarifs, navigation et pied de page ORIGINAUX sur la recette (variantes retirées) | — | OK | OK | OK | recette hébergée le 25/11 : titre et hauteur identiques à la production | — |
+| P-02 | Tarifs originaux → connexion → paiement de recette de la même formule | toutes | OK | OK | — | parcours hébergé (Entrepreneur) le 25/11 | Stripe bac à sable (I-03) |
+| P-03 | ClairDossier IA à droite de « Vos résultats » dans la page dossier ORIGINALE | toutes | OK | ND | ND | `captures/v11-dossier-ia-ordi.png`, mobile 390 px | migration 20261126120000 + drapeau en production (accord) |
+| P-04 | Rappel confirmé → vraie échéance (RLS) depuis la page originale | toutes | OK | ND | ND | ligne créée le 25/11 | idem |
+| P-05 | Automatisation confirmée → exécutée par `pg_cron` navigateur fermé, preuve unique | toutes | OK | ND | ND | exécution autonome 17:07:00 le 25/11 ; 124 tests SQL | idem ; avec modèle : E-01 |
+| P-06 | Mon compte ORIGINAL : à décider, depuis la dernière visite, automatisations, préférences | toutes | OK | ND | ND | `captures/v11-compte-*.png` | idem |
+| P-07 | Isolation A/B sur les nouvelles données (historique, préférences, automatisations, notifications) | toutes | OK | ND | BLQ | tests SQL + B « introuvable » dans le navigateur | production : N-01 |
+| P-08 | Build de production inchangé sans le drapeau (aucun code d'intelligence ni de recette) | — | OK | — | — | `dist/` contrôlé le 25/11 | — |
+| P-09 | Espace client de la recette hébergée = pages originales | — | — | BLQ | — | aucun Supabase de recette hébergé (choix « local seulement ») | projet Supabase hébergé (décision) |
+
 <!-- SYNTHESE -->
 ## Synthèse (calculée par `node scripts/synthese-fonctionnalites.mjs`)
 
-Fonctionnalités recensées : **140**.
+Fonctionnalités recensées : **149**.
 
 ### Local
 
 | OK | ÉMU | PART | DNT | SIM | BLQ | ND | DV | — |
 |---|---|---|---|---|---|---|---|---|
-| 100 | 0 | 7 | 6 | 6 | 2 | 15 | 2 | 2 |
+| 108 | 0 | 7 | 6 | 6 | 2 | 15 | 2 | 3 |
 
-- Couverture de vérification : 134/140 = **96 %** (état établi par une preuve ; exclus : les 6 « développé mais non testé »).
-- Taux d'opérationnalité : 100/136 = **74 %** vérifié réellement, plus 0 vérifié par émulation (périmètre actif = recensées − sans objet − désactivées volontairement ; simulé, bloqué et non développé restent au dénominateur).
+- Couverture de vérification : 143/149 = **96 %** (état établi par une preuve ; exclus : les 6 « développé mais non testé »).
+- Taux d'opérationnalité : 108/144 = **75 %** vérifié réellement, plus 0 vérifié par émulation (périmètre actif = recensées − sans objet − désactivées volontairement ; simulé, bloqué et non développé restent au dénominateur).
 
 ### Recette
 
 | OK | ÉMU | PART | DNT | SIM | BLQ | ND | DV | — |
 |---|---|---|---|---|---|---|---|---|
-| 46 | 10 | 8 | 15 | 4 | 15 | 19 | 5 | 18 |
+| 48 | 10 | 8 | 15 | 4 | 16 | 24 | 5 | 19 |
 
-- Couverture de vérification : 125/140 = **89 %** (état établi par une preuve ; exclus : les 15 « développé mais non testé »).
-- Taux d'opérationnalité : 46/117 = **39 %** vérifié réellement, plus 10 vérifié par émulation (périmètre actif = recensées − sans objet − désactivées volontairement ; simulé, bloqué et non développé restent au dénominateur).
+- Couverture de vérification : 134/149 = **90 %** (état établi par une preuve ; exclus : les 15 « développé mais non testé »).
+- Taux d'opérationnalité : 48/125 = **38 %** vérifié réellement, plus 10 vérifié par émulation (périmètre actif = recensées − sans objet − désactivées volontairement ; simulé, bloqué et non développé restent au dénominateur).
 
 ### Production
 
 | OK | ÉMU | PART | DNT | SIM | BLQ | ND | DV | — |
 |---|---|---|---|---|---|---|---|---|
-| 10 | 0 | 5 | 14 | 0 | 6 | 37 | 55 | 13 |
+| 11 | 0 | 5 | 14 | 0 | 7 | 41 | 55 | 16 |
 
-- Couverture de vérification : 126/140 = **90 %** (état établi par une preuve ; exclus : les 14 « développé mais non testé »).
-- Taux d'opérationnalité : 10/72 = **14 %** vérifié réellement, plus 0 vérifié par émulation (périmètre actif = recensées − sans objet − désactivées volontairement ; simulé, bloqué et non développé restent au dénominateur).
+- Couverture de vérification : 135/149 = **91 %** (état établi par une preuve ; exclus : les 14 « développé mais non testé »).
+- Taux d'opérationnalité : 11/78 = **14 %** vérifié réellement, plus 0 vérifié par émulation (périmètre actif = recensées − sans objet − désactivées volontairement ; simulé, bloqué et non développé restent au dénominateur).
 
 ### Par catégorie (colonne Recette)
 
@@ -276,3 +292,4 @@ Fonctionnalités recensées : **140**.
 | M | 12 | 6 | 0 | 2 | 1 | 0 | 0 | 0 | 1 | 2 |
 | N | 11 | 4 | 0 | 0 | 0 | 0 | 1 | 2 | 0 | 4 |
 | O | 18 | 1 | 10 | 0 | 4 | 0 | 1 | 2 | 0 | 0 |
+| P | 9 | 2 | 0 | 0 | 0 | 0 | 1 | 5 | 0 | 1 |
