@@ -19,10 +19,11 @@ Légende : VÉRIFIÉ EN LOCAL · VÉRIFIÉ SUR RECETTE HÉBERGÉE · IMPLÉMENT�
 | Rentabilité : gros consommateur, seuil, croissance, avec/sans crédits | VÉRIFIÉ EN LOCAL (consommations ESTIMÉES) | `RENTABILITE.md` |
 | Capacité 10 → 250 fichiers et 20 × 250 | VÉRIFIÉ EN LOCAL ; recette hébergée : NON TESTÉ | `CAPACITE.md`, `mesures/` ; correctif du rendu « Résumé » (288 s → 14 s à 250 fichiers) |
 | Build de production contrôlé, procédure de mise en production | VÉRIFIÉ EN LOCAL, non exécutée | `DEPLOIEMENT_PRODUCTION.md` |
-| Second passage quotidien du planificateur (16:10 UTC) | déployé ; exécution réelle à lire après 17:00 UTC le 25/11 | `/api/planificateur` |
+| Exécution par le planificateur hébergé, navigateur fermé | VÉRIFIÉ SUR RECETTE : passage du 25/11 à 16:10:36 UTC, 1 automatisation exécutée | `/api/planificateur`, preuve d'exécution datée |
+| Application installable (PWA) | VÉRIFIÉ EN LOCAL et par émulation sur la recette ; aucun appareil physique | `PWA.md`, `tests/pwa.test.ts` |
 | Clé API Claude, Supabase de production, Stripe bac à sable, OAuth Gmail/Outlook | BLOQUÉ | actions propriétaire ci-dessous |
 
-Tests : 463 unitaires, 118 SQL, typecheck site + recette, build recette OK.
+Tests : 467 unitaires, 118 SQL, typecheck site + recette, build recette OK.
 
 ## Environnements (une seule branche, un seul build : `scripts/vercel-build.mjs`)
 

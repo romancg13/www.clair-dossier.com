@@ -1,10 +1,10 @@
 # État des fonctionnalités — source unique de vérité
 
-Mis à jour : 2026-11-25 · commit de recette gelé et déployé : `5035ff5` (463 unitaires et 118 SQL verts sur ce code ; recette finale hébergée jouée en session neuve le 25/11 : premier résultat 12,9 s, six rendus 20 s, archive de 14 fichiers contrôlée, isolation A/B 404, 0 erreur JS) (branche `claude/clairdossier-optimization-85z7y5`, PR brouillon #71) · production : `85bbb4e`.
+Mis à jour : 2026-11-25 · commit de recette déployé : `1f278f2` (PWA) ; recette finale V8 jouée sur `5035ff5` (463 unitaires et 118 SQL verts sur ce code ; recette finale hébergée jouée en session neuve le 25/11 : premier résultat 12,9 s, six rendus 20 s, archive de 14 fichiers contrôlée, isolation A/B 404, 0 erreur JS) (branche `claude/clairdossier-optimization-85z7y5`, PR brouillon #71) · production : `85bbb4e`.
 
 Statuts : **OK** = OPÉRATIONNEL ET VÉRIFIÉ · **PART** = PARTIELLEMENT OPÉRATIONNEL · **DNT** = DÉVELOPPÉ MAIS NON TESTÉ · **ÉMU** = VÉRIFIÉ PAR ÉMULATION (navigateur automatisé, aucun appareil physique) · **SIM** = SIMULÉ · **BLQ** = BLOQUÉ · **ND** = NON DÉVELOPPÉ · **DV** = VOLONTAIREMENT DIFFÉRÉ OU DÉSACTIVÉ · **—** = sans objet dans cet environnement.
 
-Règles de lecture : « Local » = tests automatisés du dépôt (463 unitaires, 118 SQL, verts le 25/11) ou parcours navigateur local. « Recette » = https://clairdossier-recette-20b5a2.vercel.app (comptes fictifs, stockage privé) et https://clairdossier-preview.vercel.app/demo. « Production » = https://www.clair-dossier.com + Supabase `buzgokfmxpmyceppvjpp` ; **aucun outil de cette session n'accède à la base de production** : tout ce qui dépend d'un compte client y est noté DNT (« en service, non retesté le 25/11 ») et non OK. Un test unitaire ne prouve pas un service externe ; un modèle simulé ne compte jamais comme opérationnel.
+Règles de lecture : « Local » = tests automatisés du dépôt (467 unitaires, 118 SQL, verts le 25/11) ou parcours navigateur local. « Recette » = https://clairdossier-recette-20b5a2.vercel.app (comptes fictifs, stockage privé) et https://clairdossier-preview.vercel.app/demo. « Production » = https://www.clair-dossier.com + Supabase `buzgokfmxpmyceppvjpp` ; **aucun outil de cette session n'accède à la base de production** : tout ce qui dépend d'un compte client y est noté DNT (« en service, non retesté le 25/11 ») et non OK. Un test unitaire ne prouve pas un service externe ; un modèle simulé ne compte jamais comme opérationnel.
 
 Le détail fin de la vitrine historique (219 lignes F-001…) reste dans `FEATURE_INVENTORY.md` ; il est regroupé ici en lignes M.
 
@@ -103,12 +103,12 @@ Le détail fin de la vitrine historique (219 lignes F-001…) reste dans `FEATUR
 | ID | Fonction | Offres | Local | Recette | Production | Preuve | Reste à faire |
 |---|---|---|---|---|---|---|---|
 | G-01 | Demande en langage naturel → automatisation confirmée | toutes | OK | OK | DV | `intelligence.test.ts`, `recette-automatisations.test.ts` (14) | — |
-| G-02 | Bilan régulier des dossiers | toutes | OK | DNT | DV | horloge injectée | G-05 |
-| G-03 | Alerte avant échéance ou renouvellement (30, 7, 1 j) | toutes | OK | DNT | DV | idem | G-05 |
+| G-02 | Bilan régulier des dossiers | toutes | OK | DNT | DV | horloge injectée | bilan quotidien créé, premier passage le 26/11 à 07:05 UTC |
+| G-03 | Alerte avant échéance ou renouvellement (30, 7, 1 j) | toutes | OK | OK | DV | recette hébergée le 25/11 : passage du planificateur à 16:10:36 UTC (source « planificateur », navigateur fermé depuis 14:52), 1 exécution, preuve datée dans `/api/automatisations/…/executions` ; résultat : « aucune échéance dans les 30 jours » (aucune alerte à émettre) | alerte réellement émise : à observer avec une échéance proche |
 | G-04 | Pause, reprise, annulation, plafonds, arrêt après 3 échecs | toutes | OK | OK | DV | pause et isolement vérifiés en recette | — |
-| G-05 | Exécution réelle par le planificateur hébergé, navigateur fermé | toutes | OK | DNT | DV | passage quotidien 07:05 UTC ; preuve datée désormais enregistrée | automatisation quotidienne créée en recette le 25/11 (prochaine : 26/11 07:00 UTC) ; lire « Dernier passage automatique » le 26/11 |
-| G-06 | Idempotence, équité entre comptes, rattrapage unique | toutes | OK | DNT | DV | tests | — |
-| G-07 | Déclencheur « à chaque pièce reçue » | toutes | OK | PART | DV | exécuté au passage suivant, pas à la seconde | passage horaire (offre payante) |
+| G-05 | Exécution réelle par le planificateur hébergé, navigateur fermé | toutes | OK | OK | DV | recette hébergée le 25/11 : passage du planificateur à 16:10:36 UTC (source « planificateur », navigateur fermé depuis 14:52), 1 exécution, preuve datée dans `/api/automatisations/…/executions` | — |
+| G-06 | Idempotence, équité entre comptes, rattrapage unique | toutes | OK | PART | DV | tests ; une exécution réelle unique constatée (rattrapage marqué) ; équité entre comptes non observée en hébergé | — |
+| G-07 | Déclencheur « à chaque pièce reçue » | toutes | OK | OK | DV | dépôt à 14:52 → exécution au passage de 16:10 (25/11) | exécution à la seconde : passage plus fréquent (offre payante) |
 | G-08 | Heure choisie par le client | toutes | ND | ND | ND | toujours 8 h | à développer |
 | G-09 | Relance préparée automatiquement | Entrepreneur → | DV | DV | DV | refusée clairement, jamais simulée | décision produit |
 | G-10 | Coupe-circuit des automatisations | interne | OK | DNT | — | `recette-assistant.test.ts` | /admin exige `RECETTE_ADMIN_PASSWORD` |
@@ -243,10 +243,10 @@ Fonctionnalités recensées : **140**.
 
 | OK | ÉMU | PART | DNT | SIM | BLQ | ND | DV | — |
 |---|---|---|---|---|---|---|---|---|
-| 43 | 10 | 8 | 18 | 4 | 15 | 19 | 5 | 18 |
+| 46 | 10 | 8 | 15 | 4 | 15 | 19 | 5 | 18 |
 
-- Couverture de vérification : 122/140 = **87 %** (état établi par une preuve ; exclus : les 18 « développé mais non testé »).
-- Taux d'opérationnalité : 43/117 = **37 %** vérifié réellement, plus 10 vérifié par émulation (périmètre actif = recensées − sans objet − désactivées volontairement ; simulé, bloqué et non développé restent au dénominateur).
+- Couverture de vérification : 125/140 = **89 %** (état établi par une preuve ; exclus : les 15 « développé mais non testé »).
+- Taux d'opérationnalité : 46/117 = **39 %** vérifié réellement, plus 10 vérifié par émulation (périmètre actif = recensées − sans objet − désactivées volontairement ; simulé, bloqué et non développé restent au dénominateur).
 
 ### Production
 
@@ -267,7 +267,7 @@ Fonctionnalités recensées : **140**.
 | D | 9 | 8 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 1 |
 | E | 10 | 1 | 0 | 0 | 0 | 0 | 6 | 2 | 0 | 1 |
 | F | 14 | 6 | 0 | 3 | 0 | 0 | 1 | 3 | 0 | 1 |
-| G | 10 | 2 | 0 | 1 | 5 | 0 | 0 | 1 | 1 | 0 |
+| G | 10 | 5 | 0 | 1 | 2 | 0 | 0 | 1 | 1 | 0 |
 | H | 6 | 0 | 0 | 0 | 0 | 1 | 3 | 0 | 1 | 1 |
 | I | 4 | 1 | 0 | 0 | 0 | 1 | 1 | 1 | 0 | 0 |
 | J | 8 | 0 | 0 | 0 | 6 | 0 | 1 | 0 | 0 | 1 |
