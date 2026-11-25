@@ -49,7 +49,10 @@ export function findDates(text: string): DateHit[] {
 }
 
 export interface AmountHit { value: number; text: string; index: number }
-const AMOUNT = /(\d{1,3}(?:[   .]\d{3})+|\d+)(?:,(\d{1,2}))?\s?(?:€|EUR\b|euros?\b)/gi;
+// Limite à gauche : un montant ne commence jamais au milieu d'un nombre (« charges 2025 480,00 € » → 480, pas 25 480).
+// Ni au milieu d'une référence (« Facture 2026-001 480,00 € » → 480) ; le signe moins d'un avoir reste lisible.
+// Décimales après une virgule, ou après un point suivi d'un ou deux chiffres (« 3480.00 € »).
+const AMOUNT = /(?<![\d.,])(?<!\d[-/])(\d{1,3}(?:[   .]\d{3})+|\d+)(?:[,.](\d{1,2}))?\s?(?:€|EUR\b|euros?\b)/gi;
 
 /** Montants en euros écrits en chiffres. */
 export function findAmounts(text: string): AmountHit[] {

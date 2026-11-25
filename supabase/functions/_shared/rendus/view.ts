@@ -152,8 +152,11 @@ export function buildView(i: ViewInput): RenduView {
   const confirmed = future.filter((d) => d.kind === 'mentioned' && d.reliability.level === 'elevee').map(strip);
   const toConfirm = future.filter((d) => !(d.kind === 'mentioned' && d.reliability.level === 'elevee')).map(strip);
   const past = all.filter((d) => d.date < today || d.done).map(strip);
-  const nextConfirmed = confirmed[0] ?? null;
-  const nextAny = nextConfirmed ? { ...nextConfirmed, status: 'confirmee' as const } : toConfirm[0] ? { ...toConfirm[0], status: 'a_confirmer' as const } : null;
+  // « Prochaine date » du tableau de bord : jamais une date fixée à un tiers (elle reste listée dans les échéances).
+  const forThird = new Set(fromAnalysis.filter((x) => x.d.owner === 'tiers').map((x) => x.key));
+  const nextConfirmed = confirmed.find((d) => !forThird.has(d.key)) ?? null;
+  const nextToConfirm = toConfirm.find((d) => !forThird.has(d.key)) ?? null;
+  const nextAny = nextConfirmed ? { ...nextConfirmed, status: 'confirmee' as const } : nextToConfirm ? { ...nextToConfirm, status: 'a_confirmer' as const } : null;
 
   const pa = a.primary_action ?? { label: a.next_actions[0] ?? 'Voir ma synthèse', owner: 'client' as Owner, rationale: a.summary_short, due_date: null };
   const events = applyOverrides(a.events, i.overrides);
