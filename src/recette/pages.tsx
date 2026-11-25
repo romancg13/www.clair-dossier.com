@@ -154,7 +154,7 @@ export function RecetteCompte() {
           <li key={d.id}>
             <Link to={`/compte/dossier/${d.id}`} className="block rounded-2xl border border-cream-200 bg-white p-5 transition hover:border-gold-500">
               <div className="flex flex-wrap items-center justify-between gap-2"><span className="text-[17px] font-semibold text-navy-900">{d.titre}</span><Chip tone={d.etat === 'pret' ? 'ok' : d.etat === 'en_cours' ? 'busy' : 'neutral'}>{ETAT_LABEL[d.etat]}</Chip></div>
-              <p className="mt-1 text-[14px] text-slate-500">{d.action ? `Prochaine action : ${d.action}` : `${d.pieces} pièce(s)`}</p>
+              <p className="mt-1 text-[14px] text-slate-500">{d.action && !/^Rien à faire/i.test(d.action) ? `Prochaine action : ${d.action}` : `${d.pieces} pièce${d.pieces > 1 ? 's' : ''}`}</p>
             </Link>
           </li>
         ))}
