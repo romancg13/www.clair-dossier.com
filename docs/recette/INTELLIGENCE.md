@@ -21,11 +21,25 @@ rétractable (feuille plein écran sur mobile), sans bulle flottante.
 Architecture : `supabase/functions/_shared/intelligence/core.ts` (pur TypeScript) — registre d'outils fermé, trois
 niveaux d'autonomie, droits revérifiés avant chaque outil, 5 actions au plus par demande, port `Planner`.
 
+## Assistant côté serveur (V5) — `recette/server/assistant.ts`
+
+Le modèle PROPOSE des appels d'outils, le serveur les contrôle et les exécute (même registre fermé).
+
+| Point | Réalisation | Statut |
+|---|---|---|
+| Choix du modèle | par la demande, jamais par le client : Haiku 5.5 (simple), Sonnet 5.5 (courante), Opus 5.5 (complexe) ; Fable 5.2 seulement par configuration | VÉRIFIÉ EN LOCAL (qualification) |
+| Outils | schémas stricts, droits revérifiés à chaque appel, 5 actions et 4 tours au plus ; outil inconnu ou sensible = sans effet | VÉRIFIÉ EN LOCAL |
+| Sources, fichiers, actions à confirmer | pris dans les résultats d'outils, jamais dans le texte du modèle | VÉRIFIÉ EN LOCAL |
+| Budget | coût maximal réservé avant chaque appel, réconcilié après ; plafond global et par compte ; registre sans contenu client | VÉRIFIÉ EN LOCAL (y compris en concurrence) |
+| Pannes | clé invalide, quota, délai : pas de nouvelle tentative, repli sur les règles, annoncé | VÉRIFIÉ EN LOCAL |
+| Historique | privé, par compte et par dossier, effaçable ; dossier d'autrui introuvable | VÉRIFIÉ EN LOCAL |
+| Montage | bouton « ClairDossier IA » à droite de « Vos résultats » dans l'espace de recette (abonné) et sur `/demo` | VÉRIFIÉ SUR RECETTE (mode règles) |
+| Réponse d'un vrai modèle | **BLOQUÉ** : aucune clé d'API dans le coffre de la recette — une manipulation, voir `ACTIVATION_API.md`. Les tests ci-dessus utilisent un modèle SIMULÉ | BLOQUÉ |
+
 ## Limites dites sans détour
 
-- **Aucun modèle de langage n'est appelé** : le planificateur est déterministe (règles d'intention en français). Il ne
-  remplace pas un assistant conversationnel général ; l'adaptateur modèle (tool-use) reste à brancher côté serveur
-  dès qu'une clé d'API de recette existe — DIFFÉRÉ, aucune capacité annoncée sans lui.
+- **Sans clé d'API, aucun modèle n'est appelé** : l'assistant répond par règles (déterministe) et le dit. L'adaptateur
+  modèle est écrit et testé avec un modèle simulé ; il s'active dès que la clé est dans le coffre.
 - **Monté sur la démonstration fictive uniquement** (`/demo`, exécution dans le navigateur, rien n'est conservé).
   Non monté dans l'espace client de production (moteur IA désactivé, CGV art. 6).
 - **Recherche** : porte sur l'analyse, pas sur le texte intégral des pièces.
