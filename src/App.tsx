@@ -145,7 +145,7 @@ const Marseille = named(() => import('./pages/Marseille'), 'Marseille');
 function RouteFallback() {
   return (
     <div
-      className="mx-auto flex max-w-7xl items-center justify-center px-5 py-32"
+      className="mx-auto flex min-h-screen max-w-7xl items-start justify-center px-5 py-32"
       role="status"
       aria-live="polite"
     >
