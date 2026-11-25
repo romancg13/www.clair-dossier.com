@@ -2,6 +2,8 @@
 
 Mis à jour : 2026-11-25 · commit de recette déployé : `7542c12` (V11, unification) ; PWA `1f278f2` ; recette finale V8 jouée sur `5035ff5` (463 unitaires et 118 SQL verts sur ce code ; recette finale hébergée jouée en session neuve le 25/11 : premier résultat 12,9 s, six rendus 20 s, archive de 14 fichiers contrôlée, isolation A/B 404, 0 erreur JS) (branche `claude/clairdossier-optimization-85z7y5`, PR brouillon #71) · production : `85bbb4e`.
 
+Mise à jour 2026-11-25 (soir) : clé API Claude et `RECETTE_AI=direct` actifs sur `clairdossier-recette-20b5a2` (Production Vercel) ; lignes E-01, E-03, E-04, F-03 réévaluées d'après un essai réel sur la recette (comptes fictifs, pièces fictives). Coût réel NON mesuré (page `/admin` : `RECETTE_ADMIN_PASSWORD` absent).
+
 Statuts : **OK** = OPÉRATIONNEL ET VÉRIFIÉ · **PART** = PARTIELLEMENT OPÉRATIONNEL · **DNT** = DÉVELOPPÉ MAIS NON TESTÉ · **ÉMU** = VÉRIFIÉ PAR ÉMULATION (navigateur automatisé, aucun appareil physique) · **SIM** = SIMULÉ · **BLQ** = BLOQUÉ · **ND** = NON DÉVELOPPÉ · **DV** = VOLONTAIREMENT DIFFÉRÉ OU DÉSACTIVÉ · **—** = sans objet dans cet environnement.
 
 Règles de lecture : « Local » = tests automatisés du dépôt (467 unitaires, 118 SQL, verts le 25/11) ou parcours navigateur local. « Recette » = https://clairdossier-recette-20b5a2.vercel.app (comptes fictifs, stockage privé) et https://clairdossier-preview.vercel.app/demo. « Production » = https://www.clair-dossier.com + Supabase `buzgokfmxpmyceppvjpp` ; **aucun outil de cette session n'accède à la base de production** : tout ce qui dépend d'un compte client y est noté DNT (« en service, non retesté le 25/11 ») et non OK. Un test unitaire ne prouve pas un service externe ; un modèle simulé ne compte jamais comme opérationnel.
@@ -68,10 +70,10 @@ Le détail fin de la vitrine historique (219 lignes F-001…) reste dans `FEATUR
 
 | ID | Fonction | Offres | Local | Recette | Production | Preuve | Reste à faire |
 |---|---|---|---|---|---|---|---|
-| E-01 | Clé API dans le coffre serveur | — | — | BLQ | DV | aucune `ANTHROPIC_API_KEY` dans Vercel (vérifié le 25/11) | manipulation propriétaire : `ACTIVATION_API.md` |
+| E-01 | Clé API dans le coffre serveur | — | — | OK | DV | `ANTHROPIC_API_KEY` (sensible, Production) ajoutée le 25/11 à ~18 h 30 ; redéploiement ; l'assistant passe en mode `modele` | solde et limite de dépense du workspace à lire dans la Console (propriétaire) |
 | E-02 | Liste des modèles réellement accessibles (`GET /v1/models`) | — | SIM | BLQ | DV | code `runtime.ts`, page /admin | dépend de E-01 |
-| E-03 | Sélection automatique du modèle (simple / courant / avancé) | toutes | SIM | BLQ | DV | `recette-assistant.test.ts` (faux client) | dépend de E-01 |
-| E-04 | Lecture des pièces par modèle (extraction, consolidation) | toutes | SIM | BLQ | DV | `ai-pipeline.test.ts` ; passerelle Vercel gratuite : 403 | dépend de E-01 |
+| E-03 | Sélection automatique du modèle (simple / courant / avancé) | toutes | SIM | PART | DV | recette 25/11 : `claude-haiku-5-5` (question simple) et `claude-sonnet-5-5` (demande courante) observés ; niveau avancé non sollicité | observer le niveau avancé ; E-02 pour la liste des modèles |
+| E-04 | Lecture des pièces par modèle (extraction, consolidation) | toutes | SIM | OK | DV | `RECETTE_AI=direct` (Production) ; recette 25/11 : 3 pièces fictives (PDF, XLSX, EML), `moteur: anthropic` sur chacune, six rendus approuvés, 2 échéances | tests sur lots plus gros et consommation mesurée (E-02, `/admin`) |
 | E-05 | Lecture par règles déterministes (sans modèle) | toutes | OK | OK | DV | `evaluation-moteur.test.ts` : exactitude 100 %, 0 partie inventée | — |
 | E-06 | OCR / lecture de scans et photos | toutes | SIM | BLQ | DV | pièce marquée « lecture reportée » | dépend de E-01 |
 | E-07 | Fournisseur de secours | — | ND | ND | ND | — | à décider (licences, confidentialité) |
@@ -85,7 +87,7 @@ Le détail fin de la vitrine historique (219 lignes F-001…) reste dans `FEATUR
 |---|---|---|---|---|---|---|---|
 | F-01 | Panneau latéral à droite de « Vos résultats », mobile adapté | toutes | OK | OK | DV | captures V3/V5 | — |
 | F-02 | Réponses par règles sur le dossier (résumé, démarches, échéances, recherche, comparaison) | toutes | OK | OK | DV | `intelligence.test.ts` ; 2,3 s en recette | — |
-| F-03 | Conversation par modèle avec outils côté serveur | toutes | SIM | BLQ | DV | `recette-assistant.test.ts` (16) | dépend de E-01 |
+| F-03 | Conversation par modèle avec outils côté serveur | toutes | SIM | OK | DV | `recette-assistant.test.ts` (16) ; recette 25/11 : outils `echeances`, `prochaines_demarches`, `creer_rappel` appelés, 2 sources citées, rappel soumis à confirmation, 12–15 s par réponse | latence à réduire ; coût réel à mesurer |
 | F-04 | Registre fermé d'outils, droits vérifiés par le serveur | toutes | OK | OK | DV | `intelligence.test.ts` | — |
 | F-05 | Refus des actions sensibles, résistance aux consignes cachées | toutes | OK | OK | DV | idem + pièce piégée du corpus | — |
 | F-06 | Création réelle d'un rappel (échéance) après confirmation | toutes | OK | OK | DV | `recette-assistant.test.ts` ; fait en recette le 25/11 | — |
@@ -141,7 +143,7 @@ Le détail fin de la vitrine historique (219 lignes F-001…) reste dans `FEATUR
 | J-02 | Plafonds global et par compte, concurrence | — | OK | DNT | DV | idem | E-01 |
 | J-03 | Registre par appel (compte, fonction, modèle, jetons, cache, durée, coût) | — | OK | DNT | DV | idem | E-01 |
 | J-04 | Alertes 70 / 90 / 100 %, une par palier et par mois | interne | OK | DNT | — | `recette-pilotage.test.ts` | E-01 |
-| J-05 | Repli sur les règles au plafond, résultat annoncé partiel | toutes | OK | DNT | DV | `moteur-budget.test.ts` | E-01 |
+| J-05 | Repli sur les règles au plafond, résultat annoncé partiel | toutes | OK | DNT | DV | `moteur-budget.test.ts` | provoquer le plafond sur la recette (E-01 acquis) |
 | J-06 | Coupe-circuit des appels de modèle | interne | OK | DNT | — | `recette-assistant.test.ts` | — |
 | J-07 | Calculateur de rentabilité (offres, options, gros consommateur, seuil, croissance, avec/sans crédits) | interne | OK | — | — | `RENTABILITE.md`, `rentabilite.test.ts` ; toutes les consommations sont ESTIMÉES | remplacer par des mesures réelles |
 | J-08 | Coût réel mesuré par document, dossier, conversation | interne | BLQ | BLQ | — | 0 appel réel, 0 USD dépensé | E-01 |
@@ -259,10 +261,10 @@ Fonctionnalités recensées : **149**.
 
 | OK | ÉMU | PART | DNT | SIM | BLQ | ND | DV | — |
 |---|---|---|---|---|---|---|---|---|
-| 48 | 10 | 8 | 15 | 4 | 16 | 24 | 5 | 19 |
+| 51 | 10 | 9 | 15 | 4 | 12 | 24 | 5 | 19 |
 
 - Couverture de vérification : 134/149 = **90 %** (état établi par une preuve ; exclus : les 15 « développé mais non testé »).
-- Taux d'opérationnalité : 48/125 = **38 %** vérifié réellement, plus 10 vérifié par émulation (périmètre actif = recensées − sans objet − désactivées volontairement ; simulé, bloqué et non développé restent au dénominateur).
+- Taux d'opérationnalité : 51/125 = **41 %** vérifié réellement, plus 10 vérifié par émulation (périmètre actif = recensées − sans objet − désactivées volontairement ; simulé, bloqué et non développé restent au dénominateur).
 
 ### Production
 
@@ -281,8 +283,8 @@ Fonctionnalités recensées : **149**.
 | B | 8 | 3 | 0 | 1 | 0 | 2 | 0 | 0 | 1 | 1 |
 | C | 12 | 6 | 0 | 1 | 1 | 0 | 0 | 3 | 0 | 1 |
 | D | 9 | 8 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 1 |
-| E | 10 | 1 | 0 | 0 | 0 | 0 | 6 | 2 | 0 | 1 |
-| F | 14 | 6 | 0 | 3 | 0 | 0 | 1 | 3 | 0 | 1 |
+| E | 10 | 3 | 0 | 1 | 0 | 0 | 3 | 2 | 0 | 1 |
+| F | 14 | 7 | 0 | 3 | 0 | 0 | 0 | 3 | 0 | 1 |
 | G | 10 | 5 | 0 | 1 | 2 | 0 | 0 | 1 | 1 | 0 |
 | H | 6 | 0 | 0 | 0 | 0 | 1 | 3 | 0 | 1 | 1 |
 | I | 4 | 1 | 0 | 0 | 0 | 1 | 1 | 1 | 0 | 0 |
