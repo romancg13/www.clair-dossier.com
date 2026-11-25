@@ -1,10 +1,26 @@
-# État de reprise — recette ClairDossier (V5)
+# État de reprise — recette ClairDossier (V6)
 
-Mis à jour : 2026-11-25 · branche unique `claude/clairdossier-optimization-85z7y5` (PR brouillon #70, NON fusionnée) · base `main@6f8f788`.
-La PR #68 (`claude/clair-dossier-workflow-63mjz1@c9753d6`) y est fusionnée : #70 est la seule référence.
-Production : inchangée. Aucune migration appliquée à un Supabase distant, aucun paiement, aucun DNS.
+Mis à jour : 2026-11-25 · PR #70 **fusionnée** (production `85bbb4e`) · travaux V6 : branche `claude/clairdossier-optimization-85z7y5`, PR brouillon #71, NON fusionnée · déployé en recette : `77ccb92`.
+Source unique de l'état de chaque fonctionnalité : `ETAT_FONCTIONNALITES.md` (122 lignes, synthèse calculée). Sécurité de la production : `SECURITE_ISOLATION.md`.
+Production : inchangée depuis la fusion. Aucune migration appliquée, aucun paiement, aucun appel d'API payant (coût constaté : 0).
 
 Légende : VÉRIFIÉ EN LOCAL · VÉRIFIÉ SUR RECETTE HÉBERGÉE · IMPLÉMENTÉ NON TESTÉ · SIMULÉ · BLOQUÉ · DIFFÉRÉ.
+
+## Travaux V6 (2026-11-25)
+
+| Lot | Statut | Preuve |
+|---|---|---|
+| Diagnostic d'isolation en lecture seule pour la production | VÉRIFIÉ EN LOCAL · production BLOQUÉ (aucun accès) | `supabase/verification/`, 118 tests SQL |
+| Centre d'actions multidossiers, préférences de l'assistant | VÉRIFIÉ SUR RECETTE | `tests/recette-pilotage.test.ts`, `captures/v6-recette-compte.png` |
+| « Depuis votre dernière visite », coupe-circuit, alertes de budget 70/90/100 % | VÉRIFIÉ EN LOCAL | idem, `tests/recette-assistant.test.ts` (16) |
+| Premier résultat plus tôt (exécuteur, accès au stockage, sondage adaptatif) | VÉRIFIÉ SUR RECETTE : 15 s (premier résultat), 23 s (six rendus) contre 37–39 s | `tests/recette-performance.test.ts`, `scripts/recette/latence.ts` |
+| Preuve de passage du planificateur | VÉRIFIÉ EN LOCAL ; recette : automatisation quotidienne créée, passage du 26/11 07:05 UTC à lire | `/api/planificateur` |
+| Évaluation continue du moteur ; correctif « partie inventée » | VÉRIFIÉ EN LOCAL (exactitude 100 %, citations 100 %) | `npm run ia:evaluation`, `tests/evaluation-moteur.test.ts` |
+| Rentabilité : gros consommateur, seuil, croissance, avec/sans crédits | VÉRIFIÉ EN LOCAL (consommations ESTIMÉES) | `RENTABILITE.md` |
+| Capacité 250 fichiers et 20 × 250 | NON TESTÉ : `scripts/recette/capacite.ts` écrit, exécution non aboutie | à relancer |
+| Clé API Claude, Supabase de production, Stripe bac à sable, OAuth Gmail/Outlook | BLOQUÉ | actions propriétaire ci-dessous |
+
+Tests : 462 unitaires, 118 SQL, typecheck site + recette, build recette OK.
 
 ## Environnements (une seule branche, un seul build : `scripts/vercel-build.mjs`)
 
@@ -84,8 +100,11 @@ MCP depuis l'interface ChatGPT/Claude, démonstration universelle (protections p
 
 - Tests : `npm run typecheck && npm run typecheck:recette && npm test` ; SQL : `npm install --no-save @electric-sql/pglite && node tests/sql/migrations.pglite.mjs`.
 - Recette Supabase locale : voir `RECETTE_LOCALE.md`.
-- Retour arrière : rien n'est fusionné. Preview : redéployer `0f4d057` (V3) sur les deux projets. Chaque migration a son fichier dans `supabase/rollback/`.
+- Retour arrière : la PR #71 n'est pas fusionnée. Recette et preview : redéployer `a5a152b` (V5) sur les deux projets. Production : revert de `85bbb4e`. Chaque migration a son fichier dans `supabase/rollback/`.
 
 ## Prochaine action
 
-Attendre l'accord explicite du propriétaire avant toute fusion dans `main`, toute migration réelle et toute activation du lien commercial universel.
+1. Propriétaire : exécuter le diagnostic d'isolation (`SECURITE_ISOLATION.md`) — priorité.
+2. Propriétaire : clé API (`ACTIVATION_API.md`), puis `npm run ia:evaluation` avec modèle.
+3. Lire le passage du planificateur du 26/11 ; relancer la mesure de capacité.
+Aucune fusion dans `main`, migration réelle ou activation du lien universel sans accord explicite.

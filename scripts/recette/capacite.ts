@@ -25,6 +25,8 @@ const LATENCE = latMin > 0 ? { minMs: latMin, maxMs: latMax || latMin } : null;
 const SONDAGE = arg('sondage', 'oui') === 'oui';
 
 const ms = (t: number) => Math.round(performance.now() - t);
+/** Avancement sur la sortie d'erreur (la sortie standard ne porte que le résultat). */
+const progres = (m: string) => process.stderr.write(`[capacité] ${m}\n`);
 const Mo = (n: number) => Math.round((n / 1048576) * 10) / 10;
 const centile = (l: number[], p: number) => (l.length ? [...l].sort((a, b) => a - b)[Math.min(l.length - 1, Math.floor((p / 100) * l.length))] : null);
 const resume = (l: number[]) => ({ n: l.length, mediane_ms: centile(l, 50), p95_ms: centile(l, 95), max_ms: l.length ? Math.max(...l) : null });
@@ -140,6 +142,7 @@ async function volet1(fichiers: Fichier[]) {
         rendu.calcul_ms += performance.now() - t;
         rendu.documents += out.length;
         rendu.parRevision.set(input.revision, (rendu.parRevision.get(input.revision) ?? 0) + (performance.now() - t));
+        progres(`volet 1 : rendu « ${k} » révision ${input.revision} en ${Math.round(performance.now() - t)} ms`);
         return out;
       };
     },
@@ -154,7 +157,10 @@ async function volet1(fichiers: Fichier[]) {
 
   const t0 = performance.now();
   const jalons: Record<string, number> = {};
-  const jalon = (k: string) => (jalons[k] ??= ms(t0));
+  const jalon = (k: string) => {
+    if (jalons[k] === undefined) progres(`volet 1 : ${k} à ${ms(t0)} ms`);
+    return (jalons[k] ??= ms(t0));
+  };
   const parCle: Record<string, number> = {};
   let extractionsEcrites = 0;
   const revisions = new Map<string, number>();
@@ -184,7 +190,10 @@ async function volet1(fichiers: Fichier[]) {
       if (j.status === 'done' || j.status === 'failed' || j.status === 'cancelled') t.fini = ms(t0);
       travaux.set(j.id, t);
     }
-    if (/^analyses\/.*\/r\d+\.json$/.test(key) && !revisions.has(key)) revisions.set(key, (dernier.analyse = ms(t0)));
+    if (/^analyses\/.*\/r\d+\.json$/.test(key) && !revisions.has(key)) {
+      revisions.set(key, (dernier.analyse = ms(t0)));
+      progres(`volet 1 : analyse ${key.split('/').pop()} enregistrée à ${ms(t0)} ms (${JSON.stringify(value).length} octets)`);
+    }
     if (key.startsWith('views/')) dernier.vue = ms(t0);
     if (key.startsWith('published/')) dernier.publie = ms(t0);
     return r;
@@ -301,6 +310,7 @@ async function volet2(dossiers: number, parDossier: number) {
   const refus: Record<number, number> = {};
   for (let dz = 0; dz < dossiers; dz++) {
     const r = await deposer(c, ids[dz], Array.from({ length: parDossier }, (_, i) => piece(dz, i)), 20, 1);
+    progres(`volet 2 : dossier ${dz + 1}/${dossiers} déposé à ${ms(tDepot)} ms`);
     durees.push(...r.durees);
     for (const [k, v] of Object.entries(r.refus)) refus[Number(k)] = (refus[Number(k)] ?? 0) + v;
   }
