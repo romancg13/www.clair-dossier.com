@@ -659,6 +659,11 @@ export async function handle(env: ApiEnv, req: Request): Promise<Response> {
     await removePreference(store.kv, user.id, mp[1]);
     return json({ ok: true });
   }
+  /* ── Ma consommation IA du mois (mes appels seulement) : assistant (registre) + lecture des pièces (compteur du moteur) ── */
+  if (path === '/api/moi/consommation' && m === 'GET') {
+    const lecture = await store.costs(user.id, []);
+    return json({ assistant: env.assistant ? await env.assistant.finops.compte(user.id) : null, lecture_pieces_centimes: lecture.userMonth });
+  }
   if (path === '/api/boite' && m === 'GET') return json({ messages: await store.mailbox(user.id) });
   if (path === '/api/connexions' && m === 'GET') return json({ connexions: await listConnections(store, user.id) });
   const cx = /^\/api\/connexions\/(cd_[A-Za-z0-9_-]+)$/.exec(path);

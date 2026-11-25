@@ -143,3 +143,19 @@ test('mémoire professionnelle : privée, bornée, supprimable, transmise au mod
   await answer(deps, 'a', 'Bonjour', ctx, []);
   assert.doesNotMatch(vu, /préférences de travail/);
 });
+
+test('consommation d’un compte : ses propres appels seulement, coût réel réglé', async () => {
+  const s = stack({ start: NOW });
+  const f = new Finops(s.kv, s.clock.now, { globalUsd: 1, perUserUsd: 1 });
+  const ligne = (user_id: string, usd: number) => ({ at: s.clock.now().toISOString(), user_id, feature: 'assistant', model: 'claude-haiku-5-5', input_tokens: 900, output_tokens: 120, cache_read_tokens: 0, cache_write_tokens: 0, estimated_micro_usd: 5000, actual_micro_usd: usd, duration_ms: 1500, status: 'ok' as const });
+  assert.ok(await f.reserve('a', 5000));
+  await f.settle('a', 5000, 150);
+  await f.record(ligne('a', 150));
+  s.clock.advance(1000);
+  await f.record(ligne('b', 999));
+  const c = await f.compte('a');
+  assert.equal(c.depense_usd, 0.00015);
+  assert.equal(c.reserve_usd, 0);
+  assert.deepEqual(c.appels.map((x) => x.usd), [0.00015]);
+  assert.equal((await f.compte('b')).appels.length, 1);
+});

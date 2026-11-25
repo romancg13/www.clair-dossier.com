@@ -151,6 +151,18 @@ export class Finops {
     const ratio = (g.spent + g.reserved) / (this.budget.globalUsd * MICRO);
     return { mois: m, ratio, seuil: ratio >= 1 ? '100' : ratio >= 0.9 ? '90' : ratio >= 0.7 ? '70' : 'ok' };
   }
+  /** Consommation du mois d'UN compte (ses propres appels, aucun autre compte) : coût réel réglé, réservations en cours, appels. */
+  async compte(userId: string): Promise<{ mois: string; depense_usd: number; reserve_usd: number; appels: { at: string; model: string; feature: string; input_tokens: number; output_tokens: number; cache_read_tokens: number; usd: number; ms: number; status: string }[] }> {
+    const m = month(this.now());
+    const [, u] = this.keys(userId);
+    const p = (await this.kv.getJson<Pot>(u))?.value ?? { reserved: 0, spent: 0 };
+    const appels = [];
+    for (const k of (await this.kv.list(`finops/journal/${m}/`)).slice(-300)) {
+      const e = (await this.kv.getJson<LedgerEntry>(k))?.value;
+      if (e?.user_id === userId) appels.push({ at: e.at, model: e.model, feature: e.feature, input_tokens: e.input_tokens, output_tokens: e.output_tokens, cache_read_tokens: e.cache_read_tokens, usd: e.actual_micro_usd / MICRO, ms: e.duration_ms, status: e.status });
+    }
+    return { mois: m, depense_usd: p.spent / MICRO, reserve_usd: p.reserved / MICRO, appels };
+  }
   async record(e: LedgerEntry): Promise<void> {
     await this.kv.putJson(`finops/journal/${month(this.now())}/${e.at.replace(/[:.]/g, '-')}-${crypto.randomUUID().slice(0, 8)}.json`, e).catch(() => undefined);
   }
