@@ -20,6 +20,7 @@ pas de `/demo`, 12 liens Stripe inchangés (`tests/paiements-geles.test.ts`).
 | 4 | Passer la PR #71 en « prête », fusionner dans `main` | propriétaire (accord écrit) | déploiement GitHub Pages vert | `git revert -m 1 <commit de fusion>` puis push |
 | 5 | Contrôle après déploiement : 8 pages publiques ordinateur + mobile, 0 erreur JS, `/demo` = 404, liens Stripe inchangés, connexion d'un compte de test | Claude + propriétaire | captures | étape 4 |
 | 6 | Facultatif : migration `20261125140000` (supervision) | propriétaire | onglet Supervision | `.down.sql` correspondant |
+| 7 | Migration `20261126120000` (ClairDossier Intelligence dans l'espace client) puis build avec `VITE_INTELLIGENCE=1` | Claude, après accord | « Mon compte » : centre d'actions ; page dossier : bouton ClairDossier IA ; `select jobname from cron.job` | `.down.sql` (supprime historique, préférences, automatisations) |
 
 ## À ne PAS faire lors de cette mise en production
 

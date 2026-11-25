@@ -2617,6 +2617,14 @@ await test('intelligence : exécution par la base — une preuve par échéance,
   assert.deepEqual(notes.map((n) => n.kind), ['bilan', 'echeance']);
   assert.match(notes[1].title, /dans 6 jours/);
   assert.doesNotMatch(JSON.stringify(notes), /Secret de B|Lointaine/);
+  await rejects(q(`update public.client_notifications set read_at = now()`).then(async () => {
+    if ((await q('select count(*)::int as n from public.client_notifications where read_at is not null'))[0].n) throw new Error('écriture directe acceptée');
+    throw new Error('row-level security : aucune ligne modifiable');
+  }), /row-level security/);
+  assert.equal((await q('select public.mark_client_notifications_read() as n'))[0].n, 2);
+  await asUser(IB);
+  assert.equal((await q('select public.mark_client_notifications_read() as n'))[0].n, 0, 'B ne touche pas aux notifications de A');
+  await asUser(IA);
   const runs = await q('select status from public.client_automation_runs where automation_id = $1', [al.id]);
   assert.deepEqual(runs.map((x) => x.status), ['faite']);
   // Rejouer la même échéance (deux passages simultanés) : aucune seconde exécution, aucune seconde alerte.

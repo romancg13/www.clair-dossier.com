@@ -74,6 +74,17 @@ alter table public.client_notifications enable row level security;
 drop policy if exists "client_notifications_select_own" on public.client_notifications;
 create policy "client_notifications_select_own" on public.client_notifications for select using (auth.uid() = user_id);
 
+create or replace function public.mark_client_notifications_read() returns integer
+language plpgsql security definer set search_path = public as $$
+declare v integer;
+begin
+  update public.client_notifications set read_at = now() where user_id = auth.uid() and read_at is null;
+  get diagnostics v = row_count;
+  return v;
+end $$;
+revoke all on function public.mark_client_notifications_read() from public, anon;
+grant execute on function public.mark_client_notifications_read() to authenticated;
+
 -- ── 4. Automatisations ─────────────────────────────────────────────────────────
 create table if not exists public.client_automations (
   id uuid primary key default gen_random_uuid(),

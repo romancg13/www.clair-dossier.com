@@ -16,6 +16,7 @@ drop function if exists public.client_subscription_active(uuid);
 drop function if exists public.client_dossier_closed(uuid);
 drop table if exists public.client_automation_runs;
 drop table if exists public.client_automations;
+drop function if exists public.mark_client_notifications_read();
 drop table if exists public.client_notifications;
 drop trigger if exists assistant_preferences_limit on public.assistant_preferences;
 drop function if exists public.assistant_preferences_limit();
