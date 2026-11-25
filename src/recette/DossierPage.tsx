@@ -55,12 +55,15 @@ export function DossierPage() {
     const lot = crypto.randomUUID();
     setUpload({ done: 0, total: files.length });
     setNotice(null);
+    let recus = 0;
     try {
       for (const [i, f] of files.entries()) {
         const form = new FormData();
         form.append('lot', lot);
+        form.append('total', String(files.length));
         form.append('fichiers', f, f.name);
         await api(`/api/dossiers/${id}/pieces`, { form });
+        recus++;
         setUpload({ done: i + 1, total: files.length });
       }
       setNotice('Pièces reçues. La lecture a commencé : vous pouvez fermer cette page, les résultats vous attendront ici.');
@@ -68,6 +71,8 @@ export function DossierPage() {
       if (e instanceof ApiError && e.redirect) window.location.assign(e.redirect);
       setNotice(e instanceof ApiError ? e.message : 'Dépôt interrompu. Réessayez.');
     } finally {
+      // Envoi arrêté avant le dernier fichier : le lot est clos sur les pièces reçues (sinon, clôture automatique après 10 min).
+      if (recus > 0 && recus < files.length) await api(`/api/dossiers/${id}/lots/${lot}/fin`, { body: {} }).catch(() => undefined);
       setUpload(null);
       void load();
     }

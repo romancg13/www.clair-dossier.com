@@ -10,7 +10,7 @@ import type { EngineDeps } from '../../supabase/functions/_shared/engine/runner.
 import { readDatesForm, type RenduView } from '../../supabase/functions/_shared/rendus/index.ts';
 import { demandeJustificatifs, ficheRendezVous, postsLinkedIn, type BriefLinkedIn } from '../../supabase/functions/_shared/prestations/index.ts';
 import { checkPassword, emailKey, hashPassword, sha, signEvent, signLink, token, verifyEvent, verifyLink } from './security.ts';
-import { RecetteStore, type DossierRec, type Subscription, type UserRec } from './store.ts';
+import { RecetteStore, jobEnCours, type DossierRec, type Subscription, type UserRec } from './store.ts';
 import { sha256 } from './engine-deps.ts';
 import { handleMcp, handleOAuth, listConnections } from './mcp.ts';
 import { seedDemo } from './seed.ts';
@@ -77,7 +77,8 @@ async function dossierStatus(env: ApiEnv, d: DossierRec) {
   const view = await env.store.getView(d.id);
   const pieces = (await env.store.listPieces(d.id)).filter((p) => !p.deleted_at);
   const failed = jobs.filter((j) => j.status === 'failed');
-  const running = jobs.filter((j) => j.status === 'queued' || j.status === 'running');
+  // Lecture reportée au mois suivant (plafond) ou contrôle de fin de lot : rien n'est en cours pour le client.
+  const running = jobs.filter((j) => jobEnCours(j, env.store.now()));
   let etat: 'vide' | 'en_cours' | 'pret' | 'en_verification' | 'cloture' | 'incident';
   if (d.closed) etat = 'cloture';
   else if (!pieces.length) etat = 'vide';
@@ -290,6 +291,8 @@ export async function handle(env: ApiEnv, req: Request): Promise<Response> {
       if (files.length > MAX_FILES) return err(413, `Au plus ${MAX_FILES} fichiers par envoi : répartissez vos pièces en plusieurs dépôts.`);
       const big = files.find((f) => f.size > MAX_UPLOAD);
       if (big) return err(413, `« ${big.name} » dépasse 4 Mo.`);
+      // Lot envoyé fichier par fichier : nombre annoncé, pour notifier une seule fois, sur le lot complet.
+      await store.declareLot(d.id, lot, Math.min(200, Math.max(files.length, Math.floor(Number(form.get('total')) || 0))));
       // Stockage des pièces en parallèle, puis mise en file (durable avant la réponse).
       const added = await Promise.all(
         files.map(async (f) => {
@@ -304,6 +307,15 @@ export async function handle(env: ApiEnv, req: Request): Promise<Response> {
       env.waitUntil(store.addEvent(d.id, user.id, 'pieces_deposees', `${added.length} pièce${added.length > 1 ? 's' : ''} déposée${added.length > 1 ? 's' : ''}`));
       env.waitUntil(runNow(env));
       return json({ lot, pieces: added }, 201);
+    }
+    const fin = /^\/lots\/([0-9a-f-]{36})\/fin$/.exec(sub);
+    if (fin && m === 'POST') {
+      // Envoi du lot arrêté avant le dernier fichier annoncé : le lot est clos sur les pièces reçues, puis notifié.
+      if (await store.closeLot(d.id, fin[1])) {
+        await store.enqueue({ key: `r:${d.id}`, kind: 'render', user_id: d.user_id, dossier_id: d.id, piece_id: null });
+        env.waitUntil(runNow(env));
+      }
+      return json({ ok: true });
     }
     if (sub === '/lien' && m === 'POST') {
       const b = await body<{ categorie?: DeliverableKey; nom?: string; piece?: string }>(req);

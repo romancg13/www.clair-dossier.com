@@ -2,7 +2,7 @@
 // conditionnel, plus les données d'application de la recette (comptes,
 // abonnements simulés, dossiers). Une seule source pour l'API, l'exécuteur et le MCP.
 import type { DeadlineRow, DeliverableKey, EventOverride } from '../../supabase/functions/_shared/analysis-model.ts';
-import type { AnalysisRec, Costs, DossierState, EngineStore, ExtractionRec, Job, OutFileLite, PieceRec, PublishedCategory } from '../../supabase/functions/_shared/engine/ports.ts';
+import type { AnalysisRec, Costs, DossierState, EngineStore, ExtractionRec, Job, OutFileLite, PieceRec, PieceState, PublishedCategory } from '../../supabase/functions/_shared/engine/ports.ts';
 import { update, type Kv, type KvEntry } from './kv.ts';
 
 /**
@@ -70,6 +70,15 @@ export interface EventItem {
 
 const enc = (k: string) => encodeURIComponent(k).replace(/%/g, '~');
 const month = (d: Date) => d.toISOString().slice(0, 7);
+
+/** Délai sans nouvelle pièce au-delà duquel un lot dont l'envoi s'est interrompu est tenu pour complet. */
+export const LOT_IDLE_MS = 10 * 60_000;
+
+/**
+ * Travail qui traite réellement le dossier, pour le statut affiché : en cours, ou prévu dans les 10 minutes.
+ * Une lecture reportée au mois suivant (plafond) et le contrôle différé de fin de lot (n:) n'en sont pas.
+ */
+export const jobEnCours = (j: Job, now: Date) => !j.key.startsWith('n:') && (j.status === 'running' || (j.status === 'queued' && Date.parse(j.run_after) <= now.getTime() + 10 * 60_000));
 
 export class RecetteStore implements EngineStore {
   constructor(
@@ -146,19 +155,19 @@ export class RecetteStore implements EngineStore {
     return ref ? ((await this.kv.getJson<PieceRec>(`pieces/${ref.value.dossier_id}/${id}.json`))?.value ?? null) : null;
   }
   async addPiece(p: PieceRec, bytes: Uint8Array) {
-    // Écritures indépendantes (clés distinctes) : en parallèle.
+    // Fichier et référence d'abord (en parallèle), fiche de la pièce ensuite : une pièce n'est jamais listée sans son fichier.
     await Promise.all([
       this.kv.putBytes(`files/${p.user_id}/${p.dossier_id}/${p.id}`, bytes, p.mime ?? 'application/octet-stream'),
       this.kv.putJson(`pieceref/${p.id}.json`, { dossier_id: p.dossier_id }, { create: true }),
-      this.kv.putJson(`pieces/${p.dossier_id}/${p.id}.json`, p, { create: true }),
     ]);
+    await this.kv.putJson(`pieces/${p.dossier_id}/${p.id}.json`, p, { create: true });
   }
   async readPieceBytes(p: PieceRec) {
     const b = await this.kv.getBytes(`files/${p.user_id}/${p.dossier_id}/${p.id}`);
     if (!b) throw new Error('fichier de la pièce introuvable');
     return b;
   }
-  async markDuplicate(pieceId: string, ofId: string) {
+  async markDuplicate(pieceId: string, ofId: string | null) {
     const ref = await this.kv.getJson<{ dossier_id: string }>(`pieceref/${pieceId}.json`);
     if (ref) await update<PieceRec>(this.kv, `pieces/${ref.value.dossier_id}/${pieceId}.json`, (p) => (p && p.duplicate_of !== ofId ? { ...p, duplicate_of: ofId } : null));
   }
@@ -180,8 +189,11 @@ export class RecetteStore implements EngineStore {
     return last ? ((await this.kv.getJson<AnalysisRec>(`analyses/${dossierId}/r${String(last.value.revision).padStart(5, '0')}.json`))?.value ?? null) : null;
   }
   async insertAnalysis(rec: AnalysisRec) {
-    const ok = (await this.kv.putJson(`analyses/${rec.dossier_id}/r${String(rec.revision).padStart(5, '0')}.json`, rec, { create: true })).ok;
-    if (ok) await update<{ revision: number }>(this.kv, `analyses/${rec.dossier_id}/last.json`, (cur) => (cur && cur.revision >= rec.revision ? null : { revision: rec.revision }));
+    const key = `analyses/${rec.dossier_id}/r${String(rec.revision).padStart(5, '0')}.json`;
+    const ok = (await this.kv.putJson(key, rec, { create: true })).ok;
+    // Pointeur avancé aussi quand la révision existait déjà (essai précédent interrompu entre les deux écritures),
+    // jamais vers une révision absente.
+    if (ok || (await this.kv.getJson(key, { fresh: true }))) await update<{ revision: number }>(this.kv, `analyses/${rec.dossier_id}/last.json`, (cur) => (cur && cur.revision >= rec.revision ? null : { revision: rec.revision }));
     return ok;
   }
   async setAnalysisStatus(dossierId: string, revision: number, status: AnalysisRec['status']) {
@@ -410,8 +422,49 @@ export class RecetteStore implements EngineStore {
   async listEvents(dossierId: string) {
     return (await this.kv.getJson<{ items: EventItem[] }>(`events/${dossierId}.json`))?.value.items ?? [];
   }
-  async claimNotification(dossierId: string, lotId: string) {
-    return (await this.kv.putJson(`notif/${dossierId}/${lotId}.json`, { at: this.now().toISOString() }, { create: true })).ok;
+  /** Nombre de fichiers annoncé pour un lot envoyé fichier par fichier ; le premier envoi du lot fait foi. */
+  async declareLot(dossierId: string, lotId: string, total: number) {
+    await this.kv.putJson(`lots/${dossierId}/${lotId}.json`, { total }, { create: true });
+  }
+  /**
+   * Envoi du lot terminé côté navigateur avant tous les fichiers annoncés (fichier refusé, erreur) : le nombre annoncé
+   * est ramené au nombre de pièces reçues. Vrai si le lot attendait encore des fichiers.
+   */
+  async closeLot(dossierId: string, lotId: string) {
+    const received = (await this.listPieces(dossierId)).filter((p) => p.lot_id === lotId).length;
+    let lowered = false;
+    await update<{ total: number }>(this.kv, `lots/${dossierId}/${lotId}.json`, (cur) => ((lowered = Boolean(cur && cur.total > received)) ? { ...cur!, total: received } : null));
+    return lowered;
+  }
+  async claimNotification(dossierId: string, lotId: string, covered?: Record<string, PieceState>) {
+    const key = `notif/${dossierId}/${lotId}.json`;
+    if (await this.kv.getJson(key)) return false;
+    const total = (await this.kv.getJson<{ total: number }>(`lots/${dossierId}/${lotId}.json`))?.value.total ?? 0;
+    const lot = (await this.listPieces(dossierId)).filter((p) => p.lot_id === lotId);
+    if (!lot.length) return false;
+    if (lot.length < total) {
+      // Fichiers annoncés encore attendus. Envoi interrompu sans clôture (onglet fermé, réseau coupé) : le lot est tenu
+      // pour complet LOT_IDLE_MS après sa dernière pièce ; un rendu est planifié à cette échéance pour le notifier.
+      const due = Math.max(...lot.map((p) => Date.parse(p.created_at))) + LOT_IDLE_MS - this.now().getTime();
+      if (due > 0) {
+        // Pas de réarmement depuis ce contrôle lui-même : la consolidation de la nouvelle pièce le replanifiera.
+        const key = `n:${dossierId}:${lotId}`;
+        if (!(await this.openJobs(dossierId)).some((j) => j.key === key && j.status === 'running')) await this.enqueue({ key, kind: 'render', user_id: lot[0].user_id, dossier_id: dossierId, piece_id: null, delayMs: due });
+        return false;
+      }
+    }
+    // Chaque pièce principale du lot doit figurer dans la révision publiée (sinon, la suivante notifiera), et au moins
+    // l'une doit avoir été réellement lue : un lot entièrement reporté notifiera avec la révision qui le lira.
+    const states: PieceState[] = [];
+    for (const p of lot) {
+      if (p.deleted_at || p.duplicate_of) continue;
+      const x = covered ? null : await this.getExtraction(p.id);
+      const st = covered ? covered[p.id] : x && (x.status === 'error' && x.deferred ? 'deferred' : x.status);
+      if (!st) return false;
+      states.push(st);
+    }
+    if (states.length && states.every((st) => st === 'deferred')) return false;
+    return (await this.kv.putJson(key, { at: this.now().toISOString() }, { create: true })).ok;
   }
   async notificationsAllowed(userId: string) {
     return (await this.getUser(userId))?.notifications ?? false;
