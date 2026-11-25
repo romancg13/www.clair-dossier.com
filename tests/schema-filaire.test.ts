@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import type Anthropic from '@anthropic-ai/sdk';
 import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
 import { AnalysisOutputSchema, AnalysisWireSchema, fromWire, validate, type AnalysisWire } from '../supabase/functions/_shared/engine/schemas.ts';
-import { createAnthropicProvider } from '../supabase/functions/_shared/engine/anthropic.ts';
+import { createAnthropicProvider, relireChampsJson } from '../supabase/functions/_shared/engine/anthropic.ts';
 
 function mesure(schema: unknown) {
   let unions = 0, facultatifs = 0;
@@ -74,4 +74,14 @@ test('fournisseur : synthèse rendue par un outil non strict, validée stricteme
   contenu = [{ type: 'text', text: 'Voici la synthèse…' }];
   const r3 = await p.consolidate(entree, 'B');
   assert.ok(!r3.ok && r3.kind === 'invalid');
+});
+
+test('outil non strict : tableaux rendus en texte JSON relus, texte ordinaire conservé, validation toujours stricte', () => {
+  const brut = { ...wire, parties: JSON.stringify(wire.parties), amounts: JSON.stringify(wire.amounts), primary_action: JSON.stringify(wire.primary_action), situation: '[sic] texte' };
+  const relu = relireChampsJson(brut) as typeof wire;
+  assert.deepEqual(relu.parties, wire.parties);
+  assert.deepEqual(relu.primary_action, wire.primary_action);
+  assert.equal(relu.situation, '[sic] texte', 'un texte qui n’est pas du JSON reste un texte');
+  assert.ok(validate(AnalysisWireSchema, relu).ok);
+  assert.ok(!validate(AnalysisWireSchema, relireChampsJson({ ...wire, facts: '[{"text": 1}]' })).ok, 'contenu relu mais non conforme : refusé');
 });

@@ -32,6 +32,28 @@ export interface AnthropicOptions {
   timeoutMs?: number;
 }
 
+/**
+ * Un outil non strict peut rendre un tableau ou un objet SOUS FORME DE TEXTE JSON (« "[{…}]" ») : on relit ce texte,
+ * champ de premier niveau par champ, avant la validation stricte. Rien n'est inventé ni assoupli : un texte qui n'est
+ * pas un JSON valide reste tel quel et la validation le refuse.
+ */
+export function relireChampsJson(input: unknown): unknown {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) return input;
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(input as Record<string, unknown>)) {
+    if (typeof v === 'string' && /^\s*[[{]/.test(v)) {
+      try {
+        out[k] = JSON.parse(v);
+        continue;
+      } catch {
+        /* texte ordinaire */
+      }
+    }
+    out[k] = v;
+  }
+  return out;
+}
+
 export function createAnthropicProvider(o: AnthropicOptions): ModelProvider {
   const timeout = o.timeoutMs ?? 120_000;
   async function call<T>(model: string, system: string, content: Anthropic.MessageParam['content'], schema: typeof ExtractionOutputSchema | typeof AnalysisWireSchema): Promise<ModelResult<T>> {
@@ -80,7 +102,7 @@ export function createAnthropicProvider(o: AnthropicOptions): ModelProvider {
       if (res.stop_reason === 'max_tokens') return { ok: false, kind: 'invalid', message: 'sortie tronquée (limite de jetons)', retryable: true, ...usage };
       const appel = res.content.find((b): b is Anthropic.ToolUseBlock => b.type === 'tool_use' && b.name === 'enregistrer_synthese');
       if (!appel) return { ok: false, kind: 'invalid', message: 'sortie non conforme : synthèse non rendue par l’outil', retryable: true, ...usage };
-      const v = validate(schema as never, appel.input);
+      const v = validate(schema as never, relireChampsJson(appel.input));
       if (!v.ok) return { ok: false, kind: 'invalid', message: `sortie non conforme : ${v.error}`, retryable: true, ...usage };
       return { ok: true, data: v.data as T, ...usage };
     } catch (e) {
