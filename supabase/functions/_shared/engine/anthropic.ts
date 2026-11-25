@@ -51,7 +51,7 @@ export function createAnthropicProvider(o: AnthropicOptions): ModelProvider {
       const status = err.status ?? 0;
       // Type d'erreur du fournisseur (jamais le contenu de la pièce) : diagnostic d'exploitation.
       const type = (err.error?.error?.type ?? err.error?.type ?? '').slice(0, 40);
-      return { ok: false, kind: t ? 'timeout' : 'unavailable', message: `${t ? 'délai dépassé' : `fournisseur indisponible (${status || 'réseau'}${type ? ` ${type}` : ''})`}`, retryable: t || status === 0 || status === 429 || status >= 500 };
+      return { ok: false, kind: t ? 'timeout' : 'unavailable', message: `${t ? 'délai dépassé' : `fournisseur indisponible (${status || 'réseau'}${type ? ` ${type}` : ''})`}${status === 400 ? ` : ${String((err.error as { error?: { message?: string } } | undefined)?.error?.message ?? '').slice(0, 200)}` : ''}`, retryable: t || status === 0 || status === 429 || status >= 500 };
     }
   }
   return {

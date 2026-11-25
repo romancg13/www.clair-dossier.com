@@ -350,7 +350,7 @@ async function runConsolidate(deps: EngineDeps, job: Job): Promise<RunReport['ou
   const cost = await recordCost(deps, dossier.user_id, null, res, provider.name);
   if (!res.ok) {
     if (res.retryable && job.attempts < job.max_attempts) throw new Retry(res.message);
-    await store.alert('CONSOLIDATION_REPLI', { dossier: dossier.id, kind: res.kind, motif: res.message.slice(0, 160) }); // statut et type d'erreur du fournisseur, jamais le contenu
+    await store.alert('CONSOLIDATION_REPLI', { dossier: dossier.id, kind: res.kind, motif: res.message.slice(0, 260) }); // statut et type d'erreur du fournisseur, jamais le contenu
     provider = rulesProvider;
     res = await rulesProvider.consolidate(input, '');
   }
