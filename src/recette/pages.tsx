@@ -222,12 +222,36 @@ export function RecetteAdmin() {
   const [x, setX] = useState<{ alertes: { code: string; at: string; meta: Record<string, unknown> }[]; travaux_en_echec: { id: string; kind: string; dossier: string; tentatives: number; erreur: string | null }[]; file: number } | null>(null);
   const [err, setErr] = useState<string | null>(null);
   useEffect(() => void api<NonNullable<typeof x>>('/api/admin/exceptions').then(setX).catch((e) => setErr(e instanceof ApiError ? e.message : 'Accès refusé.')), []);
+  type Ia = { couts: { mois: string; plafond_usd: number; depense_usd: number; reserve_usd: number; seuil: string; appels: number; par_modele: Record<string, { appels: number; usd: number }>; par_fonction: Record<string, { appels: number; usd: number }> } | null; sante: { configure: boolean; authentifie?: boolean; cause?: string; modeles_accessibles?: string[]; modeles_absents?: string[] } };
+  const [ia, setIa] = useState<Ia | null>(null);
+  useEffect(() => void api<Ia>('/api/admin/ia').then(setIa).catch(() => setIa(null)), []);
   return (
     <Page>
       <Seo title="Exceptions" description="Exceptions techniques." path="/admin" noindex />
       <h1 className="font-display text-[34px] text-navy-900">Exceptions</h1>
       <p className="mt-2 text-[14px] text-slate-500">Seules les exceptions apparaissent ici (métadonnées, jamais le contenu des pièces). Le parcours normal ne demande aucune action.</p>
       {err && <div className="mt-4"><Alert tone="error">{err}</Alert></div>}
+      {ia && (
+        <section className="mt-6 rounded-2xl border border-cream-200 bg-white p-5 text-[14px] text-navy-900">
+          <h2 className="text-[18px] font-semibold">Coûts IA du mois</h2>
+          {!ia.sante.configure ? (
+            <p className="mt-2 text-slate-500">Aucune clé d’API dans le coffre de la recette : l’assistant et la lecture fonctionnent par règles, coût nul.</p>
+          ) : ia.sante.authentifie === false ? (
+            <p className="mt-2 font-semibold text-red-700">Fournisseur IA : {ia.sante.cause}. Les traitements se replient sur les règles.</p>
+          ) : (
+            <p className="mt-2 text-slate-500">Fournisseur joignable · modèles : {(ia.sante.modeles_accessibles ?? []).join(', ') || '—'}{ia.sante.modeles_absents?.length ? ` · indisponibles : ${ia.sante.modeles_absents.join(', ')}` : ''}</p>
+          )}
+          {ia.couts && (
+            <>
+              <p className="mt-2">
+                <strong>{ia.couts.depense_usd.toFixed(4)} $</strong> dépensés sur {ia.couts.plafond_usd.toFixed(2)} $ (assistant) · {ia.couts.appels} appel{ia.couts.appels > 1 ? 's' : ''}
+                {ia.couts.seuil !== 'ok' && <strong className="ml-2 text-amber-800">Seuil de {ia.couts.seuil} % atteint{ia.couts.seuil === '100' ? ' : nouveaux appels bloqués, repli sur les règles' : ''}</strong>}
+              </p>
+              {Object.keys(ia.couts.par_modele).length > 0 && <p className="mt-1 text-slate-500">{Object.entries(ia.couts.par_modele).map(([m, v]) => `${m} : ${v.appels} appel(s), ${v.usd.toFixed(4)} $`).join(' · ')}</p>}
+            </>
+          )}
+        </section>
+      )}
       {x && (<><p className="mt-4 text-[14px]">Travaux en file : {x.file}</p><h2 className="mt-6 text-[18px] font-semibold">Travaux en échec ({x.travaux_en_echec.length})</h2><ul className="mt-2 text-[14px]">{x.travaux_en_echec.map((t) => <li key={t.id}>{t.kind} · dossier {t.dossier.slice(0, 8)} · {t.tentatives} tentatives · {t.erreur}</li>)}</ul><h2 className="mt-6 text-[18px] font-semibold">Alertes</h2><ul className="mt-2 text-[14px]">{x.alertes.map((a, i) => <li key={i}>{new Date(a.at).toLocaleString('fr-FR')} · {a.code} · {JSON.stringify(a.meta)}</li>)}</ul></>)}
     </Page>
   );
