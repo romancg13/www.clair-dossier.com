@@ -3,6 +3,7 @@
 // dépendance : importable par le site, le worker et l'adaptateur de recette.
 import { applyOverrides, type ChronoEvent, type DeadlineRow, type DeliverableKey, type EventOverride, type PieceRef } from '../analysis-model.ts';
 import { deadlineKey } from '../ai-pipeline.ts';
+import { frLongDate } from '../engine/text-rules.ts';
 
 export type Reliab = { level: 'elevee' | 'a_verifier'; reasons: string[] };
 export type Owner = 'client' | 'cabinet' | 'tiers' | 'personne';
@@ -95,12 +96,25 @@ export const OWNER_LABEL: Record<Owner, string> = { client: 'Vous', cabinet: 'Vo
 const FACT_STATUS: Record<string, string> = { documented: 'documenté', asserted_by_party: 'déclaré par une partie', inferred: 'déduit', missing: 'manquant' };
 const NATURE: Record<string, string> = { mentioned: 'Date écrite dans une pièce', computed: 'Date calculée', hypothesis: 'À confirmer' };
 
-export function reliabilityOf(ev: Ev[], opts: { contradicted?: boolean; kind?: 'mentioned' | 'computed' | 'hypothesis' } = {}): Reliab {
+const foldFr = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ');
+/** La date ISO figure-t-elle dans l'extrait (« 9 décembre 2026 », « mardi 9 décembre », « 1er mars », « 09/12/2026 », « 2026-12-09 ») ? */
+export function quoteHasDate(quote: string, iso: string): boolean {
+  const [y, m, d] = iso.split('-').map(Number);
+  if (!y || !m || !d) return false;
+  const q = foldFr(quote);
+  const month = foldFr(frLongDate(`${y}-${String(m).padStart(2, '0')}`)).replace(/ \d+$/, '');
+  // Jour et mois en lettres ; l'année, si elle est écrite juste après, doit être la bonne.
+  for (const x of q.matchAll(new RegExp(`(?<!\\d)0?${d}${d === 1 ? '(?:er)?' : ''} ${month}(?: (\\d{4}))?`, 'g'))) if (!x[1] || Number(x[1]) === y) return true;
+  return new RegExp(`(?<!\\d)0?${d}[/.-]0?${m}[/.-]${y}(?!\\d)`).test(q) || q.includes(iso);
+}
+
+export function reliabilityOf(ev: Ev[], opts: { contradicted?: boolean; kind?: 'mentioned' | 'computed' | 'hypothesis'; date?: string | null } = {}): Reliab {
   const reasons: string[] = [];
   if (!ev.length) reasons.push('non sourcé');
   else if (!ev.some((e) => e.status === 'found')) reasons.push(ev.some((e) => e.status === 'unknown') ? 'lecture visuelle à vérifier' : 'extrait non retrouvé dans la pièce');
   if (opts.contradicted) reasons.push('contredit par une autre pièce');
-  if (opts.kind === 'hypothesis') reasons.push('date proposée, non confirmée');
+  // Hypothèse : « proposée » seulement si la date est écrite dans un extrait retrouvé (rendez-vous proposé…).
+  if (opts.kind === 'hypothesis') reasons.push(opts.date && ev.some((e) => e.status === 'found' && quoteHasDate(e.quote, opts.date!)) ? 'date proposée, non confirmée' : 'date à confirmer, absente des extraits cités');
   if (opts.kind === 'computed') reasons.push('date calculée, non écrite dans une pièce');
   return { level: reasons.length ? 'a_verifier' : 'elevee', reasons };
 }
@@ -151,7 +165,7 @@ export function buildView(i: ViewInput): RenduView {
   const linkedEvent = new Map(fromAnalysis.map((x) => [x.key, x.event]));
   const rows = new Map<string, DeadlineView & { kind: string; manual: boolean }>();
   for (const { d, key } of fromAnalysis) {
-    rows.set(key, { key, date: d.date!, time: null, title: d.title, owner: d.owner_name ?? OWNER_LABEL[d.owner ?? 'client'], nature: NATURE[d.kind], source: src(d.evidence), reliability: reliabilityOf(d.evidence, { kind: d.kind }), done: false, kind: d.kind, manual: false });
+    rows.set(key, { key, date: d.date!, time: null, title: d.title, owner: d.owner_name ?? OWNER_LABEL[d.owner ?? 'client'], nature: NATURE[d.kind], source: src(d.evidence), reliability: reliabilityOf(d.evidence, { kind: d.kind, date: d.date }), done: false, kind: d.kind, manual: false });
   }
   for (const r of i.deadlineRows) {
     const key = r.ai_key ?? deadlineKey(r.title, r.due_date);
@@ -161,7 +175,7 @@ export function buildView(i: ViewInput): RenduView {
       key, date: r.due_date, time: r.due_time, title: r.title, owner: base?.owner_name ?? OWNER_LABEL[base?.owner ?? 'client'],
       nature: !r.ai_key ? 'Ajoutée par vous' : r.user_edited ? `${NATURE[base?.kind ?? 'mentioned']} — corrigée par vous` : NATURE[base?.kind ?? 'mentioned'],
       source: base ? src(base.evidence) : null,
-      reliability: manual ? { level: 'elevee', reasons: [] } : reliabilityOf(base?.evidence ?? [], { kind: base?.kind ?? 'mentioned' }),
+      reliability: manual ? { level: 'elevee', reasons: [] } : reliabilityOf(base?.evidence ?? [], { kind: base?.kind ?? 'mentioned', date: base?.date }),
       done: r.done, kind: manual ? 'mentioned' : (base?.kind ?? 'mentioned'), manual,
     });
   }
@@ -178,6 +192,19 @@ export function buildView(i: ViewInput): RenduView {
     const date = o.retained_date && /^\d{4}-\d{2}-\d{2}$/.test(o.retained_date) ? o.retained_date : r.date;
     rows.set(key, { ...r, date, title: target === key && o.label ? o.label : r.title, nature: `${r.nature} — corrigée par vous` });
   }
+  // Date retenue de chaque échéance de l'analyse après corrections (null : masquée), par date écrite.
+  // Sert aux textes qui citent une échéance (situation, action, relances) : ils suivent la date retenue.
+  const fates = new Map<string, (string | null)[]>();
+  for (const { d, key } of fromAnalysis) fates.set(d.date!, [...(fates.get(d.date!) ?? []), rows.get(key)?.date ?? null]);
+  /** Date retenue sans ambiguïté pour une échéance écrite (`same` si inchangée, `null` si corrigée de façon ambiguë ou masquée). */
+  const retainedFor = (iso: string | null | undefined): string | 'same' | null => {
+    const f = iso ? fates.get(iso) : undefined;
+    if (!f || f.every((x) => x === iso)) return 'same';
+    return new Set(f).size === 1 && f[0] ? f[0] : null;
+  };
+  const shortFr = (iso: string) => iso.split('-').reverse().join('/');
+  const retext = (text: string, from: string, to: string) =>
+    text.replace(new RegExp(`(?<!\\d)${frLongDate(from)}`, 'g'), frLongDate(to)).split(shortFr(from)).join(shortFr(to));
   const all = [...rows.values()].sort((x, y) => x.date.localeCompare(y.date));
   const strip = ({ kind: _k, manual: _m, ...rest }: DeadlineView & { kind: string; manual: boolean }): DeadlineView => rest;
   const future = all.filter((d) => d.date >= today && !d.done);
@@ -187,7 +214,23 @@ export function buildView(i: ViewInput): RenduView {
   const nextConfirmed = confirmed[0] ?? null;
   const nextAny = nextConfirmed ? { ...nextConfirmed, status: 'confirmee' as const } : toConfirm[0] ? { ...toConfirm[0], status: 'a_confirmer' as const } : null;
 
-  const pa = a.primary_action ?? { label: a.next_actions[0] ?? 'Voir ma synthèse', owner: 'client' as Owner, rationale: a.summary_short, due_date: null };
+  const pa0 = a.primary_action ?? { label: a.next_actions[0] ?? 'Voir ma synthèse', owner: 'client' as Owner, rationale: a.summary_short, due_date: null };
+  const paDue = retainedFor(pa0.due_date);
+  const pa = { ...pa0, due_date: paDue === 'same' ? pa0.due_date : paDue };
+  // Situation : la date limite citée suit la date retenue (seulement la prochaine échéance confirmée qu'elle annonce).
+  let situation = a.situation ?? a.summary_short;
+  for (const d of a.deadlines) {
+    const to = d.kind === 'mentioned' && d.date ? retainedFor(d.date) : 'same';
+    if (to !== 'same' && to) situation = retext(situation, d.date!, to);
+  }
+  const relances = a.reminder_drafts.map((r) => {
+    const base = { subject: r.subject, recipient: r.recipient_hint, body: r.body, condition: r.condition ?? 'Brouillon : à relire et adapter avant tout envoi.', related_deadline: r.related_deadline ?? null, audience: r.audience };
+    const from = base.related_deadline;
+    const to = retainedFor(from);
+    if (!from || to === 'same') return base;
+    if (!to) return { ...base, condition: `${base.condition} Attention : l’échéance liée du ${frLongDate(from)} a été corrigée ou masquée par vous ; vérifiez la date citée avant tout envoi.` };
+    return { ...base, subject: retext(base.subject, from, to), body: retext(base.body, from, to), related_deadline: to, condition: `${base.condition} Date de l’échéance corrigée par vous (date écrite dans la pièce : ${frLongDate(from)}) ; vérifiez la date citée avant tout envoi.` };
+  });
   const events = applyOverrides(a.events, i.overrides);
   const evByKey = new Map(events.map((e) => [e.key, e]));
   const milestones = (a.milestones ?? [])
@@ -211,7 +254,7 @@ export function buildView(i: ViewInput): RenduView {
     version: 1,
     dossier: { id: i.dossierId ?? null, title: i.title, revision: i.revision, as_of: today, provider: i.provider, simulation: i.provider === 'regles', coverage_label: coverageLabel, complete: i.coverage.complete },
     tableau: {
-      situation: a.situation ?? a.summary_short,
+      situation,
       action: { label: pa.label, owner: pa.owner, owner_label: OWNER_LABEL[pa.owner], rationale: pa.rationale, due_date: pa.due_date, target: targetOf(pa.label) },
       next_date: nextAny,
       cabinet: pa.owner === 'cabinet' ? pa.rationale : a.deadlines.find((d) => d.owner === 'cabinet' && d.date && d.date >= today)?.title ?? null,
@@ -234,7 +277,7 @@ export function buildView(i: ViewInput): RenduView {
       history: [...i.overrides].sort((x, y) => x.created_at.localeCompare(y.created_at)).map((o) => ({ at: o.created_at, key: o.event_key, retained: o.retained_date, label: o.label, hidden: o.hidden, reason: o.reason, author: o.author })),
     },
     echeances: { confirmed, to_confirm: toConfirm, past, none_confirmed: confirmed.length === 0 },
-    relances: { drafts: a.reminder_drafts.map((r) => ({ subject: r.subject, recipient: r.recipient_hint, body: r.body, condition: r.condition ?? 'Brouillon : à relire et adapter avant tout envoi.', related_deadline: r.related_deadline ?? null, audience: r.audience })) },
+    relances: { drafts: relances },
     pieces: i.pieces.map((p) => ({ id: p.id, name: p.file_name })),
   };
 }
@@ -247,7 +290,7 @@ export function categoryData(v: RenduView): Record<DeliverableKey, unknown> {
     resume: { head, r: v.resume },
     chronologie: { head, c: v.chronologie },
     dates: { head, d: v.dates },
-    echeances: { head, e: v.echeances },
+    echeances: { head, id: v.dossier.id, e: v.echeances },
     relances: { head, r: v.relances },
   };
 }

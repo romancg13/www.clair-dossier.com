@@ -326,6 +326,7 @@ export async function handle(env: ApiEnv, req: Request): Promise<Response> {
     }
     if (sub === '/dates' && m === 'POST') {
       const b = await body<{ cle?: string; date?: string; raison?: string }>(req);
+      if (b.cle && /^\d{4}-\d{2}-\d{2}$/.test(b.date ?? '') && !isCalendarDate(b.date!)) return err(400, `Date inexistante : ${b.date!.split('-').reverse().join('/')}.`);
       if (!b.cle || !isCalendarDate(b.date ?? '') || !(b.raison ?? '').trim()) return err(400, 'Date (AAAA-MM-JJ) et raison requises.');
       await store.addOverride(d.id, { event_key: b.cle, retained_date: b.date!, label: null, hidden: false, reason: b.raison!.trim().slice(0, 300), author: user.role === 'admin' ? 'Équipe ClairDossier' : 'Titulaire du dossier', created_at: now.toISOString() });
       await store.addEvent(d.id, user.id, 'date_corrigee', `Date corrigée : ${b.date!.split('-').reverse().join('/')}`);
@@ -348,13 +349,19 @@ export async function handle(env: ApiEnv, req: Request): Promise<Response> {
       // Saisies illisibles ou dates inexistantes (« 31/02/2021 ») : signalées, jamais enregistrées.
       const ignorees = read.invalid.map(labelOf);
       const conflits: string[] = [];
+      const introuvables: string[] = [];
       // Date retenue actuelle : dernière correction enregistrée (même si la vue n'est pas encore régénérée).
       const latest = new Map<string, string | null>();
       for (const o of [...(await store.listOverrides(d.id))].sort((x, y) => x.created_at.localeCompare(y.created_at))) latest.set(o.event_key, o.retained_date);
       let n = 0;
       for (const r of read.rows) {
         const cur = view?.dates.rows.find((x) => x.key === r.key);
-        if (!cur) continue;
+        if (!cur) {
+          // Ligne d'un formulaire plus ancien que le dossier : signalée si elle a été modifiée, jamais appliquée.
+          // (Formulaire émis avant « dates_imprimees » : impossible de savoir si elle a été modifiée ; rien n'est signalé.)
+          if (r.printed !== null && r.retained !== r.printed) introuvables.push(r.key.replace(/^(\d{4})-(\d{2})-(\d{2}):.*$/, 'ligne du $3/$2/$1'));
+          continue;
+        }
         const current = latest.get(r.key) ?? cur.retained;
         if (r.printed !== null && r.retained === r.printed) continue; // ligne laissée telle qu'imprimée
         if (current === r.retained) continue; // déjà la date retenue
@@ -371,7 +378,7 @@ export async function handle(env: ApiEnv, req: Request): Promise<Response> {
         await store.enqueue({ key: `r:${d.id}`, kind: 'render', user_id: d.user_id, dossier_id: d.id, piece_id: null });
         env.waitUntil(runNow(env));
       }
-      return json({ corrigees: n, conflits, ignorees });
+      return json({ corrigees: n, conflits, ignorees, introuvables });
     }
     if (sub === '/cloture' && m === 'POST') {
       const b = await body<{ cloture?: boolean }>(req);

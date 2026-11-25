@@ -10,7 +10,8 @@ import { handle, type ApiEnv } from '../recette/server/api.ts';
 import { loadAssets } from '../recette/server/assets.ts';
 import { fixture, stack } from './helpers/recette.ts';
 import { deadlineKey } from '../supabase/functions/_shared/ai-pipeline.ts';
-import { buildConfirmedIcs, buildView, categoryFiles, reliabilityOf, type RenduView, type ViewAnalysis } from '../supabase/functions/_shared/rendus/index.ts';
+import { buildConfirmedIcs, buildView, categoryData, categoryFiles, reliabilityOf, type RenduView, type ViewAnalysis } from '../supabase/functions/_shared/rendus/index.ts';
+import { reliability as verifyReliability } from '../supabase/functions/_shared/engine/verify.ts';
 import { Pdf } from '../supabase/functions/_shared/rendus/pdf.ts';
 import { demandeJustificatifs, ficheRendezVous } from '../supabase/functions/_shared/prestations/index.ts';
 
@@ -141,6 +142,41 @@ test('C12 : la date confirmée exportée dans l’ICS est corrigeable et sa corr
   assert.equal(v1.tableau.next_date?.status, 'confirmee');
   const ics = await publishedIcs(s, 'D1');
   assert.ok(ics.includes('DTSTART;VALUE=DATE:20270122') && !ics.includes('20270115'), 'ICS à la date corrigée');
+  // Contre-revue : les textes qui citent l'échéance suivent la date retenue (relance au tiers, situation).
+  assert.ok(v0.relances.drafts.some((r) => r.related_deadline === '2027-01-15' && r.body.includes('15 janvier 2027')), 'prémisse : la relance cite l’échéance');
+  for (const r of v1.relances.drafts) {
+    assert.ok(!r.body.includes('15 janvier 2027') && !r.body.includes('15/01/2027'), r.body);
+    assert.notEqual(r.related_deadline, '2027-01-15');
+  }
+  const rel = v1.relances.drafts.find((r) => r.related_deadline === '2027-01-22')!;
+  assert.ok(rel.body.includes('avant le 22 janvier 2027'), rel.body);
+  assert.match(rel.condition, /corrigée par vous.*15 janvier 2027.*vérifiez la date citée/);
+  assert.ok(!v1.tableau.situation.includes('15 janvier 2027') && v1.tableau.situation.includes('réponse attendue avant le 22 janvier 2027'), v1.tableau.situation);
+});
+
+test('C12 : relance liée à une échéance masquée ou corrigée de façon ambiguë : date non réécrite, avertissement', () => {
+  const ev = (q: string) => [{ document_id: 'p1', page: 1, quote: q, status: 'found' as const }];
+  const mk = (overrides: Parameters<typeof buildView>[0]['overrides'], titles = ['Réponse attendue']): RenduView => buildView({
+    title: 'T', revision: 1, generatedAt: new Date('2026-11-18T09:00:00Z'), coverage: { total: 1, extracted: 1, unsupported: 0, failed: 0, pending: 0, complete: true },
+    pieces: [{ id: 'p1', file_name: 'Courrier.pdf', created_at: '2026-11-18T09:00:00Z' }], deadlineRows: [], provider: 'regles', overrides,
+    analysis: {
+      situation: 'Réponse attendue avant le 15 janvier 2027.', summary_short: 's', summary_long: 'l', parties: [], facts: [], contradictions: [], missing_items: [], attention_points: [], next_actions: [], events: [],
+      deadlines: titles.map((t) => ({ title: t, date: '2027-01-15', kind: 'mentioned' as const, basis: 'b', priority: 'haute', owner: 'client' as const, evidence: ev('avant le 15 janvier 2027') })),
+      reminder_drafts: [{ audience: 'third_party', subject: 'Relance', body: 'Nous reviendrons vers vous avant le 15 janvier 2027.', suggested_date: null, recipient_hint: 'Cabinet', condition: 'À relire.', related_deadline: '2027-01-15' }],
+    },
+  });
+  const o = (key: string, date: string | null, hidden = false) => ({ event_key: key, retained_date: date, label: null, hidden, reason: 'r', author: 'Titulaire du dossier', created_at: '2026-11-18T10:00:00Z' });
+  const k1 = deadlineKey('Réponse attendue', '2027-01-15');
+  const masked = mk([o(k1, null, true)]).relances.drafts[0];
+  assert.equal(masked.body, 'Nous reviendrons vers vous avant le 15 janvier 2027.');
+  assert.match(masked.condition, /^À relire\. Attention : l’échéance liée du 15 janvier 2027 a été corrigée ou masquée par vous/);
+  // Deux échéances le même jour, une seule déplacée : on ne sait pas laquelle la relance vise.
+  const amb = mk([o(k1, '2027-01-22')], ['Réponse attendue', 'Paiement du solde']);
+  assert.equal(amb.relances.drafts[0].related_deadline, '2027-01-15');
+  assert.match(amb.relances.drafts[0].condition, /corrigée ou masquée par vous/);
+  assert.equal(amb.tableau.situation, 'Réponse attendue avant le 15 janvier 2027.');
+  // Rien de corrigé : brouillon inchangé.
+  assert.deepEqual(mk([]).relances.drafts[0].condition, 'À relire.');
 });
 
 test('C12 : le lien échéance ↔ événement ne dépend pas de la coïncidence des clés (libellé court)', () => {
@@ -203,6 +239,19 @@ test('C13 : saisie J/M/AAAA acceptée ; date impossible refusée et signalée (f
   assert.equal((await call('POST', `/api/dossiers/${id}/dates`, { cle: keys[ix], date: '2021-02-31', raison: 'x' })).status, 400);
 });
 
+test('C13 (contre-revue) : ligne absente du dossier signalée ; date inexistante nommée dans le message de la route en ligne', async () => {
+  const { call, id, keys, fill } = await bailDossier();
+  const ix = keys.findIndex((k) => k.startsWith('2021-03-03'));
+  const doc = await PDFDocument.load(await fill({ [ix]: '04/03/2021' }));
+  doc.getForm().getTextField('cles').setText(JSON.stringify(keys.map((k, i) => (i === ix ? '2020-05-05:ligne-disparue' : k))));
+  const r = await (await call('POST', `/api/dossiers/${id}/dates/formulaire`, pdfForm(new Uint8Array(await doc.save())))).json();
+  assert.equal(r.corrigees, 0);
+  assert.deepEqual(r.introuvables, ['ligne du 05/05/2020']);
+  const res = await call('POST', `/api/dossiers/${id}/dates`, { cle: keys[ix], date: '2021-02-31', raison: 'x' });
+  assert.equal(res.status, 400);
+  assert.match(JSON.stringify(await res.json()), /Date inexistante : 31\/02\/2021/);
+});
+
 /* ── C24 : prestations, aucune échéance affirmée à tort ─────────────────── */
 
 test('C24 : la demande de justificatifs et la fiche RDV n’affirment pas une date à confirmer comme échéance', async () => {
@@ -246,6 +295,18 @@ test('C25 : UID ICS propre à chaque dossier, stable d’une révision à l’au
   assert.equal(uid(await publishedIcs(s, 'D1')), u1);
 });
 
+test('C25 (contre-revue) : l’identifiant du dossier fait partie de l’empreinte des échéances (UID ICS régénéré)', async () => {
+  const s = stack();
+  await s.user('A');
+  await s.dossier('D1', 'A');
+  await s.depose('D1', 'A', 'L1', INITIAL);
+  await s.run();
+  const v = await view(s, 'D1');
+  const other = { ...v, dossier: { ...v.dossier, id: 'autre-dossier' } };
+  assert.notDeepEqual(categoryData(v).echeances, categoryData(other).echeances);
+  assert.deepEqual(categoryData(v).resume, categoryData(other).resume, 'les autres rendus ne sont pas régénérés');
+});
+
 /* ── C26 : pied de page PDF complet ─────────────────────────────────────── */
 
 test('C26 : le pied de page PDF n’est jamais tronqué (avertissement juridique, « sans IA », « Données fictives »)', async () => {
@@ -274,6 +335,16 @@ test('B6 : une date proposée n’est pas dite « non écrite dans une pièce »
   const found = [{ document_id: 'p1', page: 1, quote: 'q', status: 'found' as const }];
   assert.deepEqual(reliabilityOf(found, { kind: 'computed' }).reasons, ['date calculée, non écrite dans une pièce']);
   assert.deepEqual(reliabilityOf(found, { kind: 'mentioned' }), { level: 'elevee', reasons: [] });
+});
+
+test('B6 (contre-revue) : « date proposée » seulement si la date figure dans un extrait retrouvé ; ancien libellé retiré de verify', () => {
+  const q = (quote: string, status: 'found' | 'not_found' = 'found') => [{ document_id: 'p1', page: 1, quote, status }];
+  assert.deepEqual(reliabilityOf(q('Je vous propose le mardi 9 décembre à 10 h.'), { kind: 'hypothesis', date: '2026-12-09' }).reasons, ['date proposée, non confirmée']);
+  assert.deepEqual(reliabilityOf(q('Rendez-vous possible le 09/12/2026.'), { kind: 'hypothesis', date: '2026-12-09' }).reasons, ['date proposée, non confirmée']);
+  assert.deepEqual(reliabilityOf(q('Le délai de réponse est probablement de huit jours.'), { kind: 'hypothesis', date: '2026-12-09' }).reasons, ['date à confirmer, absente des extraits cités']);
+  assert.deepEqual(reliabilityOf(q('Je vous propose le 9 décembre 2025.'), { kind: 'hypothesis', date: '2026-12-09' }).reasons, ['date à confirmer, absente des extraits cités'], 'mauvaise année');
+  assert.ok(reliabilityOf(q('Je vous propose le 9 décembre.', 'not_found'), { kind: 'hypothesis', date: '2026-12-09' }).reasons.includes('date à confirmer, absente des extraits cités'), 'extrait non retrouvé');
+  assert.ok(!verifyReliability([{ ...q('x')[0], locator: null }], { hypothesis: true }).reasons.includes('date non écrite dans une pièce'));
 });
 
 /* ── B7 : PDF « Dates modifiables », sous-ligne repliée ─────────────────── */

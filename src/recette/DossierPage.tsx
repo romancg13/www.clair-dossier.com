@@ -337,10 +337,11 @@ function Dates({ v, id, onChange }: { v: RenduView; id: string; onChange: () => 
     const form = new FormData();
     form.append('fichier', f);
     try {
-      const r = await api<{ corrigees: number; conflits?: string[]; ignorees?: string[] }>(`/api/dossiers/${id}/dates/formulaire`, { form });
+      const r = await api<{ corrigees: number; conflits?: string[]; ignorees?: string[]; introuvables?: string[] }>(`/api/dossiers/${id}/dates/formulaire`, { form });
       const parts: string[] = [];
       if (r.corrigees) parts.push(r.corrigees > 1 ? `${r.corrigees} dates corrigées depuis le formulaire.` : 'Une date corrigée depuis le formulaire.');
       if (r.conflits?.length) parts.push(`Non appliqué, car la date a été modifiée depuis l’impression du formulaire : ${r.conflits.join(' ; ')}. Téléchargez le formulaire à jour pour la corriger.`);
+      if (r.introuvables?.length) parts.push(`Non appliqué, car ${r.introuvables.length > 1 ? 'ces lignes ne figurent' : 'cette ligne ne figure'} plus dans le dossier : ${r.introuvables.join(' ; ')}. Téléchargez le formulaire à jour.`);
       if (r.ignorees?.length) parts.push(`Date illisible ou inexistante, non prise en compte : ${r.ignorees.join(' ; ')} (format attendu : JJ/MM/AAAA).`);
       setMsg(parts.length ? parts.join(' ') : 'Aucune modification trouvée dans le formulaire.');
       onChange();
