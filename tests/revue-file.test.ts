@@ -286,7 +286,7 @@ test('C03 : un envoi de plus de 20 fichiers est refusé avant tout stockage ; 20
 
 /* ── B5 ──────────────────────────────────────────────────────────────── */
 
-test('B5 : travail en échec visible (état « incident », écran d’exceptions) et jamais repris par l’exécuteur', async () => {
+test('B5 : travail en échec visible (écran d’exceptions), jamais repris ; dossier livré avec la pièce signalée illisible, lue après redépôt', async () => {
   // Horloge pilotée et fichier de la pièce introuvable : l'extraction lève à chaque tentative.
   let t = Date.parse('2026-11-18T09:00:00Z');
   const kv = new SondeKv();
@@ -309,8 +309,14 @@ test('B5 : travail en échec visible (état « incident », écran d’exception
   assert.equal(failed.length, 1, 'le travail en échec reste rattaché au dossier');
   assert.equal(await s.claim('w9', 60_000), null, 'un travail en échec n’est jamais repris');
   const d = await (await c.call('GET', `/api/dossiers/${dA}`)).json();
-  assert.equal(d.statut.etat, 'incident');
+  // Depuis C06 (lot « exécuteur »), un échec définitif d'extraction n'empêche plus la livraison :
+  // le dossier est publié, la pièce illisible est signalée et le client est invité à la redéposer.
+  assert.equal(d.statut.etat, 'pret');
   assert.equal(d.statut.travaux, 0);
+  assert.equal(d.pieces[0].lecture.statut, 'error');
+  assert.equal(d.vue.tableau.action.label, 'Redéposer une pièce lisible');
+  assert.doesNotMatch(d.vue.tableau.situation, /en attente de lecture/, 'une pièce en échec n’est pas annoncée « en attente »');
+  assert.match(d.vue.tableau.situation, /1 pièce n'a pas pu être lue : merci de la redéposer/);
   // Écran d'exceptions (administration de la recette).
   const tk = token();
   await s.putUser({ id: 'adm', email: 'admin@recette.test', first_name: 'Admin', last_name: 'Recette', company: null, role: 'admin', pwd: { salt: '', hash: '' }, notifications: false, created_at: new Date(t).toISOString() });
@@ -326,9 +332,19 @@ test('B5 : travail en échec visible (état « incident », écran d’exception
     await drain(deps, 60_000, 50);
     t += 10 * 60_000;
   }
-  assert.equal((await s.getExtraction('p1'))?.status, 'ok', 'la pièce en échec est relue après le nouveau dépôt');
+  // Depuis C06, un échec définitif est acquis : un autre dépôt ne relance pas la pièce en échec…
+  assert.equal((await s.getExtraction('p1'))?.status, 'error');
+  // …mais redéposer la même pièce (geste demandé au client) la fait lire, sans doublon trompeur.
+  await s.addPiece({ id: 'p3', dossier_id: dA, user_id: me, lot_id: 'L3', file_name: 'Courrier-bailleur-2026-10-12.pdf', mime: null, size_bytes: bytes.byteLength, sha256: await sha256(bytes), duplicate_of: null, created_at: new Date(t).toISOString(), deleted_at: null }, bytes);
+  await s.enqueue({ key: 'x:p3', kind: 'extract', user_id: me, dossier_id: dA, piece_id: 'p3' });
+  for (let i = 0; i < 8; i++) {
+    await drain(deps, 60_000, 50);
+    t += 10 * 60_000;
+  }
+  assert.equal((await s.getExtraction('p3'))?.status, 'ok', 'la pièce redéposée est lue');
   const d2 = await (await c.call('GET', `/api/dossiers/${dA}`)).json();
   assert.equal(d2.statut.etat, 'pret');
+  assert.doesNotMatch(d2.vue.tableau.situation, /n'a pas pu être lue/, 'plus de pièce illisible signalée après le redépôt');
   await settle();
 });
 
@@ -409,8 +425,8 @@ test('C03 : anomalies_techniques (client) ne lit pas les travaux des autres clie
   const autres = new Set((await store.openJobs('DB')).map((j) => `jobs/${j.id}.json`));
   assert.equal(autres.size, 40);
   const tk = token();
-  await kv.putJson(`oauth/grants/${sha(tk)}.json`, { user_id: me, client_id: 'cl', scope: 'dossiers:lecture', exp: Date.now() + 3_600_000, kind: 'access' });
-  await kv.putJson(`oauth/links/${me}/cl.json`, { at: new Date().toISOString() });
+  await kv.putJson(`oauth/grants/${sha(tk)}.json`, { user_id: me, client_id: 'cl', scope: 'dossiers:lecture', exp: Date.now() + 3_600_000, kind: 'access', resource: `${e.siteUrl}/mcp`, gen: 'g1' });
+  await kv.putJson(`oauth/links/${me}/cl.json`, { at: new Date().toISOString(), gen: 'g1' });
   kv.lectures = [];
   const r = await handleMcp(e, new Request('https://recette.test/mcp', { method: 'POST', headers: { authorization: `Bearer ${tk}`, 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'anomalies_techniques', arguments: {} } }) }));
   const out = (await r.json()).result.structuredContent;

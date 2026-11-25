@@ -390,12 +390,16 @@ export function consolidateByRules(input: ConsolidationInput): AnalysisOutput {
     : pieces.length
       ? `Au ${frLongDate(today)}, ${pieces.length} pièce${pieces.length > 1 ? 's' : ''} de votre dossier ${pieces.length > 1 ? 'ont été lues' : 'a été lue'}.`
       : `Au ${frLongDate(today)}, aucune pièce de votre dossier n'a encore pu être lue.`;
-  const pending = (input.others ?? []).length;
+  // « others » mêle pièces illisibles et lectures reportées : seules ces dernières sont « en attente ».
+  const unreadableIds = new Set(input.unreadable.map((u) => u.document_id));
+  const pending = (input.others ?? []).filter((o) => !unreadableIds.has(o.document_id)).length;
+  const unreadableCount = input.unreadable.length;
   const s2parts: string[] = [];
   if (amountC) s2parts.push(amountC.text.replace(/^Montants différents : /, 'Les pièces ne concordent pas : ').replace(/\.$/, ''));
   if (nextConfirmed) s2parts.push(`réponse attendue avant le ${frLongDate(nextConfirmed.date!)}`);
   if (!s2parts.length && referencedMissing) s2parts.push(`il manque ${referencedMissing.short_label} pour vérifier`);
   if (!s2parts.length && pending) s2parts.push(`${pending} pièce${pending > 1 ? 's sont' : ' est'} en attente de lecture : vous serez prévenu dès que les résultats seront prêts`);
+  if (!s2parts.length && unreadableCount) s2parts.push(`${unreadableCount} pièce${unreadableCount > 1 ? 's n\'ont' : ' n\'a'} pas pu être lue${unreadableCount > 1 ? 's' : ''} : merci de ${unreadableCount > 1 ? 'les' : 'la'} redéposer dans une version lisible`);
   const s2 = s2parts.length ? `${capitalize(s2parts.join(' ; '))}.` : '';
   const situation = tidy(`${s1} ${s2}`);
 
