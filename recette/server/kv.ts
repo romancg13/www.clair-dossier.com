@@ -3,6 +3,7 @@
 //  - BlobKv : Vercel Blob privé (recette hébergée, persistance réelle) ;
 //  - MemoryKv : mémoire de processus — TESTS UNIQUEMENT, jamais présenté comme persistant.
 import { BlobNotFoundError, BlobPreconditionFailedError, del, get, head, list, put } from '@vercel/blob';
+import { generateClientTokenFromReadWriteToken } from '@vercel/blob/client';
 
 export interface KvEntry<T> {
   value: T;
@@ -20,6 +21,11 @@ export interface Kv {
   putBytes(key: string, bytes: Uint8Array, contentType: string): Promise<void>;
   delete(key: string): Promise<void>;
   list(prefix: string): Promise<string[]>;
+  /**
+   * Autorisation de dépôt DIRECT navigateur → stockage privé, pour UNE clé, bornée
+   * en taille et en durée. Absente : le stockage ne sait pas faire (tests en mémoire).
+   */
+  directUpload?(key: string, opts: { maxBytes: number; validMs: number }): Promise<{ pathname: string; token: string }>;
 }
 
 /** Lecture-modification-écriture avec reprise sur conflit (optimiste). */
@@ -143,6 +149,12 @@ export class BlobKv implements Kv {
   }
   async putBytes(key: string, bytes: Uint8Array, contentType: string) {
     await put(this.k(key), Buffer.from(bytes), { access: 'private', addRandomSuffix: false, allowOverwrite: true, contentType, cacheControlMaxAge: 60 });
+  }
+  async directUpload(key: string, opts: { maxBytes: number; validMs: number }) {
+    const pathname = this.k(key);
+    // Jeton à usage restreint : ce chemin exact, cette taille maximale, quelques minutes.
+    const token = await generateClientTokenFromReadWriteToken({ pathname, maximumSizeInBytes: opts.maxBytes, validUntil: Date.now() + opts.validMs, addRandomSuffix: false, allowOverwrite: true });
+    return { pathname, token };
   }
   async delete(key: string) {
     await del(this.k(key)).catch(() => undefined);

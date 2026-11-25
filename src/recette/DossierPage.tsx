@@ -21,6 +21,9 @@ function Fiabilite({ r }: { r: { level: 'elevee' | 'a_verifier'; reasons: string
   return r.level === 'elevee' ? <Chip tone="ok">Fiabilité élevée</Chip> : <Chip tone="warn">À vérifier : {r.reasons.join(', ')}</Chip>;
 }
 
+/** Au-delà, le fichier part directement vers le stockage privé (pas de transit par l'API). */
+const PETIT = 4 * 1024 * 1024;
+
 export function DossierPage() {
   const { id = '' } = useParams();
   const [d, setD] = useState<DossierDetail | null>(null);
@@ -57,15 +60,42 @@ export function DossierPage() {
     setNotice(null);
     let recus = 0;
     try {
-      for (const [i, f] of files.entries()) {
-        const form = new FormData();
-        form.append('lot', lot);
-        form.append('total', String(files.length));
-        form.append('fichiers', f, f.name);
-        await api(`/api/dossiers/${id}/pieces`, { form });
-        recus++;
-        setUpload({ done: i + 1, total: files.length });
-      }
+      // Envoi par 4 fichiers à la fois. Jusqu'à 4 Mo : dépôt classique. Au-delà : dépôt direct vers le
+      // stockage privé (autorisation courte délivrée par le serveur, puis confirmation), sans transit par l'API.
+      const queue = [...files];
+      const envoyer = async (f: File) => {
+        if (f.size <= PETIT) {
+          const form = new FormData();
+          form.append('lot', lot);
+          form.append('total', String(files.length));
+          form.append('fichiers', f, f.name);
+          await api(`/api/dossiers/${id}/pieces`, { form });
+          return;
+        }
+        const a = await api<{ mode: 'direct' | 'serveur'; id?: string; pathname?: string; token?: string }>(`/api/dossiers/${id}/pieces/autoriser`, { body: { nom: f.name, taille: f.size, type: f.type, lot, total: files.length } });
+        if (a.mode !== 'direct' || !a.id || !a.pathname || !a.token) throw new ApiError(413, `« ${f.name} » dépasse 4 Mo : le dépôt direct n’est pas disponible ici.`);
+        const { put } = await import('@vercel/blob/client');
+        await put(a.pathname, f, { access: 'private', token: a.token, contentType: f.type || undefined, multipart: f.size > 8 * 1024 * 1024 });
+        // La confirmation est idempotente : on la rejoue si le fichier n'est pas encore visible du serveur.
+        for (let essai = 0; ; essai++) {
+          try {
+            await api(`/api/dossiers/${id}/pieces/confirmer`, { body: { id: a.id } });
+            return;
+          } catch (e) {
+            if (!(e instanceof ApiError) || e.status !== 409 || essai >= 4) throw e;
+            await new Promise((r) => setTimeout(r, 800 * (essai + 1)));
+          }
+        }
+      };
+      await Promise.all(
+        Array.from({ length: Math.min(4, files.length) }, async () => {
+          for (let f = queue.shift(); f; f = queue.shift()) {
+            await envoyer(f);
+            recus++;
+            setUpload({ done: recus, total: files.length });
+          }
+        }),
+      );
       setNotice('Pièces reçues. La lecture a commencé : vous pouvez fermer cette page, les résultats vous attendront ici.');
     } catch (e) {
       if (e instanceof ApiError && e.redirect) window.location.assign(e.redirect);
@@ -217,7 +247,7 @@ export function DossierPage() {
             <label className="mt-3 inline-flex cursor-pointer"><span className="inline-flex min-h-11 items-center rounded-full bg-navy-900 px-6 py-3 text-[15px] font-semibold text-white">Choisir des fichiers</span>
               <input type="file" multiple className="sr-only" accept=".pdf,.jpg,.jpeg,.png,.webp,.docx,.xlsx,.csv,.txt,.eml" onChange={(e) => void deposer([...(e.target.files ?? [])])} />
             </label>
-            <p className="mt-3 text-[13px] text-slate-500">PDF, photos, Word, tableurs, courriels · 4 Mo par fichier en recette.</p>
+            <p className="mt-3 text-[13px] text-slate-500">PDF, photos, Word, tableurs, courriels · 25 Mo par fichier.</p>
             <div className="mt-4 flex flex-wrap justify-center gap-2 text-[13px]">
               <span className="text-slate-500">Pièces fictives :</span>
               <button type="button" className="underline decoration-gold-500" onClick={() => void exemples('initial')}>lot initial (4)</button>

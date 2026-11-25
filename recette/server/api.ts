@@ -32,6 +32,9 @@ export interface ApiEnv {
 }
 
 const MAX_UPLOAD = 4 * 1024 * 1024;
+// Dépôt direct vers le stockage privé (sans transit par la fonction) : limite alignée sur l'espace client.
+const MAX_DIRECT = 25 * 1024 * 1024;
+const DIRECT_VALID_MS = 10 * 60 * 1000;
 /** Fichiers par envoi : borne le travail d'une requête (l'interface envoie un fichier par requête). */
 const MAX_FILES = 20;
 const SESSION_DAYS = 30;
@@ -357,6 +360,57 @@ export async function handle(env: ApiEnv, req: Request): Promise<Response> {
       env.waitUntil(store.addEvent(d.id, user.id, 'pieces_deposees', `${added.length} pièce${added.length > 1 ? 's' : ''} déposée${added.length > 1 ? 's' : ''}`));
       env.waitUntil(runNow(env));
       return json({ lot, pieces: added }, 201);
+    }
+    // ── Dépôt direct (gros fichiers) : autorisation courte, puis confirmation idempotente ──
+    if (sub === '/pieces/autoriser' && m === 'POST') {
+      // Droits vérifiés AVANT toute autorisation : rien n'est stocké en cas de refus.
+      if (!ent.active) return err(402, 'Un abonnement actif est nécessaire pour déposer des pièces.', { redirect: '/tarifs' });
+      if (d.closed) return err(409, 'Ce dossier est clôturé : rouvrez-le pour ajouter des pièces.');
+      const b = await body<{ nom?: string; taille?: number; type?: string; lot?: string; total?: number }>(req);
+      const taille = Math.floor(Number(b.taille));
+      if (!b.nom || !Number.isFinite(taille) || taille <= 0) return err(400, 'Nom et taille du fichier requis.');
+      if (taille > MAX_DIRECT) return err(413, `« ${String(b.nom).slice(0, 80)} » dépasse ${MAX_DIRECT / 1024 / 1024} Mo.`);
+      const lot = b.lot && /^[0-9a-f-]{36}$/.test(b.lot) ? b.lot : uuid();
+      // Le stockage ne sait pas recevoir en direct (tests) : le client utilise le dépôt classique.
+      if (!store.kv.directUpload) return json({ mode: 'serveur', lot });
+      if (!(await consume(store, `limites/stockage/${d.user_id}.json`, LIMITES.octetsParCompte, Infinity, taille))) return err(413, `Espace de stockage plein : un compte de recette conserve au plus ${LIMITES.octetsParCompte / 1024 / 1024} Mo.`);
+      const id = uuid();
+      const nom = String(b.nom).replace(/[\u0000-\u001f\\/]/g, '_').slice(0, 160) || 'piece';
+      // Chemin imposé par le serveur, dans l'espace du compte : le client ne choisit rien.
+      const cle = `depots/${d.user_id}/${d.id}/${id}`;
+      await store.kv.putJson(`depots-attente/${id}.json`, { id, cle, dossier_id: d.id, user_id: d.user_id, lot, nom, mime: typeof b.type === 'string' ? b.type.slice(0, 120) : null, taille, cree: store.now().toISOString() }, { create: true });
+      await store.declareLot(d.id, lot, Math.min(200, Math.max(1, Math.floor(Number(b.total)) || 1)));
+      const acces = await store.kv.directUpload(cle, { maxBytes: taille, validMs: DIRECT_VALID_MS });
+      return json({ mode: 'direct', id, lot, ...acces }, 201);
+    }
+    if (sub === '/pieces/confirmer' && m === 'POST') {
+      const b = await body<{ id?: string }>(req);
+      if (!b.id || !/^[0-9a-f-]{36}$/.test(b.id)) return err(400, 'Dépôt invalide.');
+      type Attente = { id: string; cle: string; dossier_id: string; user_id: string; lot: string; nom: string; mime: string | null; taille: number };
+      const att = (await store.kv.getJson<Attente>(`depots-attente/${b.id}.json`))?.value;
+      if (!att) {
+        // Rejeu d'une confirmation déjà traitée : même réponse, aucun double enregistrement.
+        const deja = await store.getPiece(b.id);
+        return deja && deja.dossier_id === d.id ? json({ lot: deja.lot_id, pieces: [{ id: deja.id, nom: deja.file_name }] }) : err(404, 'Dépôt introuvable.');
+      }
+      // Même réponse qu'un dépôt inexistant pour le dossier d'un autre compte.
+      if (att.dossier_id !== d.id || att.user_id !== d.user_id) return err(404, 'Dépôt introuvable.');
+      if (d.closed) return err(409, 'Ce dossier est clôturé : rouvrez-le pour ajouter des pièces.');
+      const bytes = await store.kv.getBytes(att.cle);
+      if (!bytes) return err(409, 'Le fichier n’est pas encore arrivé : réessayez dans un instant.');
+      if (bytes.byteLength > att.taille || bytes.byteLength > MAX_DIRECT) {
+        await store.kv.delete(att.cle);
+        await store.kv.delete(`depots-attente/${att.id}.json`);
+        return err(413, 'Le fichier reçu dépasse la taille annoncée : il a été écarté.');
+      }
+      if (!(await store.getPiece(att.id)))
+        await store.addPiece({ id: att.id, dossier_id: d.id, user_id: d.user_id, lot_id: att.lot, file_name: att.nom, mime: att.mime, size_bytes: bytes.byteLength, sha256: await sha256(bytes), duplicate_of: null, created_at: store.now().toISOString(), deleted_at: null }, bytes);
+      await store.enqueue({ key: `x:${att.id}`, kind: 'extract', user_id: d.user_id, dossier_id: d.id, piece_id: att.id });
+      await store.kv.delete(att.cle);
+      await store.kv.delete(`depots-attente/${att.id}.json`);
+      env.waitUntil(store.addEvent(d.id, user.id, 'pieces_deposees', '1 pièce déposée'));
+      env.waitUntil(runNow(env));
+      return json({ lot: att.lot, pieces: [{ id: att.id, nom: att.nom }] }, 201);
     }
     const fin = /^\/lots\/([0-9a-f-]{36})\/fin$/.exec(sub);
     if (fin && m === 'POST') {
