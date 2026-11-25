@@ -24,6 +24,7 @@ const ext = (n: string) => n.split(".").pop()?.toLowerCase() ?? "";
 /** Les six documents ClairDossier : Visualiser, Télécharger chaque format, Tout télécharger. */
 export function DeliverablesGrid({ files, caption, emptyLabel, busy, onDownloadAll }: Props) {
   const ready = files.length > 0;
+  const missing = DELIVERABLE_CATALOG.filter((d) => !files.some((f) => f.key === d.key));
   return (
     <section aria-labelledby="livrables-title">
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -47,8 +48,9 @@ export function DeliverablesGrid({ files, caption, emptyLabel, busy, onDownloadA
 
       {!ready ? (
         // Aucun document encore publié : une seule ligne au lieu de six cartes vides identiques.
+        // L'état (emptyLabel) reste une phrase à part ; les libellés gardent leur casse (« Résumé IA »).
         <p className="mt-5 rounded-2xl border border-dashed hairline bg-cream-50/60 p-5 text-sm leading-relaxed text-slate-500">
-          {emptyLabel} Six documents seront proposés ici : {DELIVERABLE_CATALOG.map((d) => d.label.toLowerCase()).join(", ")}.
+          {emptyLabel} Vos six documents ({DELIVERABLE_CATALOG.map((d) => d.label).join(", ")}) apparaîtront ici dès leur publication.
         </p>
       ) : (
       <>
@@ -97,9 +99,9 @@ export function DeliverablesGrid({ files, caption, emptyLabel, busy, onDownloadA
           );
         })}
       </ul>
-      {DELIVERABLE_CATALOG.some((d) => !files.some((f) => f.key === d.key)) && (
+      {missing.length > 0 && (
         <p className="mt-3 text-xs leading-relaxed text-slate-500">
-          {emptyLabel.replace(/[.…]+$/, "")} : {DELIVERABLE_CATALOG.filter((d) => !files.some((f) => f.key === d.key)).map((d) => d.label).join(" · ")}.
+          {missing.length === 1 ? "Document pas encore publié" : "Documents pas encore publiés"} : {missing.map((d) => d.label).join(" · ")}.
         </p>
       )}
       </>

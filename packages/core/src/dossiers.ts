@@ -45,9 +45,10 @@ export interface TrackingFacts {
   /** Étape forcée par l'administration (historique 1–5) : ne peut que signaler un traitement en cours. */
   forcedStep?: number | null;
   /**
-   * Au moins un des six documents du catalogue visible par le client — même règle
-   * que les cartes (voir splitDeliverables) : un document libre déposé à la main
-   * ne suffit pas à annoncer « Documents disponibles ».
+   * Au moins un document livré visible par le client. Moteur documentaire en
+   * service : un des six documents du catalogue — même règle que les cartes (voir
+   * splitDeliverables), un document libre déposé à la main ne suffit pas. Moteur
+   * éteint (production actuelle) : tout document déposé par l'équipe compte.
    */
   hasDeliverables: boolean;
   /** Traitement en cours (travaux ouverts, prise en charge par l'équipe). */

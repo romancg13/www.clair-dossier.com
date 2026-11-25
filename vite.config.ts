@@ -42,6 +42,27 @@ function shortlinkPage(): Plugin {
   };
 }
 
+// Feuille Tailwind : src/index.css exclut le code sous drapeau (« @source not … » suivi
+// du nom du drapeau en commentaire). Dans un build où ce drapeau vaut « 1 », l'exclusion
+// est retirée avant Tailwind : la recette garde toutes ses classes, la production aucune.
+function sourcesSousDrapeau(): Plugin {
+  let env: Record<string, string> = {};
+  return {
+    name: 'sources-sous-drapeau',
+    enforce: 'pre',
+    configResolved(config) {
+      env = config.env;
+    },
+    transform(code, id) {
+      if (!/[\\/]src[\\/]index\.css(\?|$)/.test(id)) return null;
+      const out = code.replace(/^@source not "[^"]+";[ \t]*\/\* (VITE_\w+) \*\/[ \t]*$/gm, (ligne, drapeau: string) =>
+        env[drapeau] === '1' ? '' : ligne,
+      );
+      return { code: out, map: null };
+    },
+  };
+}
+
 // Use VITE_BASE_PATH at build time (set by Pages workflow). Empty default for local dev.
 const base = process.env.VITE_BASE_PATH ?? '/';
 
@@ -58,7 +79,7 @@ export default defineConfig({
     // Horloge du build : le HTML prérendu affiche les campagnes (src/data/campagnes.ts) en cours à cet instant.
     __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
   },
-  plugins: [react(), tailwindcss(), spaFallback(), shortlinkPage()],
+  plugins: [react(), sourcesSousDrapeau(), tailwindcss(), spaFallback(), shortlinkPage()],
   build: {
     target: 'es2022',
     sourcemap: false,

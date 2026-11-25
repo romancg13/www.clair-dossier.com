@@ -38,7 +38,7 @@ Sans abonnement (bouton « Sans abonnement ») : création et dépôt refusés (
 | MCP depuis l'interface ChatGPT / Claude Code | Non vérifié | — | à faire par le titulaire (commande §7) |
 | Prestations (3 posts LinkedIn datés Europe/Paris avec heure d'été, demande de justificatifs, fiche RDV) | Réel (brouillons) | Démo + tests | test « LinkedIn … heure d'été vérifiés » |
 | Isolement A/B | Réel | Démo + tests | API et MCP : 404 identique à un identifiant inexistant |
-| Sélecteur unique suivi/cartes (code de production) | Réel dans la branche, **non déployé** | Tests | `splitDeliverables` ; une ligne au lieu de six cartes vides |
+| Sélecteur unique suivi/cartes (code de production) | Réel dans la branche, **non déployé** | Tests | `splitDeliverables` ; une ligne au lieu de six cartes vides ; le suivi n'applique la règle du catalogue qu'avec le moteur en service (`VITE_AI_ENGINE`) — moteur éteint, un document déposé par l'équipe mène toujours à « Documents disponibles » |
 | Stripe | Vérifié en lecture seule | Compte live | §5 |
 
 Zéro clic admin : aucun compte administrateur n'existe sur la démo (aucun mot de passe admin fourni) ; le parcours n'utilise que le compte client.
@@ -104,7 +104,7 @@ Observation : une erreur transitoire « module script … text/html » au premie
 ## 9. Retour arrière
 
 - Production intacte : aucun push sur `main`, aucune modification Supabase, Stripe, DNS ou protection.
-- Code de production modifié (inactif par défaut) : drapeaux `VITE_RECETTE`, `VITE_HOME_CLARTE`, `VITE_NOINDEX` éteints ; seuls changements actifs si fusion : sélecteur unique suivi/cartes (`packages/core`, `DossierDetail.tsx`, `DeliverablesGrid.tsx`).
+- Code de production modifié (inactif par défaut) : drapeaux `VITE_RECETTE`, `VITE_HOME_CLARTE`, `VITE_NOINDEX` éteints ; build sans drapeau : feuille CSS identique à la base et aucun chunk de recette (classes et pages de recette exclues, test `revue-production`) ; seul changement visible si fusion : la grille « Vos documents ClairDossier » affiche une ligne au lieu de six cartes vides (`DeliverablesGrid.tsx`) — suivi et intitulés inchangés tant que le moteur IA est éteint (`DossierDetail.tsx`, `packages/core`).
 - Dossiers de démo déjà analysés : la chronologie est calculée à la consolidation puis conservée ; après déploiement de ce correctif, relancer la consolidation de ces dossiers (un nouveau dépôt suffit) ou repartir d'une base de démo neuve, faute de quoi leurs jalons gardent l'avertissement « extrait non retrouvé dans la pièce ».
 - Supprimer la démo : projet Vercel `clairdossier-recette-20b5a2` + magasin Blob `clairdossier-recette-20b5a2`.
 
