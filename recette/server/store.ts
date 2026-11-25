@@ -3,7 +3,24 @@
 // abonnements simulés, dossiers). Une seule source pour l'API, l'exécuteur et le MCP.
 import type { DeadlineRow, DeliverableKey, EventOverride } from '../../supabase/functions/_shared/analysis-model.ts';
 import type { AnalysisRec, Costs, DossierState, EngineStore, ExtractionRec, Job, OutFileLite, PieceRec, PublishedCategory } from '../../supabase/functions/_shared/engine/ports.ts';
-import { update, type Kv } from './kv.ts';
+import { update, type Kv, type KvEntry } from './kv.ts';
+
+/**
+ * File de travaux : un seul document (queue.json), mis à jour atomiquement.
+ *  - open : travaux à exécuter (en attente ou en cours), seuls parcourus par claim() ;
+ *  - failed : travaux en échec définitif, conservés pour l'état « incident » et l'écran d'exceptions ;
+ *  - dossiers : dossier de chaque travail listé, pour lire la file d'UN dossier sans charger les travaux
+ *    des autres clients (une entrée antérieure sans dossier connu est lue, par compatibilité).
+ */
+interface QueueDoc {
+  open: string[];
+  failed?: string[];
+  dossiers?: Record<string, string>;
+}
+/** Travaux en échec conservés (les plus anciens sortent de la liste). */
+const MAX_FAILED = 200;
+/** Lectures de travaux menées en parallèle par paquet. */
+const READ_BATCH = 16;
 
 export type SubStatus = 'none' | 'incomplete' | 'active' | 'past_due' | 'canceled' | 'expired';
 export interface Subscription {
@@ -226,36 +243,83 @@ export class RecetteStore implements EngineStore {
     const runAfter = new Date(now.getTime() + (j.delayMs ?? 0)).toISOString();
     const keyDoc = `jobkeys/${enc(j.key)}.json`;
     for (let i = 0; i < 6; i++) {
-      const ref = await this.kv.getJson<{ job_id: string }>(keyDoc);
+      // Après un conflit : lecture d'autorité de la clé.
+      const ref = await this.kv.getJson<{ job_id: string }>(keyDoc, { fresh: i > 0 });
+      let replaced: Job | null = null;
       if (ref) {
-        const cur = await this.kv.getJson<Job>(`jobs/${ref.value.job_id}.json`);
+        // Lecture rapide d'abord ; lecture d'autorité seulement après un conflit ou si le travail paraît absent :
+        // un travail tout juste créé ne doit jamais passer pour absent (clé « libre »). Un statut lu périmé est sans
+        // risque : les branches « queued » et « running » écrivent sous condition d'ETag, et les statuts terminaux sont définitifs.
+        const jobDoc = `jobs/${ref.value.job_id}.json`;
+        const cur = (i === 0 ? await this.kv.getJson<Job>(jobDoc) : null) ?? (await this.kv.getJson<Job>(jobDoc, { fresh: true }));
         if (cur && cur.value.status === 'queued') {
           const r = await this.kv.putJson(`jobs/${cur.value.id}.json`, { ...cur.value, run_after: runAfter > cur.value.run_after ? runAfter : cur.value.run_after, updated_at: now.toISOString() }, { ifMatch: cur.etag });
-          if (r.ok) return 'rearmed' as const;
-          continue;
+          if (!r.ok) continue;
+          // Auto-réparation : un travail dont l'inscription dans la file a échoué (panne, arrêt) y est réinscrit.
+          await this.relist(cur.value.id);
+          return 'rearmed' as const;
         }
         if (cur && cur.value.status === 'running') {
           const r = await this.kv.putJson(`jobs/${cur.value.id}.json`, { ...cur.value, rerun: true, updated_at: now.toISOString() }, { ifMatch: cur.etag });
           if (r.ok) return 'rearmed' as const;
           continue;
         }
+        replaced = cur?.value ?? null;
       }
       const job: Job = { id: this.id(), key: j.key, kind: j.kind, user_id: j.user_id, dossier_id: j.dossier_id, piece_id: j.piece_id, status: 'queued', attempts: 0, max_attempts: 4, run_after: runAfter, lease_until: null, locked_by: null, rerun: false, last_error: null, created_at: now.toISOString(), updated_at: now.toISOString() };
-      const claim = ref ? await this.kv.putJson(keyDoc, { job_id: job.id }, { ifMatch: (await this.kv.getJson(keyDoc))?.etag ?? 'x' }) : await this.kv.putJson(keyDoc, { job_id: job.id }, { create: true });
-      if (!claim.ok) continue;
-      await this.kv.putJson(`jobs/${job.id}.json`, job, { create: true });
-      await update<{ open: string[] }>(this.kv, 'queue.json', (cur) => ({ open: [...new Set([...(cur?.open ?? []), job.id])] }));
+      // Le travail existe AVANT que la clé ne le désigne ; la clé ne bascule que si elle n'a pas changé
+      // depuis la lecture qui l'a constatée libre (ETag de CETTE lecture, jamais relu au moment d'écrire).
+      if (!(await this.kv.putJson(`jobs/${job.id}.json`, job, { create: true })).ok) continue;
+      const claim = await this.kv.putJson(keyDoc, { job_id: job.id }, ref ? { ifMatch: ref.etag } : { create: true });
+      if (!claim.ok) {
+        await this.kv.delete(`jobs/${job.id}.json`);
+        continue;
+      }
+      await this.enlist(job, replaced?.status === 'failed' ? replaced.id : null);
       return 'created' as const;
     }
     throw new Error('mise en file impossible (conflits)');
   }
+  /** Inscrit un travail dans la file (aucune écriture s'il y figure déjà) ; retire l'échec qu'il remplace. */
+  private async enlist(job: Job, replaces: string | null = null) {
+    await update<QueueDoc>(this.kv, 'queue.json', (q) => {
+      const open = q?.open ?? [];
+      const failed = q?.failed ?? [];
+      const drop = replaces !== null && failed.includes(replaces);
+      if (open.includes(job.id) && q?.dossiers?.[job.id] === job.dossier_id && !drop) return null;
+      const dossiers = { ...(q?.dossiers ?? {}), [job.id]: job.dossier_id };
+      if (drop) delete dossiers[replaces];
+      return { open: open.includes(job.id) ? open : [...open, job.id], failed: drop ? failed.filter((x) => x !== replaces) : failed, dossiers };
+    });
+  }
+  /** Réinscription d'un travail réarmé absent de la file, s'il est toujours en attente (pas un travail terminé entre-temps). */
+  private async relist(jobId: string) {
+    if ((await this.queue()).open.includes(jobId)) return;
+    const cur = (await this.kv.getJson<Job>(`jobs/${jobId}.json`, { fresh: true }))?.value;
+    if (cur && cur.status === 'queued') await this.enlist(cur);
+  }
+  private async queue() {
+    const q = (await this.kv.getJson<QueueDoc>('queue.json'))?.value;
+    return { open: q?.open ?? [], failed: q?.failed ?? [], dossiers: q?.dossiers ?? {} };
+  }
+  /** Lecture des travaux par paquets parallèles bornés (ordre conservé ; travaux introuvables ignorés). */
+  private async readJobs(ids: string[]) {
+    const out: KvEntry<Job>[] = [];
+    for (let i = 0; i < ids.length; i += READ_BATCH) {
+      for (const e of await Promise.all(ids.slice(i, i + READ_BATCH).map((id) => this.kv.getJson<Job>(`jobs/${id}.json`)))) if (e) out.push(e);
+    }
+    return out;
+  }
   async claim(workerId: string, leaseMs: number) {
+    const entries = await this.readJobs((await this.queue()).open);
+    // Auto-nettoyage : un travail terminé encore listé (réinscription concurrente de sa fin) sort de la file ;
+    // un échec rejoint la liste des échecs. Ces statuts sont définitifs : aucun risque de retirer un travail à exécuter.
+    const finis = entries.map((e) => e.value).filter((j) => j.status === 'done' || j.status === 'cancelled' || j.status === 'failed');
+    if (finis.length) await this.unlist(finis);
+    // Horodatage APRÈS le parcours : le bail écrit n'est pas déjà entamé par la durée de la lecture.
     const now = this.now();
-    const open = (await this.kv.getJson<{ open: string[] }>('queue.json'))?.value.open ?? [];
     const candidates: { j: Job; etag: string }[] = [];
-    for (const id of open) {
-      const e = await this.kv.getJson<Job>(`jobs/${id}.json`);
-      if (!e) continue;
+    for (const e of entries) {
       const j = e.value;
       const runnable = (j.status === 'queued' && j.run_after <= now.toISOString()) || (j.status === 'running' && j.lease_until !== null && j.lease_until < now.toISOString());
       if (runnable) candidates.push({ j, etag: e.etag });
@@ -272,31 +336,57 @@ export class RecetteStore implements EngineStore {
     const now = this.now();
     let terminal = false;
     await update<Job>(this.kv, `jobs/${job.id}.json`, (cur) => {
+      // Recalculé à chaque essai : un essai précédent refusé (rerun posé entre-temps) ne doit pas compter.
+      terminal = false;
       if (!cur || cur.locked_by !== job.locked_by || cur.status !== 'running') return null; // bail perdu : un autre exécuteur a repris
       if (outcome.status === 'queued') return { ...cur, status: 'queued', attempts: outcome.countAttempt ? cur.attempts : Math.max(0, cur.attempts - 1), run_after: new Date(now.getTime() + outcome.delayMs).toISOString(), lease_until: null, locked_by: null, last_error: outcome.error ?? null, updated_at: now.toISOString() };
       if (outcome.status === 'done' && cur.rerun) return { ...cur, status: 'queued', rerun: false, attempts: 0, run_after: new Date(now.getTime() + 5_000).toISOString(), lease_until: null, locked_by: null, updated_at: now.toISOString() };
       terminal = true;
       return { ...cur, status: outcome.status, lease_until: null, last_error: outcome.error ?? null, updated_at: now.toISOString() };
     });
-    if (terminal) await update<{ open: string[] }>(this.kv, 'queue.json', (cur) => ({ open: (cur?.open ?? []).filter((x) => x !== job.id) }));
+    // Fin du travail : retiré des travaux à exécuter ; un échec reste listé (état « incident », écran d'exceptions).
+    if (terminal) {
+      // Extraction menée à son terme : les échecs antérieurs de la même pièce (autre clé, p. ex. réconciliation) sont obsolètes.
+      const obsoletes = outcome.status === 'done' && job.kind === 'extract' && job.piece_id ? await this.failedOfPiece(job.dossier_id, job.piece_id, job.id) : [];
+      await this.unlist([{ ...job, status: outcome.status }, ...obsoletes.map((id) => ({ id, dossier_id: job.dossier_id, status: 'done' as const }))]);
+    }
   }
+  /** Retire de la file des travaux terminés ; ceux en échec rejoignent la liste des échecs (bornée). */
+  private async unlist(jobs: Pick<Job, 'id' | 'dossier_id' | 'status'>[]) {
+    await update<QueueDoc>(this.kv, 'queue.json', (q) => {
+      const ids = new Set(jobs.map((j) => j.id));
+      const dossiers = { ...(q?.dossiers ?? {}) };
+      let failed = (q?.failed ?? []).filter((x) => !ids.has(x));
+      for (const j of jobs) {
+        if (j.status === 'failed') {
+          failed.push(j.id);
+          dossiers[j.id] = j.dossier_id;
+        } else delete dossiers[j.id];
+      }
+      for (const x of failed.slice(0, Math.max(0, failed.length - MAX_FAILED))) delete dossiers[x];
+      failed = failed.slice(-MAX_FAILED);
+      return { open: (q?.open ?? []).filter((x) => !ids.has(x)), failed, dossiers };
+    });
+  }
+  /** Échecs d'extraction d'une pièce (lus parmi les seuls échecs de son dossier). */
+  private async failedOfPiece(dossierId: string, pieceId: string, except: string) {
+    const q = await this.queue();
+    const ids = q.failed.filter((id) => id !== except && (q.dossiers[id] ?? dossierId) === dossierId);
+    return (await this.readJobs(ids)).map((e) => e.value).filter((j) => j.status === 'failed' && j.kind === 'extract' && j.piece_id === pieceId).map((j) => j.id);
+  }
+  /** Travaux d'un dossier : en attente, en cours et en échec. Seuls ceux de CE dossier sont lus. */
   async openJobs(dossierId: string) {
-    const open = (await this.kv.getJson<{ open: string[] }>('queue.json'))?.value.open ?? [];
-    const out: Job[] = [];
-    for (const id of open) {
-      const j = (await this.kv.getJson<Job>(`jobs/${id}.json`))?.value;
-      if (j && j.dossier_id === dossierId) out.push(j);
-    }
-    return out;
+    const q = await this.queue();
+    const ids = [...new Set([...q.open, ...q.failed])].filter((id) => (q.dossiers[id] ?? dossierId) === dossierId);
+    return (await this.readJobs(ids)).map((e) => e.value).filter((j) => j.dossier_id === dossierId);
   }
+  /** Tous les travaux en attente ou en cours (exécuteur). */
   async allOpenJobs() {
-    const open = (await this.kv.getJson<{ open: string[] }>('queue.json'))?.value.open ?? [];
-    const out: Job[] = [];
-    for (const id of open) {
-      const j = (await this.kv.getJson<Job>(`jobs/${id}.json`))?.value;
-      if (j) out.push(j);
-    }
-    return out;
+    return (await this.readJobs((await this.queue()).open)).map((e) => e.value).filter((j) => j.status === 'queued' || j.status === 'running');
+  }
+  /** Travaux en échec conservés (écran d'exceptions de l'administration). */
+  async failedJobs() {
+    return (await this.readJobs((await this.queue()).failed)).map((e) => e.value).filter((j) => j.status === 'failed');
   }
 
   /* ── Coûts, journal, notifications, alertes ───────────────────────────── */

@@ -144,7 +144,7 @@ export function DossierPage() {
         ) : etat === 'vide' ? (
           <p className="text-[16px] text-navy-900">Déposez vos pièces : vous retrouverez ici la situation, vos dates importantes et votre prochaine action.</p>
         ) : etat === 'incident' ? (
-          <p className="text-[16px] text-navy-900">La lecture a été interrompue ; elle reprendra automatiquement. Vos pièces sont conservées.</p>
+          <p className="text-[16px] text-navy-900">La lecture a été interrompue. Vos pièces sont conservées ; un nouveau dépôt relance la lecture.</p>
         ) : null}
       </Card>
 
