@@ -25,6 +25,8 @@ export function engineDeps(store: RecetteStore, o: { ai: ModelProvider | null; c
     // (3 s). Par règles (aucun appel, aucun coût), ces attentes fixes ne protègent rien : elles sont réduites à 1 s.
     consolidateDelayMs: o.ai ? 2_000 : 1_000,
     extractionWaitMs: o.ai ? 3_000 : 1_000,
+    // Analyse progressive (avec IA seulement) : premiers résultats par règles en quelques secondes, puis l'analyse IA.
+    progressive: Boolean(o.ai),
     now: store.now,
     workerId: `w-${crypto.randomUUID().slice(0, 8)}`,
     dossierLink: (id) => `${o.siteUrl ?? ''}/compte/dossier/${id}`,

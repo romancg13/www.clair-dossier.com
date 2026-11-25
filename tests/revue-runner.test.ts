@@ -254,7 +254,7 @@ test('C18 : dépôt et consolidation partagent la clé d’extraction : un seul 
     calls[f] = (calls[f] ?? 0) + 1;
     return null;
   });
-  const s = stack({ ai });
+  const s = stack({ ai, config: { progressive: false } });
   await s.user('A');
   await s.dossier('D1', 'A');
   await s.depose('D1', 'A', LOT, ['Courrier-bailleur-2026-10-12.pdf']);

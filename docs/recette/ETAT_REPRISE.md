@@ -99,6 +99,8 @@ Le gain de latence réel sur la recette hébergée est à lire dans la remise (m
 | Rentabilité avec coûts mesurés | VÉRIFIÉ (petit échantillon) | `RENTABILITE.md` : usage normal 84–89 %, intensif 14–62 %, seuil 6 clients |
 | Unification sur Supabase (pages originales + IA + automatisations pg_cron) | VÉRIFIÉ SUR SUPABASE LOCAL | `UNIFICATION.md`, captures `v11-*` |
 
+V12 (25/11) — analyse progressive : avec l'IA, les règles publient des « Premiers résultats — analyse en cours » sans aucun appel payant, puis la lecture et la synthèse IA les remplacent (une notification, avec l'analyse complète ; jamais par-dessus une synthèse IA déjà publiée). `tests/moteur-progressif.test.ts` (3), drapeau `progressive` de la configuration du moteur, actif sur la recette seulement. Mesure réelle sur la recette hébergée : À FAIRE (plafond de lecture atteint, accord de budget requis).
+
 Point faible : premier résultat avec IA 142–207 s (30 s par règles). Piste : publier d'abord l'aperçu par règles puis remplacer par la synthèse du modèle, effort réduit pour la consolidation.
 
 ## Blocages — action minimale du propriétaire

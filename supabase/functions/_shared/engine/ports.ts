@@ -75,7 +75,8 @@ export interface ExtractionRec {
   /** Lecture reportée (lecture visuelle indisponible, budget du lot) : ce n'est pas au client d'agir. */
   deferred?: boolean;
   /** Pièce lue par les règles déterministes faute de budget IA (résultat partiel) ; la lecture IA reprend au cycle suivant. */
-  fallback?: BudgetScope;
+  /** Repli budget, ou 'progressif' : lecture par règles publiée en premiers résultats, remplacée par la lecture IA. */
+  fallback?: BudgetScope | 'progressif';
   /** Relectures automatiques déjà tentées après un échec définitif (plafonnées, attente croissante). */
   rereads?: number;
   data: StoredExtraction | null;
@@ -104,6 +105,8 @@ export interface CoverageRec {
   fallback?: number;
   /** Motif lisible d'un résultat partiel pour cause de budget IA (pièces ou consolidation en repli). */
   partial_reason?: string;
+  /** Premiers résultats (règles) publiés pendant que la lecture approfondie se poursuit. */
+  provisional?: boolean;
   complete: boolean;
 }
 
@@ -232,6 +235,10 @@ export interface EngineConfig {
   consolidateDelayMs: number;
   /** Attente avant de retenter une consolidation dont des lectures sont encore en cours (défaut 20 s). */
   extractionWaitMs?: number;
+  /** Analyse progressive : premiers résultats par règles publiés aussitôt, puis remplacés par l'analyse IA. */
+  progressive?: boolean;
+  /** Attente avant la lecture IA qui suit les premiers résultats (laisse passer la première synthèse). */
+  progressiveDelayMs?: number;
   now: () => Date;
   workerId: string;
   /** Attentes successives avant relecture automatique d'une pièce en échec définitif (défaut : 1 h, 6 h, 24 h ; [] = aucune). */
