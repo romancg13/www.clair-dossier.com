@@ -158,6 +158,11 @@ export interface EngineStore {
   /** Droits revérifiés côté serveur (abonnement actif ou résilié non échu). */
   entitlementActive(userId: string): Promise<boolean>;
   listPieces(dossierId: string): Promise<PieceRec[]>;
+  /**
+   * Facultatif : la pièce et celles du dossier de MÊME empreinte (elle comprise), triées par dépôt, sans lire les
+   * autres fiches. Absent : le moteur lit toutes les pièces du dossier (listPieces).
+   */
+  piecesOfSameContent?(dossierId: string, pieceId: string): Promise<{ piece: PieceRec | null; same: PieceRec[] }>;
   getPiece(id: string): Promise<PieceRec | null>;
   readPieceBytes(piece: PieceRec): Promise<Uint8Array>;
   /** Rattache une pièce à son original ; null la rend de nouveau principale. */
@@ -183,6 +188,11 @@ export interface EngineStore {
   getPublished(dossierId: string): Promise<Partial<Record<DeliverableKey, PublishedCategory>>>;
   /** Publication ATOMIQUE d'une catégorie : fichiers écrits, puis bascule du pointeur ; anciennes versions conservées. */
   publishCategory(dossierId: string, userId: string, category: DeliverableKey, revision: number, dataHash: string, files: OutFileLite[], status: 'approved' | 'pending'): Promise<void>;
+  /**
+   * Facultatif : publication groupée de plusieurs catégories (fichiers écrits de front, pointeurs basculés ensemble),
+   * mêmes garanties que publishCategory pour chacune. Absent : une publication par catégorie.
+   */
+  publishCategories?(dossierId: string, userId: string, revision: number, items: { category: DeliverableKey; dataHash: string; files: OutFileLite[] }[], status: 'approved' | 'pending'): Promise<void>;
   /** Jeu de données d'affichage (web) de la révision publiée. */
   putView(dossierId: string, revision: number, view: unknown, status: 'approved' | 'pending'): Promise<void>;
 

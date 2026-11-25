@@ -7,6 +7,7 @@ import { plans } from '../../src/data/pricing.ts';
 import { DELIVERABLE_CATALOG, type DeliverableKey } from '../../supabase/functions/_shared/analysis-model.ts';
 import { drain } from '../../supabase/functions/_shared/engine/runner.ts';
 import type { EngineDeps } from '../../supabase/functions/_shared/engine/runner.ts';
+import type { Job } from '../../supabase/functions/_shared/engine/ports.ts';
 import { isCalendarDate, readDatesForm, type RenduView } from '../../supabase/functions/_shared/rendus/index.ts';
 import { demandeJustificatifs, ficheRendezVous } from '../../supabase/functions/_shared/prestations/index.ts';
 import { checkPassword, emailKey, hashPassword, safeEqual, sha, signEvent, signLink, token, verifyEvent, verifyLink } from './security.ts';
@@ -43,6 +44,12 @@ const MAX_DIRECT = 25 * 1024 * 1024;
 const DIRECT_VALID_MS = 10 * 60 * 1000;
 /** Fichiers par envoi : borne le travail d'une requête (l'interface envoie un fichier par requête). */
 const MAX_FILES = 20;
+/**
+ * Nombre de fichiers qu'un lot peut annoncer (valeur fournie par le navigateur, donc bornée). 200 auparavant : un lot
+ * de 250 pièces était tenu pour complet — et notifié — dès la 200e. La borne ne protège ni budget ni stockage
+ * (le volume par compte et la taille par fichier s'en chargent) : elle écarte seulement une valeur absurde.
+ */
+const MAX_LOT = 1000;
 const SESSION_DAYS = 30;
 const MINUTE = 60_000;
 
@@ -97,22 +104,22 @@ function entitlementView(s: Subscription, now: Date) {
 }
 
 /** Statut affiché d'un dossier : réel, dérivé des travaux et de la dernière publication. */
-async function dossierStatus(env: ApiEnv, d: DossierRec) {
-  const jobs = await env.store.openJobs(d.id);
-  const view = await env.store.getView(d.id);
-  const pieces = (await env.store.listPieces(d.id)).filter((p) => !p.deleted_at);
+async function dossierStatus(env: ApiEnv, d: DossierRec, lu?: { jobs: Job[]; view: Awaited<ReturnType<RecetteStore['getView']>>; pieces: number }) {
+  // Données déjà lues par l'appelant (écran du dossier) : aucune relecture. Sinon (liste des dossiers) : trois
+  // lectures indépendantes menées de front, et les pièces sont COMPTÉES sans lire leurs fiches.
+  const [jobs, view, pieces] = lu ? [lu.jobs, lu.view, lu.pieces] : await Promise.all([env.store.openJobs(d.id), env.store.getView(d.id), env.store.countPieces(d.id)]);
   const failed = jobs.filter((j) => j.status === 'failed');
   // Lecture reportée au mois suivant (plafond) ou contrôle de fin de lot : rien n'est en cours pour le client.
   const running = jobs.filter((j) => jobEnCours(j, env.store.now()));
   let etat: 'vide' | 'en_cours' | 'pret' | 'en_verification' | 'cloture' | 'incident';
   if (d.closed) etat = 'cloture';
-  else if (!pieces.length) etat = 'vide';
+  else if (!pieces) etat = 'vide';
   else if (running.length) etat = 'en_cours';
   else if (failed.length && !view) etat = 'incident';
   else if (view?.status === 'pending') etat = 'en_verification';
   else if (view) etat = 'pret';
   else etat = 'en_cours';
-  return { etat, travaux: running.length, pieces: pieces.length, revision: view?.revision ?? null };
+  return { etat, travaux: running.length, pieces, revision: view?.revision ?? null, vue: view };
 }
 
 async function body<T>(req: Request): Promise<T> {
@@ -346,7 +353,15 @@ export async function handle(env: ApiEnv, req: Request): Promise<Response> {
 
   if (path === '/api/dossiers' && m === 'GET') {
     const list = await store.listUserDossiers(user.id);
-    return json({ dossiers: await Promise.all(list.map(async (d) => ({ id: d.id, titre: d.title, objectif: d.objective, cree_le: d.created_at, ...(await dossierStatus(env, d)), action: ((await store.getView(d.id))?.view as RenduView | undefined)?.tableau.action.label ?? null }))) });
+    return json({
+      dossiers: await Promise.all(
+        list.map(async (d) => {
+          // La vue lue pour le statut sert aussi au geste affiché (une seule lecture).
+          const { vue, ...statut } = await dossierStatus(env, d);
+          return { id: d.id, titre: d.title, objectif: d.objective, cree_le: d.created_at, ...statut, action: (vue?.view as RenduView | undefined)?.tableau.action.label ?? null };
+        }),
+      ),
+    });
   }
 
   const dm = /^\/api\/dossiers\/([0-9a-f-]{36})(\/.*)?$/.exec(path);
@@ -356,22 +371,22 @@ export async function handle(env: ApiEnv, req: Request): Promise<Response> {
     if (!d || d.deleted || (d.user_id !== user.id && user.role !== 'admin')) return err(404, 'Dossier introuvable.');
     const sub = dm[2] ?? '';
     if (sub === '' && m === 'GET') {
-      const open = await store.openJobs(d.id);
+      // Lectures indépendantes menées de front (un aller-retour au lieu de six en série) ; le statut réemploie ces données.
+      const [open, v, toutes, published, echeances, evenements] = await Promise.all([store.openJobs(d.id), store.getView(d.id), store.listPieces(d.id), store.getPublished(d.id), store.listDeadlines(d.id), store.listEvents(d.id)]);
       if (open.some((j) => (j.status === 'queued' && j.run_after <= now.toISOString()) || (j.status === 'running' && (j.lease_until ?? '') < now.toISOString()))) env.waitUntil(runNow(env));
-      const v = await store.getView(d.id);
-      const pieces = (await store.listPieces(d.id)).filter((p) => !p.deleted_at);
+      const pieces = toutes.filter((p) => !p.deleted_at);
       const extractions = await Promise.all(pieces.map((p) => store.getExtraction(p.id)));
-      const published = await store.getPublished(d.id);
+      const { vue: _vue, ...statut } = await dossierStatus(env, d, { jobs: open, view: v, pieces: pieces.length });
       return json({
         dossier: { id: d.id, titre: d.title, objectif: d.objective, cree_le: d.created_at, cloture: d.closed },
-        statut: await dossierStatus(env, d),
+        statut,
         abonnement: ent,
         vue: v && v.status === 'approved' ? v.view : null,
         en_verification: v?.status === 'pending',
         pieces: pieces.map((p, i) => ({ id: p.id, nom: p.file_name, taille: p.size_bytes, deposee_le: p.created_at, doublon_de: p.duplicate_of, lecture: extractions[i] ? { statut: extractions[i]!.status, motif: extractions[i]!.reason, report: Boolean(extractions[i]!.deferred), moteur: extractions[i]!.provider } : null })),
         rendus: DELIVERABLE_CATALOG.map((c) => ({ cle: c.key, libelle: c.key === 'dashboard' ? 'Tableau de bord' : c.key === 'resume' ? 'Résumé' : c.label, revision: published[c.key]?.revision ?? null, statut: published[c.key]?.status ?? null, fichiers: published[c.key]?.status === 'approved' ? published[c.key]!.files.map((f) => ({ nom: f.name, taille: f.size_bytes })) : [], versions: published[c.key]?.previous.length ?? 0 })),
-        echeances: await store.listDeadlines(d.id),
-        historique: (await store.listEvents(d.id)).slice(0, 60),
+        echeances,
+        historique: evenements.slice(0, 60),
       });
     }
     if (sub === '/pieces' && m === 'POST') {
@@ -391,7 +406,7 @@ export async function handle(env: ApiEnv, req: Request): Promise<Response> {
       // Volume total par compte : réservé avant tout stockage (écriture conditionnelle).
       if (!(await consume(store, `limites/stockage/${d.user_id}.json`, LIMITES.octetsParCompte, Infinity, files.reduce((n, f) => n + f.size, 0)))) return err(413, `Espace de stockage plein : un compte de recette conserve au plus ${Math.round(LIMITES.octetsParCompte / 1048576)} Mo de pièces.`);
       // Lot envoyé fichier par fichier : nombre annoncé, pour notifier une seule fois, sur le lot complet.
-      await store.declareLot(d.id, lot, Math.min(200, Math.max(files.length, Math.floor(Number(form.get('total')) || 0))));
+      await store.declareLot(d.id, lot, Math.min(MAX_LOT, Math.max(files.length, Math.floor(Number(form.get('total')) || 0))));
       // Stockage des pièces en parallèle, puis mise en file (durable avant la réponse).
       const added = await Promise.all(
         files.map(async (f) => {
@@ -462,7 +477,7 @@ export async function handle(env: ApiEnv, req: Request): Promise<Response> {
       // Chemin imposé par le serveur, dans l'espace du compte : le client ne choisit rien.
       const cle = `depots/${d.user_id}/${d.id}/${id}`;
       await store.kv.putJson(`depots-attente/${id}.json`, { id, cle, dossier_id: d.id, user_id: d.user_id, lot, nom, mime: typeof b.type === 'string' ? b.type.slice(0, 120) : null, taille, cree: store.now().toISOString() }, { create: true });
-      await store.declareLot(d.id, lot, Math.min(200, Math.max(1, Math.floor(Number(b.total)) || 1)));
+      await store.declareLot(d.id, lot, Math.min(MAX_LOT, Math.max(1, Math.floor(Number(b.total)) || 1)));
       const acces = await store.kv.directUpload(cle, { maxBytes: taille, validMs: DIRECT_VALID_MS });
       return json({ mode: 'direct', id, lot, ...acces }, 201);
     }
@@ -666,14 +681,29 @@ async function runNow(env: ApiEnv) {
       const j = await env.store.kv.getJson<{ last_error: string | null; attempts: number }>(`jobs/${r.job}.json`);
       console.error(JSON.stringify({ evt: 'travail', kind: r.kind, outcome: r.outcome, tentatives: j?.value.attempts, erreur: j?.value.last_error?.slice(0, 300) }));
     }
+    // Exécuteur en pause : aucune relance (elle tournerait à vide, sans fin) ; la reprise vient d'une consultation ou du planificateur.
+    if (deps.config.paused) return;
     // Travaux encore prêts (lot volumineux) : nouvelle invocation ; travaux différés : repris par la consultation ou la tâche planifiée.
     // Relance unique, à l'échéance du prochain travail (≤ 30 s) : pas de rafale d'invocations à vide.
+    // Passage à vide (rien n'a pu être pris) alors qu'un veilleur patiente déjà : on s'arrête là, sans relire la file.
+    // Sans cela, chaque dépôt d'un gros lot lancerait sa propre chaîne d'invocations, chacune relisant tous les travaux.
+    const aVide = !reports.length;
+    if (aVide && (await env.store.watchHeld())) return;
     const now = env.store.now().getTime();
-    const next = (await env.store.allOpenJobs()).filter((j) => j.status === 'queued').map((j) => Date.parse(j.run_after)).sort((x, y) => x - y)[0];
-    if (next !== undefined && next <= now + 30_000) {
-      if (next > now) await new Promise((res) => setTimeout(res, next - now + 50));
-      await env.kickWorker();
+    const ouverts = await env.store.allOpenJobs();
+    const next = ouverts.filter((j) => j.status === 'queued').map((j) => Date.parse(j.run_after)).sort((x, y) => x - y)[0];
+    if (next === undefined || next > now + 30_000) return;
+    let reveil = next;
+    if (aVide) {
+      // Travaux prêts que ce passage n'a pas pu prendre : ils attendent la fin de travaux en cours (deux au plus par
+      // compte), et l'exécuteur qui les tient enchaînera. UN seul veilleur patiente — jusqu'à l'échéance du prochain
+      // travail, ou jusqu'à la fin du bail le plus proche (reprise d'un exécuteur interrompu) — puis relance.
+      const bail = ouverts.filter((j) => j.status === 'running' && j.lease_until).map((j) => Date.parse(j.lease_until!)).sort((x, y) => x - y)[0];
+      if (next <= now) reveil = Math.min(now + 30_000, Math.max(now + 1_000, bail ?? 0));
+      if (!(await env.store.claimWatch(reveil))) return;
     }
+    if (reveil > now) await new Promise((res) => setTimeout(res, reveil - now + 50));
+    await env.kickWorker();
   } catch (e) {
     console.error(JSON.stringify({ evt: 'executeur', erreur: String(e instanceof Error ? e.stack ?? e.message : e).slice(0, 600) }));
     await env.store.alert('EXECUTEUR_INTERROMPU', { at: env.store.now().toISOString() });

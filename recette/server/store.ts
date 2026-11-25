@@ -102,6 +102,8 @@ export class RecetteStore implements EngineStore {
   private tour: string | null | undefined;
   /** Travaux à exécuter vus dans la file à sa dernière lecture par cet exécuteur. */
   private listed = new Set<string>();
+  /** Empreinte (immuable) des pièces dont cet exécuteur a déjà lu la fiche : dossier → clé de la fiche → empreinte. */
+  private shas = new Map<string, Map<string, string>>();
 
   /* ── Comptes et abonnements (application) ─────────────────────────────── */
   async getUser(id: string) {
@@ -134,11 +136,7 @@ export class RecetteStore implements EngineStore {
 
   async listUserDossiers(userId: string): Promise<DossierRec[]> {
     const idx = (await this.kv.getJson<{ ids: string[] }>(`index/${userId}.json`))?.value.ids ?? [];
-    const out: DossierRec[] = [];
-    for (const id of idx) {
-      const d = await this.getDossierRec(id);
-      if (d && !d.deleted && d.user_id === userId) out.push(d);
-    }
+    const out = (await this.readMany<DossierRec>(idx.map((id) => `dossiers/${id}.json`))).filter((d) => !d.deleted && d.user_id === userId);
     return out.sort((a, b) => b.created_at.localeCompare(a.created_at));
   }
   async getDossierRec(id: string) {
@@ -157,14 +155,47 @@ export class RecetteStore implements EngineStore {
     const d = await this.getDossierRec(id);
     return d ? { id: d.id, user_id: d.user_id, title: d.title, typology: d.typology, objective: d.objective, deleted: d.deleted, closed: d.closed, review_mode: d.review_mode, sensitive: d.sensitive } : null;
   }
-  async listPieces(dossierId: string) {
-    const keys = await this.kv.list(`pieces/${dossierId}/`);
-    const out: PieceRec[] = [];
-    for (const k of keys) {
-      const p = await this.kv.getJson<PieceRec>(k);
-      if (p) out.push(p.value);
+  /** Lecture de fiches par paquets parallèles bornés (un aller-retour par paquet, et non par fiche). */
+  private async readMany<T>(keys: string[]): Promise<T[]> {
+    const out: T[] = [];
+    for (let i = 0; i < keys.length; i += READ_BATCH) {
+      for (const e of await Promise.all(keys.slice(i, i + READ_BATCH).map((k) => this.kv.getJson<T>(k)))) if (e) out.push(e.value);
     }
-    return out.sort((a, b) => a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id));
+    return out;
+  }
+  async listPieces(dossierId: string) {
+    return (await this.readMany<PieceRec>(await this.kv.list(`pieces/${dossierId}/`))).sort((a, b) => a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id));
+  }
+  /**
+   * Nombre de pièces du dossier, sans lire leurs fiches (une liste de clés). Exact tant qu'aucune pièce n'est
+   * retirée : la recette ne supprime jamais une pièce (deleted_at n'y est jamais renseigné).
+   */
+  async countPieces(dossierId: string) {
+    return (await this.kv.list(`pieces/${dossierId}/`)).length;
+  }
+  /**
+   * La pièce et celles du dossier qui ont la MÊME empreinte, sans relire tout le dossier à chaque pièce : l'empreinte
+   * d'une pièce ne change jamais, cet exécuteur ne lit donc qu'une fois la fiche de chaque pièce pour la connaître.
+   * Les fiches de même empreinte, elles, sont RELUES à chaque appel (rattachement « doublon » à jour).
+   * Un lot de N pièces coûte ainsi de l'ordre de N lectures de fiches par exécuteur, et non N × N.
+   */
+  async piecesOfSameContent(dossierId: string, pieceId: string) {
+    const prefix = `pieces/${dossierId}/`;
+    const keys = await this.kv.list(prefix);
+    let known = this.shas.get(dossierId);
+    if (!known) this.shas.set(dossierId, (known = new Map()));
+    const read = new Map<string, PieceRec>();
+    for (const p of await this.readMany<PieceRec>(keys.filter((k) => !known.has(k)))) {
+      known.set(`${prefix}${p.id}.json`, p.sha256);
+      read.set(p.id, p);
+    }
+    const sha = known.get(`${prefix}${pieceId}.json`);
+    if (sha === undefined || !keys.includes(`${prefix}${pieceId}.json`)) return { piece: null, same: [] };
+    const sameKeys = keys.filter((k) => known.get(k) === sha);
+    const same = [...read.values()].filter((p) => p.sha256 === sha);
+    same.push(...(await this.readMany<PieceRec>(sameKeys.filter((k) => !same.some((p) => `${prefix}${p.id}.json` === k)))));
+    same.sort((x, y) => x.created_at.localeCompare(y.created_at) || x.id.localeCompare(y.id));
+    return { piece: same.find((p) => p.id === pieceId) ?? null, same };
   }
   async getPiece(id: string) {
     const ref = await this.kv.getJson<{ dossier_id: string }>(`pieceref/${id}.json`);
@@ -191,8 +222,12 @@ export class RecetteStore implements EngineStore {
     return (await this.kv.getJson<ExtractionRec>(`extractions/${pieceId}.json`))?.value ?? null;
   }
   async putExtraction(rec: ExtractionRec) {
-    await this.kv.putJson(`extractions/${rec.piece_id}.json`, rec);
-    if (rec.status === 'ok' && !rec.reused_from) await this.kv.putJson(`xsha/${rec.user_id}/${rec.sha256}.json`, { piece_id: rec.piece_id });
+    // Deux écritures indépendantes, menées de front : le repère de réemploi n'est suivi que si l'extraction qu'il
+    // désigne est lisible et concordante (findReusableExtraction), l'ordre d'arrivée est donc sans effet.
+    await Promise.all([
+      this.kv.putJson(`extractions/${rec.piece_id}.json`, rec),
+      ...(rec.status === 'ok' && !rec.reused_from ? [this.kv.putJson(`xsha/${rec.user_id}/${rec.sha256}.json`, { piece_id: rec.piece_id })] : []),
+    ]);
   }
   async findReusableExtraction(userId: string, sha: string) {
     const r = await this.kv.getJson<{ piece_id: string }>(`xsha/${userId}/${sha}.json`);
@@ -259,6 +294,40 @@ export class RecetteStore implements EngineStore {
         previous: prev ? [{ revision: prev.revision, data_hash: prev.data_hash, files: prev.files.map((f) => ({ name: f.name, path: f.path })), published_at: prev.published_at }, ...prev.previous].slice(0, 10) : [],
       };
       return { c };
+    });
+  }
+  /**
+   * Publication groupée : tous les fichiers sont écrits de front, puis les pointeurs des catégories basculent en UNE
+   * écriture conditionnelle (au lieu d'une lecture-écriture par catégorie). Mêmes règles que publishCategory.
+   */
+  async publishCategories(dossierId: string, _userId: string, revision: number, items: { category: DeliverableKey; dataHash: string; files: OutFileLite[] }[], status: 'approved' | 'pending') {
+    if (!items.length) return;
+    const written = await Promise.all(
+      items.map(async (it) => {
+        const dir = `out/${dossierId}/${it.category}/r${revision}-${it.dataHash.slice(0, 10)}`;
+        return Promise.all(
+          it.files.map(async (f) => {
+            const path = `${dir}/${f.name}`;
+            await this.kv.putBytes(path, f.bytes, f.mime);
+            return { name: f.name, mime: f.mime, size_bytes: f.bytes.byteLength, path };
+          }),
+        );
+      }),
+    );
+    const at = this.now().toISOString();
+    await update<{ c: Partial<Record<DeliverableKey, PublishedCategory>> }>(this.kv, `published/${dossierId}.json`, (cur) => {
+      const c = { ...(cur?.c ?? {}) };
+      let changed = false;
+      items.forEach((it, i) => {
+        const prev = c[it.category];
+        if (prev && prev.revision > revision) return;
+        changed = true;
+        c[it.category] = {
+          category: it.category, revision, data_hash: it.dataHash, status, files: written[i], published_at: at,
+          previous: prev ? [{ revision: prev.revision, data_hash: prev.data_hash, files: prev.files.map((f) => ({ name: f.name, path: f.path })), published_at: prev.published_at }, ...prev.previous].slice(0, 10) : [],
+        };
+      });
+      return changed ? { c } : null;
     });
   }
   async putView(dossierId: string, revision: number, view: unknown, status: 'approved' | 'pending') {
@@ -443,7 +512,9 @@ export class RecetteStore implements EngineStore {
       // Recalculé à chaque essai : un essai précédent refusé (rerun posé entre-temps) ne doit pas compter.
       terminal = false;
       if (!cur || cur.locked_by !== job.locked_by || cur.status !== 'running') return null; // bail perdu : un autre exécuteur a repris
-      if (outcome.status === 'queued') return { ...cur, status: 'queued', attempts: outcome.countAttempt ? cur.attempts : Math.max(0, cur.attempts - 1), run_after: new Date(now.getTime() + outcome.delayMs).toISOString(), lease_until: null, locked_by: null, last_error: outcome.error ?? null, updated_at: now.toISOString() };
+      // Remis en file (nouvel essai, attente) : la prochaine exécution commencera APRÈS toute relance demandée pendant
+      // celle-ci, elle la prend donc en compte — inutile de rejouer le travail une fois de plus (rerun effacé).
+      if (outcome.status === 'queued') return { ...cur, status: 'queued', rerun: false, attempts: outcome.countAttempt ? cur.attempts : Math.max(0, cur.attempts - 1), run_after: new Date(now.getTime() + outcome.delayMs).toISOString(), lease_until: null, locked_by: null, last_error: outcome.error ?? null, updated_at: now.toISOString() };
       if (outcome.status === 'done' && cur.rerun) return { ...cur, status: 'queued', rerun: false, attempts: 0, run_after: new Date(now.getTime() + 5_000).toISOString(), lease_until: null, locked_by: null, updated_at: now.toISOString() };
       terminal = true;
       return { ...cur, status: outcome.status, lease_until: null, last_error: outcome.error ?? null, updated_at: now.toISOString() };
@@ -504,6 +575,20 @@ export class RecetteStore implements EngineStore {
   /** Tous les travaux en attente ou en cours (exécuteur). */
   async allOpenJobs() {
     return (await this.readJobs((await this.queue()).open)).map((e) => e.value).filter((j) => j.status === 'queued' || j.status === 'running');
+  }
+  /**
+   * Veille de la file. watchHeld : un veilleur patiente déjà (une lecture). claimWatch : vrai si cet exécuteur devient LE veilleur jusqu'à `untilMs` (aucune veille en cours).
+   * Écriture conditionnelle : de plusieurs exécuteurs simultanés, un seul l'obtient. Aucune libération à faire :
+   * la veille s'éteint d'elle-même à son échéance (un veilleur interrompu ne bloque donc personne).
+   */
+  async watchHeld() {
+    const cur = await this.kv.getJson<{ until: string }>('queue-veille.json');
+    return Boolean(cur && cur.value.until > this.now().toISOString());
+  }
+  async claimWatch(untilMs: number) {
+    const cur = await this.kv.getJson<{ until: string }>('queue-veille.json');
+    if (cur && cur.value.until > this.now().toISOString()) return false;
+    return (await this.kv.putJson('queue-veille.json', { until: new Date(untilMs).toISOString() }, cur ? { ifMatch: cur.etag } : { create: true })).ok;
   }
   /** Travaux en échec conservés (écran d'exceptions de l'administration). */
   async failedJobs() {

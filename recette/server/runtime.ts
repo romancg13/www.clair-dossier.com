@@ -14,6 +14,8 @@ import type { ApiEnv } from './api.ts';
 
 let kv: Kv | null = null;
 let secrets: { secret: string; worker: string } | null = null;
+/** Mot de passe d'administration pour lequel le compte a déjà été vérifié par cette instance. */
+let adminVerifie: string | null = null;
 
 export function storage(): Kv {
   // Un espace par environnement : une prévisualisation (essai IA) ne partage ni données, ni file de travaux, ni secrets avec la démo.
@@ -106,7 +108,12 @@ export async function apiEnv(siteUrl: string, waitUntil: (p: Promise<unknown>) =
       clearTimeout(t);
     },
   };
-  await ensureAdmin(env).catch(() => undefined);
+  // Compte d'administration : vérifié une fois par instance (deux lectures et un calcul de mot de passe), et non à
+  // chaque requête — le mot de passe serveur ne change qu'avec un nouveau déploiement, donc une nouvelle instance.
+  if (env.adminPassword && adminVerifie !== env.adminPassword) {
+    const pwd = env.adminPassword;
+    await ensureAdmin(env).then(() => (adminVerifie = pwd)).catch(() => undefined);
+  }
   return env;
 }
 

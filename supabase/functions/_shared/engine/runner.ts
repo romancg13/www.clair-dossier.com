@@ -58,6 +58,8 @@ export const rulesProvider: ModelProvider = {
 };
 
 class Retry extends Error {}
+/** Lectures indépendantes menées en parallèle par paquet (borne la pression sur le stockage). */
+const READ_BATCH = 16;
 
 /** Attentes avant relecture automatique d'une pièce en échec définitif : trois essais au plus, de plus en plus espacés. */
 export const REREAD_DELAYS_MS = [60 * 60_000, 6 * 60 * 60_000, 24 * 60 * 60_000];
@@ -119,11 +121,15 @@ async function recordCost(deps: EngineDeps, userId: string, lotId: string | null
 
 async function runExtract(deps: EngineDeps, job: Job): Promise<RunReport['outcome']> {
   const { store, config } = deps;
-  // La pièce est lue avec celles de son dossier (nécessaires à la détection des doublons) : une seule lecture de la liste.
-  const siblings = job.piece_id ? await store.listPieces(job.dossier_id) : [];
-  const piece = siblings.find((s) => s.id === job.piece_id) ?? null;
+  // La pièce est lue avec celles de même contenu (détection des doublons) : les seules fiches utiles si le magasin
+  // sait les désigner, sinon toutes celles du dossier. Droits vérifiés de front (lectures indépendantes).
+  const [found, p] = await Promise.all([
+    !job.piece_id ? null : store.piecesOfSameContent ? store.piecesOfSameContent(job.dossier_id, job.piece_id) : store.listPieces(job.dossier_id).then((all) => ({ piece: all.find((s) => s.id === job.piece_id) ?? null, same: all })),
+    processable(store, job.dossier_id),
+  ]);
+  const piece = found?.piece ?? null;
+  const siblings = found?.same ?? [];
   if (!piece || piece.deleted_at) return 'done';
-  const p = await processable(store, job.dossier_id);
   if (!p.ok) return 'cancelled';
   const consolidate = () => store.enqueue({ key: `c:${piece.dossier_id}`, kind: 'consolidate', user_id: piece.user_id, dossier_id: piece.dossier_id, piece_id: null, delayMs: config.consolidateDelayMs });
 
@@ -149,7 +155,8 @@ async function runExtract(deps: EngineDeps, job: Job): Promise<RunReport['outcom
     return 'done';
   }
   for (const f of failedCopies) if (f.duplicate_of !== piece.id) await store.markDuplicate(f.id, piece.id);
-  const existing = await store.getExtraction(piece.id);
+  // Extraction déjà enregistrée et extraction réutilisable (même empreinte, autre dossier) : lectures indépendantes, menées de front.
+  const [existing, reusable] = await Promise.all([store.getExtraction(piece.id), store.findReusableExtraction(piece.user_id, piece.sha256)]);
   // Pièce lue par les règles faute de budget IA : la lecture IA est reprise (ce travail attendait le cycle suivant).
   const resumable = Boolean(existing && existing.status === 'ok' && existing.fallback && existing.fallback !== 'lot' && deps.ai);
   if (existing && existing.status !== 'error' && !resumable) {
@@ -160,7 +167,6 @@ async function runExtract(deps: EngineDeps, job: Job): Promise<RunReport['outcom
   const rereads = existing && existing.status === 'error' && !existing.deferred ? (existing.rereads ?? 0) + 1 : 0;
   const base = { piece_id: piece.id, dossier_id: piece.dossier_id, user_id: piece.user_id, sha256: piece.sha256, created_at: iso(config.now()) };
   // Même empreinte déjà lue pour ce titulaire (autre dossier) : réemploi, coût nul.
-  const reusable = await store.findReusableExtraction(piece.user_id, piece.sha256);
   if (!resumable && reusable && reusable.status === 'ok' && reusable.data && reusable.piece_id !== piece.id) {
     await store.putExtraction({ ...reusable, ...base, reused_from: reusable.piece_id, input_tokens: 0, output_tokens: 0, cost_cents: 0 });
     await consolidate();
@@ -276,7 +282,11 @@ async function runConsolidate(deps: EngineDeps, job: Job): Promise<RunReport['ou
   const pieces = (await store.listPieces(dossier.id)).filter((x) => !x.deleted_at);
   const main = pieces.filter((x) => !x.duplicate_of);
   const ex = new Map<string, ExtractionRec | null>();
-  for (const x of main) ex.set(x.id, await store.getExtraction(x.id));
+  // Extractions lues par paquets parallèles bornés (un aller-retour par paquet, et non par pièce).
+  for (let i = 0; i < main.length; i += READ_BATCH) {
+    const batch = main.slice(i, i + READ_BATCH);
+    (await Promise.all(batch.map((x) => store.getExtraction(x.id)))).forEach((x, k) => ex.set(batch[k].id, x));
+  }
   const cov = coverageOf(pieces, ex);
   if (cov.pending > 0) {
     // Pièce sans extraction ni travail ouvert (travail perdu) : réconciliation.
@@ -396,27 +406,56 @@ export async function renderAndPublish(deps: EngineDeps, dossier: DossierState, 
   const latest = await lastRevision();
   if (latest !== null && latest > rec.revision) return 'skipped'; // révision obsolète
   const mode: 'approved' | 'pending' = again.dossier.review_mode === 'auto' && !again.dossier.sensitive ? 'approved' : 'pending';
-  if (mode === 'approved') await store.syncDeadlines(dossier.id, dossier.user_id, toDeadlineRows(rec.data));
-  const pieces = (await store.listPieces(dossier.id)).filter((x) => !x.deleted_at && !x.duplicate_of).map((x) => ({ id: x.id, file_name: x.file_name, created_at: x.created_at }));
-  const input: RenderInput = { dossierId: dossier.id, title: dossier.title, revision: rec.revision, generatedAt: config.now(), analysis: rec.data, coverage: rec.coverage, pieces, overrides: await store.listOverrides(dossier.id), deadlineRows: await store.listDeadlines(dossier.id), provider: rec.provider };
+  // Lectures indépendantes menées de front ; les échéances sont relues APRÈS leur synchronisation.
+  const [allPieces, overrides, published, deadlineRows] = await Promise.all([
+    store.listPieces(dossier.id),
+    store.listOverrides(dossier.id),
+    store.getPublished(dossier.id),
+    (async () => {
+      if (mode === 'approved') await store.syncDeadlines(dossier.id, dossier.user_id, toDeadlineRows(rec.data));
+      return store.listDeadlines(dossier.id);
+    })(),
+  ]);
+  const pieces = allPieces.filter((x) => !x.deleted_at && !x.duplicate_of).map((x) => ({ id: x.id, file_name: x.file_name, created_at: x.created_at }));
+  const input: RenderInput = { dossierId: dossier.id, title: dossier.title, revision: rec.revision, generatedAt: config.now(), analysis: rec.data, coverage: rec.coverage, pieces, overrides, deadlineRows, provider: rec.provider };
   const { view, hashes } = await deps.renderer.prepare(input);
-  const published = await store.getPublished(dossier.id);
   const changed = (Object.keys(hashes) as DeliverableKey[]).filter((k) => published[k]?.data_hash !== hashes[k] || published[k]?.status !== mode);
-  for (const k of changed) {
-    const files = await deps.renderer.files(k, input, view);
-    const cur = await lastRevision();
-    if (cur !== null && cur > rec.revision) return 'skipped';
-    await store.publishCategory(dossier.id, dossier.user_id, k, rec.revision, hashes[k], files, mode);
-  }
+  // Premier résultat utile : la situation, les dates et la prochaine action (jeu de données d'affichage) sont mis à
+  // disposition AVANT la fabrication des documents, qui suivent. Une interruption entre les deux est rattrapée par la
+  // reprise du travail (les catégories dont l'empreinte diffère sont alors publiées).
   await store.putView(dossier.id, rec.revision, view, mode);
+  if (store.publishCategories) {
+    // Publication groupée : documents fabriqués l'un après l'autre (calcul), écrits de front, pointeurs basculés ensemble.
+    const items: { category: DeliverableKey; dataHash: string; files: OutFileLite[] }[] = [];
+    for (const k of changed) items.push({ category: k, dataHash: hashes[k], files: await deps.renderer.files(k, input, view) });
+    if (items.length) {
+      const cur = await lastRevision();
+      if (cur !== null && cur > rec.revision) return 'skipped';
+      await store.publishCategories(dossier.id, dossier.user_id, rec.revision, items, mode);
+    }
+  } else {
+    for (const k of changed) {
+      const files = await deps.renderer.files(k, input, view);
+      const cur = await lastRevision();
+      if (cur !== null && cur > rec.revision) return 'skipped';
+      await store.publishCategory(dossier.id, dossier.user_id, k, rec.revision, hashes[k], files, mode);
+    }
+  }
   if (mode === 'approved') {
-    if (rec.status !== 'published') await store.setAnalysisStatus(dossier.id, rec.revision, 'published');
-    if (changed.length) await store.addEvent(dossier.id, dossier.user_id, 'resultats_disponibles', `Résultats mis à jour (révision ${rec.revision}) : ${changed.length} document${changed.length > 1 ? 's' : ''} actualisé${changed.length > 1 ? 's' : ''}${rec.coverage.complete ? '' : ' — analyse partielle'}${rec.coverage.partial_reason ? ` (${rec.coverage.partial_reason})` : ''}.`);
-    // Réservation possible seulement une fois le lot complet (voir EngineStore.claimNotification) : elle peut donc
-    // survenir sur une republication sans changement (dernier fichier du lot identique à un précédent).
-    const claimed: string[] = [];
-    // Complétude jugée sur le contenu de CETTE révision : une pièce lue pendant son calcul notifiera avec la suivante.
-    for (const lot of rec.lots) if (await store.claimNotification(dossier.id, lot, rec.pieces)) claimed.push(lot);
+    // Statut de la révision, ligne d'historique et réservation des notifications : écritures indépendantes (clés
+    // distinctes), menées de front.
+    const [, , claimed] = await Promise.all([
+      rec.status !== 'published' ? store.setAnalysisStatus(dossier.id, rec.revision, 'published') : null,
+      changed.length ? store.addEvent(dossier.id, dossier.user_id, 'resultats_disponibles', `Résultats mis à jour (révision ${rec.revision}) : ${changed.length} document${changed.length > 1 ? 's' : ''} actualisé${changed.length > 1 ? 's' : ''}${rec.coverage.complete ? '' : ' — analyse partielle'}${rec.coverage.partial_reason ? ` (${rec.coverage.partial_reason})` : ''}.`) : null,
+      (async () => {
+        // Réservation possible seulement une fois le lot complet (voir EngineStore.claimNotification) : elle peut donc
+        // survenir sur une republication sans changement (dernier fichier du lot identique à un précédent).
+        const lots: string[] = [];
+        // Complétude jugée sur le contenu de CETTE révision : une pièce lue pendant son calcul notifiera avec la suivante.
+        for (const lot of rec.lots) if (await store.claimNotification(dossier.id, lot, rec.pieces)) lots.push(lot);
+        return lots;
+      })(),
+    ]);
     if (claimed.length && (await store.notificationsAllowed(dossier.user_id))) {
       await store.notify(dossier.user_id, {
         subject: 'Vos résultats ClairDossier sont disponibles',

@@ -6,6 +6,7 @@ import { Link, useParams } from 'react-router-dom';
 import { Seo } from '../lib/seo';
 import { api, ApiError, ETAT_LABEL, frDate, type DossierDetail, type RenduView } from './api';
 import { Alert, Card, Chip, Kicker, Page, Primary, Secondary, inputCls } from './ui';
+import { delaiSondage } from './suivi';
 import { IntelligenceLauncher } from '../components/intelligence/IntelligencePanel';
 import type { PendingAction, Reply } from '../../supabase/functions/_shared/intelligence/core';
 
@@ -55,10 +56,16 @@ export function DossierPage() {
     api<{ historique: { from: 'vous' | 'ia'; text: string }[] }>(`/api/dossiers/${id}/assistant`).then((r) => setIaHist(r.historique)).catch(() => setIaHist(null));
   }, [id]);
   // Lecture en cours : actualisation automatique (le traitement continue même si la page est fermée).
+  // Cadence rapprochée au début (premier résultat attendu en quelques secondes), puis espacée (voir suivi.ts).
+  const suiviDepuis = useRef<number | null>(null);
   useEffect(() => {
-    if (!d || d.statut.etat !== 'en_cours') return;
-    const t = setInterval(() => void load(), 4000);
-    return () => clearInterval(t);
+    if (!d || d.statut.etat !== 'en_cours') {
+      suiviDepuis.current = null;
+      return;
+    }
+    suiviDepuis.current ??= Date.now();
+    const t = setTimeout(() => void load(), delaiSondage(Date.now() - suiviDepuis.current));
+    return () => clearTimeout(t);
   }, [d, load]);
 
   async function deposer(files: File[]) {
@@ -112,6 +119,8 @@ export function DossierPage() {
       // Envoi arrêté avant le dernier fichier : le lot est clos sur les pièces reçues (sinon, clôture automatique après 10 min).
       if (recus > 0 && recus < files.length) await api(`/api/dossiers/${id}/lots/${lot}/fin`, { body: {} }).catch(() => undefined);
       setUpload(null);
+      // Nouveau dépôt : le suivi repart à la cadence rapprochée.
+      suiviDepuis.current = null;
       void load();
     }
   }
@@ -226,7 +235,7 @@ export function DossierPage() {
         </div>
       </div>
       {!v || !disponibles.length ? (
-        <p className="mt-3 text-[15px] text-slate-500">{etat === 'en_cours' ? 'En préparation : ils apparaîtront ici dès la fin de la lecture.' : 'Aucun résultat pour le moment.'}</p>
+        <p className="mt-3 text-[15px] text-slate-500">{etat === 'en_cours' ? (v ? 'La situation est disponible ci-dessus ; vos documents sont en cours de fabrication et apparaîtront ici.' : 'En préparation : ils apparaîtront ici dès la fin de la lecture.') : 'Aucun résultat pour le moment.'}</p>
       ) : (
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           {disponibles.map((r) => {
