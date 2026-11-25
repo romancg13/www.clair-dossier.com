@@ -1,6 +1,6 @@
 # État des fonctionnalités — source unique de vérité
 
-Mis à jour : 2026-11-25 · recette déployée sur `780e55e` ; suite complète rejouée sur ce code (463 unitaires verts) (branche `claude/clairdossier-optimization-85z7y5`, PR brouillon #71) · production : `85bbb4e`.
+Mis à jour : 2026-11-25 · commit de recette gelé et déployé : `5035ff5` (463 unitaires et 118 SQL verts sur ce code ; recette finale hébergée jouée en session neuve le 25/11 : premier résultat 12,9 s, six rendus 20 s, archive de 14 fichiers contrôlée, isolation A/B 404, 0 erreur JS) (branche `claude/clairdossier-optimization-85z7y5`, PR brouillon #71) · production : `85bbb4e`.
 
 Statuts : **OK** = OPÉRATIONNEL ET VÉRIFIÉ · **PART** = PARTIELLEMENT OPÉRATIONNEL · **DNT** = DÉVELOPPÉ MAIS NON TESTÉ · **SIM** = SIMULÉ · **BLQ** = BLOQUÉ · **ND** = NON DÉVELOPPÉ · **DV** = VOLONTAIREMENT DIFFÉRÉ OU DÉSACTIVÉ · **—** = sans objet dans cet environnement.
 
