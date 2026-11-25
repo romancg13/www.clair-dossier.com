@@ -1635,6 +1635,7 @@ export function DossierDetail() {
                     files={deliverableFiles}
                     caption={aiDeliverables.length ? `Dernière version publiée le ${fmtDate(aiDeliverables[aiDeliverables.length - 1].created_at)}` : null}
                     emptyLabel={aiProgress.processing ? "En préparation…" : "Pas encore disponibles."}
+                    catalogHint={AI_ENGINE}
                     busy={zipping}
                     onDownloadAll={() => downloadZip(deliverables, `documents-${dossier.title || dossier.id}.zip`)}
                   />

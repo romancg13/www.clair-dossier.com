@@ -21,7 +21,9 @@ type Props = {
 export function DossierTracker({ step, detail, updating, progress, toCheck = 0 }: Props) {
   const reading = step === 2 && progress && progress.total > 0;
   const headline =
-    step === 2
+    // « Analyse » seulement quand une lecture automatique existe réellement (progression fournie) ;
+    // sinon le libellé neutre du suivi (« Traitement en cours ») : le dossier peut être traité à la main.
+    step === 2 && progress
       ? reading
         ? `Analyse en cours — ${progress.done}/${progress.total} pièces`
         : "Analyse en cours"

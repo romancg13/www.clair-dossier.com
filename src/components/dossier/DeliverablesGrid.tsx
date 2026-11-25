@@ -17,6 +17,8 @@ type Props = {
   emptyLabel: string;
   busy?: boolean;
   onDownloadAll?: () => void;
+  /** Faux : ne pas annoncer les six documents du catalogue (traitement automatique non activé). */
+  catalogHint?: boolean;
   /** Actions placées à droite du titre (ex. bouton ClairDossier IA). */
   actions?: ReactNode;
 };
@@ -25,7 +27,7 @@ const VIEW_ORDER = ["pdf", "csv", "ics"];
 const ext = (n: string) => n.split(".").pop()?.toLowerCase() ?? "";
 
 /** Les six résultats ClairDossier : Voir, Télécharger, autres formats au clic, un seul ZIP. */
-export function DeliverablesGrid({ files, caption, emptyLabel, busy, onDownloadAll, actions }: Props) {
+export function DeliverablesGrid({ files, caption, emptyLabel, busy, onDownloadAll, actions, catalogHint = true }: Props) {
   const ready = files.length > 0;
   const missing = DELIVERABLE_CATALOG.filter((d) => !files.some((f) => f.key === d.key));
   return (
@@ -55,7 +57,8 @@ export function DeliverablesGrid({ files, caption, emptyLabel, busy, onDownloadA
       {!ready ? (
         // Aucun document encore publié : une seule ligne au lieu de six cartes vides identiques.
         <p className="mt-4 rounded-2xl border border-dashed hairline bg-cream-50/60 p-4 text-sm leading-relaxed text-slate-500">
-          {emptyLabel} Vos six documents ({DELIVERABLE_CATALOG.map((d) => d.label).join(", ")}) apparaîtront ici dès leur publication.
+          {emptyLabel}
+          {catalogHint && ` Vos six documents (${DELIVERABLE_CATALOG.map((d) => d.label).join(", ")}) apparaîtront ici dès leur publication.`}
         </p>
       ) : (
         <>
