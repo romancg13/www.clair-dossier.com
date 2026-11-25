@@ -162,3 +162,46 @@ test('C23 : buildChronology recopie statut et repère quand ils existent, rien d
   const [f] = buildChronology([{ document_id: 'b', data: { dates: [{ date: '2026-09-20', precision: 'day', kind: 'event_date', label: 'Relance', evidence: [{ page: 2, quote: 'Relance du 20/09/2026' }] }] } }]);
   assert.deepEqual(f.evidence, [{ document_id: 'b', page: 2, quote: 'Relance du 20/09/2026' }]);
 });
+
+/* ── Contre-revue : correspondances sur des limites de mots, contenu minimal d'un extrait consolidé ── */
+
+test('C11 : « 5 janvier 2027 » coupé dans « 15 janvier 2027 » ne confirme pas le 5 janvier', () => {
+  const g = guard(echeance('2027-01-05', '5 janvier 2027'), attente());
+  const d = g.deadlines[0];
+  assert.equal(chk(d).evidence[0].status, 'not_found', 'fragment coupé au milieu d’un nombre');
+  assert.equal(chk(d).unverified, true);
+  assert.equal(g.primary_action.due_date, null);
+  const v = view(g);
+  assert.equal(v.echeances.confirmed.length, 0, 'aucune « date confirmée »');
+  assert.ok(v.echeances.to_confirm.some((x) => x.date === '2027-01-05' && x.reliability.level === 'a_verifier'));
+  assert.equal(v.tableau.action.due_date, null);
+  // Le vrai fragment, lui, reste retrouvé et confirme la vraie date.
+  const ok = guard(echeance('2027-01-15', '15 janvier 2027'), attente());
+  assert.equal(chk(ok.deadlines[0]).unverified, false);
+  assert.equal(ok.primary_action.due_date, '2027-01-15');
+});
+
+test('C11 : coupe au chiffre refusée aussi à l’extraction (texte de la pièce) et au format numérique', () => {
+  const texte = piece('Réponse attendue avant le 15/01/2027. Rendez-vous le 11 mai 2027. Cabinet Verdier Gestion réclame 13 480,00 €.');
+  const one = (quote: string) => chk(verifyExtraction(extraction({ dates: [{ date: '2027-01-05', precision: 'day', label: 'x', kind: 'deadline', evidence: [{ page: null, locator: null, quote }] }] } as never), texte).dates[0]).evidence[0].status;
+  assert.equal(one('5/01/2027'), 'not_found');
+  assert.equal(one('1 mai 2027'), 'not_found');
+  assert.equal(one('net Verdier Ges'), 'not_found');
+  assert.equal(one('3 480,00 €'), 'not_found');
+  // Témoins : fragments entiers, y compris après une apostrophe.
+  assert.equal(one('15/01/2027'), 'found');
+  assert.equal(one('11 mai 2027'), 'found');
+  assert.equal(one('13 480,00 €'), 'found');
+  assert.equal(chk(verifyExtraction(extraction({ references: [{ kind: 'article', value: '5', evidence: [{ page: null, locator: null, quote: 'article 5' }] }] } as never), piece("En application de l'article 5 du bail.")).references[0]).evidence[0].status, 'found');
+});
+
+test('C08 : un extrait consolidé trop pauvre (« 2027 », un seul nombre) n’est pas « trouvé »', () => {
+  const ex = new Map([['c', { data: attente(), vision: false }]]);
+  assert.equal(consolidatedQuoteStatus(q('2027'), ex), 'not_found');
+  assert.equal(consolidatedQuoteStatus(q('15'), ex), 'not_found');
+  const g = guard(analysis({ facts: [{ text: 'Le délai expire en 2027', status: 'documented', evidence: [q('2027')] }] as never }), attente());
+  assert.equal(chk(g.facts[0]).unverified, true);
+  // Témoins : deux mots, ou un mot de quatre lettres au moins.
+  assert.equal(consolidatedQuoteStatus(q('janvier 2027'), ex), 'found');
+  assert.equal(consolidatedQuoteStatus(q('réponse'), ex), 'found');
+});

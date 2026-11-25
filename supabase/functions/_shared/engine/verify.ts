@@ -7,6 +7,16 @@ import { findDates, fold } from './text-rules.ts';
 
 export type QuoteStatus = 'found' | 'not_found' | 'unknown';
 const norm = (s: string) => fold(s).replace(/[’'`´]/g, "'").replace(/[^a-z0-9€'%]+/g, ' ').trim();
+/**
+ * `q` figure-t-il dans `hay` sur des limites de mots (textes déjà normalisés) ? Un fragment coupé
+ * au milieu d'un mot ou d'un nombre ne compte pas : « 5 janvier 2027 » n'est pas dans « 15 janvier
+ * 2027 », ni « 3 480,00 € » dans « 13 480,00 € ». L'apostrophe sert de limite (« l'article 5 »).
+ */
+const within = (hay: string, q: string) => {
+  for (let i = hay.indexOf(q); i >= 0; i = hay.indexOf(q, i + 1))
+    if (!/[a-z0-9]/.test(hay[i - 1] ?? '') && !/[a-z0-9]/.test(hay[i + q.length] ?? '')) return true;
+  return false;
+};
 
 /** L'extrait figure-t-il dans le texte de la page (ou du document) ? */
 export function quoteStatus(quote: string, piece: PreparedPiece, page: number | null): QuoteStatus {
@@ -14,7 +24,7 @@ export function quoteStatus(quote: string, piece: PreparedPiece, page: number | 
   if (q.length < 3) return 'not_found';
   const texts = piece.pageTexts ? (page && piece.pageTexts[page - 1] !== undefined ? [piece.pageTexts[page - 1]] : piece.pageTexts) : piece.text ? [piece.text] : null;
   if (!texts) return 'unknown'; // scan ou photo : aucun texte de contrôle
-  return texts.some((t) => norm(t).includes(q)) ? 'found' : 'not_found';
+  return texts.some((t) => within(norm(t), q)) ? 'found' : 'not_found';
 }
 
 export type VerifiedQuote = ExtractionOutput['parties'][number]['evidence'][number] & { status: QuoteStatus };
@@ -53,6 +63,8 @@ type DEv = AnalysisOutput['facts'][number]['evidence'][number] & { status?: Quot
  * Statut d'un extrait consolidé, retrouvé DANS une preuve de l'extraction de la même pièce.
  * Seul le sens « extrait consolidé contenu dans une preuve » vaut : un passage plus long qui
  * contiendrait une preuve courte (un nom de partie, un montant) peut être inventé autour d'elle.
+ * Correspondance sur des limites de mots ; un mot isolé de moins de quatre lettres ou un nombre
+ * seul ne suffit pas. Limite connue : un mot isolé plus long (« janvier ») reste « trouvé ».
  */
 export function consolidatedQuoteStatus(e: DEv, extractions: Map<string, { data: StoredExtraction; vision: boolean }>): QuoteStatus {
   const x = extractions.get(e.document_id);
@@ -62,7 +74,10 @@ export function consolidatedQuoteStatus(e: DEv, extractions: Map<string, { data:
   );
   const q = norm(e.quote);
   if (q.length < 3) return 'not_found'; // même seuil que quoteStatus : un extrait vide ne prouve rien
-  const hit = all.find((v) => norm(v.quote).includes(q));
+  // Contenu minimal : deux mots, ou un mot d'au moins quatre lettres. Un nombre isolé (« 2027 »)
+  // se retrouve dans presque toute preuve et ne prouve rien à lui seul.
+  if (!q.includes(' ') && !/[a-z]{4,}/.test(q)) return 'not_found';
+  const hit = all.find((v) => within(norm(v.quote), q));
   if (hit) return hit.status ?? 'unknown';
   return x.vision ? 'unknown' : 'not_found';
 }

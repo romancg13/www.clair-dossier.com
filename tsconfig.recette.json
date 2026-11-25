@@ -1,5 +1,5 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": { "lib": ["ES2022", "DOM", "DOM.Iterable"], "types": ["node"] },
-  "include": ["supabase/functions/_shared/engine", "supabase/functions/_shared/rendus", "supabase/functions/_shared/prestations", "recette", "tests/recette-*.test.ts", "tests/engine-*.test.ts", "tests/helpers"]
+  "include": ["supabase/functions/_shared/engine", "supabase/functions/_shared/rendus", "supabase/functions/_shared/prestations", "recette", "tests/recette-*.test.ts", "tests/engine-*.test.ts", "tests/revue-*.test.ts", "tests/helpers"]
 }
