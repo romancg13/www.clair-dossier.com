@@ -69,11 +69,19 @@ const HYPOTHESES = {
 const H = HYPOTHESES;
 const eur = (usd) => usd * H.usdEur;
 const coutAppel = (modele, input, output) => eur((input * API_USD_PER_MTOK[modele].input + output * API_USD_PER_MTOK[modele].output) / 1e6);
-const C = {
-  piece: coutAppel(H.extraction.modele, H.extraction.input, H.extraction.output) * (1 - H.partRegles),
-  revision: coutAppel(H.consolidation.modele, H.consolidation.input, H.consolidation.output),
-  message: H.message.appels * Object.entries(H.message.mix).reduce((s, [m, part]) => s + part * coutAppel(m, H.message.input, H.message.output), 0),
-};
+// MESURÉ sur la recette hébergée le 25/11/2026 (API réelle, pièces fictives, petit échantillon) :
+//  - lecture d'une pièce (Sonnet 5.5) : 2,47 c€ pour un relevé de charges seul ; 3 pièces + synthèse : 22,28 c€ (une tentative
+//    de synthèse non conforme comprise) → ≈ 2,5 c€ par pièce, ≈ 8 c€ par synthèse ; toutes les pièces lues par le modèle (aucune par règles) ;
+//  - assistant, par question : Haiku 0,0005 $ · Sonnet 0,0165 $ · Opus 0,068 $ (2 à 3 appels avec outils chacun).
+// Ces mesures REMPLACENT les hypothèses ; MESURES=0 pour revenir aux hypothèses.
+const MESURES = process.env.MESURES !== '0';
+const C = MESURES
+  ? { piece: 0.025, revision: 0.08, message: eur(0.5 * 0.0005 + 0.35 * 0.0165 + 0.15 * 0.068) }
+  : {
+      piece: coutAppel(H.extraction.modele, H.extraction.input, H.extraction.output) * (1 - H.partRegles),
+      revision: coutAppel(H.consolidation.modele, H.consolidation.input, H.consolidation.output),
+      message: H.message.appels * Object.entries(H.message.mix).reduce((s, [m, part]) => s + part * coutAppel(m, H.message.input, H.message.output), 0),
+    };
 const r2 = (n) => Math.round(n * 100) / 100;
 
 function couts(offre, sc, prix) {

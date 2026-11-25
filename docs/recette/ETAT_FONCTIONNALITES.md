@@ -1,6 +1,6 @@
 # État des fonctionnalités — source unique de vérité
 
-Mis à jour : 2026-11-25 · commit de recette déployé : `7542c12` (V11, unification) ; PWA `1f278f2` ; recette finale V8 jouée sur `5035ff5` (463 unitaires et 118 SQL verts sur ce code ; recette finale hébergée jouée en session neuve le 25/11 : premier résultat 12,9 s, six rendus 20 s, archive de 14 fichiers contrôlée, isolation A/B 404, 0 erreur JS) (branche `claude/clairdossier-optimization-85z7y5`, PR brouillon #71) · production : `85bbb4e`.
+Mis à jour : 2026-11-25 · commit de recette déployé : `74767fa` (V11, IA réelle) ; PWA `1f278f2` ; recette finale V8 jouée sur `5035ff5` (463 unitaires et 118 SQL verts sur ce code ; recette finale hébergée jouée en session neuve le 25/11 : premier résultat 12,9 s, six rendus 20 s, archive de 14 fichiers contrôlée, isolation A/B 404, 0 erreur JS) (branche `claude/clairdossier-optimization-85z7y5`, PR brouillon #71) · production : `85bbb4e`.
 
 Mise à jour 2026-11-25 (soir) : clé API Claude et `RECETTE_AI=direct` actifs sur `clairdossier-recette-20b5a2` (Production Vercel) ; lignes E-01, E-03, E-04, F-03 réévaluées d'après un essai réel sur la recette (comptes fictifs, pièces fictives). Coût réel NON mesuré (page `/admin` : `RECETTE_ADMIN_PASSWORD` absent).
 
@@ -72,8 +72,8 @@ Le détail fin de la vitrine historique (219 lignes F-001…) reste dans `FEATUR
 |---|---|---|---|---|---|---|---|
 | E-01 | Clé API dans le coffre serveur | — | — | OK | DV | `ANTHROPIC_API_KEY` (sensible, Production) ajoutée le 25/11 à ~18 h 30 ; redéploiement ; l'assistant passe en mode `modele` | solde et limite de dépense du workspace à lire dans la Console (propriétaire) |
 | E-02 | Liste des modèles réellement accessibles (`GET /v1/models`) | — | SIM | BLQ | DV | code `runtime.ts`, page /admin | dépend de E-01 |
-| E-03 | Sélection automatique du modèle (simple / courant / avancé) | toutes | SIM | PART | DV | recette 25/11 : `claude-haiku-5-5` (question simple) et `claude-sonnet-5-5` (demande courante) observés ; niveau avancé non sollicité | observer le niveau avancé ; E-02 pour la liste des modèles |
-| E-04 | Lecture des pièces par modèle (extraction, consolidation) | toutes | SIM | OK | DV | `RECETTE_AI=direct` (Production) ; recette 25/11 : 3 pièces fictives (PDF, XLSX, EML), `moteur: anthropic` sur chacune, six rendus approuvés, 2 échéances | tests sur lots plus gros et consommation mesurée (E-02, `/admin`) |
+| E-03 | Sélection automatique du modèle (simple / courant / avancé) | toutes | SIM | OK | DV | recette 25/11 (session V11, API réelle) : question simple → claude-haiku-5-5, courante → claude-sonnet-5-5, analyse avancée → claude-opus-5-5, tous observés | — |
+| E-04 | Lecture des pièces par modèle (extraction, consolidation) | toutes | SIM | OK | DV | recette 25/11 (session V11, API réelle) : 3 pièces lues par le modèle ET synthèse par le modèle (fournisseur « anthropic », plus de mention simulation) après 2 correctifs : grammaire refusée par l'API (400 « compiled grammar is too large ») → sortie par outil non strict validée strictement ; tableaux rendus en texte → relus. Analyse juste (3 480 € réclamés / 3 210 € au relevé, réponse avant le 15/01/2027, loyer T4 « paiement à vérifier ») | premier résultat 142 s avec IA (30 s par règles) : à réduire |
 | E-05 | Lecture par règles déterministes (sans modèle) | toutes | OK | OK | DV | `evaluation-moteur.test.ts` : exactitude 100 %, 0 partie inventée | — |
 | E-06 | OCR / lecture de scans et photos | toutes | SIM | BLQ | DV | pièce marquée « lecture reportée » | dépend de E-01 |
 | E-07 | Fournisseur de secours | — | ND | ND | ND | — | à décider (licences, confidentialité) |
@@ -87,7 +87,7 @@ Le détail fin de la vitrine historique (219 lignes F-001…) reste dans `FEATUR
 |---|---|---|---|---|---|---|---|
 | F-01 | Panneau latéral à droite de « Vos résultats », mobile adapté | toutes | OK | OK | DV | captures V3/V5 | — |
 | F-02 | Réponses par règles sur le dossier (résumé, démarches, échéances, recherche, comparaison) | toutes | OK | OK | DV | `intelligence.test.ts` ; 2,3 s en recette | — |
-| F-03 | Conversation par modèle avec outils côté serveur | toutes | SIM | OK | DV | `recette-assistant.test.ts` (16) ; recette 25/11 : outils `echeances`, `prochaines_demarches`, `creer_rappel` appelés, 2 sources citées, rappel soumis à confirmation, 12–15 s par réponse | latence à réduire ; coût réel à mesurer |
+| F-03 | Conversation par modèle avec outils côté serveur | toutes | SIM | OK | DV | recette 25/11 (session V11, API réelle) : 3 réponses en mode modèle, outils serveur (echeances, resumer, prochaines_demarches, comparer, preparer_relance), 2-3 sources citées, 9 à 20 s | latence à réduire |
 | F-04 | Registre fermé d'outils, droits vérifiés par le serveur | toutes | OK | OK | DV | `intelligence.test.ts` | — |
 | F-05 | Refus des actions sensibles, résistance aux consignes cachées | toutes | OK | OK | DV | idem + pièce piégée du corpus | — |
 | F-06 | Création réelle d'un rappel (échéance) après confirmation | toutes | OK | OK | DV | `recette-assistant.test.ts` ; fait en recette le 25/11 | — |
@@ -139,14 +139,14 @@ Le détail fin de la vitrine historique (219 lignes F-001…) reste dans `FEATUR
 
 | ID | Fonction | Offres | Local | Recette | Production | Preuve | Reste à faire |
 |---|---|---|---|---|---|---|---|
-| J-01 | Réservation du coût maximal avant chaque appel, règlement après | — | OK | DNT | DV | `recette-assistant.test.ts` ; 0 appel réel | E-01 |
-| J-02 | Plafonds global et par compte, concurrence | — | OK | DNT | DV | idem | E-01 |
-| J-03 | Registre par appel (compte, fonction, modèle, jetons, cache, durée, coût) | — | OK | DNT | DV | idem | E-01 |
+| J-01 | Réservation du coût maximal avant chaque appel, règlement après | — | OK | OK | DV | recette 25/11 (session V11, API réelle) : réservation puis règlement, réservations à 0 après chaque appel (`/api/moi/consommation`) | — |
+| J-02 | Plafonds global et par compte, concurrence | — | OK | OK | DV | recette 25/11 (session V11, API réelle) : plafond global de lecture (1 €/mois) atteint et respecté | — |
+| J-03 | Registre par appel (compte, fonction, modèle, jetons, cache, durée, coût) | — | OK | OK | DV | recette 25/11 (session V11, API réelle) : registre par appel lisible par le titulaire (modèle, jetons, cache, durée, coût) | — |
 | J-04 | Alertes 70 / 90 / 100 %, une par palier et par mois | interne | OK | DNT | — | `recette-pilotage.test.ts` | E-01 |
-| J-05 | Repli sur les règles au plafond, résultat annoncé partiel | toutes | OK | DNT | DV | `moteur-budget.test.ts` | provoquer le plafond sur la recette (E-01 acquis) |
+| J-05 | Repli sur les règles au plafond, résultat annoncé partiel | toutes | OK | PART | DV | recette 25/11 (session V11, API réelle) : plafond global atteint → alerte BUDGET, synthèse par règles, six rendus publiés | affichage du motif « résultat partiel » au client : non relu |
 | J-06 | Coupe-circuit des appels de modèle | interne | OK | DNT | — | `recette-assistant.test.ts` | — |
 | J-07 | Calculateur de rentabilité (offres, options, gros consommateur, seuil, croissance, avec/sans crédits) | interne | OK | — | — | `RENTABILITE.md`, `rentabilite.test.ts` ; toutes les consommations sont ESTIMÉES | remplacer par des mesures réelles |
-| J-08 | Coût réel mesuré par document, dossier, conversation | interne | BLQ | BLQ | — | 0 appel réel, 0 USD dépensé | E-01 |
+| J-08 | Coût réel mesuré par document, dossier, conversation | interne | BLQ | PART | — | MESURÉ 25/11 (petit échantillon) : ≈ 2,5 c€/pièce, ≈ 8 c€/synthèse, ≈ 1,5 c€/question ; `RENTABILITE.md` recalculé | mesurer sur un corpus plus large (accord de budget) |
 
 ## K — Supervision et MCP
 
@@ -261,10 +261,10 @@ Fonctionnalités recensées : **149**.
 
 | OK | ÉMU | PART | DNT | SIM | BLQ | ND | DV | — |
 |---|---|---|---|---|---|---|---|---|
-| 51 | 10 | 9 | 15 | 4 | 12 | 24 | 5 | 19 |
+| 55 | 10 | 10 | 11 | 4 | 11 | 24 | 5 | 19 |
 
-- Couverture de vérification : 134/149 = **90 %** (état établi par une preuve ; exclus : les 15 « développé mais non testé »).
-- Taux d'opérationnalité : 51/125 = **41 %** vérifié réellement, plus 10 vérifié par émulation (périmètre actif = recensées − sans objet − désactivées volontairement ; simulé, bloqué et non développé restent au dénominateur).
+- Couverture de vérification : 138/149 = **93 %** (état établi par une preuve ; exclus : les 11 « développé mais non testé »).
+- Taux d'opérationnalité : 55/125 = **44 %** vérifié réellement, plus 10 vérifié par émulation (périmètre actif = recensées − sans objet − désactivées volontairement ; simulé, bloqué et non développé restent au dénominateur).
 
 ### Production
 
@@ -283,12 +283,12 @@ Fonctionnalités recensées : **149**.
 | B | 8 | 3 | 0 | 1 | 0 | 2 | 0 | 0 | 1 | 1 |
 | C | 12 | 6 | 0 | 1 | 1 | 0 | 0 | 3 | 0 | 1 |
 | D | 9 | 8 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 1 |
-| E | 10 | 3 | 0 | 1 | 0 | 0 | 3 | 2 | 0 | 1 |
+| E | 10 | 4 | 0 | 0 | 0 | 0 | 3 | 2 | 0 | 1 |
 | F | 14 | 7 | 0 | 3 | 0 | 0 | 0 | 3 | 0 | 1 |
 | G | 10 | 5 | 0 | 1 | 2 | 0 | 0 | 1 | 1 | 0 |
 | H | 6 | 0 | 0 | 0 | 0 | 1 | 3 | 0 | 1 | 1 |
 | I | 4 | 1 | 0 | 0 | 0 | 1 | 1 | 1 | 0 | 0 |
-| J | 8 | 0 | 0 | 0 | 6 | 0 | 1 | 0 | 0 | 1 |
+| J | 8 | 3 | 0 | 2 | 2 | 0 | 0 | 0 | 0 | 1 |
 | K | 6 | 0 | 0 | 0 | 1 | 0 | 1 | 1 | 0 | 3 |
 | L | 5 | 1 | 0 | 0 | 0 | 0 | 0 | 3 | 1 | 0 |
 | M | 12 | 6 | 0 | 2 | 1 | 0 | 0 | 0 | 1 | 2 |
