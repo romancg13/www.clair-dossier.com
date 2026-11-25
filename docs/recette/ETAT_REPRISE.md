@@ -34,7 +34,18 @@ essai prospect inactif, messagerie directe (IMPLÉMENTÉ NON TESTÉ), supervisio
 
 ## Moteur (REMISE §11)
 
-À compléter au retour du lot (branche de travail isolée, voir journal Git).
+Lot fusionné (`2b88a05`), chaque point avec un test qui échoue sans le correctif — VÉRIFIÉ EN LOCAL (magasin en mémoire) :
+
+| Défaut ouvert | Correctif | Test |
+|---|---|---|
+| Équité entre clients | Prise des travaux à tour de rôle entre comptes, 2 travaux en cours au plus par compte | `tests/moteur-equite.test.ts` |
+| Citation validée par un mot isolé | Passage d'au moins 2 mots significatifs, ou valeur typée concordante (date, montant, référence), ou partie vérifiée sur la même pièce | `tests/moteur-citations.test.ts` |
+| Budget IA épuisé sans repli | Repli sur les règles, résultat annoncé PARTIEL avec motif, reprise au cycle suivant sans double décompte | `tests/moteur-budget.test.ts` |
+| Pièce en échec = nouveau dépôt | Relecture automatique après 1 h, 6 h, 24 h (3 au plus) ; reste « illisible » d'ici là | `tests/moteur-relecture.test.ts` |
+| Latence (lectures du stockage) | Dépôt de 4 pièces → premier résultat : 207 → 174 accès, 140 → 107 lectures | `tests/moteur-acces-stockage.test.ts` |
+| Facture échue sans preuve d'impayé | « Paiement à vérifier » confirmé | `tests/moteur-citations.test.ts` |
+
+Le gain de latence réel sur la recette hébergée est à lire dans la remise (mesure navigateur), pas dans ces compteurs.
 
 ## Blocages — action minimale du propriétaire
 
