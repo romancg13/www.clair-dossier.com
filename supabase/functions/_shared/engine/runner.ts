@@ -282,6 +282,7 @@ async function runConsolidate(deps: EngineDeps, job: Job): Promise<RunReport['ou
     revision: (last?.revision ?? 0) + 1,
     input_fingerprint: fingerprint,
     lots,
+    pieces: Object.fromEntries(main.map((x) => [x.id, ex.get(x.id)!.status === 'error' && ex.get(x.id)!.deferred ? 'deferred' : ex.get(x.id)!.status])),
     data: { ...guarded, events },
     coverage: cov,
     provider: provider.name,
@@ -339,7 +340,8 @@ export async function renderAndPublish(deps: EngineDeps, dossier: DossierState, 
     // Réservation possible seulement une fois le lot complet (voir EngineStore.claimNotification) : elle peut donc
     // survenir sur une republication sans changement (dernier fichier du lot identique à un précédent).
     const claimed: string[] = [];
-    for (const lot of rec.lots) if (await store.claimNotification(dossier.id, lot)) claimed.push(lot);
+    // Complétude jugée sur le contenu de CETTE révision : une pièce lue pendant son calcul notifiera avec la suivante.
+    for (const lot of rec.lots) if (await store.claimNotification(dossier.id, lot, rec.pieces)) claimed.push(lot);
     if (claimed.length && (await store.notificationsAllowed(dossier.user_id))) {
       await store.notify(dossier.user_id, {
         subject: 'Vos résultats ClairDossier sont disponibles',
@@ -373,6 +375,16 @@ async function recordUnreadable(deps: EngineDeps, pieceId: string) {
   const piece = await store.getPiece(pieceId);
   if (!piece || piece.deleted_at || (await store.getExtraction(piece.id))) return;
   await store.putExtraction({ piece_id: piece.id, dossier_id: piece.dossier_id, user_id: piece.user_id, sha256: piece.sha256, created_at: iso(config.now()), status: 'error', reason: 'Lecture impossible de cette pièce après plusieurs essais : merci de la redéposer.', deferred: false, data: null, vision: false, provider: 'aucun', model: null, reused_from: null, input_tokens: 0, output_tokens: 0, cost_cents: 0 });
+  // Copie déjà déposée pendant les essais (rattachée à cette pièce comme doublon) : la plus ancienne devient l'original
+  // et est lue ; la pièce en échec lui est rattachée. Le client n'a pas à redéposer une troisième fois.
+  const copies = (await store.listPieces(piece.dossier_id)).filter((c) => !c.deleted_at && c.duplicate_of === piece.id).sort((a, b) => a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id));
+  if (copies.length) {
+    const [copy, ...others] = copies;
+    await store.markDuplicate(copy.id, null);
+    await store.markDuplicate(piece.id, copy.id);
+    for (const o of others) await store.markDuplicate(o.id, copy.id);
+    await store.enqueue({ key: `x:${copy.id}`, kind: 'extract', user_id: copy.user_id, dossier_id: copy.dossier_id, piece_id: copy.id });
+  }
   await store.enqueue({ key: `c:${piece.dossier_id}`, kind: 'consolidate', user_id: piece.user_id, dossier_id: piece.dossier_id, piece_id: null, delayMs: config.consolidateDelayMs });
 }
 

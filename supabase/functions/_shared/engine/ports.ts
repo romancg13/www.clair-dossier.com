@@ -10,7 +10,10 @@ export type JobStatus = 'queued' | 'running' | 'done' | 'failed' | 'cancelled';
 
 export interface Job {
   id: string;
-  /** Clé d'idempotence : x:<pièce>, c:<dossier>, r:<dossier> (une seule clé par pièce, quel que soit l'appelant). */
+  /**
+   * Clé d'idempotence : x:<pièce>, c:<dossier>, r:<dossier> (une seule clé par pièce, quel que soit l'appelant) ;
+   * n:<dossier>:<lot> = rendu différé qui clôt un lot dont l'envoi s'est interrompu (aucun traitement de pièce).
+   */
   key: string;
   kind: JobKind;
   user_id: string;
@@ -91,12 +94,16 @@ export interface CoverageRec {
   complete: boolean;
 }
 
+export type PieceState = 'ok' | 'unsupported' | 'error' | 'deferred';
+
 export interface AnalysisRec {
   dossier_id: string;
   user_id: string;
   revision: number;
   input_fingerprint: string;
   lots: string[];
+  /** État de chaque pièce principale prise en compte par cette révision (absent sur les révisions antérieures). */
+  pieces?: Record<string, PieceState>;
   data: AnalysisData3;
   coverage: CoverageRec;
   provider: string;
@@ -138,7 +145,8 @@ export interface EngineStore {
   listPieces(dossierId: string): Promise<PieceRec[]>;
   getPiece(id: string): Promise<PieceRec | null>;
   readPieceBytes(piece: PieceRec): Promise<Uint8Array>;
-  markDuplicate(pieceId: string, ofId: string): Promise<void>;
+  /** Rattache une pièce à son original ; null la rend de nouveau principale. */
+  markDuplicate(pieceId: string, ofId: string | null): Promise<void>;
 
   getExtraction(pieceId: string): Promise<ExtractionRec | null>;
   putExtraction(rec: ExtractionRec): Promise<void>;
@@ -170,8 +178,12 @@ export interface EngineStore {
   addCost(userId: string, lotId: string | null, cents: number): Promise<void>;
 
   addEvent(dossierId: string, userId: string, type: string, label: string): Promise<void>;
-  /** Vrai une seule fois par (dossier, lot), et seulement quand le lot est complet (pièces annoncées reçues, toutes traitées). */
-  claimNotification(dossierId: string, lotId: string): Promise<boolean>;
+  /**
+   * Vrai une seule fois par (dossier, lot), et seulement quand le lot est complet (pièces annoncées reçues ou envoi
+   * clos), que chacune de ses pièces principales figure dans la révision publiée (`covered`) et qu'au moins l'une
+   * n'est pas reportée.
+   */
+  claimNotification(dossierId: string, lotId: string, covered?: Record<string, PieceState>): Promise<boolean>;
   notify(userId: string, message: { subject: string; text: string; link: string }): Promise<void>;
   notificationsAllowed(userId: string): Promise<boolean>;
   /** Alerte technique : identifiants et compteurs UNIQUEMENT, jamais de contenu. */

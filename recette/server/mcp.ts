@@ -7,7 +7,7 @@
 //    et requêtes sans poignée de main (2026-07-28, server/discover).
 import { currentUser, type ApiEnv } from './api.ts';
 import { sha, token, safeEqual } from './security.ts';
-import { RecetteStore, type UserRec } from './store.ts';
+import { RecetteStore, jobEnCours, type UserRec } from './store.ts';
 import type { RenduView } from '../../supabase/functions/_shared/rendus/index.ts';
 
 const SCOPE = 'dossiers:lecture';
@@ -150,7 +150,7 @@ async function callTool(env: ApiEnv, user: UserRec, name: string, args: Record<s
     const v = await s.getView(d.id);
     const view = v?.status === 'approved' ? (v.view as RenduView) : null;
     const jobs = await s.openJobs(d.id);
-    return { id: d.id, titre: d.title, cloture: d.closed, traitement_en_cours: jobs.some((x) => x.status === 'queued' || x.status === 'running'), revision: v?.revision ?? null, situation: view?.tableau.situation ?? null, prochaine_action: view?.tableau.action ?? null, prochaine_date: view?.tableau.next_date ? { date: view.tableau.next_date.date, libelle: view.tableau.next_date.title, statut: view.tableau.next_date.status } : null, couverture: view?.dossier.coverage_label ?? null, url: `${env.siteUrl}/compte/dossier/${d.id}` };
+    return { id: d.id, titre: d.title, cloture: d.closed, traitement_en_cours: jobs.some((x) => jobEnCours(x, s.now())), revision: v?.revision ?? null, situation: view?.tableau.situation ?? null, prochaine_action: view?.tableau.action ?? null, prochaine_date: view?.tableau.next_date ? { date: view.tableau.next_date.date, libelle: view.tableau.next_date.title, statut: view.tableau.next_date.status } : null, couverture: view?.dossier.coverage_label ?? null, url: `${env.siteUrl}/compte/dossier/${d.id}` };
   };
   switch (name) {
     case 'lister_dossiers':

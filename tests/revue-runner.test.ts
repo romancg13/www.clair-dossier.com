@@ -9,6 +9,7 @@ import { RecetteStore } from '../recette/server/store.ts';
 import { handle, type ApiEnv } from '../recette/server/api.ts';
 import { drain, rulesProvider } from '../supabase/functions/_shared/engine/runner.ts';
 import type { ModelProvider } from '../supabase/functions/_shared/engine/anthropic.ts';
+import type { EngineConfig } from '../supabase/functions/_shared/engine/ports.ts';
 
 type Pile = ReturnType<typeof stack>;
 const LOT = '11111111-1111-4111-8111-111111111111';
@@ -130,22 +131,28 @@ test('C06 : la copie redéposée d’une pièce en échec est lue et la remplace
   assert.equal(last!.coverage.extracted, 2);
 });
 
-test('C06 : copie déposée pendant les essais (rattachée à la pièce en échec) : le dépôt suivant est lu, jamais doublon de cette copie', async () => {
+test('C06 : copie déposée pendant les essais de la pièce en échec : elle devient l’original et est lue, sans troisième dépôt', async () => {
   const s = stack();
   await s.user('A');
   await s.dossier('D1', 'A');
+  await s.depose('D1', 'A', LOT, ['Courrier-bailleur-2026-10-12.pdf']);
   const cassee = await pieceSansFichier(s, 'D1', 'A', LOT, 'Releve-charges-2025.xlsx', 'px');
-  const [copie1] = await s.depose('D1', 'A', LOT, ['Releve-charges-2025.xlsx']);
+  const [copie1] = await s.depose('D1', 'A', LOT2, ['Releve-charges-2025.xlsx']); // redéposée avant l'épuisement des essais
   await s.run(60);
+  const pieces = await s.store.listPieces('D1');
   assert.equal((await s.store.getExtraction(cassee))?.status, 'error');
-  assert.equal((await s.store.listPieces('D1')).find((p) => p.id === copie1)?.duplicate_of, cassee);
+  assert.equal(pieces.find((p) => p.id === copie1)?.duplicate_of, null, 'la copie n’est plus doublon de la pièce cassée');
+  assert.equal(pieces.find((p) => p.id === cassee)?.duplicate_of, copie1, 'la pièce cassée est rattachée à sa copie');
+  assert.equal((await s.store.getExtraction(copie1))?.status, 'ok', 'la copie est lue');
+  const last = await s.store.lastAnalysis('D1');
+  assert.equal(last?.coverage.failed, 0, 'aucune demande « redéposer »');
+  assert.equal(last?.coverage.extracted, 2);
+  assert.equal((await s.store.getView('D1'))?.revision, last?.revision);
+  assert.deepEqual(await s.store.allOpenJobs(), []);
+  // Dépôt suivant du même fichier : doublon de la copie lue, aucune nouvelle lecture.
   const [copie2] = await s.depose('D1', 'A', LOT2, ['Releve-charges-2025.xlsx']);
   await s.run();
-  assert.equal((await s.store.listPieces('D1')).find((p) => p.id === copie2)?.duplicate_of, null);
-  assert.equal((await s.store.getExtraction(copie2))?.status, 'ok');
-  const last = await s.store.lastAnalysis('D1');
-  assert.equal(last?.coverage.failed, 0);
-  assert.equal(last?.coverage.extracted, 1);
+  assert.equal((await s.store.listPieces('D1')).find((p) => p.id === copie2)?.duplicate_of, copie1);
 });
 
 test('C06 : un fichier non écrit au dépôt ne laisse aucune fiche de pièce orpheline', async () => {
@@ -243,10 +250,10 @@ test('C18 : dépôt et consolidation partagent la clé d’extraction : un seul 
 
 /* ── C20 : une notification par lot, quand le lot est complet ──────────── */
 
-function apiEnv() {
+function apiEnv(o: { ai?: ModelProvider | null; config?: Partial<EngineConfig> } = {}) {
   const store = new RecetteStore(new MemoryKv());
   const pending: Promise<unknown>[] = [];
-  const e: ApiEnv = { store, deps: async () => engineDeps(store, { ai: null, config: { consolidateDelayMs: 0 } }), secret: 'secret-de-test-0123456789', workerToken: 'w', cronSecret: 'c', siteUrl: 'http://127.0.0.1:9', adminPassword: null, waitUntil: (p) => void pending.push(p), kickWorker: async () => undefined, aiLabel: 'règles' };
+  const e: ApiEnv = { store, deps: async () => engineDeps(store, { ai: o.ai ?? null, config: { consolidateDelayMs: 0, ...o.config } }), secret: 'secret-de-test-0123456789', workerToken: 'w', cronSecret: 'c', siteUrl: 'http://127.0.0.1:9', adminPassword: null, waitUntil: (p) => void pending.push(p), kickWorker: async () => undefined, aiLabel: 'règles' };
   const settle = async () => {
     while (pending.length) await pending.shift();
   };
@@ -309,4 +316,110 @@ test('C20 : dernier fichier du lot identique à un précédent : la notification
   // Nouveau dépôt du même fichier (autre lot) : rien de nouveau, aucune notification.
   await deposerUnParUn(a, d, ['Bail-commercial-2021.pdf'], async () => undefined);
   assert.equal((await boite()).length, avant + 1);
+});
+
+/* ── Contre-revue : lot interrompu, course de complétude, lot entièrement reporté, statut ── */
+
+test('C20 : lot interrompu par un fichier refusé (413) : le navigateur clôt le lot et une notification part', async () => {
+  const a = apiEnv();
+  await a.call('POST', '/api/demo/demarrer', { scenario: 'a' });
+  const d = (await (await a.call('GET', '/api/dossiers')).json()).dossiers[0].id as string;
+  const boite = async () => (await (await a.call('GET', '/api/boite')).json()).messages as unknown[];
+  const avant = (await boite()).length;
+  const lot = crypto.randomUUID();
+  const sel: [string, Uint8Array][] = [['Courrier-bailleur-2026-10-12.pdf', fixture('Courrier-bailleur-2026-10-12.pdf')], ['gros-scan.pdf', new Uint8Array(5 * 1024 * 1024)], ['Releve-charges-2025.xlsx', fixture('Releve-charges-2025.xlsx')]];
+  let recus = 0;
+  for (const [n, b] of sel) {
+    const f = new FormData();
+    f.append('lot', lot);
+    f.append('total', String(sel.length));
+    f.append('fichiers', new File([b], n));
+    const r = await a.call('POST', `/api/dossiers/${d}/pieces`, f);
+    await a.settle();
+    if (r.status !== 201) break; // comme l'espace dossier : l'erreur arrête la boucle
+    recus++;
+  }
+  assert.equal(recus, 1);
+  assert.equal((await boite()).length, avant, 'lot incomplet : pas encore de notification');
+  // Bloc finally de l'espace dossier : fin du lot sur les pièces reçues.
+  assert.equal((await a.call('POST', `/api/dossiers/${d}/lots/${lot}/fin`, {})).status, 200);
+  await a.settle();
+  assert.equal((await boite()).length, avant + 1, 'une notification pour le lot interrompu');
+  assert.equal((await (await a.call('GET', `/api/dossiers/${d}`)).json()).statut.etat, 'pret');
+});
+
+test('C20 : lot abandonné sans clôture (onglet fermé) : tenu pour complet 10 min après la dernière pièce, notifié une fois', async () => {
+  const s = stack();
+  await s.user('A');
+  await s.dossier('D1', 'A');
+  await s.store.declareLot('D1', LOT, 3);
+  await s.depose('D1', 'A', LOT, ['Courrier-bailleur-2026-10-12.pdf']);
+  const t0 = s.clock.now().getTime();
+  await drain(s.deps, 60_000, 50);
+  assert.ok(await s.store.getView('D1'), 'résultat publié');
+  assert.equal((await s.store.mailbox('A')).length, 0, 'pas de notification avant le délai');
+  await s.run();
+  assert.equal((await s.store.mailbox('A')).length, 1, 'notification après le délai');
+  assert.ok(s.clock.now().getTime() - t0 >= 10 * 60_000);
+  assert.deepEqual(await s.store.allOpenJobs(), []);
+});
+
+test('C20 : pièce du lot lue pendant le calcul de la révision précédente : la notification porte sur la révision qui la couvre', async () => {
+  const s = stack();
+  await s.user('A');
+  await s.dossier('D1', 'A');
+  await s.store.declareLot('D1', LOT, 2);
+  await s.depose('D1', 'A', LOT, ['Courrier-bailleur-2026-10-12.pdf']);
+  await drain(s.deps, 60_000, 1); // lecture de la 1re pièce
+  const prep = s.deps.renderer.prepare.bind(s.deps.renderer);
+  let once = true;
+  s.deps.renderer.prepare = async (input) => {
+    if (once) {
+      once = false;
+      await s.depose('D1', 'A', LOT, ['Photo-floue.jpg']); // 2e fichier reçu et lu pendant le rendu de la révision 1
+      await drain({ ...s.deps, config: { ...s.deps.config, workerId: 'w2' } }, 60_000, 5);
+    }
+    return prep(input);
+  };
+  await drain(s.deps, 60_000, 1); // consolidation et rendu de la révision 1
+  await s.run();
+  const mails = await s.store.mailbox('A');
+  assert.equal((await s.store.getView('D1'))?.revision, 2);
+  assert.equal(mails.length, 1);
+  assert.match(mails[0].text, /Certaines pièces n'ont pas pu être exploitées/, 'la notification reflète la pièce reportée');
+});
+
+test('C07 : plafond mensuel déjà atteint au dépôt : aucune notification pour un lot entièrement reporté, une seule quand il est lu', async () => {
+  const s = stack({ ai: iaFacturee({ in: 20_000, out: 3_000 }), config: { budgetCentsPerUserMonth: 5 } });
+  await s.user('A');
+  await s.dossier('D1', 'A');
+  await s.store.addCost('A', null, 6);
+  const [p1] = await s.depose('D1', 'A', LOT, ['Courrier-bailleur-2026-10-12.pdf']);
+  for (let i = 0; i < 200; i++) {
+    await drain(s.deps, 60_000, 50);
+    s.clock.advance(3_000);
+  }
+  assert.equal((await s.store.getExtraction(p1))?.deferred, true);
+  assert.equal((await s.store.mailbox('A')).length, 0, 'rien à annoncer : aucune pièce lue');
+  s.clock.advance(Date.parse('2026-12-01T06:00:01Z') - s.clock.now().getTime());
+  await s.run();
+  assert.equal((await s.store.getExtraction(p1))?.status, 'ok');
+  assert.equal((await s.store.mailbox('A')).length, 1, 'notification sur la révision qui lit le lot');
+});
+
+test('C07 : lecture reportée au mois suivant : le dossier n’est plus affiché « en cours » une fois les résultats publiés', async () => {
+  const a = apiEnv({ ai: iaFacturee({ in: 20_000, out: 3_000 }), config: { budgetCentsPerUserMonth: 5, extractionWaitMs: 0 } });
+  await a.call('POST', '/api/demo/demarrer', { scenario: 'a' });
+  const d = (await (await a.call('GET', '/api/dossiers')).json()).dossiers[0].id as string;
+  await deposerUnParUn(a, d, ['Courrier-bailleur-2026-10-12.pdf', 'Releve-charges-2025.xlsx'], async () => undefined);
+  for (let i = 0; i < 6; i++) {
+    await a.call('GET', `/api/dossiers/${d}`);
+    await a.settle();
+  }
+  const det = await (await a.call('GET', `/api/dossiers/${d}`)).json();
+  assert.ok(det.vue, 'résultats publiés');
+  assert.ok(det.pieces.some((p: { lecture: { report: boolean } | null }) => p.lecture?.report), 'une pièce reportée');
+  assert.ok((await a.store.allOpenJobs()).some((j) => j.kind === 'extract' && j.status === 'queued'), 'relecture planifiée');
+  assert.equal(det.statut.etat, 'pret');
+  assert.equal(det.statut.travaux, 0);
 });
