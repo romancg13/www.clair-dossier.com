@@ -82,7 +82,8 @@ writeFileSync(
         { src: '^/compte/dossier/.*$', dest: '/compte/index.html' },
         { src: '^/(.*)$', dest: existsSync(join(st, 'spa-shell.html')) ? '/spa-shell.html' : '/index.html' },
       ],
-      crons: [{ path: cronPath, schedule: '5 7 * * *' }],
+      // Deux passages quotidiens (8 h 05 et 17 h 10 à Paris en hiver) : le second exécute dans la journée ce qu'un dépôt a rendu dû.
+      crons: [{ path: cronPath, schedule: '5 7 * * *' }, { path: cronPath, schedule: '10 16 * * *' }],
     },
     null,
     2,
