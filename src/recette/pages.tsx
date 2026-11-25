@@ -6,7 +6,7 @@ import { Seo } from '../lib/seo';
 import { api, ApiError, ETAT_LABEL, frDate, type DossierListe } from './api';
 import { useMoi } from './useMoi';
 import { Alert, Card, Chip, Field, Kicker, Page, Primary, Secondary, inputCls } from './ui';
-import { CentreActions, DernierPassage, Preferences } from './Pilotage';
+import { CentreActions, CoupeCircuitAdmin, DernierPassage, Preferences } from './Pilotage';
 
 const safeNext = (n: string | null) => (n && n.startsWith('/') && !n.startsWith('//') ? n : null);
 
@@ -297,6 +297,7 @@ export function RecetteAdmin() {
           )}
         </section>
       )}
+      <CoupeCircuitAdmin />
       {x && (<><p className="mt-4 text-[14px]">Travaux en file : {x.file}</p><h2 className="mt-6 text-[18px] font-semibold">Travaux en échec ({x.travaux_en_echec.length})</h2><ul className="mt-2 text-[14px]">{x.travaux_en_echec.map((t) => <li key={t.id}>{t.kind} · dossier {t.dossier.slice(0, 8)} · {t.tentatives} tentatives · {t.erreur}</li>)}</ul><h2 className="mt-6 text-[18px] font-semibold">Alertes</h2><ul className="mt-2 text-[14px]">{x.alertes.map((a, i) => <li key={i}>{new Date(a.at).toLocaleString('fr-FR')} · {a.code} · {JSON.stringify(a.meta)}</li>)}</ul></>)}
     </Page>
   );

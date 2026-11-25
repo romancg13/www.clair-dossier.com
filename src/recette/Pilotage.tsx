@@ -111,3 +111,33 @@ export function Preferences() {
     </details>
   );
 }
+
+type Coupe = { ia: boolean; automatisations: boolean; motif: string | null; at: string | null };
+/** Administration : arrêt immédiat des appels de modèle et/ou des automatisations (rien n'est supprimé), et dernier passage du planificateur. */
+export function CoupeCircuitAdmin() {
+  const [c, setC] = useState<Coupe | null>(null);
+  const [p, setP] = useState<{ dernier_passage: { at: string; executees: number | null; source: string } | null } | null>(null);
+  useEffect(() => {
+    void api<Coupe>('/api/admin/coupe-circuit').then(setC).catch(() => setC(null));
+    void api<NonNullable<typeof p>>('/api/planificateur').then(setP).catch(() => setP(null));
+  }, []);
+  if (!c) return null;
+  const regler = async (next: Partial<Coupe>) => setC(await api<Coupe>('/api/admin/coupe-circuit', { body: { ia: c.ia, automatisations: c.automatisations, ...next } }));
+  const ligne = (actif: boolean, quoi: string, cle: 'ia' | 'automatisations') => (
+    <li className="flex flex-wrap items-center justify-between gap-3 py-2">
+      <span>{quoi} : <strong className={actif ? 'text-red-700' : 'text-emerald-800'}>{actif ? 'arrêtés' : 'en service'}</strong></span>
+      <Secondary onClick={() => void regler({ [cle]: !actif })}>{actif ? 'Remettre en service' : 'Arrêter maintenant'}</Secondary>
+    </li>
+  );
+  return (
+    <section className="mt-6 rounded-2xl border border-cream-200 bg-white p-5 text-[14px] text-navy-900">
+      <h2 className="text-[18px] font-semibold">Coupe-circuit</h2>
+      <p className="mt-1 text-slate-500">Arrêt immédiat, sans rien supprimer : les dossiers et les résultats restent disponibles, les réponses passent par les règles.</p>
+      <ul className="mt-2 divide-y divide-cream-200">
+        {ligne(c.ia, 'Appels de modèle', 'ia')}
+        {ligne(c.automatisations, 'Automatisations', 'automatisations')}
+      </ul>
+      <p className="mt-2 text-slate-500">{p?.dernier_passage ? `Dernier passage du planificateur : ${quand(p.dernier_passage.at)} (${p.dernier_passage.source}) — ${p.dernier_passage.executees ?? 'interrompu'} exécution(s).` : 'Aucun passage du planificateur enregistré.'}</p>
+    </section>
+  );
+}
