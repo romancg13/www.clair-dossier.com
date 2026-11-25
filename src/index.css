@@ -443,3 +443,10 @@ form select:focus {
   animation: word-rise 0.85s cubic-bezier(0.16, 1, 0.3, 1) both;
   animation-delay: calc(var(--w, 0) * 60ms);
 }
+
+/* Application installée : respecter les zones sécurisées des écrans (encoche, barre d'accueil). */
+@media (display-mode: standalone) {
+  body {
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+}

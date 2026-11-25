@@ -24,6 +24,7 @@ import { useMyProfile } from '../lib/profile';
 import { DraftsPanel, ProfilePanel, SubscriptionPanel } from '../components/account/AccountPanels';
 import { MailConnect } from '../components/account/MailConnect';
 import { PersonalizeSpace } from '../components/account/PersonalizeSpace';
+import { InstallApp } from '../components/pwa/InstallApp';
 import { greeting } from '../../packages/core/src/index';
 
 type DossierRow = {
@@ -310,6 +311,8 @@ export function Account() {
           {profile && extended && <MailConnect />}
           {/* Aperçu des options : inerte sans VITE_OPTIONS_PREVIEW=1. */}
           <PersonalizeSpace />
+          {/* Application installable : même espace, depuis l'écran d'accueil. */}
+          <InstallApp />
 
           <SubscriptionPanel paidReturn={Boolean(paidPlan)} />
 

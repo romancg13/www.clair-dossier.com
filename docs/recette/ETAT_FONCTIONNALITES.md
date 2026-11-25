@@ -2,7 +2,7 @@
 
 Mis à jour : 2026-11-25 · commit de recette gelé et déployé : `5035ff5` (463 unitaires et 118 SQL verts sur ce code ; recette finale hébergée jouée en session neuve le 25/11 : premier résultat 12,9 s, six rendus 20 s, archive de 14 fichiers contrôlée, isolation A/B 404, 0 erreur JS) (branche `claude/clairdossier-optimization-85z7y5`, PR brouillon #71) · production : `85bbb4e`.
 
-Statuts : **OK** = OPÉRATIONNEL ET VÉRIFIÉ · **PART** = PARTIELLEMENT OPÉRATIONNEL · **DNT** = DÉVELOPPÉ MAIS NON TESTÉ · **SIM** = SIMULÉ · **BLQ** = BLOQUÉ · **ND** = NON DÉVELOPPÉ · **DV** = VOLONTAIREMENT DIFFÉRÉ OU DÉSACTIVÉ · **—** = sans objet dans cet environnement.
+Statuts : **OK** = OPÉRATIONNEL ET VÉRIFIÉ · **PART** = PARTIELLEMENT OPÉRATIONNEL · **DNT** = DÉVELOPPÉ MAIS NON TESTÉ · **ÉMU** = VÉRIFIÉ PAR ÉMULATION (navigateur automatisé, aucun appareil physique) · **SIM** = SIMULÉ · **BLQ** = BLOQUÉ · **ND** = NON DÉVELOPPÉ · **DV** = VOLONTAIREMENT DIFFÉRÉ OU DÉSACTIVÉ · **—** = sans objet dans cet environnement.
 
 Règles de lecture : « Local » = tests automatisés du dépôt (463 unitaires, 118 SQL, verts le 25/11) ou parcours navigateur local. « Recette » = https://clairdossier-recette-20b5a2.vercel.app (comptes fictifs, stockage privé) et https://clairdossier-preview.vercel.app/demo. « Production » = https://www.clair-dossier.com + Supabase `buzgokfmxpmyceppvjpp` ; **aucun outil de cette session n'accède à la base de production** : tout ce qui dépend d'un compte client y est noté DNT (« en service, non retesté le 25/11 ») et non OK. Un test unitaire ne prouve pas un service externe ; un modèle simulé ne compte jamais comme opérationnel.
 
@@ -200,53 +200,79 @@ Le détail fin de la vitrine historique (219 lignes F-001…) reste dans `FEATUR
 | N-10 | Analyse de sécurité dynamique (HawkScan ou équivalent) | — | ND | ND | ND | non exécutée | — |
 | N-11 | Supabase de recette hébergé et isolé | — | OK | BLQ | — | recette locale 63 cas ; organisation à la limite gratuite | décision propriétaire |
 
+## O — Application installable (PWA)
+
+Même site, mêmes comptes, même serveur : l'application installée est le site ouvert sans barre de navigateur. Toutes les fonctions des catégories A à N y sont donc identiques (même code, même API) ; seules les lignes ci-dessous lui sont propres. **Aucun appareil physique n'a été utilisé** : les vérifications sont faites dans Chromium automatisé (ordinateur et écran de téléphone émulé). iPhone, iPad, Android, Safari Mac et Windows restent à confirmer par le fondateur. Détail et matrice : `PWA.md`.
+
+| ID | Fonction | Offres | Local | Recette | Production | Preuve | Reste à faire |
+|---|---|---|---|---|---|---|---|
+| O-01 | Manifeste (nom, identifiant stable, plein écran, couleurs, raccourcis) | toutes, gratuit | OK | ÉMU | ND | `tests/pwa.test.ts` ; manifeste servi en recette | arrive en production à la fusion de la PR #71 |
+| O-02 | Icônes 192, 512, adaptative, Apple — dérivées du logo officiel | toutes | OK | ÉMU | PART | test des tailles ; 192/512/Apple déjà en production | icône adaptative : à la fusion |
+| O-03 | Recette et démonstration distinctes de la production (nom, identifiant, icône « RECETTE ») | — | OK | ÉMU | — | `tests/pwa.test.ts` | — |
+| O-04 | « Installer l'application » dans Mon compte et dès la connexion, sans abonnement | toutes | OK | ÉMU | ND | parcours Chromium, `captures/v9-installer-*.png` | — |
+| O-05 | Invitation native (Chrome, Edge, Android) | toutes | DNT | DNT | ND | code `src/lib/pwa.ts` ; l'invitation du navigateur ne se déclenche pas en navigateur automatisé | essai sur un vrai Chrome/Android |
+| O-06 | Consignes iPhone/iPad, Android, Safari Mac, ordinateur selon le navigateur détecté | toutes | OK | ÉMU | ND | `tests/pwa.test.ts` (détection) ; aucun iPhone réel | essai sur iPhone |
+| O-07 | Aucune invitation répétée une fois l'application ouverte | toutes | OK | ÉMU | ND | mode application émulé | — |
+| O-08 | Service worker minimal : seule la page hors connexion est en cache | toutes | OK | ÉMU | ND | test statique + cache inspecté après dépôt, rendus et archive : 2 fichiers publics, rien d'autre | — |
+| O-09 | Aucune donnée privée sur l'appareil (cache, IndexedDB, stockage local vides) | toutes | OK | ÉMU | ND | inspection après parcours complet | — |
+| O-10 | Hors connexion : écran simple, aucun ancien résultat affiché, API sans réponse en cache | toutes | OK | ÉMU | ND | parcours hors ligne | — |
+| O-11 | Mise à jour proposée, jamais imposée (pas de rechargement pendant un dépôt) | toutes | PART | DNT | ND | logique testée statiquement ; passage réel d'une version à l'autre non observé | observer au prochain déploiement |
+| O-12 | Désactivation à distance du service worker (`/pwa.json`) et retour arrière | interne | OK | ÉMU | ND | désinscription et caches vidés constatés | — |
+| O-13 | Zones sécurisées (encoche, barre d'accueil), cibles tactiles de 44 px | toutes | DNT | DNT | ND | règles CSS en place ; aucun iPhone réel | essai sur iPhone |
+| O-14 | Synchronisation site ↔ application (mêmes données serveur) | toutes | OK | OK | ND | par construction : aucune donnée locale ; deux sessions du même compte lisent le même serveur | — |
+| O-15 | Photo et fichiers du téléphone au dépôt | toutes | DNT | DNT | ND | champ de dépôt acceptant les images (sélecteur natif) ; aucun téléphone réel | essai sur téléphone |
+| O-16 | Notifications poussées (analyse terminée, échéance, automatisation) | toutes | ND | ND | ND | — | clés d'envoi à créer dans le coffre serveur, abonnement par appareil, envoi sans contenu confidentiel |
+| O-17 | Partage d'un document vers ClairDossier depuis une autre application | toutes | ND | ND | ND | — | Android/Chrome uniquement ; à développer |
+| O-18 | Retour OAuth et paiement dans l'application installée | Entrepreneur → | BLQ | BLQ | ND | dépend de H-01/H-02 et I-03 | — |
+
 <!-- SYNTHESE -->
 ## Synthèse (calculée par `node scripts/synthese-fonctionnalites.mjs`)
 
-Fonctionnalités recensées : **122**.
+Fonctionnalités recensées : **140**.
 
 ### Local
 
-| OK | PART | DNT | SIM | BLQ | ND | DV | — |
-|---|---|---|---|---|---|---|---|
-| 89 | 6 | 3 | 6 | 1 | 13 | 2 | 2 |
+| OK | ÉMU | PART | DNT | SIM | BLQ | ND | DV | — |
+|---|---|---|---|---|---|---|---|---|
+| 100 | 0 | 7 | 6 | 6 | 2 | 15 | 2 | 2 |
 
-- Couverture de vérification : 119/122 = **98 %** (état établi par une preuve ; exclus : les 3 « développé mais non testé »).
-- Taux d'opérationnalité : 89/118 = **75 %** (périmètre actif = recensées − sans objet − désactivées volontairement ; simulé, bloqué et non développé restent au dénominateur).
+- Couverture de vérification : 134/140 = **96 %** (état établi par une preuve ; exclus : les 6 « développé mais non testé »).
+- Taux d'opérationnalité : 100/136 = **74 %** vérifié réellement, plus 0 vérifié par émulation (périmètre actif = recensées − sans objet − désactivées volontairement ; simulé, bloqué et non développé restent au dénominateur).
 
 ### Recette
 
-| OK | PART | DNT | SIM | BLQ | ND | DV | — |
-|---|---|---|---|---|---|---|---|
-| 42 | 8 | 14 | 4 | 14 | 17 | 5 | 18 |
+| OK | ÉMU | PART | DNT | SIM | BLQ | ND | DV | — |
+|---|---|---|---|---|---|---|---|---|
+| 43 | 10 | 8 | 18 | 4 | 15 | 19 | 5 | 18 |
 
-- Couverture de vérification : 108/122 = **89 %** (état établi par une preuve ; exclus : les 14 « développé mais non testé »).
-- Taux d'opérationnalité : 42/99 = **42 %** (périmètre actif = recensées − sans objet − désactivées volontairement ; simulé, bloqué et non développé restent au dénominateur).
+- Couverture de vérification : 122/140 = **87 %** (état établi par une preuve ; exclus : les 18 « développé mais non testé »).
+- Taux d'opérationnalité : 43/117 = **37 %** vérifié réellement, plus 10 vérifié par émulation (périmètre actif = recensées − sans objet − désactivées volontairement ; simulé, bloqué et non développé restent au dénominateur).
 
 ### Production
 
-| OK | PART | DNT | SIM | BLQ | ND | DV | — |
-|---|---|---|---|---|---|---|---|
-| 10 | 4 | 14 | 0 | 6 | 21 | 55 | 12 |
+| OK | ÉMU | PART | DNT | SIM | BLQ | ND | DV | — |
+|---|---|---|---|---|---|---|---|---|
+| 10 | 0 | 5 | 14 | 0 | 6 | 37 | 55 | 13 |
 
-- Couverture de vérification : 108/122 = **89 %** (état établi par une preuve ; exclus : les 14 « développé mais non testé »).
-- Taux d'opérationnalité : 10/55 = **18 %** (périmètre actif = recensées − sans objet − désactivées volontairement ; simulé, bloqué et non développé restent au dénominateur).
+- Couverture de vérification : 126/140 = **90 %** (état établi par une preuve ; exclus : les 14 « développé mais non testé »).
+- Taux d'opérationnalité : 10/72 = **14 %** vérifié réellement, plus 0 vérifié par émulation (périmètre actif = recensées − sans objet − désactivées volontairement ; simulé, bloqué et non développé restent au dénominateur).
 
 ### Par catégorie (colonne Recette)
 
-| Catégorie | Total | OK | PART | DNT | SIM | BLQ | ND | DV | — |
-|---|---|---|---|---|---|---|---|---|---|
-| A | 7 | 4 | 0 | 0 | 0 | 0 | 1 | 0 | 2 |
-| B | 8 | 3 | 1 | 0 | 2 | 0 | 0 | 1 | 1 |
-| C | 12 | 6 | 1 | 1 | 0 | 0 | 3 | 0 | 1 |
-| D | 9 | 8 | 0 | 0 | 0 | 0 | 0 | 0 | 1 |
-| E | 10 | 1 | 0 | 0 | 0 | 6 | 2 | 0 | 1 |
-| F | 14 | 6 | 3 | 0 | 0 | 1 | 3 | 0 | 1 |
-| G | 10 | 2 | 1 | 5 | 0 | 0 | 1 | 1 | 0 |
-| H | 6 | 0 | 0 | 0 | 1 | 3 | 0 | 1 | 1 |
-| I | 4 | 1 | 0 | 0 | 1 | 1 | 1 | 0 | 0 |
-| J | 8 | 0 | 0 | 6 | 0 | 1 | 0 | 0 | 1 |
-| K | 6 | 0 | 0 | 1 | 0 | 1 | 1 | 0 | 3 |
-| L | 5 | 1 | 0 | 0 | 0 | 0 | 3 | 1 | 0 |
-| M | 12 | 6 | 2 | 1 | 0 | 0 | 0 | 1 | 2 |
-| N | 11 | 4 | 0 | 0 | 0 | 1 | 2 | 0 | 4 |
+| Catégorie | Total | OK | ÉMU | PART | DNT | SIM | BLQ | ND | DV | — |
+|---|---|---|---|---|---|---|---|---|---|---|
+| A | 7 | 4 | 0 | 0 | 0 | 0 | 0 | 1 | 0 | 2 |
+| B | 8 | 3 | 0 | 1 | 0 | 2 | 0 | 0 | 1 | 1 |
+| C | 12 | 6 | 0 | 1 | 1 | 0 | 0 | 3 | 0 | 1 |
+| D | 9 | 8 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 1 |
+| E | 10 | 1 | 0 | 0 | 0 | 0 | 6 | 2 | 0 | 1 |
+| F | 14 | 6 | 0 | 3 | 0 | 0 | 1 | 3 | 0 | 1 |
+| G | 10 | 2 | 0 | 1 | 5 | 0 | 0 | 1 | 1 | 0 |
+| H | 6 | 0 | 0 | 0 | 0 | 1 | 3 | 0 | 1 | 1 |
+| I | 4 | 1 | 0 | 0 | 0 | 1 | 1 | 1 | 0 | 0 |
+| J | 8 | 0 | 0 | 0 | 6 | 0 | 1 | 0 | 0 | 1 |
+| K | 6 | 0 | 0 | 0 | 1 | 0 | 1 | 1 | 0 | 3 |
+| L | 5 | 1 | 0 | 0 | 0 | 0 | 0 | 3 | 1 | 0 |
+| M | 12 | 6 | 0 | 2 | 1 | 0 | 0 | 0 | 1 | 2 |
+| N | 11 | 4 | 0 | 0 | 0 | 0 | 1 | 2 | 0 | 4 |
+| O | 18 | 1 | 10 | 0 | 4 | 0 | 1 | 2 | 0 | 0 |

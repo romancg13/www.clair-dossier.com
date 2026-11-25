@@ -12,8 +12,8 @@ import { execSync } from 'node:child_process';
 const sh = (cmd) => execSync(cmd, { stdio: 'inherit' });
 if (process.env.BLOB_READ_WRITE_TOKEN) {
   sh('node scripts/recette/vercel-build.mjs');
-  sh('node scripts/preview-neutralise.mjs --dir=.vercel/output/static');
+  sh('node scripts/preview-neutralise.mjs --dir=.vercel/output/static --pwa=recette');
 } else {
   sh('npm run build');
-  sh('node scripts/preview-neutralise.mjs');
+  sh('node scripts/preview-neutralise.mjs --pwa=demo');
 }

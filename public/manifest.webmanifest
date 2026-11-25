@@ -1,15 +1,25 @@
 {
+  "id": "/?app=clairdossier",
   "name": "ClairDossier",
   "short_name": "ClairDossier",
   "description": "Dossiers administratifs et juridiques, clairs, structurés et suivis.",
-  "start_url": "/compte",
+  "start_url": "/compte?source=application",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "any",
   "background_color": "#fbf9f4",
   "theme_color": "#0d1b3d",
   "lang": "fr",
+  "dir": "ltr",
+  "categories": ["business", "productivity"],
   "icons": [
     { "src": "/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" },
-    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Mes dossiers", "url": "/compte?source=raccourci", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Nouveau dossier", "url": "/dossier/nouveau?source=raccourci", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] }
   ]
 }

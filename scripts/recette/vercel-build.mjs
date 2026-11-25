@@ -77,6 +77,8 @@ writeFileSync(
       routes: [
         { src: '^/(.*)$', headers, continue: true },
         { src: '^/assets/(.*)$', headers: { 'cache-control': 'public, max-age=31536000, immutable' }, continue: true },
+        // Application installable : service worker, coupe-circuit et manifeste toujours revalidés (mises à jour et retour arrière immédiats).
+        { src: '^/(sw\\.js|pwa\\.json|manifest\\.webmanifest)$', headers: { 'cache-control': 'no-cache' }, continue: true },
         { src: '^/((?:api|mcp|oauth|\\.well-known)(?:/.*)?)$', dest: '/api?__p=$1' },
         { handle: 'filesystem' },
         { src: '^/compte/dossier/.*$', dest: '/compte/index.html' },

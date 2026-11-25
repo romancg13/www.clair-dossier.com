@@ -6,6 +6,7 @@ import { Seo } from '../lib/seo';
 import { api, ApiError, ETAT_LABEL, frDate, type DossierListe } from './api';
 import { useMoi } from './useMoi';
 import { Alert, Card, Chip, Field, Kicker, Page, Primary, Secondary, inputCls } from './ui';
+import { InstallApp } from '../components/pwa/InstallApp';
 import { CentreActions, CoupeCircuitAdmin, DernierPassage, Preferences } from './Pilotage';
 
 const safeNext = (n: string | null) => (n && n.startsWith('/') && !n.startsWith('//') ? n : null);
@@ -78,6 +79,7 @@ export function RecetteConnexion() {
           <Secondary onClick={() => void demo('sans-abonnement')}>Sans abonnement</Secondary>
         </div>
       </Card>
+      <InstallApp discret />
     </Page>
   );
 }
@@ -162,6 +164,7 @@ export function RecetteCompte() {
       </ul>
       <Automatisations />
       <Preferences />
+      <InstallApp />
       <details className="mt-4 rounded-2xl border border-cream-200 bg-white p-5">
         <summary className="cursor-pointer text-[15px] font-medium text-navy-900">Suivi depuis ChatGPT ou Claude (lecture seule)</summary>
         <p className="mt-3 text-[14px] text-slate-500">Adresse du serveur : <code className="rounded bg-cream-100 px-1.5 py-0.5">{window.location.origin}/mcp</code>. Accès en lecture seule à l’état de vos dossiers, sans les pièces ; vous l’autorisez à la première connexion et pouvez le retirer ici.</p>
