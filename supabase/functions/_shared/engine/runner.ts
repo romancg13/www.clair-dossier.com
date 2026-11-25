@@ -10,7 +10,7 @@ import { preparePiece, type PreparedPiece, type ReadingCaps } from './reading.ts
 import { consolidateByRules, extractByRules, type ConsolidationInput } from './rules.ts';
 import { guardAnalysis, verifyExtraction, type StoredExtraction } from './verify.ts';
 import type { ModelProvider, ModelResult } from './anthropic.ts';
-import type { AnalysisData3, AnalysisRec, CoverageRec, DossierState, EngineConfig, EngineStore, ExtractionRec, Job, OutFileLite, PieceRec } from './ports.ts';
+import type { AnalysisData3, AnalysisRec, BudgetScope, CoverageRec, DossierState, EngineConfig, EngineStore, ExtractionRec, Job, OutFileLite, PieceRec } from './ports.ts';
 import { SCHEMA_VERSION, type AnalysisOutput, type ExtractionOutput } from './schemas.ts';
 
 export interface RenderInput {
@@ -59,6 +59,20 @@ export const rulesProvider: ModelProvider = {
 
 class Retry extends Error {}
 
+/** Attentes avant relecture automatique d'une pièce en échec définitif : trois essais au plus, de plus en plus espacés. */
+export const REREAD_DELAYS_MS = [60 * 60_000, 6 * 60 * 60_000, 24 * 60 * 60_000];
+const rereadDelays = (c: EngineConfig) => c.rereadDelaysMs ?? REREAD_DELAYS_MS;
+/** Clé du travail de relecture automatique d'une pièce (distincte de x:<pièce>, terminé quand elle est créée). */
+const rereadKey = (pieceId: string) => `xr:${pieceId}`;
+
+/** Motif lisible d'un repli sur les règles déterministes faute de budget IA. */
+export const BUDGET_REASON: Record<BudgetScope, string> = {
+  user: 'plafond mensuel de lecture approfondie de votre compte atteint',
+  global: 'plafond mensuel de lecture approfondie du service atteint',
+  lot: 'budget de traitement de ce dépôt atteint',
+};
+const budgetResume = (scope: BudgetScope) => (scope === 'lot' ? 'La lecture approfondie de ce dépôt n’a pas été faite.' : 'La lecture approfondie reprendra automatiquement au début du mois prochain.');
+
 const iso = (d: Date) => d.toISOString();
 const monthStartNext = (d: Date) => new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1, 6));
 const parisDate = (d: Date) => new Intl.DateTimeFormat('fr-CA', { timeZone: 'Europe/Paris', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
@@ -105,7 +119,9 @@ async function recordCost(deps: EngineDeps, userId: string, lotId: string | null
 
 async function runExtract(deps: EngineDeps, job: Job): Promise<RunReport['outcome']> {
   const { store, config } = deps;
-  const piece = job.piece_id ? await store.getPiece(job.piece_id) : null;
+  // La pièce est lue avec celles de son dossier (nécessaires à la détection des doublons) : une seule lecture de la liste.
+  const siblings = job.piece_id ? await store.listPieces(job.dossier_id) : [];
+  const piece = siblings.find((s) => s.id === job.piece_id) ?? null;
   if (!piece || piece.deleted_at) return 'done';
   const p = await processable(store, job.dossier_id);
   if (!p.ok) return 'cancelled';
@@ -113,7 +129,6 @@ async function runExtract(deps: EngineDeps, job: Job): Promise<RunReport['outcom
 
   // Doublon dans le dossier : même empreinte qu'une pièce antérieure → aucune extraction, aucun coût.
   // Une pièce antérieure en échec de lecture (non reporté) n'est pas un original : la copie redéposée est lue et la remplace.
-  const siblings = await store.listPieces(piece.dossier_id);
   const same = siblings.filter((s) => !s.deleted_at && s.sha256 === piece.sha256).sort((a, b) => a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id));
   const failedCopies: PieceRec[] = [];
   let first: PieceRec | undefined;
@@ -135,14 +150,18 @@ async function runExtract(deps: EngineDeps, job: Job): Promise<RunReport['outcom
   }
   for (const f of failedCopies) if (f.duplicate_of !== piece.id) await store.markDuplicate(f.id, piece.id);
   const existing = await store.getExtraction(piece.id);
-  if (existing && existing.status !== 'error') {
+  // Pièce lue par les règles faute de budget IA : la lecture IA est reprise (ce travail attendait le cycle suivant).
+  const resumable = Boolean(existing && existing.status === 'ok' && existing.fallback && existing.fallback !== 'lot' && deps.ai);
+  if (existing && existing.status !== 'error' && !resumable) {
     await consolidate();
     return 'done';
   }
+  // Échec définitif déjà enregistré : ce passage est une relecture automatique (comptée, plafonnée).
+  const rereads = existing && existing.status === 'error' && !existing.deferred ? (existing.rereads ?? 0) + 1 : 0;
   const base = { piece_id: piece.id, dossier_id: piece.dossier_id, user_id: piece.user_id, sha256: piece.sha256, created_at: iso(config.now()) };
   // Même empreinte déjà lue pour ce titulaire (autre dossier) : réemploi, coût nul.
   const reusable = await store.findReusableExtraction(piece.user_id, piece.sha256);
-  if (reusable && reusable.status === 'ok' && reusable.data && reusable.piece_id !== piece.id) {
+  if (!resumable && reusable && reusable.status === 'ok' && reusable.data && reusable.piece_id !== piece.id) {
     await store.putExtraction({ ...reusable, ...base, reused_from: reusable.piece_id, input_tokens: 0, output_tokens: 0, cost_cents: 0 });
     await consolidate();
     return 'done';
@@ -151,8 +170,17 @@ async function runExtract(deps: EngineDeps, job: Job): Promise<RunReport['outcom
   const bytes = await store.readPieceBytes(piece);
   const prepared = await preparePiece(bytes, piece.file_name, piece.mime, deps.reading);
   const fail = async (status: 'unsupported' | 'error', reason: string, provider = 'aucun', deferred = false) => {
-    await store.putExtraction({ ...base, status, reason, deferred, data: null, vision: false, provider, model: null, reused_from: null, input_tokens: 0, output_tokens: 0, cost_cents: 0 });
+    // Échec définitif (ni format non pris en charge, ni report) : la pièce reste annoncée « illisible » et sera relue
+    // d'elle-même, sans nouveau dépôt, après une attente croissante ; au-delà du plafond, plus aucun essai.
+    const definitive = status === 'error' && !deferred;
+    await store.putExtraction({ ...base, status, reason, deferred, ...(definitive ? { rereads } : {}), data: null, vision: false, provider, model: null, reused_from: null, input_tokens: 0, output_tokens: 0, cost_cents: 0 });
     await consolidate();
+    const wait = definitive ? rereadDelays(config)[rereads] : undefined;
+    if (wait !== undefined) {
+      // Depuis le travail de relecture lui-même : il se replanifie (se remettre en file relancerait aussitôt).
+      if (job.key === rereadKey(piece.id)) throw Object.assign(new Retry('relecture automatique reprogrammée'), { delayMs: wait, countAttempt: false });
+      await store.enqueue({ key: rereadKey(piece.id), kind: 'extract', user_id: piece.user_id, dossier_id: piece.dossier_id, piece_id: piece.id, delayMs: wait });
+    }
     return 'done' as const;
   };
   if (!prepared.ok) return fail('unsupported', prepared.reason);
@@ -162,6 +190,20 @@ async function runExtract(deps: EngineDeps, job: Job): Promise<RunReport['outcom
 
   if (provider !== rulesProvider) {
     const over = await overBudget(deps, piece.user_id, piece.lot_id);
+    if (over && !pp.needsVision) {
+      // Budget IA épuisé, texte lisible : repli sur les règles déterministes. Le résultat est livré, annoncé PARTIEL
+      // avec son motif ; ce même travail reprend la lecture IA au cycle suivant (un seul appel, un seul coût).
+      await store.alert('BUDGET', { scope: over, dossier: piece.dossier_id });
+      if (!(existing && existing.status === 'ok' && existing.fallback === over)) {
+        const fb = await rulesProvider.extract(pp, piece.file_name, '');
+        if (!fb.ok) throw new Retry('repli règles impossible');
+        await store.putExtraction({ ...base, status: 'ok', reason: `Lecture par les règles automatiques seulement : ${BUDGET_REASON[over]}. ${budgetResume(over)}`, fallback: over, data: verifyExtraction(fb.data, pp), vision: false, provider: 'regles', model: null, reused_from: null, input_tokens: 0, output_tokens: 0, cost_cents: 0 });
+        await store.addEvent(piece.dossier_id, piece.user_id, 'lecture_partielle', `« ${piece.file_name} » lue par les règles automatiques seulement : ${BUDGET_REASON[over]}.`);
+        await consolidate();
+      }
+      if (over === 'lot') return 'done';
+      throw Object.assign(new Retry(`budget ${over} atteint : repli règles`), { until: monthStartNext(config.now()), countAttempt: false });
+    }
     if (over === 'user' || over === 'global') {
       await store.alert('BUDGET', { scope: over, dossier: piece.dossier_id });
       // Pièce comptée « reportée » : les pièces déjà lues sont publiées sans attendre ; ce travail la relit au début du mois suivant.
@@ -200,7 +242,7 @@ async function runExtract(deps: EngineDeps, job: Job): Promise<RunReport['outcom
 
 /* ── Consolidation ──────────────────────────────────────────────────────── */
 
-function coverageOf(pieces: PieceRec[], ex: Map<string, ExtractionRec | null>): CoverageRec {
+function coverageOf(pieces: PieceRec[], ex: Map<string, ExtractionRec | null>, consolidationFallback: BudgetScope | null = null): CoverageRec {
   const live = pieces.filter((p) => !p.deleted_at);
   const dup = live.filter((p) => p.duplicate_of);
   const main = live.filter((p) => !p.duplicate_of);
@@ -208,8 +250,17 @@ function coverageOf(pieces: PieceRec[], ex: Map<string, ExtractionRec | null>): 
   const pending = st.filter((s) => s === null).length;
   const deferred = main.filter((p) => ex.get(p.id)?.status === 'error' && ex.get(p.id)?.deferred).length;
   const failed = st.filter((s) => s === 'error').length - deferred;
-  return { total: main.length, extracted: st.filter((s) => s === 'ok').length, unsupported: st.filter((s) => s === 'unsupported').length, failed, pending, deferred, duplicates: dup.length, complete: main.length > 0 && pending === 0 && failed === 0 && deferred === 0 };
+  // Repli budget : pièces lues par les règles seules, ou consolidation rendue par les règles → résultat PARTIEL, motif en clair.
+  const fb = main.map((p) => ex.get(p.id)).filter((x): x is ExtractionRec => Boolean(x && x.status === 'ok' && x.fallback));
+  const scope = consolidationFallback ?? fb[0]?.fallback ?? null;
+  const partial = scope
+    ? { fallback: fb.length, partial_reason: `${fb.length ? `${fb.length} pièce${fb.length > 1 ? 's lues' : ' lue'} par les règles automatiques seulement` : 'synthèse établie par les règles automatiques seulement'} — ${BUDGET_REASON[scope]}. ${budgetResume(scope)}` }
+    : {};
+  return { total: main.length, extracted: st.filter((s) => s === 'ok').length, unsupported: st.filter((s) => s === 'unsupported').length, failed, pending, deferred, duplicates: dup.length, ...partial, complete: main.length > 0 && pending === 0 && failed === 0 && deferred === 0 && !scope };
 }
+
+/** Clé du travail qui reprend, au cycle suivant, une consolidation rendue par les règles faute de budget. */
+const resumeKey = (dossierId: string) => `cr:${dossierId}`;
 
 async function runConsolidate(deps: EngineDeps, job: Job): Promise<RunReport['outcome']> {
   const { store, config } = deps;
@@ -218,7 +269,8 @@ async function runConsolidate(deps: EngineDeps, job: Job): Promise<RunReport['ou
   const dossier = p.dossier;
   // Lectures en cours ou reprises proches ; une lecture reportée au mois suivant (budget) ne retient pas la publication.
   const horizon = config.now().getTime() + 10 * 60_000;
-  const open = (await store.openJobs(dossier.id)).filter((j) => j.kind === 'extract' && j.id !== job.id && (j.status === 'running' || (j.status === 'queued' && Date.parse(j.run_after) <= horizon)));
+  // Une relecture automatique (xr:) non plus : la pièce reste « illisible » d'ici là, et relance la consolidation si elle est lue.
+  const open = (await store.openJobs(dossier.id)).filter((j) => j.kind === 'extract' && !j.key.startsWith('xr:') && j.id !== job.id && (j.status === 'running' || (j.status === 'queued' && Date.parse(j.run_after) <= horizon)));
   if (open.length) throw Object.assign(new Retry('extractions en cours'), { delayMs: deps.config.extractionWaitMs ?? 20_000, countAttempt: false });
 
   const pieces = (await store.listPieces(dossier.id)).filter((x) => !x.deleted_at);
@@ -238,10 +290,27 @@ async function runConsolidate(deps: EngineDeps, job: Job): Promise<RunReport['ou
   const deferredPieces = notOk.filter((x) => ex.get(x.id)!.deferred).map((x) => ({ document_id: x.id, file_name: x.file_name }));
   const fingerprint = await deps.sha256(canonical({ v: SCHEMA_VERSION, usable: usable.map((x) => [x.id, x.sha256, ex.get(x.id)!.provider]), unreadable: unreadable.map((u) => [u.document_id, u.reason]), deferred: deferredPieces.map((d) => d.document_id), objective: dossier.objective }));
   const last = await store.lastAnalysis(dossier.id);
-  if (last && last.input_fingerprint === fingerprint) {
-    // Rien de nouveau (doublon, relance) : aucun appel au modèle ; republication si la précédente a été interrompue.
-    await renderAndPublish(deps, dossier, last);
+  const lots = [...new Set(main.map((x) => x.lot_id))];
+  const useAi = Boolean(deps.ai && usable.some((x) => ex.get(x.id)!.provider !== 'regles'));
+  // Budget consulté une seule fois par consolidation, et seulement si l'IA serait appelée.
+  let budget: BudgetScope | null | undefined;
+  const over = async () => (budget === undefined ? (budget = useAi ? await overBudget(deps, dossier.user_id, null) : null) : budget);
+  // Fin d'une consolidation en repli budget : reprise IA au cycle suivant, par un travail à part (jamais le travail
+  // courant de consolidation, qu'un nouveau dépôt doit pouvoir relancer tout de suite).
+  const parkForResume = async (): Promise<RunReport['outcome']> => {
+    const until = monthStartNext(config.now());
+    if (job.key === resumeKey(dossier.id)) throw Object.assign(new Retry('budget atteint : reprise au cycle suivant'), { until, countAttempt: false });
+    await store.enqueue({ key: resumeKey(dossier.id), kind: 'consolidate', user_id: dossier.user_id, dossier_id: dossier.id, piece_id: null, delayMs: until.getTime() - config.now().getTime() });
     return 'done';
+  };
+  if (last && last.input_fingerprint === fingerprint) {
+    // Dernière synthèse rendue par les règles faute de budget, budget de nouveau disponible : recalcul par l'IA.
+    const resume = Boolean(last.budget_fallback) && useAi && !(await over());
+    if (!resume) {
+      // Rien de nouveau (doublon, relance) : aucun appel au modèle ; republication si la précédente a été interrompue.
+      await renderAndPublish(deps, dossier, last);
+      return last.budget_fallback && useAi ? parkForResume() : 'done';
+    }
   }
 
   const extractions = new Map(usable.map((x) => [x.id, { data: ex.get(x.id)!.data!, vision: ex.get(x.id)!.vision }]));
@@ -258,14 +327,13 @@ async function runConsolidate(deps: EngineDeps, job: Job): Promise<RunReport['ou
     unreadable,
     others: [...unreadable.map((u) => ({ document_id: u.document_id, file_name: u.file_name })), ...deferredPieces],
   };
-  const lots = [...new Set(main.map((x) => x.lot_id))];
-  const useAi = deps.ai && usable.some((x) => ex.get(x.id)!.provider !== 'regles');
   let provider: ModelProvider = useAi ? deps.ai! : rulesProvider;
+  let budgetFallback: BudgetScope | null = null;
   if (provider !== rulesProvider) {
-    const over = await overBudget(deps, dossier.user_id, null);
-    if (over) {
-      await store.alert('BUDGET', { scope: over, dossier: dossier.id });
-      provider = rulesProvider; // le client reçoit un résultat déterministe plutôt qu'aucun
+    budgetFallback = await over();
+    if (budgetFallback) {
+      await store.alert('BUDGET', { scope: budgetFallback, dossier: dossier.id });
+      provider = rulesProvider; // le client reçoit un résultat déterministe, annoncé partiel, plutôt qu'aucun
     }
   }
   let res: ModelResult<AnalysisOutput> = usable.length ? await provider.consolidate(input, deps.boundary()) : { ok: true, data: consolidateByRules(input), model: null, input_tokens: 0, output_tokens: 0 };
@@ -278,6 +346,9 @@ async function runConsolidate(deps: EngineDeps, job: Job): Promise<RunReport['ou
   }
   if (!res.ok) throw new Retry('consolidation impossible');
   const guarded = guardAnalysis(res.data, { knownDocs: new Set(usable.map((x) => x.id)), eventKeys: new Set(events.map((e) => e.key)), extractions }).analysis;
+  const coverage = coverageOf(pieces, ex, budgetFallback);
+  // Résultat partiel pour cause de budget : le motif figure en tête des points d'attention de tous les rendus.
+  if (coverage.partial_reason) guarded.attention_points = [`Résultat partiel : ${coverage.partial_reason}`, ...guarded.attention_points];
   const rec: AnalysisRec = {
     dossier_id: dossier.id,
     user_id: dossier.user_id,
@@ -286,10 +357,11 @@ async function runConsolidate(deps: EngineDeps, job: Job): Promise<RunReport['ou
     lots,
     pieces: Object.fromEntries(main.map((x) => [x.id, ex.get(x.id)!.status === 'error' && ex.get(x.id)!.deferred ? 'deferred' : ex.get(x.id)!.status])),
     data: { ...guarded, events },
-    coverage: cov,
+    coverage,
     provider: provider.name,
     model: res.model,
     status: 'pending',
+    ...(budgetFallback ? { budget_fallback: budgetFallback } : {}),
     input_tokens: res.input_tokens,
     output_tokens: res.output_tokens,
     cost_cents: cost,
@@ -305,7 +377,7 @@ async function runConsolidate(deps: EngineDeps, job: Job): Promise<RunReport['ou
     throw new Retry('révision déjà présente : nouveau calcul'); // compté : un blocage durable finit en alerte TRAVAIL_ECHEC
   }
   await renderAndPublish(deps, dossier, rec);
-  return 'done';
+  return budgetFallback ? parkForResume() : 'done';
 }
 
 /* ── Rendu et publication ───────────────────────────────────────────────── */
@@ -320,8 +392,9 @@ export async function renderAndPublish(deps: EngineDeps, dossier: DossierState, 
   // Droits, clôture et suppression revérifiés JUSTE avant publication.
   const again = await processable(store, dossier.id);
   if (!again.ok) return 'skipped';
-  const latest = await store.lastAnalysis(dossier.id);
-  if (latest && latest.revision > rec.revision) return 'skipped'; // révision obsolète
+  const lastRevision = async () => (store.lastRevision ? store.lastRevision(dossier.id) : ((await store.lastAnalysis(dossier.id))?.revision ?? null));
+  const latest = await lastRevision();
+  if (latest !== null && latest > rec.revision) return 'skipped'; // révision obsolète
   const mode: 'approved' | 'pending' = again.dossier.review_mode === 'auto' && !again.dossier.sensitive ? 'approved' : 'pending';
   if (mode === 'approved') await store.syncDeadlines(dossier.id, dossier.user_id, toDeadlineRows(rec.data));
   const pieces = (await store.listPieces(dossier.id)).filter((x) => !x.deleted_at && !x.duplicate_of).map((x) => ({ id: x.id, file_name: x.file_name, created_at: x.created_at }));
@@ -331,14 +404,14 @@ export async function renderAndPublish(deps: EngineDeps, dossier: DossierState, 
   const changed = (Object.keys(hashes) as DeliverableKey[]).filter((k) => published[k]?.data_hash !== hashes[k] || published[k]?.status !== mode);
   for (const k of changed) {
     const files = await deps.renderer.files(k, input, view);
-    const cur = await store.lastAnalysis(dossier.id);
-    if (cur && cur.revision > rec.revision) return 'skipped';
+    const cur = await lastRevision();
+    if (cur !== null && cur > rec.revision) return 'skipped';
     await store.publishCategory(dossier.id, dossier.user_id, k, rec.revision, hashes[k], files, mode);
   }
   await store.putView(dossier.id, rec.revision, view, mode);
   if (mode === 'approved') {
     if (rec.status !== 'published') await store.setAnalysisStatus(dossier.id, rec.revision, 'published');
-    if (changed.length) await store.addEvent(dossier.id, dossier.user_id, 'resultats_disponibles', `Résultats mis à jour (révision ${rec.revision}) : ${changed.length} document${changed.length > 1 ? 's' : ''} actualisé${changed.length > 1 ? 's' : ''}${rec.coverage.complete ? '' : ' — analyse partielle'}.`);
+    if (changed.length) await store.addEvent(dossier.id, dossier.user_id, 'resultats_disponibles', `Résultats mis à jour (révision ${rec.revision}) : ${changed.length} document${changed.length > 1 ? 's' : ''} actualisé${changed.length > 1 ? 's' : ''}${rec.coverage.complete ? '' : ' — analyse partielle'}${rec.coverage.partial_reason ? ` (${rec.coverage.partial_reason})` : ''}.`);
     // Réservation possible seulement une fois le lot complet (voir EngineStore.claimNotification) : elle peut donc
     // survenir sur une republication sans changement (dernier fichier du lot identique à un précédent).
     const claimed: string[] = [];
@@ -347,7 +420,7 @@ export async function renderAndPublish(deps: EngineDeps, dossier: DossierState, 
     if (claimed.length && (await store.notificationsAllowed(dossier.user_id))) {
       await store.notify(dossier.user_id, {
         subject: 'Vos résultats ClairDossier sont disponibles',
-        text: `Bonjour,\n\nDe nouveaux résultats sont disponibles dans l'un de vos dossiers (situation, dates, prochaine action).${rec.coverage.complete ? '' : "\nCertaines pièces n'ont pas pu être exploitées : le détail figure dans votre espace."}\n\nCes documents sont générés automatiquement et doivent être vérifiés ; ils ne constituent pas un conseil juridique.`,
+        text: `Bonjour,\n\nDe nouveaux résultats sont disponibles dans l'un de vos dossiers (situation, dates, prochaine action).${rec.coverage.complete ? '' : rec.coverage.partial_reason && !rec.coverage.failed && !rec.coverage.unsupported && !rec.coverage.deferred ? `\nRésultat partiel : ${rec.coverage.partial_reason}` : "\nCertaines pièces n'ont pas pu être exploitées : le détail figure dans votre espace."}\n\nCes documents sont générés automatiquement et doivent être vérifiés ; ils ne constituent pas un conseil juridique.`,
         link: config.dossierLink(dossier.id),
       });
     }
@@ -375,8 +448,12 @@ async function runRender(deps: EngineDeps, job: Job): Promise<RunReport['outcome
 async function recordUnreadable(deps: EngineDeps, pieceId: string) {
   const { store, config } = deps;
   const piece = await store.getPiece(pieceId);
-  if (!piece || piece.deleted_at || (await store.getExtraction(piece.id))) return;
-  await store.putExtraction({ piece_id: piece.id, dossier_id: piece.dossier_id, user_id: piece.user_id, sha256: piece.sha256, created_at: iso(config.now()), status: 'error', reason: 'Lecture impossible de cette pièce après plusieurs essais : merci de la redéposer.', deferred: false, data: null, vision: false, provider: 'aucun', model: null, reused_from: null, input_tokens: 0, output_tokens: 0, cost_cents: 0 });
+  if (!piece || piece.deleted_at) return;
+  const cur = await store.getExtraction(piece.id);
+  // Déjà lue, non prise en charge ou reportée : rien à enregistrer. Déjà en échec définitif : c'était une relecture.
+  if (cur && !(cur.status === 'error' && !cur.deferred)) return;
+  const rereads = cur ? (cur.rereads ?? 0) + 1 : 0;
+  await store.putExtraction({ piece_id: piece.id, dossier_id: piece.dossier_id, user_id: piece.user_id, sha256: piece.sha256, created_at: iso(config.now()), status: 'error', reason: cur?.reason ?? 'Lecture impossible de cette pièce après plusieurs essais : merci de la redéposer.', deferred: false, rereads, data: null, vision: false, provider: cur?.provider ?? 'aucun', model: null, reused_from: null, input_tokens: 0, output_tokens: 0, cost_cents: 0 });
   // Copie déjà déposée pendant les essais (rattachée à cette pièce comme doublon) : la plus ancienne devient l'original
   // et est lue ; la pièce en échec lui est rattachée. Le client n'a pas à redéposer une troisième fois.
   const copies = (await store.listPieces(piece.dossier_id)).filter((c) => !c.deleted_at && c.duplicate_of === piece.id).sort((a, b) => a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id));
@@ -386,6 +463,11 @@ async function recordUnreadable(deps: EngineDeps, pieceId: string) {
     await store.markDuplicate(piece.id, copy.id);
     for (const o of others) await store.markDuplicate(o.id, copy.id);
     await store.enqueue({ key: `x:${copy.id}`, kind: 'extract', user_id: copy.user_id, dossier_id: copy.dossier_id, piece_id: copy.id });
+  } else {
+    // Aucune copie pour la remplacer : relecture automatique, sans nouveau dépôt, après une attente croissante et un
+    // nombre d'essais plafonné. Le travail en échec reste signalé tant que la pièce n'est pas lue.
+    const wait = piece.duplicate_of ? undefined : rereadDelays(config)[rereads];
+    if (wait !== undefined) await store.enqueue({ key: rereadKey(piece.id), kind: 'extract', user_id: piece.user_id, dossier_id: piece.dossier_id, piece_id: piece.id, delayMs: wait, keepFailed: true });
   }
   await store.enqueue({ key: `c:${piece.dossier_id}`, kind: 'consolidate', user_id: piece.user_id, dossier_id: piece.dossier_id, piece_id: null, delayMs: config.consolidateDelayMs });
 }

@@ -292,7 +292,9 @@ test('B5 : travail en échec visible (écran d’exceptions), jamais repris ; do
   const kv = new SondeKv();
   kv.octetsAbsents = (k) => k.startsWith('files/');
   const { e, store: s, settle } = apiEnv(new RecetteStore(kv, () => new Date(t)));
-  const deps = engineDeps(s, { ai: null, config: { consolidateDelayMs: 0 } });
+  // Relecture automatique désactivée ici (rereadDelaysMs: []) : ce test porte sur le travail en échec et le redépôt ;
+  // la relecture automatique d'une pièce en échec a ses propres tests (tests/moteur-relecture.test.ts).
+  const deps = engineDeps(s, { ai: null, config: { consolidateDelayMs: 0, rereadDelaysMs: [] } });
   const c = client(e);
   await c.call('POST', '/api/demo/demarrer', { scenario: 'a' });
   const me = (await (await c.call('GET', '/api/moi')).json()).user.id as string;
@@ -368,8 +370,10 @@ test('complete : rerun posé pendant la fin du travail → le travail remis en a
   const store = new RecetteStore(kv, () => new Date(t));
   await store.enqueue(consolidation('D1'));
   const j = (await store.claim('w1', 60_000))!;
-  // complete() lit le travail (en cours, sans rerun) puis s'arrête avant d'écrire ; une extraction remet c:D1 en file.
-  const p = pauseApres(kv, (op, k) => op === 'get' && k === `jobs/${j.id}.json`);
+  // complete() s'arrête juste avant d'écrire la fin du travail (écriture conditionnelle sur l'ETag de la prise, sans
+  // relecture) ; une extraction remet c:D1 en file : l'écriture est refusée, le travail relu, le rerun honoré.
+  const p = pauseApres(kv, (op, k) => op === 'get' && k === 'temoin.json');
+  await kv.getJson('temoin.json');
   const c = store.complete(j, { status: 'done', error: null });
   await p.enPause;
   assert.equal(await store.enqueue(consolidation('D1')), 'rearmed');

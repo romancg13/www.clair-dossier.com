@@ -16,7 +16,13 @@ interface QueueDoc {
   open: string[];
   failed?: string[];
   dossiers?: Record<string, string>;
+  /** Compte de chaque travail à exécuter (tourniquet entre comptes) ; une entrée antérieure sans compte connu forme un groupe à part. */
+  users?: Record<string, string>;
 }
+/** Travaux d'un même compte exécutés en même temps, tous exécuteurs confondus (borne par client). */
+export const MAX_RUNNING_PER_ACCOUNT = 2;
+/** Groupe des travaux listés avant l'introduction du tourniquet (compte inconnu sans lecture). */
+const UNKNOWN_ACCOUNT = '?';
 /** Travaux en échec conservés (les plus anciens sortent de la liste). */
 const MAX_FAILED = 200;
 /** Lectures de travaux menées en parallèle par paquet. */
@@ -76,9 +82,10 @@ export const LOT_IDLE_MS = 10 * 60_000;
 
 /**
  * Travail qui traite réellement le dossier, pour le statut affiché : en cours, ou prévu dans les 10 minutes.
- * Une lecture reportée au mois suivant (plafond) et le contrôle différé de fin de lot (n:) n'en sont pas.
+ * Une lecture reportée au mois suivant (plafond) et le contrôle différé de fin de lot (n:) n'en sont pas ; ni les
+ * reprises de fond : relecture automatique d'une pièce illisible (xr:), reprise d'une synthèse en repli budget (cr:).
  */
-export const jobEnCours = (j: Job, now: Date) => !j.key.startsWith('n:') && (j.status === 'running' || (j.status === 'queued' && Date.parse(j.run_after) <= now.getTime() + 10 * 60_000));
+export const jobEnCours = (j: Job, now: Date) => !/^(n|xr|cr):/.test(j.key) && (j.status === 'running' || (j.status === 'queued' && Date.parse(j.run_after) <= now.getTime() + 10 * 60_000));
 
 export class RecetteStore implements EngineStore {
   constructor(
@@ -86,6 +93,15 @@ export class RecetteStore implements EngineStore {
     readonly now: () => Date = () => new Date(),
     readonly id: () => string = () => crypto.randomUUID(),
   ) {}
+
+  /** Travaux en attente déjà lus par CET exécuteur (valeur + ETag) : relus seulement s'ils changent (écriture conditionnelle refusée). */
+  private seen = new Map<string, KvEntry<Job>>();
+  /** Travaux pris par cet exécuteur, avec l'ETag de la prise : la fin du travail s'écrit sous condition sans relecture. */
+  private held = new Map<string, KvEntry<Job>>();
+  /** Dernier compte servi (tourniquet) ; undefined = pas encore lu dans le stockage. */
+  private tour: string | null | undefined;
+  /** Travaux à exécuter vus dans la file à sa dernière lecture par cet exécuteur. */
+  private listed = new Set<string>();
 
   /* ── Comptes et abonnements (application) ─────────────────────────────── */
   async getUser(id: string) {
@@ -188,6 +204,9 @@ export class RecetteStore implements EngineStore {
     const last = await this.kv.getJson<{ revision: number }>(`analyses/${dossierId}/last.json`);
     return last ? ((await this.kv.getJson<AnalysisRec>(`analyses/${dossierId}/r${String(last.value.revision).padStart(5, '0')}.json`))?.value ?? null) : null;
   }
+  async lastRevision(dossierId: string) {
+    return (await this.kv.getJson<{ revision: number }>(`analyses/${dossierId}/last.json`))?.value.revision ?? null;
+  }
   async insertAnalysis(rec: AnalysisRec) {
     const key = `analyses/${rec.dossier_id}/r${String(rec.revision).padStart(5, '0')}.json`;
     const ok = (await this.kv.putJson(key, rec, { create: true })).ok;
@@ -250,7 +269,7 @@ export class RecetteStore implements EngineStore {
   }
 
   /* ── File de travaux ──────────────────────────────────────────────────── */
-  async enqueue(j: Pick<Job, 'key' | 'kind' | 'user_id' | 'dossier_id' | 'piece_id'> & { delayMs?: number }) {
+  async enqueue(j: Pick<Job, 'key' | 'kind' | 'user_id' | 'dossier_id' | 'piece_id'> & { delayMs?: number; keepFailed?: boolean }) {
     const now = this.now();
     const runAfter = new Date(now.getTime() + (j.delayMs ?? 0)).toISOString();
     const keyDoc = `jobkeys/${enc(j.key)}.json`;
@@ -267,6 +286,7 @@ export class RecetteStore implements EngineStore {
         if (cur && cur.value.status === 'queued') {
           const r = await this.kv.putJson(`jobs/${cur.value.id}.json`, { ...cur.value, run_after: runAfter > cur.value.run_after ? runAfter : cur.value.run_after, updated_at: now.toISOString() }, { ifMatch: cur.etag });
           if (!r.ok) continue;
+          this.seen.delete(cur.value.id);
           // Auto-réparation : un travail dont l'inscription dans la file a échoué (panne, arrêt) y est réinscrit.
           await this.relist(cur.value.id);
           return 'rearmed' as const;
@@ -287,7 +307,8 @@ export class RecetteStore implements EngineStore {
         await this.kv.delete(`jobs/${job.id}.json`);
         continue;
       }
-      await this.enlist(job, replaced?.status === 'failed' ? replaced.id : null);
+      // keepFailed : l'échec remplacé reste listé (incident visible) tant que la relecture n'a pas abouti.
+      await this.enlist(job, replaced?.status === 'failed' && !j.keepFailed ? replaced.id : null);
       return 'created' as const;
     }
     throw new Error('mise en file impossible (conflits)');
@@ -298,21 +319,25 @@ export class RecetteStore implements EngineStore {
       const open = q?.open ?? [];
       const failed = q?.failed ?? [];
       const drop = replaces !== null && failed.includes(replaces);
-      if (open.includes(job.id) && q?.dossiers?.[job.id] === job.dossier_id && !drop) return null;
+      if (open.includes(job.id) && q?.dossiers?.[job.id] === job.dossier_id && q?.users?.[job.id] === job.user_id && !drop) return null;
       const dossiers = { ...(q?.dossiers ?? {}), [job.id]: job.dossier_id };
       if (drop) delete dossiers[replaces];
-      return { open: open.includes(job.id) ? open : [...open, job.id], failed: drop ? failed.filter((x) => x !== replaces) : failed, dossiers };
+      return { open: open.includes(job.id) ? open : [...open, job.id], failed: drop ? failed.filter((x) => x !== replaces) : failed, dossiers, users: { ...(q?.users ?? {}), [job.id]: job.user_id } };
     });
   }
   /** Réinscription d'un travail réarmé absent de la file, s'il est toujours en attente (pas un travail terminé entre-temps). */
   private async relist(jobId: string) {
+    // Déjà vu dans la file par cet exécuteur : un travail en attente n'en sort jamais (seuls les statuts définitifs
+    // en sont retirés), inutile de la relire.
+    if (this.listed.has(jobId)) return;
     if ((await this.queue()).open.includes(jobId)) return;
     const cur = (await this.kv.getJson<Job>(`jobs/${jobId}.json`, { fresh: true }))?.value;
     if (cur && cur.status === 'queued') await this.enlist(cur);
   }
-  private async queue() {
-    const q = (await this.kv.getJson<QueueDoc>('queue.json'))?.value;
-    return { open: q?.open ?? [], failed: q?.failed ?? [], dossiers: q?.dossiers ?? {} };
+  private async queue(entry?: KvEntry<QueueDoc> | null) {
+    const q = (entry === undefined ? await this.kv.getJson<QueueDoc>('queue.json') : entry)?.value;
+    this.listed = new Set(q?.open ?? []);
+    return { open: q?.open ?? [], failed: q?.failed ?? [], dossiers: q?.dossiers ?? {}, users: q?.users ?? {} };
   }
   /** Lecture des travaux par paquets parallèles bornés (ordre conservé ; travaux introuvables ignorés). */
   private async readJobs(ids: string[]) {
@@ -322,32 +347,99 @@ export class RecetteStore implements EngineStore {
     }
     return out;
   }
+  /**
+   * Prise d'un travail, à tour de rôle entre les comptes : le compte servi est le suivant (ordre cyclique des
+   * identifiants) après le dernier servi, un seul travail par compte et par tour. Un compte qui a déjà
+   * MAX_RUNNING_PER_ACCOUNT travaux en cours (bail valide) passe son tour. Un gros volume d'un compte ne
+   * retarde donc le premier travail d'un autre que d'un tour, et ses travaux ne sont lus que lorsque vient son tour.
+   */
   async claim(workerId: string, leaseMs: number) {
-    const entries = await this.readJobs((await this.queue()).open);
+    const q = await this.queue();
+    const listed = new Set(q.open);
+    for (const id of this.seen.keys()) if (!listed.has(id)) this.seen.delete(id);
+    const byAccount = new Map<string, string[]>();
+    for (const id of q.open) {
+      const a = q.users[id] ?? UNKNOWN_ACCOUNT;
+      const ids = byAccount.get(a);
+      if (ids) ids.push(id);
+      else byAccount.set(a, [id]);
+    }
+    const accounts = [...byAccount.keys()].sort();
+    if (!accounts.length) return null;
+    let order = accounts;
+    if (accounts.length > 1) {
+      // Le dernier compte servi n'est lu (une fois par exécuteur) que si plusieurs comptes attendent.
+      if (this.tour === undefined) this.tour = (await this.kv.getJson<{ user: string }>('queue-tour.json'))?.value.user ?? null;
+      const last = this.tour;
+      const i = last === null ? 0 : accounts.findIndex((a) => a > last);
+      order = i <= 0 ? accounts : [...accounts.slice(i), ...accounts.slice(0, i)];
+    }
+    const finis: Job[] = [];
+    let claimed: Job | null = null;
+    for (const account of order) {
+      claimed = await this.claimFor(byAccount.get(account)!, workerId, leaseMs, finis);
+      if (!claimed) continue;
+      this.tour = account;
+      // Repère du tourniquet partagé entre exécuteurs (écriture simple : le perdre ne coûte qu'un tour).
+      if (accounts.length > 1) await this.kv.putJson('queue-tour.json', { user: account }).catch(() => undefined);
+      break;
+    }
     // Auto-nettoyage : un travail terminé encore listé (réinscription concurrente de sa fin) sort de la file ;
     // un échec rejoint la liste des échecs. Ces statuts sont définitifs : aucun risque de retirer un travail à exécuter.
-    const finis = entries.map((e) => e.value).filter((j) => j.status === 'done' || j.status === 'cancelled' || j.status === 'failed');
     if (finis.length) await this.unlist(finis);
-    // Horodatage APRÈS le parcours : le bail écrit n'est pas déjà entamé par la durée de la lecture.
-    const now = this.now();
-    const candidates: { j: Job; etag: string }[] = [];
-    for (const e of entries) {
-      const j = e.value;
-      const runnable = (j.status === 'queued' && j.run_after <= now.toISOString()) || (j.status === 'running' && j.lease_until !== null && j.lease_until < now.toISOString());
-      if (runnable) candidates.push({ j, etag: e.etag });
-    }
-    // Ordre : extractions d'abord, puis le plus ancien.
-    candidates.sort((a, b) => Number(a.j.kind !== 'extract') - Number(b.j.kind !== 'extract') || a.j.run_after.localeCompare(b.j.run_after));
-    for (const { j, etag } of candidates) {
-      const next: Job = { ...j, status: 'running', attempts: j.attempts + 1, lease_until: new Date(now.getTime() + leaseMs).toISOString(), locked_by: workerId, updated_at: now.toISOString() };
-      if ((await this.kv.putJson(`jobs/${j.id}.json`, next, { ifMatch: etag })).ok) return next;
+    return claimed;
+  }
+  /** Prise du travail le plus prioritaire d'UN compte (extractions d'abord, puis le plus ancien), ou null. */
+  private async claimFor(ids: string[], workerId: string, leaseMs: number, finis: Job[]): Promise<Job | null> {
+    // Second passage seulement si un travail gardé en mémoire avait changé entre-temps (relu, puis réessayé).
+    for (let pass = 0; pass < 2; pass++) {
+      const entries: KvEntry<Job>[] = [];
+      let stale = false;
+      // Lecture par paquets, arrêtée au premier paquet qui contient un travail prêt : la file d'un compte n'est
+      // parcourue en entier que si rien n'y est prêt.
+      for (let i = 0; i < ids.length; i += READ_BATCH) {
+        const batch = await Promise.all(ids.slice(i, i + READ_BATCH).map(async (id) => this.seen.get(id) ?? (await this.kv.getJson<Job>(`jobs/${id}.json`))));
+        const at = this.now().toISOString();
+        for (const e of batch) if (e) entries.push(e);
+        if (batch.some((e) => e && ((e.value.status === 'queued' && e.value.run_after <= at) || (e.value.status === 'running' && e.value.lease_until !== null && e.value.lease_until < at)))) break;
+      }
+      // Horodatage APRÈS le parcours : le bail écrit n'est pas déjà entamé par la durée de la lecture.
+      const now = this.now();
+      const iso = now.toISOString();
+      let running = 0;
+      const candidates: KvEntry<Job>[] = [];
+      for (const e of entries) {
+        const j = e.value;
+        if (j.status === 'done' || j.status === 'cancelled' || j.status === 'failed') {
+          this.seen.delete(j.id);
+          if (!finis.some((f) => f.id === j.id)) finis.push(j);
+        } else if (j.status === 'queued') {
+          this.seen.set(j.id, e);
+          if (j.run_after <= iso) candidates.push(e);
+        } else if (j.lease_until !== null && j.lease_until < iso) candidates.push(e); // bail expiré : repris
+        else running++;
+      }
+      if (running >= MAX_RUNNING_PER_ACCOUNT) return null;
+      // Ordre : extractions d'abord, puis le plus ancien.
+      candidates.sort((a, b) => Number(a.value.kind !== 'extract') - Number(b.value.kind !== 'extract') || a.value.run_after.localeCompare(b.value.run_after));
+      for (const { value: j, etag } of candidates) {
+        const next: Job = { ...j, status: 'running', attempts: j.attempts + 1, lease_until: new Date(now.getTime() + leaseMs).toISOString(), locked_by: workerId, updated_at: iso };
+        const r = await this.kv.putJson(`jobs/${j.id}.json`, next, { ifMatch: etag });
+        if (r.ok) {
+          this.seen.delete(j.id);
+          if (r.etag) this.held.set(j.id, { value: next, etag: r.etag });
+          return next;
+        }
+        if (this.seen.delete(j.id)) stale = true;
+      }
+      if (!stale) return null;
     }
     return null;
   }
   async complete(job: Job, outcome: Parameters<EngineStore['complete']>[1]) {
     const now = this.now();
     let terminal = false;
-    await update<Job>(this.kv, `jobs/${job.id}.json`, (cur) => {
+    const next = (cur: Job | null): Job | null => {
       // Recalculé à chaque essai : un essai précédent refusé (rerun posé entre-temps) ne doit pas compter.
       terminal = false;
       if (!cur || cur.locked_by !== job.locked_by || cur.status !== 'running') return null; // bail perdu : un autre exécuteur a repris
@@ -355,21 +447,34 @@ export class RecetteStore implements EngineStore {
       if (outcome.status === 'done' && cur.rerun) return { ...cur, status: 'queued', rerun: false, attempts: 0, run_after: new Date(now.getTime() + 5_000).toISOString(), lease_until: null, locked_by: null, updated_at: now.toISOString() };
       terminal = true;
       return { ...cur, status: outcome.status, lease_until: null, last_error: outcome.error ?? null, updated_at: now.toISOString() };
-    });
+    };
+    // ETag de la prise encore en main : écriture conditionnelle directe, sans relecture. Refusée (travail réarmé
+    // entre-temps, bail repris) : relecture puis nouvel essai, comme pour toute écriture en conflit.
+    const mine = this.held.get(job.id);
+    this.held.delete(job.id);
+    this.seen.delete(job.id);
+    const direct = mine && mine.value.locked_by === job.locked_by ? next(structuredClone(mine.value)) : null;
+    if (!direct || !(await this.kv.putJson(`jobs/${job.id}.json`, direct, { ifMatch: mine!.etag })).ok) await update<Job>(this.kv, `jobs/${job.id}.json`, next);
     // Fin du travail : retiré des travaux à exécuter ; un échec reste listé (état « incident », écran d'exceptions).
     if (terminal) {
       // Extraction menée à son terme : les échecs antérieurs de la même pièce (autre clé, p. ex. réconciliation) sont obsolètes.
-      const obsoletes = outcome.status === 'done' && job.kind === 'extract' && job.piece_id ? await this.failedOfPiece(job.dossier_id, job.piece_id, job.id) : [];
-      await this.unlist([{ ...job, status: outcome.status }, ...obsoletes.map((id) => ({ id, dossier_id: job.dossier_id, status: 'done' as const }))]);
+      // Une seule lecture de la file pour les deux usages (échecs obsolètes, puis retrait sous condition d'ETag).
+      const lookup = outcome.status === 'done' && job.kind === 'extract' && job.piece_id !== null;
+      const qe = lookup ? await this.kv.getJson<QueueDoc>('queue.json') : undefined;
+      const obsoletes = lookup ? await this.failedOfPiece(job.dossier_id, job.piece_id!, job.id, qe) : [];
+      await this.unlist([{ ...job, status: outcome.status }, ...obsoletes.map((id) => ({ id, dossier_id: job.dossier_id, status: 'done' as const }))], qe);
+      for (const id of obsoletes) this.seen.delete(id);
     }
   }
   /** Retire de la file des travaux terminés ; ceux en échec rejoignent la liste des échecs (bornée). */
-  private async unlist(jobs: Pick<Job, 'id' | 'dossier_id' | 'status'>[]) {
-    await update<QueueDoc>(this.kv, 'queue.json', (q) => {
+  private async unlist(jobs: Pick<Job, 'id' | 'dossier_id' | 'status'>[], read?: KvEntry<QueueDoc> | null) {
+    const fn = (q: QueueDoc | null): QueueDoc => {
       const ids = new Set(jobs.map((j) => j.id));
       const dossiers = { ...(q?.dossiers ?? {}) };
+      const users = { ...(q?.users ?? {}) };
       let failed = (q?.failed ?? []).filter((x) => !ids.has(x));
       for (const j of jobs) {
+        delete users[j.id];
         if (j.status === 'failed') {
           failed.push(j.id);
           dossiers[j.id] = j.dossier_id;
@@ -377,12 +482,16 @@ export class RecetteStore implements EngineStore {
       }
       for (const x of failed.slice(0, Math.max(0, failed.length - MAX_FAILED))) delete dossiers[x];
       failed = failed.slice(-MAX_FAILED);
-      return { open: (q?.open ?? []).filter((x) => !ids.has(x)), failed, dossiers };
-    });
+      return { open: (q?.open ?? []).filter((x) => !ids.has(x)), failed, dossiers, users };
+    };
+    for (const j of jobs) this.listed.delete(j.id);
+    // File déjà lue par l'appelant : écriture sous condition de l'ETag de CETTE lecture ; refusée, reprise ordinaire.
+    if (read && (await this.kv.putJson('queue.json', fn(structuredClone(read.value)), { ifMatch: read.etag })).ok) return;
+    await update<QueueDoc>(this.kv, 'queue.json', fn);
   }
   /** Échecs d'extraction d'une pièce (lus parmi les seuls échecs de son dossier). */
-  private async failedOfPiece(dossierId: string, pieceId: string, except: string) {
-    const q = await this.queue();
+  private async failedOfPiece(dossierId: string, pieceId: string, except: string, read?: KvEntry<QueueDoc> | null) {
+    const q = await this.queue(read);
     const ids = q.failed.filter((id) => id !== except && (q.dossiers[id] ?? dossierId) === dossierId);
     return (await this.readJobs(ids)).map((e) => e.value).filter((j) => j.status === 'failed' && j.kind === 'extract' && j.piece_id === pieceId).map((j) => j.id);
   }

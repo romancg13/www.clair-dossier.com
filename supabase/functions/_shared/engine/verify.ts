@@ -3,7 +3,7 @@
 // garde-fous sur la sortie consolidée. Rien de ce que déclare le modèle n'est cru seul.
 import type { AnalysisOutput, ExtractionOutput } from './schemas.ts';
 import type { PreparedPiece } from './reading.ts';
-import { findDates, fold } from './text-rules.ts';
+import { findAmounts, findDates, fold } from './text-rules.ts';
 
 export type QuoteStatus = 'found' | 'not_found' | 'unknown';
 const norm = (s: string) => fold(s).replace(/[’'`´]/g, "'").replace(/[^a-z0-9€'%]+/g, ' ').trim();
@@ -59,27 +59,88 @@ export function verifyExtraction(x: ExtractionOutput, piece: PreparedPiece): Sto
 
 type DEv = AnalysisOutput['facts'][number]['evidence'][number] & { status?: QuoteStatus };
 
+/** Mots vides : ils ne comptent pas comme mots significatifs d'un passage. */
+const STOP = new Set(
+  'a au aux avec ce ces cet cette dans de des du elle en est et il ils je la le les leur leurs lui ma mais me mes mon ne nos notre nous on ont ou par pas pour qu que qui sa se ses son sont sur ta te tes ton tu un une vos votre vous y d l n s c j m t'.split(' '),
+);
+/** Mots d'une dénomination qui ne désignent personne à eux seuls (forme sociale, civilité, nature de l'entité). */
+const GENERIC_NAME = new Set('sarl sas sasu sa sci eurl snc scp selarl societe ste cabinet monsieur madame mme mlle maitre entreprise ets etablissements groupe compagnie association agence syndic gestion'.split(' '));
+const words = (q: string) => q.split(/[ ']+/).filter(Boolean);
+/** Mot significatif : nombre, ou mot d'au moins trois lettres qui n'est pas un mot vide. */
+const significant = (w: string) => /\d/.test(w) || (/^[a-z]{3,}$/.test(w) && !STOP.has(w));
+/** Passage : au moins deux mots significatifs (dont un d'au moins trois caractères). Un mot isolé n'en est jamais un. */
+const isPassage = (q: string) => {
+  const sig = words(q).filter(significant);
+  return sig.length >= 2 && sig.some((w) => w.replace(/[^a-z0-9]/g, '').length >= 3);
+};
+/** Aucun mot significatif dans ce qui reste d'un extrait une fois sa valeur typée retirée. */
+const onlyValue = (quote: string, valueText: string) => !words(norm(quote.replace(valueText, ' '))).some(significant);
+const best = (evidence: { status?: QuoteStatus }[]): QuoteStatus | null =>
+  evidence.some((v) => v.status === 'found') ? 'found' : evidence.some((v) => v.status === 'unknown') ? 'unknown' : evidence.length ? 'not_found' : null;
+
 /**
- * Statut d'un extrait consolidé, retrouvé DANS une preuve de l'extraction de la même pièce.
- * Seul le sens « extrait consolidé contenu dans une preuve » vaut : un passage plus long qui
- * contiendrait une preuve courte (un nom de partie, un montant) peut être inventé autour d'elle.
- * Correspondance sur des limites de mots ; un mot isolé de moins de quatre lettres ou un nombre
- * seul ne suffit pas. Limite connue : un mot isolé plus long (« janvier ») reste « trouvé ».
+ * Statut d'un extrait consolidé, contrôlé contre l'extraction (déjà vérifiée) de la pièce qu'il cite.
+ * Un mot isolé ne suffit JAMAIS, même long et réellement présent (« janvier », « réponse ») : il se
+ * retrouve dans presque toute pièce et ne soutient aucun fait. L'extrait est « trouvé » seulement si :
+ *  1. PASSAGE — il compte au moins deux mots significatifs et figure, sur des limites de mots, DANS une
+ *     preuve de l'extraction. Seul ce sens vaut : un passage plus long qui contiendrait une preuve
+ *     courte (un nom de partie, un montant) peut être inventé autour d'elle ;
+ *  2. VALEUR TYPÉE — il se réduit à une date complète, un montant ou une référence, et cette valeur
+ *     concorde avec une valeur extraite de la même pièce dont la preuve est retrouvée (une date écrite
+ *     autrement que dans la pièce reste ainsi vérifiable) ;
+ *  3. NOM DE PARTIE (`partyName`, éléments « parties » seulement) — c'est un mot distinctif figurant dans
+ *     une preuve d'une partie extraite de la même pièce, et cette partie est bien celle que l'élément
+ *     désigne. La présence du mot dans une autre preuve de la pièce ne compte pas.
+ * Sinon : « non retrouvé » (ou « inconnu » pour une pièce lue visuellement) — l'élément reste « à vérifier ».
  */
-export function consolidatedQuoteStatus(e: DEv, extractions: Map<string, { data: StoredExtraction; vision: boolean }>): QuoteStatus {
+export function consolidatedQuoteStatus(e: DEv, extractions: Map<string, { data: StoredExtraction; vision: boolean }>, opts: { partyName?: string } = {}): QuoteStatus {
   const x = extractions.get(e.document_id);
   if (!x) return 'not_found';
-  const all: VerifiedQuote[] = (['parties', 'dates', 'amounts', 'references', 'obligations', 'requests', 'alleged_facts', 'referenced_documents'] as const).flatMap((k) =>
-    (x.data[k] as unknown as { evidence: VerifiedQuote[] }[]).flatMap((i) => i.evidence),
-  );
   const q = norm(e.quote);
   if (q.length < 3) return 'not_found'; // même seuil que quoteStatus : un extrait vide ne prouve rien
-  // Contenu minimal : deux mots, ou un mot d'au moins quatre lettres. Un nombre isolé (« 2027 »)
-  // se retrouve dans presque toute preuve et ne prouve rien à lui seul.
-  if (!q.includes(' ') && !/[a-z]{4,}/.test(q)) return 'not_found';
-  const hit = all.find((v) => within(norm(v.quote), q));
-  if (hit) return hit.status ?? 'unknown';
-  return x.vision ? 'unknown' : 'not_found';
+  const miss: QuoteStatus = x.vision ? 'unknown' : 'not_found';
+  const ev = (k: 'parties' | 'dates' | 'amounts' | 'references' | 'obligations' | 'requests' | 'alleged_facts' | 'referenced_documents') =>
+    (x.data[k] as unknown as { evidence: VerifiedQuote[] }[]).flatMap((i) => i.evidence);
+  const all: VerifiedQuote[] = (['parties', 'dates', 'amounts', 'references', 'obligations', 'requests', 'alleged_facts', 'referenced_documents'] as const).flatMap(ev);
+  // 1. Passage contenu dans une preuve de la pièce.
+  if (isPassage(q)) {
+    const hits = all.filter((v) => within(norm(v.quote), q));
+    if (hits.length) return best(hits) ?? miss;
+  }
+  // 2. Valeur typée seule, concordante avec une valeur extraite de la pièce.
+  const dates = findDates(e.quote);
+  if (dates.length === 1 && onlyValue(e.quote, dates[0].text)) {
+    const iso = dates[0].iso;
+    const st = best([...x.data.dates.filter((d) => d.precision === 'day' && d.date === iso).flatMap((d) => d.evidence as VerifiedQuote[]), ...all.filter((v) => findDates(v.quote).some((h) => h.iso === iso))]);
+    return st ?? miss;
+  }
+  const amounts = findAmounts(e.quote);
+  if (amounts.length === 1 && onlyValue(e.quote, amounts[0].text)) {
+    const value = amounts[0].value;
+    const same = (n: number) => Math.abs(n - value) < 0.005;
+    const st = best([...x.data.amounts.filter((a) => same(a.amount)).flatMap((a) => a.evidence as VerifiedQuote[]), ...all.filter((v) => findAmounts(v.quote).some((h) => same(h.value)))]);
+    return st ?? miss;
+  }
+  const ref = x.data.references.filter((r) => norm(r.value) === q && /\d/.test(q));
+  if (ref.length) return best(ref.flatMap((r) => r.evidence as VerifiedQuote[])) ?? miss;
+  // 3. Nom de partie court : comparaison aux parties extraites de la même pièce, jamais la simple présence d'un mot.
+  if (opts.partyName !== undefined) {
+    const distinctive = (name: string) => words(name).filter((w) => significant(w) && !GENERIC_NAME.has(w));
+    const wanted = norm(opts.partyName);
+    // Même partie : noms identiques, ou tous les mots distinctifs du plus court présents dans l'autre
+    // (« Lumen » / « Lumen SARL », mais pas « Jean Dupont » / « Jean Martin »).
+    const covers = (a: string, b: string) => distinctive(a).length > 0 && distinctive(a).every((w) => words(b).includes(w));
+    const hits = x.data.parties
+      .filter((p) => {
+        const name = norm(p.name);
+        return (name === wanted || covers(name, wanted) || covers(wanted, name)) && (name === q || distinctive(q).length > 0);
+      })
+      // Le mot cité doit figurer dans une preuve de CETTE partie, sur des limites de mots.
+      .flatMap((p) => (p.evidence as VerifiedQuote[]).filter((v) => within(norm(v.quote), q)));
+    const st = best(hits);
+    if (st) return st;
+  }
+  return miss;
 }
 
 export interface Reliability {
@@ -112,9 +173,11 @@ export function guardAnalysis(
 ): { analysis: AnalysisOutput & { guard: { stripped: number; notes: string[] } } } {
   let stripped = 0;
   const notes: string[] = [];
-  const clean = <T extends { evidence: DEv[] }>(items: T[]): (T & { unverified: boolean })[] =>
+  const clean = <T extends { evidence: DEv[] }>(items: T[], party = false): (T & { unverified: boolean })[] =>
     items.map((it) => {
-      const kept = it.evidence.filter((e) => ctx.knownDocs.has(e.document_id)).map((e) => ({ ...e, status: consolidatedQuoteStatus(e, ctx.extractions) }));
+      // Le nom que l'élément désigne n'est transmis que pour les parties : seul un nom de partie peut être vérifié par comparaison.
+      const opts = party ? { partyName: (it as unknown as { name: string }).name } : {};
+      const kept = it.evidence.filter((e) => ctx.knownDocs.has(e.document_id)).map((e) => ({ ...e, status: consolidatedQuoteStatus(e, ctx.extractions, opts) }));
       stripped += it.evidence.length - kept.length;
       return { ...it, evidence: kept, unverified: !kept.some((e) => e.status === 'found') };
     });
@@ -141,7 +204,7 @@ export function guardAnalysis(
     analysis: {
       ...a,
       situation: sit.slice(0, 2).join(' '),
-      parties: clean(a.parties),
+      parties: clean(a.parties, true),
       facts: clean(a.facts),
       key_facts: clean(a.key_facts).slice(0, 5),
       amounts: clean(a.amounts),

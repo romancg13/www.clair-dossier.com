@@ -96,7 +96,10 @@ test('C06 : pièce illisible après tous les essais : résultat partiel publié,
   await s.depose('D1', 'A', LOT, ['Courrier-bailleur-2026-10-12.pdf', 'Releve-charges-2025.xlsx']);
   const cassee = await pieceSansFichier(s, 'D1', 'A', LOT, 'Courriel-2026-10-20.eml', 'px');
   const reports = await s.run(60);
-  assert.deepEqual(await s.store.allOpenJobs(), [], 'plus aucun travail en attente');
+  // Seule reste la relecture automatique de la pièce en échec, programmée une heure plus tard (aucun travail prêt).
+  const restants = await s.store.allOpenJobs();
+  assert.deepEqual(restants.map((j) => [j.key, j.status]), [['xr:px', 'queued']], 'plus aucun travail en attente, hors relecture programmée');
+  assert.ok(Date.parse(restants[0].run_after) - s.clock.now().getTime() > 30 * 60_000, 'relecture différée, pas une boucle');
   assert.ok(reports.filter((r) => r.kind === 'consolidate' && r.outcome === 'requeued').length < 20, 'pas de replanification sans fin');
   const x = await s.store.getExtraction(cassee);
   assert.equal(x?.status, 'error');
@@ -190,8 +193,11 @@ test('C06 : sortie IA non conforme à répétition : nombre d’appels borné, r
 
 /* ── C07 : budget mensuel atteint en cours de lot ──────────────────────── */
 
-test('C07 : budget mensuel atteint en cours de lot : pièces lues publiées tout de suite, pièce restante reportée puis lue le 1er du mois', async () => {
-  const s = stack({ ai: iaFacturee({ in: 20_000, out: 3_000 }), config: { budgetCentsPerUserMonth: 5 } });
+test('C07 : budget mensuel atteint en cours de lot : pièce restante lue par les règles, résultat annoncé partiel, lecture IA reprise le 1er du mois', async () => {
+  // Depuis la levée du point « budget » (REMISE §11) : la pièce au-delà du plafond n'est plus reportée sans être lue ;
+  // elle est lue par les règles déterministes, le résultat est annoncé partiel, et la lecture IA reprend au cycle suivant.
+  const appels: string[] = [];
+  const s = stack({ ai: iaFacturee({ in: 20_000, out: 3_000 }, (f) => (appels.push(f), null)), config: { budgetCentsPerUserMonth: 5 } });
   await s.user('A');
   await s.dossier('D1', 'A');
   const [p1, p2] = await s.depose('D1', 'A', LOT, ['Courrier-bailleur-2026-10-12.pdf', 'Releve-charges-2025.xlsx']);
@@ -202,24 +208,41 @@ test('C07 : budget mensuel atteint en cours de lot : pièces lues publiées tout
     s.clock.advance(3_000);
   }
   assert.ok(replanifiees <= 2, `consolidation replanifiée ${replanifiees} fois`);
-  assert.equal((await s.store.getExtraction(p1))?.status, 'ok');
+  assert.equal((await s.store.getExtraction(p1))?.provider, 'anthropic');
   const x2 = await s.store.getExtraction(p2);
-  assert.equal(x2?.status, 'error');
-  assert.equal(x2?.deferred, true, 'pièce reportée, pas « illisible »');
-  assert.match(x2?.reason ?? '', /mois prochain/);
-  assert.equal((await s.store.getView('D1'))?.revision, 1, 'pièce déjà lue livrée sans attendre le mois suivant');
-  assert.equal((await s.store.lastAnalysis('D1'))?.coverage.deferred, 1);
+  assert.equal(x2?.status, 'ok', 'pièce lue par les règles, pas laissée de côté');
+  assert.equal(x2?.provider, 'regles');
+  assert.equal(x2?.fallback, 'user');
+  assert.match(x2?.reason ?? '', /plafond mensuel.*mois prochain/);
+  assert.deepEqual(appels, ['Courrier-bailleur-2026-10-12.pdf'], 'aucun appel au modèle au-delà du plafond');
+  const partiel = await s.store.lastAnalysis('D1');
+  assert.equal((await s.store.getView('D1'))?.revision, partiel?.revision, 'résultat livré sans attendre le mois suivant');
+  assert.equal(partiel?.coverage.extracted, 2);
+  assert.equal(partiel?.coverage.fallback, 1);
+  assert.equal(partiel?.coverage.complete, false, 'résultat explicitement partiel');
+  assert.match(partiel?.coverage.partial_reason ?? '', /1 pièce lue par les règles automatiques seulement — plafond mensuel/);
+  assert.match(partiel?.data.attention_points[0] ?? '', /^Résultat partiel : /);
   assert.equal((await s.store.mailbox('A')).length, 1);
   const open = await s.store.allOpenJobs();
-  assert.equal(open.length, 1);
-  assert.equal(open[0].kind, 'extract');
-  assert.ok(open[0].run_after.startsWith('2026-12-01T06:00'), 'relecture planifiée au début du mois suivant');
+  assert.deepEqual(open.map((j) => j.key).sort(), ['cr:D1', `x:${p2}`], 'reprises IA planifiées : la pièce et la synthèse');
+  assert.ok(open.every((j) => j.status === 'queued' && j.run_after.startsWith('2026-12-01T06:00')), 'reprise au début du mois suivant');
   assert.ok((await s.store.alerts()).some((a) => a.code === 'BUDGET'));
-  // Début du mois suivant : la pièce reportée est lue automatiquement.
+  // Début du mois suivant (plafond d'un mois ordinaire) : la pièce est lue par l'IA, une seule fois.
+  s.deps.config.budgetCentsPerUserMonth = 300;
   s.clock.advance(Date.parse('2026-12-01T06:00:01Z') - s.clock.now().getTime());
   await s.run();
-  assert.equal((await s.store.getExtraction(p2))?.status, 'ok');
-  assert.equal((await s.store.getView('D1'))?.revision, 2);
+  const relue = await s.store.getExtraction(p2);
+  assert.equal(relue?.provider, 'anthropic');
+  assert.equal(relue?.fallback, undefined);
+  assert.deepEqual(appels, ['Courrier-bailleur-2026-10-12.pdf', 'Releve-charges-2025.xlsx'], 'un seul appel par pièce : aucun double décompte');
+  const complet = await s.store.lastAnalysis('D1');
+  assert.equal(complet?.revision, (partiel?.revision ?? 0) + 1);
+  assert.equal(complet?.provider, 'anthropic');
+  assert.equal(complet?.coverage.complete, true);
+  assert.equal(complet?.coverage.total, 2, 'pièce comptée une seule fois');
+  assert.equal(complet?.coverage.partial_reason, undefined);
+  assert.equal((await s.store.getView('D1'))?.revision, complet?.revision);
+  assert.equal((await s.store.mailbox('A')).length, 1, 'pas de seconde notification pour le même lot');
   assert.deepEqual(await s.store.allOpenJobs(), []);
 });
 
@@ -389,7 +412,7 @@ test('C20 : pièce du lot lue pendant le calcul de la révision précédente : l
   assert.match(mails[0].text, /Certaines pièces n'ont pas pu être exploitées/, 'la notification reflète la pièce reportée');
 });
 
-test('C07 : plafond mensuel déjà atteint au dépôt : aucune notification pour un lot entièrement reporté, une seule quand il est lu', async () => {
+test('C07 : plafond mensuel déjà atteint au dépôt : lot lu par les règles et notifié une fois (partiel), pas de seconde notification à la reprise IA', async () => {
   const s = stack({ ai: iaFacturee({ in: 20_000, out: 3_000 }), config: { budgetCentsPerUserMonth: 5 } });
   await s.user('A');
   await s.dossier('D1', 'A');
@@ -399,15 +422,20 @@ test('C07 : plafond mensuel déjà atteint au dépôt : aucune notification pour
     await drain(s.deps, 60_000, 50);
     s.clock.advance(3_000);
   }
-  assert.equal((await s.store.getExtraction(p1))?.deferred, true);
-  assert.equal((await s.store.mailbox('A')).length, 0, 'rien à annoncer : aucune pièce lue');
+  const x = await s.store.getExtraction(p1);
+  assert.equal(x?.status, 'ok');
+  assert.equal(x?.fallback, 'user');
+  const mails = await s.store.mailbox('A');
+  assert.equal(mails.length, 1, 'le lot est lu (règles) : il est annoncé');
+  assert.match(mails[0].text, /Résultat partiel : 1 pièce lue par les règles automatiques seulement/);
+  assert.equal((await s.store.costs('A', [])).userMonth, 6, 'aucun coût ajouté par le repli');
   s.clock.advance(Date.parse('2026-12-01T06:00:01Z') - s.clock.now().getTime());
   await s.run();
-  assert.equal((await s.store.getExtraction(p1))?.status, 'ok');
-  assert.equal((await s.store.mailbox('A')).length, 1, 'notification sur la révision qui lit le lot');
+  assert.equal((await s.store.getExtraction(p1))?.provider, 'anthropic');
+  assert.equal((await s.store.mailbox('A')).length, 1, 'une seule notification pour le lot');
 });
 
-test('C07 : lecture reportée au mois suivant : le dossier n’est plus affiché « en cours » une fois les résultats publiés', async () => {
+test('C07 : lecture IA reportée au mois suivant : le dossier n’est plus affiché « en cours » une fois les résultats publiés', async () => {
   const a = apiEnv({ ai: iaFacturee({ in: 20_000, out: 3_000 }), config: { budgetCentsPerUserMonth: 5, extractionWaitMs: 0 } });
   await a.call('POST', '/api/demo/demarrer', { scenario: 'a' });
   const d = (await (await a.call('GET', '/api/dossiers')).json()).dossiers[0].id as string;
@@ -418,8 +446,8 @@ test('C07 : lecture reportée au mois suivant : le dossier n’est plus affiché
   }
   const det = await (await a.call('GET', `/api/dossiers/${d}`)).json();
   assert.ok(det.vue, 'résultats publiés');
-  assert.ok(det.pieces.some((p: { lecture: { report: boolean } | null }) => p.lecture?.report), 'une pièce reportée');
-  assert.ok((await a.store.allOpenJobs()).some((j) => j.kind === 'extract' && j.status === 'queued'), 'relecture planifiée');
+  assert.ok(det.pieces.some((p: { lecture: { statut: string; moteur: string; motif: string | null } | null }) => p.lecture?.statut === 'ok' && p.lecture.moteur === 'regles' && /plafond mensuel/.test(p.lecture.motif ?? '')), 'une pièce lue par les règles, motif lisible');
+  assert.ok((await a.store.allOpenJobs()).some((j) => j.kind === 'extract' && j.status === 'queued'), 'reprise IA planifiée');
   assert.equal(det.statut.etat, 'pret');
   assert.equal(det.statut.travaux, 0);
 });
