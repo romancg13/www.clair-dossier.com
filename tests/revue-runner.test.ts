@@ -333,7 +333,7 @@ test('C20 : lot interrompu par un fichier refusé (413) : le navigateur clôt le
     const f = new FormData();
     f.append('lot', lot);
     f.append('total', String(sel.length));
-    f.append('fichiers', new File([b], n));
+    f.append('fichiers', new File([b as Uint8Array<ArrayBuffer>], n));
     const r = await a.call('POST', `/api/dossiers/${d}/pieces`, f);
     await a.settle();
     if (r.status !== 201) break; // comme l'espace dossier : l'erreur arrête la boucle

@@ -41,8 +41,15 @@ export function RecetteConnexion() {
   };
   const demo = async (scenario: string) => {
     setBusy(true);
-    await api('/api/demo/demarrer', { body: { scenario } });
-    await go();
+    setErr(null);
+    try {
+      await api('/api/demo/demarrer', { body: { scenario } });
+      await go();
+    } catch (e2) {
+      setErr(e2 instanceof ApiError ? e2.message : 'Démonstration indisponible pour le moment.');
+    } finally {
+      setBusy(false);
+    }
   };
   return (
     <Page narrow>

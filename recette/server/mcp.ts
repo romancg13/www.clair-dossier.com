@@ -15,7 +15,15 @@ const ACCESS_TTL = 3600, REFRESH_TTL = 30 * 86_400;
 const SUPPORTED = ['2026-07-28', '2025-11-25', '2025-06-18', '2025-03-26'];
 
 interface Client { client_id: string; client_name: string; redirect_uris: string[]; created_at: string }
-interface Grant { user_id: string; client_id: string; scope: string; exp: number; kind: 'access' | 'refresh' | 'code'; redirect_uri?: string; challenge?: string; resource?: string }
+/** `gen` : génération du lien client ↔ compte à l'émission (un retrait du lien invalide définitivement les jetons émis avant). */
+interface Grant { user_id: string; client_id: string; scope: string; exp: number; kind: 'access' | 'refresh' | 'code'; redirect_uri?: string; challenge?: string; resource?: string; gen?: string }
+/** Lien client ↔ compte ; une nouvelle génération est tirée quand le lien est recréé après un retrait. */
+interface Link { client_id: string; since: string; gen?: string }
+const linkKey = (userId: string, clientId: string) => `oauth/links/${userId}/${clientId}.json`;
+/** Seuls ces paramètres sont repris dans le formulaire de consentement : jamais « decision » ni « csrf » venus de l'adresse. */
+const AUTHZ_PARAMS = ['response_type', 'client_id', 'redirect_uri', 'code_challenge', 'code_challenge_method', 'state', 'resource', 'scope'];
+/** Ressource (RFC 8707) sans barre finale : `${site}/mcp` et `${site}/mcp/` désignent le même serveur. */
+const canon = (r: string) => r.replace(/\/+$/, '');
 
 const j = (data: unknown, status = 200, h: Record<string, string> = {}) => new Response(JSON.stringify(data), { status, headers: { 'content-type': 'application/json', 'cache-control': 'no-store', 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-expose-headers': 'WWW-Authenticate, Mcp-Session-Id', 'x-robots-tag': 'noindex', ...h } });
 const html = (s: string, status = 200) => new Response(s, { status, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'x-robots-tag': 'noindex', 'x-frame-options': 'DENY', 'content-security-policy': "default-src 'none'; style-src 'unsafe-inline'; form-action 'self' https: http://localhost:* http://127.0.0.1:*" } });
@@ -49,24 +57,32 @@ export async function handleOAuth(env: ApiEnv, req: Request, url: URL): Promise<
     const loop = (u: string) => u.replace(/^(http:\/\/(?:localhost|127\.0\.0\.1)):\d+/, '$1');
     if (!client || !client.redirect_uris.some((u) => u === redirect || loop(u) === loop(redirect))) return html('<p>Client ou adresse de retour inconnus.</p>', 400);
     if (q.get('response_type') !== 'code' || q.get('code_challenge_method') !== 'S256' || !q.get('code_challenge')) return html('<p>Requête d’autorisation invalide (PKCE S256 requis).</p>', 400);
+    const back = new URL(redirect);
+    if (q.get('state')) back.searchParams.set('state', q.get('state')!);
+    back.searchParams.set('iss', site);
+    // Jetons réservés à ce serveur (RFC 8707) : toute autre ressource est refusée avant le consentement.
+    const resources = q.getAll('resource');
+    if (resources.length > 1 || (resources.length === 1 && canon(resources[0]) !== `${site}/mcp`)) {
+      back.searchParams.set('error', 'invalid_target');
+      return Response.redirect(back.toString(), 302);
+    }
     const user = await currentUser(env, req);
     if (!user) return Response.redirect(`${site}/connexion?next=${encodeURIComponent(url.pathname + '?' + q.toString())}`, 302);
     const csrf = sha(`${env.secret}|${user.id}|${q.get('client_id')}|${q.get('code_challenge')}`);
     if (req.method === 'POST') {
+      // Une seule décision et un seul jeton : une valeur glissée dans l'adresse ne peut pas l'emporter sur le bouton cliqué.
+      if (q.getAll('decision').length !== 1 || q.getAll('csrf').length !== 1) return html('<p>Requête invalide.</p>', 400);
       if (!safeEqual(q.get('csrf') ?? '', csrf)) return html('<p>Formulaire expiré.</p>', 400);
-      const back = new URL(redirect);
       if (q.get('decision') !== 'autoriser') {
         back.searchParams.set('error', 'access_denied');
       } else {
         const code = token();
-        await s.putJson(`oauth/grants/${sha(code)}.json`, { user_id: user.id, client_id: client.client_id, scope: SCOPE, exp: Date.now() + 5 * 60_000, kind: 'code', redirect_uri: redirect, challenge: q.get('code_challenge')!, resource: q.get('resource') ?? `${site}/mcp` } satisfies Grant);
+        await s.putJson(`oauth/grants/${sha(code)}.json`, { user_id: user.id, client_id: client.client_id, scope: SCOPE, exp: Date.now() + 5 * 60_000, kind: 'code', redirect_uri: redirect, challenge: q.get('code_challenge')!, resource: `${site}/mcp` } satisfies Grant);
         back.searchParams.set('code', code);
       }
-      if (q.get('state')) back.searchParams.set('state', q.get('state')!);
-      back.searchParams.set('iss', site);
       return Response.redirect(back.toString(), 302);
     }
-    const hidden = [...q.entries()].map(([k, v]) => `<input type="hidden" name="${esc(k)}" value="${esc(v)}">`).join('');
+    const hidden = AUTHZ_PARAMS.filter((k) => q.has(k)).map((k) => `<input type="hidden" name="${k}" value="${esc(q.get(k)!)}">`).join('');
     return html(`<!doctype html><html lang="fr"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Autoriser l'accès — ClairDossier</title>
 <body style="font-family:system-ui,sans-serif;background:#faf8f3;color:#0d1b3d;max-width:520px;margin:48px auto;padding:0 16px">
 <p style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#4a5366">ClairDossier · recette</p>
@@ -84,9 +100,21 @@ export async function handleOAuth(env: ApiEnv, req: Request, url: URL): Promise<
     const issue = async (g: Grant) => {
       const access = token(), refresh = token();
       const now = Date.now();
-      await s.putJson(`oauth/grants/${sha(access)}.json`, { ...g, kind: 'access', exp: now + ACCESS_TTL * 1000 } satisfies Grant);
-      await s.putJson(`oauth/grants/${sha(refresh)}.json`, { ...g, kind: 'refresh', exp: now + REFRESH_TTL * 1000 } satisfies Grant);
-      await s.putJson(`oauth/links/${g.user_id}/${g.client_id}.json`, { client_id: g.client_id, since: new Date(now).toISOString() });
+      let gen = g.gen;
+      if (g.kind === 'code') {
+        // Nouvelle autorisation : génération du lien en place, ou NOUVELLE génération si le lien a été retiré
+        // (les jetons émis avant le retrait portent l'ancienne et restent refusés).
+        const lk = linkKey(g.user_id, g.client_id);
+        const cur = (await s.getJson<Link>(lk))?.value;
+        if (cur) gen = cur.gen;
+        else {
+          const fresh: Link = { client_id: g.client_id, since: new Date(now).toISOString(), gen: token(12) };
+          const w = await s.putJson(lk, fresh, { create: true });
+          gen = w.ok ? fresh.gen : ((await s.getJson<Link>(lk, { fresh: true }))?.value.gen ?? fresh.gen);
+        }
+      }
+      await s.putJson(`oauth/grants/${sha(access)}.json`, { ...g, gen, kind: 'access', exp: now + ACCESS_TTL * 1000 } satisfies Grant);
+      await s.putJson(`oauth/grants/${sha(refresh)}.json`, { ...g, gen, kind: 'refresh', exp: now + REFRESH_TTL * 1000 } satisfies Grant);
       return j({ access_token: access, token_type: 'Bearer', expires_in: ACCESS_TTL, refresh_token: refresh, scope: g.scope });
     };
     if (q.get('grant_type') === 'authorization_code') {
@@ -103,7 +131,7 @@ export async function handleOAuth(env: ApiEnv, req: Request, url: URL): Promise<
       const r = q.get('refresh_token') ?? '';
       const g = (await s.getJson<Grant>(`oauth/grants/${sha(r)}.json`))?.value;
       if (!g || g.kind !== 'refresh' || g.exp < Date.now() || g.client_id !== q.get('client_id')) return j({ error: 'invalid_grant' }, 400);
-      if (!(await s.getJson(`oauth/links/${g.user_id}/${g.client_id}.json`))) return j({ error: 'invalid_grant' }, 400); // accès retiré
+      if (!(await linkValid(env, g))) return j({ error: 'invalid_grant' }, 400); // accès retiré (ou retiré puis accordé de nouveau)
       await s.delete(`oauth/grants/${sha(r)}.json`); // rotation
       return issue(g);
     }
@@ -117,13 +145,20 @@ export async function handleOAuth(env: ApiEnv, req: Request, url: URL): Promise<
   return j({ error: 'not_found' }, 404);
 }
 
-/** Jeton d'accès valide et lien client ↔ compte non retiré. */
+/** Lien client ↔ compte présent ET de la génération du jeton : un retrait reste définitif pour les jetons émis avant. */
+async function linkValid(env: ApiEnv, g: Grant): Promise<boolean> {
+  const l = (await env.store.kv.getJson<Link>(linkKey(g.user_id, g.client_id)))?.value;
+  return Boolean(l) && l!.gen === g.gen;
+}
+
+/** Jeton d'accès valide, émis pour ce serveur (RFC 8707), et lien client ↔ compte non retiré. */
 async function bearerUser(env: ApiEnv, req: Request): Promise<{ user: UserRec; client: string } | null> {
   const t = /^Bearer (.+)$/.exec(req.headers.get('authorization') ?? '')?.[1];
   if (!t) return null;
   const g = (await env.store.kv.getJson<Grant>(`oauth/grants/${sha(t)}.json`))?.value;
   if (!g || g.kind !== 'access' || g.exp < Date.now()) return null;
-  if (!(await env.store.kv.getJson(`oauth/links/${g.user_id}/${g.client_id}.json`))) return null;
+  if (canon(g.resource ?? '') !== `${env.siteUrl}/mcp`) return null;
+  if (!(await linkValid(env, g))) return null;
   const user = await env.store.getUser(g.user_id);
   return user ? { user, client: g.client_id } : null;
 }
@@ -221,7 +256,7 @@ export async function listConnections(store: RecetteStore, userId: string) {
   const keys = await store.kv.list(`oauth/links/${userId}/`);
   const out = [];
   for (const k of keys) {
-    const l = (await store.kv.getJson<{ client_id: string; since: string }>(k))?.value;
+    const l = (await store.kv.getJson<Link>(k))?.value;
     const c = l ? (await store.kv.getJson<Client>(`oauth/clients/${l.client_id}.json`))?.value : null;
     if (l) out.push({ client_id: l.client_id, nom: c?.client_name ?? 'Client MCP', depuis: l.since });
   }

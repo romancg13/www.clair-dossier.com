@@ -5,13 +5,16 @@ import { hashPassword, token } from './security.ts';
 import type { ApiEnv } from './api.ts';
 import type { UserRec } from './store.ts';
 
+/** Domaine des comptes créés par le serveur (démonstration, administration) ; l'inscription le refuse. */
+export const DOMAINE_RECETTE = 'recette.clair-dossier.example';
+
 export async function seedDemo(env: ApiEnv, scenario: 'a' | 'b' | 'sans-abonnement'): Promise<UserRec> {
   const s = env.store;
   const id = crypto.randomUUID();
   const who = scenario === 'b' ? TITULAIRE_B : TITULAIRE_A;
   const u: UserRec = {
     id,
-    email: `demo-${id.slice(0, 8)}@recette.clair-dossier.example`,
+    email: `demo-${id.slice(0, 8)}@${DOMAINE_RECETTE}`,
     first_name: who.prenom,
     last_name: who.nom,
     company: who.societe,
@@ -30,15 +33,26 @@ export async function seedDemo(env: ApiEnv, scenario: 'a' | 'b' | 'sans-abonneme
   return u;
 }
 
+/** Signalement unique par instance (ensureAdmin s'exécute à chaque requête). */
+let adresseOccupeeSignalee = false;
+
 /** Compte d'administration de la recette : créé seulement si un mot de passe serveur est configuré. */
 export async function ensureAdmin(env: ApiEnv): Promise<void> {
   if (!env.adminPassword || env.adminPassword.length < 16) return;
-  const email = 'admin@recette.clair-dossier.example';
+  const email = `admin@${DOMAINE_RECETTE}`;
   const { emailKey, checkPassword } = await import('./security.ts');
   const existing = await env.store.userIdByEmailHash(emailKey(email));
   if (existing) {
     const u = await env.store.getUser(existing);
-    if (u && !(await checkPassword(env.adminPassword, u.pwd))) await env.store.putUser({ ...u, pwd: await hashPassword(env.adminPassword) });
+    if (!u || u.role !== 'admin') {
+      // Adresse occupée par un compte qui n'est pas l'administration (inscription antérieure) : on n'y pose JAMAIS le
+      // mot de passe d'administration et on ne promeut pas ce compte (ses sessions deviendraient administratrices).
+      // Le compte d'administration n'est pas créé tant que ce compte n'a pas été supprimé à la main.
+      if (!adresseOccupeeSignalee) console.error(JSON.stringify({ evt: 'administration', erreur: 'adresse d’administration occupée par un compte non administrateur : compte d’administration non créé' }));
+      adresseOccupeeSignalee = true;
+      return;
+    }
+    if (!(await checkPassword(env.adminPassword, u.pwd))) await env.store.putUser({ ...u, pwd: await hashPassword(env.adminPassword) });
     return;
   }
   const id = crypto.randomUUID();
