@@ -49,29 +49,29 @@ test('forme filaire → forme stockée : vides et pages 0 redeviennent null, val
   assert.ok(validate(AnalysisOutputSchema, a).ok);
 });
 
-test('fournisseur : synthèse en JSON décrit, validée strictement, sans grammaire ; sortie illisible = nouvelle tentative', async () => {
-  const envois: { system: string; output_config?: unknown }[] = [];
-  let reponse = '```json\n' + JSON.stringify(wire) + '\n```';
+test('fournisseur : synthèse rendue par un outil non strict, validée strictement, sans grammaire ; sortie absente ou non conforme = nouvelle tentative', async () => {
+  const envois: { system: string; output_config?: unknown; tools: { name: string; strict?: boolean; input_schema: unknown }[]; tool_choice: { type: string } }[] = [];
+  let contenu: unknown[] = [{ type: 'tool_use', id: 't1', name: 'enregistrer_synthese', input: wire }];
   const client = { messages: {
-    create: async (req: { system: string; output_config?: unknown }) => {
+    create: async (req: (typeof envois)[number]) => {
       envois.push(req);
-      return { model: 'claude-sonnet-5-5', stop_reason: 'end_turn', content: [{ type: 'text', text: reponse }], usage: { input_tokens: 10, output_tokens: 10 } };
+      return { model: 'claude-sonnet-5-5', stop_reason: 'tool_use', content: contenu, usage: { input_tokens: 10, output_tokens: 10 } };
     },
-    parse: async () => { throw new Error('la synthèse ne doit plus passer par une grammaire'); },
+    parse: async () => { throw new Error('la synthèse ne doit pas passer par une grammaire'); },
   } } as unknown as Anthropic;
   const p = createAnthropicProvider({ client, modelExtract: 'claude-sonnet-5-5', modelConsolidate: 'claude-sonnet-5-5' });
   const entree = { today: '2026-11-25', title: 'D', typology: null, objective: null, pieces: [], events: [], total: 0, unreadable: [], others: [] } as never;
   const r = await p.consolidate(entree, 'B');
   assert.ok(r.ok);
   if (r.ok) assert.equal(r.data.deadlines[0].date, null);
-  assert.equal(envois[0].output_config, undefined, 'aucune grammaire demandée');
-  assert.match(envois[0].system, /Réponds UNIQUEMENT par un objet JSON conforme/);
-  assert.match(envois[0].system, /"reminder_drafts"/, 'le schéma complet est dans la consigne');
-  reponse = '{"situation": 12}';
+  assert.equal(envois[0].output_config, undefined, 'aucune grammaire de sortie');
+  assert.equal(envois[0].tools[0].strict, undefined, 'outil non strict (aucune grammaire)');
+  assert.equal(envois[0].tool_choice.type, 'auto', 'choix forcé refusé par les modèles récents');
+  assert.equal(mesure(envois[0].tools[0].input_schema).unions, 0);
+  contenu = [{ type: 'tool_use', id: 't2', name: 'enregistrer_synthese', input: { situation: 12 } }];
   const r2 = await p.consolidate(entree, 'B');
-  assert.equal(r2.ok, false);
-  if (!r2.ok) assert.deepEqual([r2.kind, r2.retryable], ['invalid', true]);
-  reponse = 'désolé, pas de JSON';
+  assert.ok(!r2.ok && r2.kind === 'invalid' && r2.retryable);
+  contenu = [{ type: 'text', text: 'Voici la synthèse…' }];
   const r3 = await p.consolidate(entree, 'B');
-  assert.equal(!r3.ok && r3.kind, 'invalid');
+  assert.ok(!r3.ok && r3.kind === 'invalid');
 });

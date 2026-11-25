@@ -55,28 +55,32 @@ export function createAnthropicProvider(o: AnthropicOptions): ModelProvider {
     }
   }
   /**
-   * Synthèse : sortie JSON décrite dans la consigne, puis validée STRICTEMENT ici (même schéma). Les sorties structurées
+   * Synthèse : objet rendu par un outil non strict, puis validé STRICTEMENT ici (même schéma). Les sorties structurées
    * à grammaire sont refusées pour ce schéma (« The compiled grammar is too large », 400, recette du 25/11/2026) ; une
    * sortie non conforme est traitée comme « invalid » (nouvelle tentative, puis repli annoncé sur les règles).
    */
   async function callJson<T>(model: string, system: string, content: Anthropic.MessageParam['content'], schema: typeof AnalysisWireSchema): Promise<ModelResult<T>> {
-    const forme = JSON.stringify((zodOutputFormat(schema as never) as unknown as { schema: unknown }).schema);
+    // Outil NON strict : l'API rend toujours un objet JSON bien formé (aucune grammaire compilée) ; le contenu est
+    // ensuite validé strictement ici. Choix d'outil « auto » (le choix forcé est refusé par les modèles récents).
+    const input_schema = (zodOutputFormat(schema as never) as unknown as { schema: Record<string, unknown> }).schema;
     try {
-      const res = await o.client.messages.create(
-        { model, max_tokens: 16000, system: `${system}\n\nRéponds UNIQUEMENT par un objet JSON conforme à ce schéma JSON (aucun texte autour, aucune balise de code) :\n${forme}`, messages: [{ role: 'user', content }] } as never,
+      const res = (await o.client.messages.create(
+        {
+          model,
+          max_tokens: 16000,
+          system: `${system}\n\nRends ta synthèse en appelant UNE seule fois l'outil enregistrer_synthese, sans autre texte.`,
+          tools: [{ name: 'enregistrer_synthese', description: 'Enregistre la synthèse du dossier (forme imposée).', input_schema }],
+          tool_choice: { type: 'auto' },
+          messages: [{ role: 'user', content }],
+        } as never,
         { timeout },
-      ) as Anthropic.Message;
+      )) as Anthropic.Message;
       const usage = { input_tokens: res.usage?.input_tokens ?? 0, output_tokens: res.usage?.output_tokens ?? 0, model: res.model ?? model };
       if (res.stop_reason === 'refusal') return { ok: false, kind: 'refusal', message: 'refus du modèle', retryable: false, ...usage };
       if (res.stop_reason === 'max_tokens') return { ok: false, kind: 'invalid', message: 'sortie tronquée (limite de jetons)', retryable: true, ...usage };
-      const texte = res.content.flatMap((b) => (b.type === 'text' ? [b.text] : [])).join('').trim().replace(/^```(?:json)?\s*|\s*```$/g, '');
-      let brut: unknown;
-      try {
-        brut = JSON.parse(texte.slice(texte.indexOf('{'), texte.lastIndexOf('}') + 1));
-      } catch {
-        return { ok: false, kind: 'invalid', message: 'sortie non conforme : JSON illisible', retryable: true, ...usage };
-      }
-      const v = validate(schema as never, brut);
+      const appel = res.content.find((b): b is Anthropic.ToolUseBlock => b.type === 'tool_use' && b.name === 'enregistrer_synthese');
+      if (!appel) return { ok: false, kind: 'invalid', message: 'sortie non conforme : synthèse non rendue par l’outil', retryable: true, ...usage };
+      const v = validate(schema as never, appel.input);
       if (!v.ok) return { ok: false, kind: 'invalid', message: `sortie non conforme : ${v.error}`, retryable: true, ...usage };
       return { ok: true, data: v.data as T, ...usage };
     } catch (e) {
