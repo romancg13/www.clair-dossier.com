@@ -29,3 +29,6 @@ mobile/.easignore
 
 # Mise en service IA : état local reprenable (aucun secret)
 .ia-commission/
+
+# Construction de la démonstration de recette (Vercel)
+.vercel/

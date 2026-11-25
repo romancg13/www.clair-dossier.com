@@ -281,7 +281,7 @@ export function DemoDossier() {
           <DeliverablesGrid
             files={deliverableFiles}
             caption={s.revision ? `Révision ${s.revision} · générée dans votre navigateur${generating ? " · génération en cours…" : ""}` : null}
-            emptyLabel={processing ? "En préparation…" : s.enabled ? "Pas encore disponible." : "Activez le traitement pour générer ce document."}
+            emptyLabel={processing ? "En préparation…" : s.enabled ? "Pas encore disponibles." : "Activez le traitement pour générer vos documents."}
             busy={generating}
             onDownloadAll={downloadAll}
           />
