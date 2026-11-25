@@ -1,10 +1,10 @@
 # État des fonctionnalités — source unique de vérité
 
-Mis à jour : 2026-11-25 · commit déployé et vérifié en recette `77ccb92` (branche `claude/clairdossier-optimization-85z7y5`, PR brouillon #71) · production : `85bbb4e`.
+Mis à jour : 2026-11-25 · recette déployée sur `780e55e` ; suite complète rejouée sur ce code (463 unitaires verts) (branche `claude/clairdossier-optimization-85z7y5`, PR brouillon #71) · production : `85bbb4e`.
 
-Statuts : **OK** = OPÉRATIONNEL ET VÉRIFIÉ · **PART** = PARTIELLEMENT OPÉRATIONNEL · **DNT** = DÉVELOPPÉ MAIS NON TESTÉ · **SIM** = SIMULÉ · **BLQ** = BLOQUÉ · **ND** = NON DÉVELOPPÉ · **DV** = DÉSACTIVÉ VOLONTAIREMENT · **—** = sans objet dans cet environnement.
+Statuts : **OK** = OPÉRATIONNEL ET VÉRIFIÉ · **PART** = PARTIELLEMENT OPÉRATIONNEL · **DNT** = DÉVELOPPÉ MAIS NON TESTÉ · **SIM** = SIMULÉ · **BLQ** = BLOQUÉ · **ND** = NON DÉVELOPPÉ · **DV** = VOLONTAIREMENT DIFFÉRÉ OU DÉSACTIVÉ · **—** = sans objet dans cet environnement.
 
-Règles de lecture : « Local » = tests automatisés du dépôt (462 unitaires, 118 SQL, verts le 25/11) ou parcours navigateur local. « Recette » = https://clairdossier-recette-20b5a2.vercel.app (comptes fictifs, stockage privé) et https://clairdossier-preview.vercel.app/demo. « Production » = https://www.clair-dossier.com + Supabase `buzgokfmxpmyceppvjpp` ; **aucun outil de cette session n'accède à la base de production** : tout ce qui dépend d'un compte client y est noté DNT (« en service, non retesté le 25/11 ») et non OK. Un test unitaire ne prouve pas un service externe ; un modèle simulé ne compte jamais comme opérationnel.
+Règles de lecture : « Local » = tests automatisés du dépôt (463 unitaires, 118 SQL, verts le 25/11) ou parcours navigateur local. « Recette » = https://clairdossier-recette-20b5a2.vercel.app (comptes fictifs, stockage privé) et https://clairdossier-preview.vercel.app/demo. « Production » = https://www.clair-dossier.com + Supabase `buzgokfmxpmyceppvjpp` ; **aucun outil de cette session n'accède à la base de production** : tout ce qui dépend d'un compte client y est noté DNT (« en service, non retesté le 25/11 ») et non OK. Un test unitaire ne prouve pas un service externe ; un modèle simulé ne compte jamais comme opérationnel.
 
 Le détail fin de la vitrine historique (219 lignes F-001…) reste dans `FEATURE_INVENTORY.md` ; il est regroupé ici en lignes M.
 
@@ -25,7 +25,7 @@ Le détail fin de la vitrine historique (219 lignes F-001…) reste dans `FEATUR
 | ID | Fonction | Offres | Local | Recette | Production | Preuve | Reste à faire |
 |---|---|---|---|---|---|---|---|
 | B-01 | Sept offres et tarifs affichés | toutes | OK | OK | OK | `tests/paiements-geles.test.ts`, page /tarifs vue en production le 25/11 | — |
-| B-02 | Paiement par liens Stripe LIVE (gelés) | toutes | OK | DV | DNT | gel vérifié par test ; aucun achat réel tenté | — |
+| B-02 | Paiement par liens Stripe LIVE (gelés) | toutes | OK | DV | DNT | gel vérifié par test ; 12 liens présents dans le build de production du 25/11 ; aucun achat réel tenté | — |
 | B-03 | Activation de l'abonnement par événement signé, idempotent et ordonné | toutes | OK | SIM | ND | `recette-api.test.ts` ; paiement simulé en recette | webhooks Stripe réels (I-03) |
 | B-04 | Droits vérifiés côté serveur (dossiers, dépôt, assistant, automatisations) | toutes | OK | OK | PART | refus 402 testés ; en production : limites non imposées par le serveur | configuration centrale des droits en production |
 | B-05 | Plafond de dossiers par offre | toutes | OK | OK | ND | `recette-api.test.ts` | idem B-04 |
@@ -45,8 +45,8 @@ Le détail fin de la vitrine historique (219 lignes F-001…) reste dans `FEATUR
 | C-06 | Relecture automatique d'une pièce échouée (1 h, 6 h, 24 h) | toutes | OK | DNT | DV | `moteur-relecture.test.ts` | observer en recette |
 | C-07 | Téléchargement des pièces et des rendus, liens privés | toutes | OK | OK | DNT | parcours recette | — |
 | C-08 | ZIP complet des rendus | toutes | OK | OK | DV | `deliverables-zip.test.ts` | — |
-| C-09 | 250 fichiers par dossier | toutes | DNT | ND | ND | script `scripts/recette/capacite.ts` écrit, exécution non aboutie le 25/11 | lancer et consigner dans `CAPACITE.md` |
-| C-10 | Capacité logique 20 × 250 fichiers | Business → Premium | ND | ND | ND | — | idem C-09 |
+| C-09 | 250 fichiers par dossier | toutes | OK | ND | ND | `CAPACITE.md` : 10 → 250 fichiers mesurés en local le 25/11 ; à 250 : six rendus en 21,7 s après correctif du rendu « Résumé » (288 s avant) | mesure sur stockage hébergé : non faite (quota gratuit d'opérations) |
+| C-10 | Capacité logique 20 × 250 fichiers | Business → Premium | OK | ND | ND | `CAPACITE.md` : 5 000 pièces déposées et listées sur 20 dossiers, 0 analyse lancée | idem C-09 |
 | C-11 | Premier résultat rapide après dépôt | toutes | OK | PART | DV | `recette-performance.test.ts` ; recette hébergée le 25/11 : premier résultat 15 s, six rendus 23 s (37–39 s avant) | viser quelques secondes : passage horaire et moins d'accès au stockage |
 | C-12 | Corbeille client, suppression, audit | toutes | OK | — | DNT | tests SQL corbeille | — |
 
@@ -179,7 +179,7 @@ Le détail fin de la vitrine historique (219 lignes F-001…) reste dans `FEATUR
 | M-06 | « Depuis votre dernière visite » : ce qui a changé, ce qui a été fait | toutes | OK | DNT | ND | idem | visible à la deuxième visite (30 min) : à relire le 26/11 |
 | M-07 | Mobile et ordinateur sans défilement horizontal | — | OK | OK | OK | parcours 390 et 1440 px | tablette non rejouée |
 | M-08 | Accessibilité (clavier, contrastes, mouvement réduit) | — | PART | PART | PART | `cinematics-quality.test.ts`, `recette-couleurs.mjs` ; pas d'audit complet | audit dédié |
-| M-09 | Refonte du hero et de la conversion (8 leviers, 3 offres puis 7) | — | ND | ND | ND | hero actuel conservé : « Des documents dispersés. Un dossier clair. » | décision propriétaire (production en lecture seule) |
+| M-09 | Refonte du hero et de la conversion (8 leviers, 3 offres puis 7) | — | PART | PART | PART | hero en service : une promesse (« Des documents dispersés. Un dossier clair. »), une phrase, un bouton principal et un lien secondaire (vu en production le 25/11) ; avis clients, vidéo et « 3 offres puis 7 » non faits | décision propriétaire : aucun avis authentique disponible à ce jour |
 | M-10 | Application mobile (Expo) | toutes | DNT | — | ND | `mobile/`, non publiée | — |
 | M-11 | Prospection B2B (scoring, validation, campagne) | interne | OK | — | DNT | `prospects-*.test.ts`, `campagne-droit10.test.ts` | — |
 | M-12 | Bandeau ClairNova, téléphone, WhatsApp, formulaires de contact | — | OK | OK | OK | `cta.test.ts`, pied de page vu le 25/11 | — |
@@ -192,7 +192,7 @@ Le détail fin de la vitrine historique (219 lignes F-001…) reste dans `FEATUR
 | N-02 | Diagnostic d'isolation en lecture seule | interne | OK | — | BLQ | joué avant/après correctif | à exécuter par le propriétaire |
 | N-03 | Chemin de fichier contrôlé par le worker | toutes | OK | — | DV | `ai-worker` (non installé) | — |
 | N-04 | Recette neutralisée : aucun lien Stripe LIVE, non indexée | — | OK | OK | — | build en échec sinon | — |
-| N-05 | Secrets côté serveur uniquement | — | OK | OK | OK | `revue-securite.test.ts`, aucune variable `VITE_` secrète | — |
+| N-05 | Secrets côté serveur uniquement ; build de production sans élément de recette | — | OK | OK | OK | `revue-securite.test.ts` ; `dist/` du 25/11 : aucun secret, aucun compte fictif, aucune route de simulation, pas de /demo | — |
 | N-06 | Stockage privé de la recette, liens non publics | — | OK | OK | — | Vercel Blob privé | architecture de recette, pas de production |
 | N-07 | Dépendances sans vulnérabilité connue | — | OK | OK | OK | `npm audit` : 0 (25/11) | — |
 | N-08 | Sauvegardes et restauration testées | — | ND | ND | BLQ | non vérifiable sans accès Supabase | vérifier dans Supabase → Backups |
@@ -209,16 +209,16 @@ Fonctionnalités recensées : **122**.
 
 | OK | PART | DNT | SIM | BLQ | ND | DV | — |
 |---|---|---|---|---|---|---|---|
-| 87 | 5 | 4 | 6 | 1 | 15 | 2 | 2 |
+| 89 | 6 | 3 | 6 | 1 | 13 | 2 | 2 |
 
-- Couverture de vérification : 118/122 = **97 %** (état établi par une preuve ; exclus : les 4 « développé mais non testé »).
-- Taux d'opérationnalité : 87/118 = **74 %** (périmètre actif = recensées − sans objet − désactivées volontairement ; simulé, bloqué et non développé restent au dénominateur).
+- Couverture de vérification : 119/122 = **98 %** (état établi par une preuve ; exclus : les 3 « développé mais non testé »).
+- Taux d'opérationnalité : 89/118 = **75 %** (périmètre actif = recensées − sans objet − désactivées volontairement ; simulé, bloqué et non développé restent au dénominateur).
 
 ### Recette
 
 | OK | PART | DNT | SIM | BLQ | ND | DV | — |
 |---|---|---|---|---|---|---|---|
-| 42 | 7 | 14 | 4 | 14 | 18 | 5 | 18 |
+| 42 | 8 | 14 | 4 | 14 | 17 | 5 | 18 |
 
 - Couverture de vérification : 108/122 = **89 %** (état établi par une preuve ; exclus : les 14 « développé mais non testé »).
 - Taux d'opérationnalité : 42/99 = **42 %** (périmètre actif = recensées − sans objet − désactivées volontairement ; simulé, bloqué et non développé restent au dénominateur).
@@ -227,7 +227,7 @@ Fonctionnalités recensées : **122**.
 
 | OK | PART | DNT | SIM | BLQ | ND | DV | — |
 |---|---|---|---|---|---|---|---|
-| 10 | 3 | 14 | 0 | 6 | 22 | 55 | 12 |
+| 10 | 4 | 14 | 0 | 6 | 21 | 55 | 12 |
 
 - Couverture de vérification : 108/122 = **89 %** (état établi par une preuve ; exclus : les 14 « développé mais non testé »).
 - Taux d'opérationnalité : 10/55 = **18 %** (périmètre actif = recensées − sans objet − désactivées volontairement ; simulé, bloqué et non développé restent au dénominateur).
@@ -248,5 +248,5 @@ Fonctionnalités recensées : **122**.
 | J | 8 | 0 | 0 | 6 | 0 | 1 | 0 | 0 | 1 |
 | K | 6 | 0 | 0 | 1 | 0 | 1 | 1 | 0 | 3 |
 | L | 5 | 1 | 0 | 0 | 0 | 0 | 3 | 1 | 0 |
-| M | 12 | 6 | 1 | 1 | 0 | 0 | 1 | 1 | 2 |
+| M | 12 | 6 | 2 | 1 | 0 | 0 | 0 | 1 | 2 |
 | N | 11 | 4 | 0 | 0 | 0 | 1 | 2 | 0 | 4 |

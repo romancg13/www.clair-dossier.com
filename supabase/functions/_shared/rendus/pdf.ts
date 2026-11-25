@@ -22,6 +22,19 @@ const clean = (s: string) => s.replace(/[\u00a0\u202f\u2009]/g, '\u00a0').replac
 /** Texte dessiné ou métadonnée sans découpage : espaces ordinaires. */
 const plain = (s: string) => clean(s).replace(/\u00a0/g, ' ');
 
+/** Largeur d'un mot à la taille 1, mémorisée par police (bornée) : la largeur est proportionnelle à la taille. */
+const MOTS = new WeakMap<PDFFont, Map<string, number>>();
+function largeurMot(font: PDFFont, mot: string): number {
+  let m = MOTS.get(font);
+  if (!m) MOTS.set(font, (m = new Map()));
+  let w = m.get(mot);
+  if (w === undefined) {
+    w = font.widthOfTextAtSize(mot.replace(/\u00a0/g, ' '), 1);
+    if (m.size < 50_000) m.set(mot, w);
+  }
+  return w;
+}
+
 export class Pdf {
   pdf!: PDFDocument;
   f!: { body: PDFFont; bold: PDFFont; title: PDFFont };
@@ -81,10 +94,17 @@ export class Pdf {
     const out: string[] = [];
     for (const para of clean(text).split('\n')) {
       let line = '';
+      let est = 0;
+      const espace = largeurMot(font, ' ') * size;
       for (const word of para.split(/[ \t\n]+/)) {
         if (!word) continue;
         const t = line ? `${line} ${word}` : word;
-        if (font.widthOfTextAtSize(t.replace(/\u00a0/g, ' '), size) > width && line) {
+        // Mesure exacte (mise en forme complète de la ligne) seulement près de la marge : loin d'elle, la somme des
+        // largeurs de mots (mémorisées) suffit à décider. Sans cela, un long document coûtait une mise en forme par mot.
+        est = line ? est + espace + largeurMot(font, word) * size : largeurMot(font, word) * size;
+        const depasse = est > width * 1.02 || (est >= width * 0.98 && font.widthOfTextAtSize(t.replace(/\u00a0/g, ' '), size) > width);
+        if (depasse && line) {
+          est = largeurMot(font, word) * size;
           out.push(line);
           line = word;
         } else line = t;

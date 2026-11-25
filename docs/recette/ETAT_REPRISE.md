@@ -1,6 +1,6 @@
 # État de reprise — recette ClairDossier (V6)
 
-Mis à jour : 2026-11-25 · PR #70 **fusionnée** (production `85bbb4e`) · travaux V6 : branche `claude/clairdossier-optimization-85z7y5`, PR brouillon #71, NON fusionnée · déployé en recette : `77ccb92`.
+Mis à jour : 2026-11-25 · PR #70 **fusionnée** (production `85bbb4e`) · travaux V6 : branche `claude/clairdossier-optimization-85z7y5`, PR brouillon #71, NON fusionnée · commit déployé : voir `ETAT_FONCTIONNALITES.md`.
 Source unique de l'état de chaque fonctionnalité : `ETAT_FONCTIONNALITES.md` (122 lignes, synthèse calculée). Sécurité de la production : `SECURITE_ISOLATION.md`.
 Production : inchangée depuis la fusion. Aucune migration appliquée, aucun paiement, aucun appel d'API payant (coût constaté : 0).
 
@@ -17,10 +17,12 @@ Légende : VÉRIFIÉ EN LOCAL · VÉRIFIÉ SUR RECETTE HÉBERGÉE · IMPLÉMENT�
 | Preuve de passage du planificateur | VÉRIFIÉ EN LOCAL ; recette : automatisation quotidienne créée, passage du 26/11 07:05 UTC à lire | `/api/planificateur` |
 | Évaluation continue du moteur ; correctif « partie inventée » | VÉRIFIÉ EN LOCAL (exactitude 100 %, citations 100 %) | `npm run ia:evaluation`, `tests/evaluation-moteur.test.ts` |
 | Rentabilité : gros consommateur, seuil, croissance, avec/sans crédits | VÉRIFIÉ EN LOCAL (consommations ESTIMÉES) | `RENTABILITE.md` |
-| Capacité 250 fichiers et 20 × 250 | NON TESTÉ : `scripts/recette/capacite.ts` écrit, exécution non aboutie | à relancer |
+| Capacité 10 → 250 fichiers et 20 × 250 | VÉRIFIÉ EN LOCAL ; recette hébergée : NON TESTÉ | `CAPACITE.md`, `mesures/` ; correctif du rendu « Résumé » (288 s → 14 s à 250 fichiers) |
+| Build de production contrôlé, procédure de mise en production | VÉRIFIÉ EN LOCAL, non exécutée | `DEPLOIEMENT_PRODUCTION.md` |
+| Second passage quotidien du planificateur (16:10 UTC) | déployé ; exécution réelle à lire après 17:00 UTC le 25/11 | `/api/planificateur` |
 | Clé API Claude, Supabase de production, Stripe bac à sable, OAuth Gmail/Outlook | BLOQUÉ | actions propriétaire ci-dessous |
 
-Tests : 462 unitaires, 118 SQL, typecheck site + recette, build recette OK.
+Tests : 463 unitaires, 118 SQL, typecheck site + recette, build recette OK.
 
 ## Environnements (une seule branche, un seul build : `scripts/vercel-build.mjs`)
 

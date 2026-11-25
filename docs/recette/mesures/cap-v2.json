@@ -1,0 +1,91 @@
+{
+  "date": "2026-11-25T14:50:25.703Z",
+  "node": "v22.23.5",
+  "volet2": {
+    "parametres": {
+      "dossiers": 20,
+      "fichiers_par_dossier": 250,
+      "total": 5000,
+      "formule": "business-pme-20",
+      "limite_formule": "20 dossiers",
+      "executeur": "en pause (aucune analyse lancée)"
+    },
+    "creation_des_dossiers": {
+      "duree_ms": 7,
+      "dossier_au_dela_de_la_formule": 402
+    },
+    "depot": {
+      "duree_ms": 37269,
+      "requetes": {
+        "n": 260,
+        "mediane_ms": 130,
+        "p95_ms": 292,
+        "max_ms": 323
+      },
+      "refus": {},
+      "acces": {
+        "lecture": 11820,
+        "autorite": 0,
+        "ecriture": 25780,
+        "octetsLus": 0,
+        "octetsEcrits": 5000,
+        "liste": 0,
+        "suppression": 0,
+        "total": 42600
+      }
+    },
+    "pieces_enregistrees": 5000,
+    "travaux_en_file": 5000,
+    "analyses_lancees": 0,
+    "file": {
+      "octets_max": 975045
+    },
+    "listage": {
+      "ms": 162,
+      "dossiers": 20,
+      "pieces_annoncees": 5000,
+      "acces": {
+        "lecture": 5064,
+        "autorite": 0,
+        "ecriture": 0,
+        "octetsLus": 0,
+        "octetsEcrits": 0,
+        "liste": 20,
+        "suppression": 0,
+        "total": 5084
+      },
+      "parallelisme_max": 322
+    },
+    "consultation_d_un_dossier": {
+      "ms": 29,
+      "pieces": 250,
+      "etat": "en_cours",
+      "acces": {
+        "lecture": 759,
+        "autorite": 0,
+        "ecriture": 0,
+        "octetsLus": 0,
+        "octetsEcrits": 0,
+        "liste": 1,
+        "suppression": 0,
+        "total": 760
+      }
+    },
+    "quotas": {
+      "octets_reserves": 300300,
+      "plafond_octets_par_compte": 52428800,
+      "part_du_plafond": 0.6,
+      "refus_au_plafond": 413
+    },
+    "executeur": {
+      "relances": 0,
+      "passages": 261
+    },
+    "memoire": {
+      "rss_depart_Mo": 156.6,
+      "rss_pic_Mo": 304.4,
+      "tas_depart_Mo": 39.2,
+      "tas_pic_Mo": 105.6
+    }
+  }
+}
