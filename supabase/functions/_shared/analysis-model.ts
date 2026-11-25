@@ -92,7 +92,14 @@ export interface DeadlineRow {
 
 /* ── Chronologie déterministe ───────────────────────────────────────────── */
 
-type ExtractedDate = { date: string; precision: Precision; label: string; kind: 'document_date' | 'event_date' | 'deadline'; evidence: { page: number | null; quote: string }[] };
+type ExtractedDate = {
+  date: string;
+  precision: Precision;
+  label: string;
+  kind: 'document_date' | 'event_date' | 'deadline';
+  /** `locator` et `status` (extrait retrouvé ou non dans la pièce) : posés par le moteur de recette, absents ailleurs. */
+  evidence: { page: number | null; quote: string; locator?: string | null; status?: 'found' | 'not_found' | 'unknown' }[];
+};
 
 /**
  * Chronologie construite SANS modèle à partir des extractions par pièce :
@@ -105,7 +112,15 @@ export function buildChronology(extractions: { document_id: string; data: { date
     for (const d of x.data?.dates ?? []) {
       if (d.kind === 'deadline' || !/^\d{4}(-\d{2}){0,2}$/.test(d.date)) continue;
       const key = deadlineKey(d.label, d.date);
-      const evidence = d.evidence.map((e) => ({ document_id: x.document_id, page: e.page, quote: e.quote }));
+      // Statut et repère conservés quand l'extraction les porte : sans eux, chaque jalon s'afficherait
+      // « extrait non retrouvé dans la pièce ». Forme inchangée pour les extractions qui ne les ont pas.
+      const evidence = d.evidence.map((e) => ({
+        document_id: x.document_id,
+        page: e.page,
+        ...(e.locator != null ? { locator: e.locator } : {}),
+        quote: e.quote,
+        ...(e.status ? { status: e.status } : {}),
+      }));
       const prev = byKey.get(key);
       if (prev) prev.evidence.push(...evidence);
       else byKey.set(key, { key, date: d.date, precision: d.precision, kind: d.kind, label: d.label, evidence });

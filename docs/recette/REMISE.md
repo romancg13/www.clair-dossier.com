@@ -43,6 +43,8 @@ Sans abonnement (bouton « Sans abonnement ») : création et dépôt refusés (
 
 Zéro clic admin : aucun compte administrateur n'existe sur la démo (aucun mot de passe admin fourni) ; le parcours n'utilise que le compte client.
 
+Contrôle des citations (limite connue) : un extrait n'est « retrouvé » que s'il figure dans la pièce sur des limites de mots (« 5 janvier 2027 » n'est pas retrouvé dans « 15 janvier 2027 »), et un extrait d'analyse réduit à un nombre isolé ou à un mot de moins de quatre lettres ne prouve rien. Un mot isolé plus long (« janvier ») reste en revanche « retrouvé » s'il figure dans une preuve vérifiée de la même pièce.
+
 ## 4. Mesures (session neuve, Playwright, mobile 390 px, client hors UE)
 
 Commit testé : `493bead` (trois parcours complets + MCP distant).
@@ -103,6 +105,7 @@ Observation : une erreur transitoire « module script … text/html » au premie
 
 - Production intacte : aucun push sur `main`, aucune modification Supabase, Stripe, DNS ou protection.
 - Code de production modifié (inactif par défaut) : drapeaux `VITE_RECETTE`, `VITE_HOME_CLARTE`, `VITE_NOINDEX` éteints ; seuls changements actifs si fusion : sélecteur unique suivi/cartes (`packages/core`, `DossierDetail.tsx`, `DeliverablesGrid.tsx`).
+- Dossiers de démo déjà analysés : la chronologie est calculée à la consolidation puis conservée ; après déploiement de ce correctif, relancer la consolidation de ces dossiers (un nouveau dépôt suffit) ou repartir d'une base de démo neuve, faute de quoi leurs jalons gardent l'avertissement « extrait non retrouvé dans la pièce ».
 - Supprimer la démo : projet Vercel `clairdossier-recette-20b5a2` + magasin Blob `clairdossier-recette-20b5a2`.
 
 ## 10. Consentements à obtenir
