@@ -2,7 +2,7 @@
 
 Mis à jour : 2026-11-25 · PR #70 **fusionnée** (production `85bbb4e`) · travaux V6 : branche `claude/clairdossier-optimization-85z7y5`, PR brouillon #71, NON fusionnée · commit déployé : voir `ETAT_FONCTIONNALITES.md`.
 Source unique de l'état de chaque fonctionnalité : `ETAT_FONCTIONNALITES.md` (122 lignes, synthèse calculée). Sécurité de la production : `SECURITE_ISOLATION.md`.
-Production : inchangée depuis la fusion. Aucune migration appliquée, aucun paiement, aucun appel d'API payant (coût constaté : 0).
+Production : inchangée depuis la fusion. Aucune migration appliquée, aucun paiement. Appels d'API payants : recette uniquement (clé installée le 25/11), environ 1 € de lecture (plafond mensuel atteint) et environ 0,2 USD d'assistant.
 
 Légende : VÉRIFIÉ EN LOCAL · VÉRIFIÉ SUR RECETTE HÉBERGÉE · IMPLÉMENTÉ NON TESTÉ · SIMULÉ · BLOQUÉ · DIFFÉRÉ.
 
@@ -87,10 +87,24 @@ Lot fusionné (`2b88a05`), chaque point avec un test qui échoue sans le correct
 
 Le gain de latence réel sur la recette hébergée est à lire dans la remise (mesure navigateur), pas dans ces compteurs.
 
+## Travaux V11 (2026-11-25) — IA réelle sur la recette
+
+| Lot | Statut | Preuve |
+|---|---|---|
+| Clé `ANTHROPIC_API_KEY` (sensible, recette seulement), redéploiement | VÉRIFIÉ SUR RECETTE | commit déployé `74767fa`, aucune valeur affichée |
+| Assistant avec modèle : routage Haiku / Sonnet / Opus, outils, sources | VÉRIFIÉ SUR RECETTE | 9–25 s par réponse ; 0,085 puis 0,067 USD pour 3 questions |
+| Lecture des pièces par le modèle | VÉRIFIÉ SUR RECETTE | 2,5 à 32 c€ par pièce |
+| Synthèse par le modèle | VÉRIFIÉ SUR RECETTE après 2 correctifs | API : « compiled grammar is too large » → outil non strict + validation zod ; `tests/schema-filaire.test.ts` |
+| Plafond global de lecture (1 €/mois) | ATTEINT le 25/11, repli par règles VÉRIFIÉ | alerte BUDGET ; plus de lecture IA avant décembre sans accord |
+| Rentabilité avec coûts mesurés | VÉRIFIÉ (petit échantillon) | `RENTABILITE.md` : usage normal 84–89 %, intensif 14–62 %, seuil 6 clients |
+| Unification sur Supabase (pages originales + IA + automatisations pg_cron) | VÉRIFIÉ SUR SUPABASE LOCAL | `UNIFICATION.md`, captures `v11-*` |
+
+Point faible : premier résultat avec IA 142–207 s (30 s par règles). Piste : publier d'abord l'aperçu par règles puis remplacer par la synthèse du modèle, effort réduit pour la consolidation.
+
 ## Blocages — action minimale du propriétaire
 
 1. **Supabase isolé hébergé** — BLOQUÉ : organisation à la limite gratuite (2 projets actifs, tous deux étrangers à ClairDossier ; les 2 projets ClairDossier sont en pause). Une action : autoriser la reprise de « ClairDossier's Projet » à la place d'un projet actif, ou un projet payant.
-2. **Analyse IA réelle** — BLOQUÉ : aucune clé d'API dans le coffre de la recette. Une action, détaillée dans `ACTIVATION_API.md` : créer la clé (workspace dédié, limite 2 USD) et l'ajouter comme `ANTHROPIC_API_KEY` du projet Vercel de recette. Tout le reste est prêt.
+2. **Analyse IA réelle** — ACTIVE sur la recette (25/11). Plafond de lecture de 1 €/mois atteint : poursuivre les essais demande l'accord du propriétaire pour relever ce plafond (dans la limite totale de 2 USD).
 3. **Messagerie** — BLOQUÉ : applications OAuth Google Cloud et Microsoft Entra, compte Resend.
 4. **Stripe bac à sable** — DIFFÉRÉ : paiement simulé sur la recette ; aucune option n'est vendue.
 5. **Juridique** — CGV art. 6, confidentialité, AIPD : projets dans `MOTEUR_ET_CONFORMITE.md` et `REMISE.md` §6, rien publié.
