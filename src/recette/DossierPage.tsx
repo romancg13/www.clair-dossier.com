@@ -386,7 +386,6 @@ function Dates({ v, id, onChange }: { v: RenduView; id: string; onChange: () => 
 function Prestations({ id, hasView }: { id: string; hasView: boolean }) {
   const [out, setOut] = useState<unknown>(null);
   const [err, setErr] = useState<string | null>(null);
-  const [brief, setBrief] = useState({ cible: 'Avocats', offre: 'ClairDossier', zone: 'Marseille', objectif: 'demandes' });
   const run = async (k: string, body: unknown = {}) => {
     setErr(null);
     try {
@@ -395,27 +394,17 @@ function Prestations({ id, hasView }: { id: string; hasView: boolean }) {
       setErr(e instanceof ApiError ? e.message : 'Indisponible.');
     }
   };
-  type Post = { accroche: string; texte: string; appel: string; hashtags: string[]; jour: string; date: string; heure: string; fuseau: string; decalage: string; raison: string; mesure: string };
-  const o = out as { brouillons?: Post[]; brouillon?: { objet: string; corps: string }; fiche?: { objectif: string; questions: string[]; pieces: string[] } } | null;
+  const o = out as { brouillon?: { objet: string; corps: string }; fiche?: { objectif: string; questions: string[]; pieces: string[] } } | null;
   return (
     <div className="mt-4 space-y-4">
       <div className="flex flex-wrap gap-2">
         {hasView && <Secondary onClick={() => void run('justificatifs')}>Demande groupée de justificatifs</Secondary>}
         {hasView && <Secondary onClick={() => void run('rendez-vous')}>Fiche de préparation de rendez-vous</Secondary>}
       </div>
-      <form className="grid gap-2 sm:grid-cols-4" onSubmit={(e) => { e.preventDefault(); void run('linkedin', brief); }}>
-        <input className={inputCls} aria-label="Cible" value={brief.cible} onChange={(e) => setBrief({ ...brief, cible: e.target.value })} />
-        <input className={inputCls} aria-label="Offre" value={brief.offre} onChange={(e) => setBrief({ ...brief, offre: e.target.value })} />
-        <input className={inputCls} aria-label="Zone" value={brief.zone} onChange={(e) => setBrief({ ...brief, zone: e.target.value })} />
-        <Primary type="submit">3 publications LinkedIn</Primary>
-      </form>
       {err && <Alert tone="error">{err}</Alert>}
-      {o?.brouillons?.map((p, i) => (
-        <Card key={i}><p className="text-[13px] text-slate-500">{p.jour} {frDate(p.date)} à {p.heure.replace(':', ' h ')} ({p.fuseau}, UTC{p.decalage}) — {p.raison}</p><p className="mt-2 font-semibold text-navy-900">{p.accroche}</p><pre className="mt-2 whitespace-pre-wrap font-sans text-[14px] text-navy-900">{`${p.texte}\n\n${p.appel}\n\n${p.hashtags.join(' ')}`}</pre><p className="mt-2 text-[12.5px] text-slate-500">Mesure : {p.mesure}</p></Card>
-      ))}
       {o?.brouillon && <Card><p className="font-semibold text-navy-900">{o.brouillon.objet}</p><pre className="mt-2 whitespace-pre-wrap font-sans text-[14px] text-navy-900">{o.brouillon.corps}</pre></Card>}
       {o?.fiche && <Card><p className="font-semibold text-navy-900">Objectif</p><p className="text-[14px]">{o.fiche.objectif}</p><p className="mt-3 font-semibold text-navy-900">Trois questions</p><ol className="list-decimal pl-5 text-[14px]">{o.fiche.questions.map((q) => <li key={q}>{q}</li>)}</ol><p className="mt-3 font-semibold text-navy-900">Pièces à apporter</p><ul className="list-disc pl-5 text-[14px]">{o.fiche.pieces.map((q) => <li key={q}>{q}</li>)}</ul></Card>}
-      <p className="text-[12.5px] text-slate-500">Brouillons uniquement : rien n’est envoyé ni publié automatiquement, aucune portée n’est promise.</p>
+      <p className="text-[12.5px] text-slate-500">Brouillons uniquement : rien n’est envoyé automatiquement.</p>
     </div>
   );
 }

@@ -7,6 +7,7 @@ import { DeliverablesGrid, type DeliverableFile } from "../components/dossier/De
 import { ChronologyEditor } from "../components/dossier/ChronologyEditor";
 import { AnalysisView } from "../components/dossier/AnalysisView";
 import { AttentionBox } from "../components/dossier/AttentionBox";
+import { PersonalizeSpace } from "../components/account/PersonalizeSpace";
 import { IntelligenceLauncher } from "../components/intelligence/IntelligencePanel";
 import { runAssistant, suggestions, type Context as IaContext } from "../../supabase/functions/_shared/intelligence/core.ts";
 import { buildAttention, visitMark, whatChanged } from "../../supabase/functions/_shared/attention.ts";
@@ -244,6 +245,13 @@ export function DemoDossier() {
             Aucun dossier client, aucune IA appelée, aucun e-mail envoyé : les étapes du traitement sont simulées (accélérées), jamais une
             véritable analyse. Les documents téléchargeables sont en revanche de vrais fichiers, générés dans votre navigateur par le même
             code que le moteur de production.
+            <span className="mt-1 block">
+              Pour essayer le parcours complet (dépôt d’une pièce fictive, traitement côté serveur, résultats) :{" "}
+              <a className="font-semibold text-navy-900 underline" href="https://clairdossier-recette-20b5a2.vercel.app/connexion" rel="noopener noreferrer">
+                ouvrir la recette
+              </a>
+              .
+            </span>
           </details>
         </div>
 
@@ -297,6 +305,10 @@ export function DemoDossier() {
             <ChronologyEditor events={events} history={s.overrides} documentNames={names} canEdit={!s.closed} onSave={saveOverride} />
           </div>
         )}
+
+        <div className="mt-8">
+          <PersonalizeSpace force />
+        </div>
 
         {/* Réservé à la démonstration fictive : jamais présent dans l'espace client réel. */}
         <details className="mt-8 rounded-2xl border border-dashed hairline bg-cream-50/60 px-5 py-3 text-sm">

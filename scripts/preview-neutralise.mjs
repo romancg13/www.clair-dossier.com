@@ -14,7 +14,8 @@
 import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-const DIST = new URL('../dist/', import.meta.url).pathname;
+const dirArg = process.argv.find((a) => a.startsWith('--dir='))?.slice(6) ?? 'dist';
+const DIST = new URL(`../${dirArg.replace(/\/$/, '')}/`, import.meta.url).pathname;
 if (!process.env.VERCEL && !process.argv.includes('--force')) {
   console.error('preview-neutralise : réservé au build Vercel de prévisualisation (ou --force).');
   process.exit(1);

@@ -8,7 +8,7 @@ import { DELIVERABLE_CATALOG, type DeliverableKey } from '../../supabase/functio
 import { drain } from '../../supabase/functions/_shared/engine/runner.ts';
 import type { EngineDeps } from '../../supabase/functions/_shared/engine/runner.ts';
 import { isCalendarDate, readDatesForm, type RenduView } from '../../supabase/functions/_shared/rendus/index.ts';
-import { demandeJustificatifs, ficheRendezVous, postsLinkedIn, type BriefLinkedIn } from '../../supabase/functions/_shared/prestations/index.ts';
+import { demandeJustificatifs, ficheRendezVous } from '../../supabase/functions/_shared/prestations/index.ts';
 import { checkPassword, emailKey, hashPassword, safeEqual, sha, signEvent, signLink, token, verifyEvent, verifyLink } from './security.ts';
 import { update } from './kv.ts';
 import { RecetteStore, jobEnCours, type DossierRec, type Subscription, type UserRec } from './store.ts';
@@ -458,12 +458,7 @@ export async function handle(env: ApiEnv, req: Request): Promise<Response> {
     if (sub.startsWith('/prestations/') && m === 'POST') {
       const view = (await store.getView(d.id))?.view as RenduView | undefined;
       const kind = sub.slice('/prestations/'.length);
-      if (kind === 'linkedin') {
-        const b = await body<Partial<BriefLinkedIn>>(req);
-        if (!b.cible?.trim() || !b.offre?.trim() || !b.zone?.trim()) return err(400, 'Cible, offre et zone requises.');
-        const posts = postsLinkedIn({ cible: b.cible.trim().slice(0, 80), offre: b.offre.trim().slice(0, 120), zone: b.zone.trim().slice(0, 60), ton: b.ton ?? 'sobre', objectif: b.objectif ?? 'demandes', audience: b.audience, fuseau: 'Europe/Paris' }, view?.dossier.as_of ?? now.toISOString().slice(0, 10));
-        return json({ brouillons: posts, note: 'Brouillons : rien n’est publié automatiquement ; aucune portée n’est garantie.' });
-      }
+      // Rédaction LinkedIn retirée des options (décision du 25/11/2026) ; la fonction reste dans prestations/ pour l'historique.
       if (!view) return err(409, 'Les résultats du dossier ne sont pas encore disponibles.');
       if (kind === 'justificatifs') return json({ brouillon: demandeJustificatifs(view, '') });
       if (kind === 'rendez-vous') return json({ fiche: ficheRendezVous(view) });
