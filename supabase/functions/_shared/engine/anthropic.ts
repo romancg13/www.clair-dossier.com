@@ -3,7 +3,7 @@
 // Aucun outil n'est exposé au modèle ; sortie à schéma strict, revalidée localement.
 import type Anthropic from '@anthropic-ai/sdk';
 import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
-import { AnalysisOutputSchema, ExtractionOutputSchema, validate, type AnalysisOutput, type ExtractionOutput } from './schemas.ts';
+import { AnalysisWireSchema, ExtractionOutputSchema, fromWire, validate, type AnalysisOutput, type AnalysisWire, type ExtractionOutput } from './schemas.ts';
 import { consolidationSystem, extractionSystem, wrapData } from './prompts.ts';
 import type { PreparedPiece } from './reading.ts';
 import type { ConsolidationInput } from './rules.ts';
@@ -34,7 +34,7 @@ export interface AnthropicOptions {
 
 export function createAnthropicProvider(o: AnthropicOptions): ModelProvider {
   const timeout = o.timeoutMs ?? 120_000;
-  async function call<T>(model: string, system: string, content: Anthropic.MessageParam['content'], schema: typeof ExtractionOutputSchema | typeof AnalysisOutputSchema): Promise<ModelResult<T>> {
+  async function call<T>(model: string, system: string, content: Anthropic.MessageParam['content'], schema: typeof ExtractionOutputSchema | typeof AnalysisWireSchema): Promise<ModelResult<T>> {
     try {
       const res = await o.client.messages.parse(
         { model, max_tokens: 16000, system, messages: [{ role: 'user', content }], output_config: { format: zodOutputFormat(schema as never) } } as never,
@@ -76,7 +76,10 @@ export function createAnthropicProvider(o: AnthropicOptions): ModelProvider {
         evenements: input.events.map((e) => ({ cle: e.key, date: e.date, nature: e.kind, libelle: e.label })),
         pieces: corpus,
       };
-      return call<AnalysisOutput>(o.modelConsolidate, consolidationSystem(input.today), [{ type: 'text', text: wrapData(boundary, 'dossier', JSON.stringify(payload)) }], AnalysisOutputSchema);
+      // Forme filaire sans type multiple (grammaire compilable), convertie vers la forme stockée.
+      return call<AnalysisWire>(o.modelConsolidate, consolidationSystem(input.today), [{ type: 'text', text: wrapData(boundary, 'dossier', JSON.stringify(payload)) }], AnalysisWireSchema).then(
+        (r): ModelResult<AnalysisOutput> => (r.ok ? { ...r, data: fromWire(r.data) } : r),
+      );
     },
   };
 }
