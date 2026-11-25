@@ -3,6 +3,13 @@
 //  C19 : deux mises en file concurrentes d'une même clé ne créent qu'un seul travail ;
 //  C03 : consulter un dossier ne parcourt plus les travaux des autres clients ; envoi borné en nombre de fichiers ;
 //  B5  : un travail en échec reste visible (état « incident », écran d'exceptions) sans être repris par l'exécuteur.
+// Contre-revue du lot (second passage) :
+//  - complete() : l'état « terminal » d'un essai refusé ne doit pas retirer de la file un travail remis en attente ;
+//  - C00 : un travail terminé réinscrit dans la file par une course est purgé par claim() ;
+//  - C19 : réarmer une clé existante ne fait plus de lecture d'autorité du travail (lecture rapide d'abord) ;
+//  - C03 : l'outil MCP anomalies_techniques d'un client ne lit pas la file des autres clients ;
+//  - B5  : un échec d'extraction devenu obsolète (pièce relue par une autre clé) sort de la liste des échecs ;
+//  - allOpenJobs() ne renvoie que les travaux en attente ou en cours ; les échecs passent par failedJobs().
 // Stockage en mémoire instrumenté : aucun réseau, aucune persistance.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -11,6 +18,7 @@ import { RecetteStore } from '../recette/server/store.ts';
 import { engineDeps, sha256 } from '../recette/server/engine-deps.ts';
 import { handle, type ApiEnv } from '../recette/server/api.ts';
 import { sha, token } from '../recette/server/security.ts';
+import { handleMcp } from '../recette/server/mcp.ts';
 import { drain } from '../supabase/functions/_shared/engine/runner.ts';
 import type { Job } from '../supabase/functions/_shared/engine/ports.ts';
 import { fixture } from './helpers/recette.ts';
@@ -22,6 +30,8 @@ class SondeKv implements Kv {
   readonly durable = false;
   readonly inner = new MemoryKv();
   lectures: string[] = [];
+  /** Lectures d'autorité (`fresh`). */
+  fraiches: string[] = [];
   /** Appelé avant chaque lecture ou écriture JSON (pause, avance d'horloge). */
   avant: ((op: Op, key: string) => void | Promise<void>) | null = null;
   /** Appelé après chaque lecture ou écriture JSON réussie. */
@@ -30,9 +40,10 @@ class SondeKv implements Kv {
   panne: ((key: string) => boolean) | null = null;
   /** Vrai : le contenu binaire est introuvable. */
   octetsAbsents: ((key: string) => boolean) | null = null;
-  async getJson<T>(key: string) {
+  async getJson<T>(key: string, opts?: { fresh?: boolean }) {
     await this.avant?.('get', key);
     this.lectures.push(key);
+    if (opts?.fresh) this.fraiches.push(key);
     const r = await this.inner.getJson<T>(key);
     this.apres?.('get', key);
     return r;
@@ -331,4 +342,111 @@ test('B5 : une nouvelle mise en file de la même clé remplace l’échec (aucun
   assert.deepEqual((await store.allOpenJobs()).map((j) => [j.key, j.status]), [['x:p1', 'queued']]);
   await store.complete((await store.claim('w1', 60_000))!, { status: 'done', error: null });
   assert.deepEqual(await store.allOpenJobs(), [], 'file vide une fois le travail terminé');
+});
+
+/* ── Contre-revue : complete() et rerun concurrent ───────────────────── */
+
+test('complete : rerun posé pendant la fin du travail → le travail remis en attente reste dans la file et est repris', async () => {
+  const kv = new SondeKv();
+  let t = Date.parse('2026-11-18T09:00:00Z');
+  const store = new RecetteStore(kv, () => new Date(t));
+  await store.enqueue(consolidation('D1'));
+  const j = (await store.claim('w1', 60_000))!;
+  // complete() lit le travail (en cours, sans rerun) puis s'arrête avant d'écrire ; une extraction remet c:D1 en file.
+  const p = pauseApres(kv, (op, k) => op === 'get' && k === `jobs/${j.id}.json`);
+  const c = store.complete(j, { status: 'done', error: null });
+  await p.enPause;
+  assert.equal(await store.enqueue(consolidation('D1')), 'rearmed');
+  p.reprendre();
+  await c;
+  const apres = await store.openJobs('D1');
+  assert.deepEqual(apres.map((x) => [x.id, x.status]), [[j.id, 'queued']], 'le travail remis en attente figure toujours dans la file');
+  t += 60_000;
+  assert.equal((await store.claim('w2', 60_000))?.id, j.id, 'la reconsolidation demandée est exécutée');
+});
+
+/* ── Contre-revue : C00, purge des travaux terminés encore listés ────── */
+
+test('C00 : un travail terminé réinscrit dans la file par une course en est purgé par claim()', async () => {
+  const kv = new SondeKv();
+  const store = new RecetteStore(kv, () => new Date('2026-11-18T09:00:00Z'));
+  await store.enqueue(consolidation('D1'));
+  const j = (await store.claim('w1', 60_000))!;
+  await store.complete(j, { status: 'done', error: null });
+  // Réinscription concurrente (relist sur une lecture périmée de queue.json) après la fin du travail.
+  const q = (await kv.getJson<{ open: string[]; failed?: string[]; dossiers?: Record<string, string> }>('queue.json'))!;
+  await kv.putJson('queue.json', { ...q.value, open: [...q.value.open, j.id], dossiers: { ...(q.value.dossiers ?? {}), [j.id]: 'D1' } }, { ifMatch: q.etag });
+  assert.equal(await store.claim('w2', 60_000), null);
+  const apres = (await kv.getJson<{ open: string[] }>('queue.json'))!.value;
+  assert.deepEqual(apres.open, [], 'le travail terminé n’est plus relu à chaque claim');
+});
+
+/* ── Contre-revue : C19, coût du réarmement ──────────────────────────── */
+
+test('C19 : réarmer une clé existante ne fait aucune lecture d’autorité du travail', async () => {
+  const kv = new SondeKv();
+  const store = new RecetteStore(kv, () => new Date('2026-11-18T09:00:00Z'));
+  await store.enqueue(consolidation('D1'));
+  kv.fraiches = [];
+  assert.equal(await store.enqueue(consolidation('D1')), 'rearmed');
+  const j = (await store.claim('w1', 60_000))!;
+  assert.equal(await store.enqueue(consolidation('D1')), 'rearmed', 'travail en cours : rerun posé');
+  assert.deepEqual(kv.fraiches.filter((k) => k.startsWith('jobs/')), [], `lectures d’autorité : ${kv.fraiches.join(', ')}`);
+  assert.equal((await kv.getJson<Job>(`jobs/${j.id}.json`))?.value.rerun, true);
+});
+
+/* ── Contre-revue : C03, outil MCP anomalies_techniques ──────────────── */
+
+test('C03 : anomalies_techniques (client) ne lit pas les travaux des autres clients', async () => {
+  const kv = new SondeKv();
+  const { e, store } = apiEnv(new RecetteStore(kv));
+  const c = client(e);
+  await c.call('POST', '/api/demo/demarrer', { scenario: 'a' });
+  const me = (await (await c.call('GET', '/api/moi')).json()).user.id as string;
+  const dA = (await (await c.call('GET', '/api/dossiers')).json()).dossiers[0].id as string;
+  await store.enqueue({ key: 'x:moi', kind: 'extract', user_id: me, dossier_id: dA, piece_id: 'pm' });
+  for (let i = 0; i < 40; i++) await store.enqueue({ key: `x:b${i}`, kind: 'extract', user_id: 'B', dossier_id: 'DB', piece_id: `b${i}` });
+  const autres = new Set((await store.openJobs('DB')).map((j) => `jobs/${j.id}.json`));
+  assert.equal(autres.size, 40);
+  const tk = token();
+  await kv.putJson(`oauth/grants/${sha(tk)}.json`, { user_id: me, client_id: 'cl', scope: 'dossiers:lecture', exp: Date.now() + 3_600_000, kind: 'access' });
+  await kv.putJson(`oauth/links/${me}/cl.json`, { at: new Date().toISOString() });
+  kv.lectures = [];
+  const r = await handleMcp(e, new Request('https://recette.test/mcp', { method: 'POST', headers: { authorization: `Bearer ${tk}`, 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'anomalies_techniques', arguments: {} } }) }));
+  const out = (await r.json()).result.structuredContent;
+  assert.ok(out.travaux_en_attente >= 1, 'le travail du client est compté');
+  const lus = kv.lectures.filter((k) => autres.has(k));
+  assert.equal(lus.length, 0, `travaux d’un autre client lus : ${lus.length}`);
+});
+
+/* ── Contre-revue : B5, échec obsolète ───────────────────────────────── */
+
+test('B5 : pièce relue avec succès par une autre clé → son ancien échec n’est plus signalé', async () => {
+  const store = new RecetteStore(new SondeKv(), () => new Date('2026-11-18T09:00:00Z'));
+  await store.enqueue({ key: 'x:p1', kind: 'extract', user_id: 'A', dossier_id: 'D1', piece_id: 'p1' });
+  await store.complete((await store.claim('w1', 60_000))!, { status: 'failed', error: 'essai' });
+  // Une autre pièce du même dossier en échec : elle, reste signalée.
+  await store.enqueue({ key: 'x:p2', kind: 'extract', user_id: 'A', dossier_id: 'D1', piece_id: 'p2' });
+  await store.complete((await store.claim('w1', 60_000))!, { status: 'failed', error: 'essai' });
+  // Réconciliation de la consolidation : même pièce, autre clé.
+  await store.enqueue({ key: 'x:D1:sha-p1', kind: 'extract', user_id: 'A', dossier_id: 'D1', piece_id: 'p1' });
+  await store.complete((await store.claim('w1', 60_000))!, { status: 'done', error: null });
+  assert.deepEqual((await store.openJobs('D1')).map((j) => [j.key, j.status]), [['x:p2', 'failed']]);
+});
+
+/* ── Contre-revue : allOpenJobs() et échecs ──────────────────────────── */
+
+test('allOpenJobs() ne compte pas les échecs ; l’écran d’exceptions les liste à part', async () => {
+  let t = Date.parse('2026-11-18T09:00:00Z');
+  const { e, store: s } = apiEnv(new RecetteStore(new SondeKv(), () => new Date(t)));
+  await s.enqueue({ key: 'x:p1', kind: 'extract', user_id: 'A', dossier_id: 'D1', piece_id: 'p1' });
+  await s.complete((await s.claim('w1', 60_000))!, { status: 'failed', error: 'essai' });
+  await s.enqueue({ key: 'x:p2', kind: 'extract', user_id: 'A', dossier_id: 'D1', piece_id: 'p2' });
+  assert.deepEqual((await s.allOpenJobs()).map((j) => [j.key, j.status]), [['x:p2', 'queued']], 'exécuteur : en attente ou en cours seulement');
+  const tk = token();
+  await s.putUser({ id: 'adm', email: 'admin@recette.test', first_name: 'Admin', last_name: 'Recette', company: null, role: 'admin', pwd: { salt: '', hash: '' }, notifications: false, created_at: new Date(t).toISOString() });
+  await s.kv.putJson(`sessions/${sha(tk)}.json`, { user_id: 'adm', created_at: new Date(t).toISOString(), expires_at: new Date(t + 86_400_000).toISOString() });
+  const x = await (await client(e, `cd_session=${tk}`).call('GET', '/api/admin/exceptions')).json();
+  assert.equal(x.file, 1, 'la file ne compte que le travail en attente');
+  assert.deepEqual(x.travaux_en_echec.map((j: { dossier: string; kind: string }) => [j.dossier, j.kind]), [['D1', 'extract']]);
 });

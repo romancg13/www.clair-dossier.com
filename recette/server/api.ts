@@ -410,8 +410,8 @@ export async function handle(env: ApiEnv, req: Request): Promise<Response> {
   /* ── Exceptions (administration de la recette : métadonnées uniquement) ── */
   if (path === '/api/admin/exceptions' && m === 'GET') {
     if (user.role !== 'admin') return err(404, 'introuvable');
-    const jobs = await store.allOpenJobs();
-    return json({ alertes: await store.alerts(), travaux_en_echec: jobs.filter((j) => j.status === 'failed').map((j) => ({ id: j.id, kind: j.kind, dossier: j.dossier_id, tentatives: j.attempts, erreur: j.last_error })), file: jobs.length });
+    const [ouverts, echecs] = await Promise.all([store.allOpenJobs(), store.failedJobs()]);
+    return json({ alertes: await store.alerts(), travaux_en_echec: echecs.map((j) => ({ id: j.id, kind: j.kind, dossier: j.dossier_id, tentatives: j.attempts, erreur: j.last_error })), file: ouverts.length });
   }
   return err(404, 'introuvable');
 }

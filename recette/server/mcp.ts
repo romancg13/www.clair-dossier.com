@@ -175,7 +175,8 @@ async function callTool(env: ApiEnv, user: UserRec, name: string, args: Record<s
     }
     case 'anomalies_techniques': {
       const ids = args.dossier_id ? [(await own(args.dossier_id))?.id].filter(Boolean) as string[] : user.role === 'admin' ? null : (await s.listUserDossiers(user.id)).map((d) => d.id);
-      const jobs = (await s.allOpenJobs()).filter((x) => !ids || ids.includes(x.dossier_id));
+      // Client : seuls les travaux de SES dossiers sont lus (jamais la file des autres clients).
+      const jobs = ids ? (await Promise.all(ids.map((id) => s.openJobs(id)))).flat() : [...(await s.allOpenJobs()), ...(await s.failedJobs())];
       const alerts = (await s.alerts()).filter((a) => !ids || ids.includes(String(a.meta.dossier ?? '')));
       return { travaux_en_echec: jobs.filter((x) => x.status === 'failed').map((x) => ({ type: x.kind, dossier_id: x.dossier_id, tentatives: x.attempts })), travaux_en_attente: jobs.filter((x) => x.status !== 'failed').length, alertes: alerts.slice(0, 20).map((a) => ({ code: a.code, le: a.at, dossier_id: a.meta.dossier ?? null })) };
     }
