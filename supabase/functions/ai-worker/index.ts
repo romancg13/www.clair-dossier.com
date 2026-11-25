@@ -145,6 +145,28 @@ async function overBudget(userId: string): Promise<boolean> {
     || Number(g.data ?? 0) + reserve(GLOBAL_BUDGET_CENTS) > GLOBAL_BUDGET_CENTS;
 }
 
+/**
+ * Essai prospect (migration 20261125) : motif de refus, ou null si le travail est
+ * permis — ce qui est TOUJOURS le cas d'un dossier hors essai (abonnés : inchangé).
+ * Fonction absente (migration non appliquée) = aucun essai n'existe : non concerné.
+ * Toute autre erreur de lecture : nouvelle tentative, jamais d'appel au modèle à l'aveugle.
+ */
+async function trialRefusal(job: Job, pages: number | null): Promise<string | null> {
+  const r = await db.rpc('trial_allows', { p_job: job.id, p_pages: pages });
+  if (r.error) return r.error.code === 'PGRST202' ? null : 'ILLISIBLE';
+  return typeof r.data === 'string' && r.data ? r.data : null;
+}
+
+/** Applique le refus d'essai : true = travail clos, l'appelant s'arrête. */
+async function stoppedByTrial(job: Job, pages: number | null): Promise<boolean> {
+  const reason = await trialRefusal(job, pages);
+  if (!reason) return false;
+  await finish(job, false, reason === 'ILLISIBLE'
+    ? 'essai : contrôle illisible — nouvelle tentative'
+    : `BUDGET: essai gratuit (${reason}) — traitement suspendu, documents et résultats conservés`);
+  return true;
+}
+
 async function finish(job: Job, ok: boolean, error?: string): Promise<void> {
   await db.rpc('ai_finish_job', { p_job: job.id, p_ok: ok, p_error: error ?? null });
 }
@@ -213,6 +235,7 @@ async function runExtract(job: Job): Promise<void> {
   const quota = await db.rpc('ai_quota_allows_pages', { p_user: doc.user_id, p_pages: prepared.pages ?? 1 });
   if (quota.error) return finish(job, false, 'BUDGET: quota de l’offre illisible (migration 20261118 manquante ?) — pause par prudence');
   if (quota.data === false) return finish(job, false, 'BUDGET: pages IA incluses dans l’offre épuisées pour ce mois — traitement suspendu, documents et résultats conservés');
+  if (await stoppedByTrial(job, prepared.pages ?? 1)) return;
   const res = await anthropic.messages.parse({
     model: MODEL_EXTRACT,
     max_tokens: 16000,
@@ -263,6 +286,7 @@ async function runConsolidate(job: Job): Promise<void> {
   const dossier = await processable(job.dossier_id);
   if (!dossier) return finish(job, true);
   if (await overBudget(job.user_id)) return finish(job, false, 'BUDGET: plafond mensuel atteint — traitement en pause');
+  if (await stoppedByTrial(job, null)) return;
 
   const live = await loadPieces(dossier.id);
   const { data: rows } = await db.from('ai_extractions').select('document_id,status,pages,data').eq('dossier_id', dossier.id);

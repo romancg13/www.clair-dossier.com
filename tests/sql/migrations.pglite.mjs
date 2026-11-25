@@ -1595,6 +1595,474 @@ await test('E-mail entrant : adresse par dossier — offre, format, idempotence,
   await rejects(q('select * from public.create_inbound_address($1)', [DA]), /DOSSIER_CLOTURE/);
 });
 
+// ── Essai prospect (migration 20261125120000) ───────────────────────────────
+const CGU_ESSAI = 'essai-2026-11';
+async function trialOpen(userId) {
+  await asService();
+  return (await q('select * from public.trial_open($1)', [userId]))[0];
+}
+async function trialClaim(userId, dossierId, key, terms = CGU_ESSAI) {
+  await asService();
+  return (await q('select * from public.trial_claim_slot($1, $2, $3, $4)', [userId, dossierId, key, terms]))[0];
+}
+async function trialDossier(userId, title, pieces = 1) {
+  const id = await insertDossier(userId, { status: 'brouillon', title });
+  const docs = [];
+  for (let i = 0; i < pieces; i++) docs.push(await addPiece(userId, id, `piece-${i + 1}.pdf`));
+  return { id, docs };
+}
+async function trialRow(userId) {
+  await asSuperuser();
+  return (await q('select * from public.trial_accounts where user_id = $1', [userId]))[0];
+}
+async function trialSlots(userId) {
+  await asSuperuser();
+  return q('select s.* from public.trial_slots s join public.trial_accounts a on a.id = s.trial_id where a.user_id = $1 order by s.slot_no', [userId]);
+}
+async function trialMotifs(kind) {
+  await asSuperuser();
+  return (await q(`select detail ->> 'motif' as m from public.trial_events where kind = $1 order by created_at`, [kind])).map((r) => r.m);
+}
+const jobOf = async (dossierId, kind) => {
+  await asSuperuser();
+  return (await q(`select id from public.ai_jobs where dossier_id = $1 and kind = $2 order by created_at desc limit 1`, [dossierId, kind]))[0]?.id;
+};
+const P1 = await newUser('Prospect.Un+promo@GoogleMail.com');
+const P2 = await newUser('prospect-deux@test.local');
+const P3 = await newUser('prospect-trois@test.local');
+const P1D1 = await trialDossier(P1, 'Essai P1 — dossier 1', 2);
+const P1D2 = await trialDossier(P1, 'Essai P1 — dossier 2');
+const P1D3 = await trialDossier(P1, 'Essai P1 — dossier 3');
+
+await test('Essai : inactif par défaut — rien ne s\'ouvre, aucune RPC serveur accessible au client', async () => {
+  await asSuperuser();
+  const [s] = await q('select enabled, max_trials, budget_cents from public.trial_settings');
+  assert.deepEqual([s.enabled, s.max_trials, s.budget_cents], [false, 0, 0], 'fermé, plafond 0, budget 0');
+  assert.equal((await q('select count(*)::int n from public.trial_settings'))[0].n, 1, 'rejeu de la migration : une seule ligne');
+  assert.equal((await trialOpen(P1)).reason, 'ESSAIS_FERMES');
+  assert.equal((await trialClaim(P1, P1D1.id, 'cle-essai-0001')).reason, 'ESSAI_ABSENT');
+  for (const as of [() => asUser(P1), asAnon]) {
+    await as();
+    await rejects(q('select * from public.trial_open($1)', [P1]), /FORBIDDEN|permission denied/);
+    await as();
+    await rejects(q('select * from public.trial_claim_slot($1, $2, $3, $4)', [P1, P1D1.id, 'cle-essai-0001', CGU_ESSAI]), /permission denied/);
+    await as();
+    await rejects(q('select public.trial_allows($1, 1)', [P1D1.id]), /permission denied/);
+    await as();
+    await rejects(q(`select public.trial_check($1, 'extract', null, 1)`, [P1D1.id]), /permission denied/);
+    await as();
+    await rejects(q('select public.trial_admin_configure(true, 100, 14, 500)'), /FORBIDDEN|AUTH_REQUIRED|permission denied/);
+    await as();
+    await rejects(q(`select public.trial_admin_suspend($1, 'motif')`, [P1]), /FORBIDDEN|AUTH_REQUIRED|permission denied/);
+  }
+  await asSuperuser();
+  assert.equal((await q('select enabled from public.trial_settings'))[0].enabled, false);
+  assert.equal((await q('select count(*)::int n from public.trial_accounts'))[0].n, 0);
+});
+
+await test('Essai : ouverture — réglages propriétaire exigés, e-mail vérifié, empreinte normalisée (casse, +tag, points Gmail)', async () => {
+  await asUser(ADMIN);
+  await q('select public.trial_admin_configure(true, null, null, null)');
+  assert.equal((await trialOpen(P1)).reason, 'BUDGET_NON_FIXE', 'aucune dépense sans budget fixé');
+  await asUser(ADMIN);
+  await q('select public.trial_admin_configure(null, null, null, 500)');
+  assert.equal((await trialOpen(P1)).reason, 'PLAFOND_GLOBAL_ATTEINT', 'plafond global 0');
+  await asUser(ADMIN);
+  await q('select public.trial_admin_configure(null, 3, 14, null)');
+  assert.equal((await trialOpen(UNVERIFIED)).reason, 'EMAIL_NON_VERIFIE');
+  const o = await trialOpen(P1);
+  assert.deepEqual([o.ok, o.reason], [true, 'OUVERT']);
+  const again = await trialOpen(P1);
+  assert.deepEqual([again.ok, again.reason, again.trial_id], [true, 'DEJA_OUVERT', o.trial_id], 'un seul essai par compte');
+  // Alias du même titulaire (points, +tag, casse, googlemail) : refusé.
+  for (const alias of ['prospectun@gmail.com', 'P.r.o.s.p.e.c.t.u.n+autre@gmail.com']) {
+    const twin = await newUser(alias);
+    const r = await trialOpen(twin);
+    assert.deepEqual([r.ok, r.reason], [false, 'EMAIL_DEJA_UTILISE'], alias);
+  }
+  await asSuperuser();
+  const [f] = await q(`select public.trial_email_fingerprint('a.b+x@test.fr') = public.trial_email_fingerprint('A.B@test.fr') as tag,
+                              public.trial_email_fingerprint('a.b@test.fr') = public.trial_email_fingerprint('ab@test.fr') as points,
+                              public.trial_email_fingerprint('sans-arobase') as invalide`);
+  assert.deepEqual([f.tag, f.points, f.invalide], [true, false, null], 'points significatifs hors Gmail');
+  const t = await trialRow(P1);
+  assert.match(t.email_fingerprint, /^[0-9a-f]{64}$/, 'adresse jamais conservée en clair');
+  assert.equal(t.budget_cents, 500);
+  assert.ok(new Date(t.expires_at) > new Date(Date.now() + 13 * 86400000), 'expiration à 14 jours');
+  assert.equal((await q('select count(*)::int n from public.trial_accounts'))[0].n, 1);
+});
+
+await test('Essai : 2 analyses OK, 3e refusée (y compris via API) ; idempotence ; manifeste figé au lancement', async () => {
+  const r1 = await trialClaim(P1, P1D1.id, 'cle-essai-0001');
+  assert.deepEqual([r1.ok, r1.reason, r1.slot, r1.replayed], [true, 'RESERVE', 1, false]);
+  const [s1] = await trialSlots(P1);
+  assert.equal(s1.piece_count, 2);
+  assert.deepEqual(s1.manifest.map((m) => m.id).sort(), [...P1D1.docs].sort(), 'manifeste = pièces présentes au lancement');
+  assert.ok(s1.manifest.every((m) => /^[0-9a-f]{64}$/.test(m.empreinte)));
+  const [set] = await q('select enabled_at, enabled_by, terms_version from public.dossier_ai_settings where dossier_id = $1', [P1D1.id]);
+  assert.ok(set.enabled_at);
+  assert.equal(set.terms_version, CGU_ESSAI, 'consentement tracé');
+  assert.equal(await openJobs(P1D1.id, 'extract'), 2);
+  assert.equal(await openJobs(P1D1.id, 'consolidate'), 1);
+  // Reprise technique : même clé → même emplacement, aucun décompte, aucun travail en double.
+  const replay = await trialClaim(P1, P1D1.id, 'cle-essai-0001');
+  assert.deepEqual([replay.ok, replay.reason, replay.slot, replay.replayed], [true, 'REJEU', 1, true]);
+  const other = await trialClaim(P1, P1D1.id, 'cle-essai-autre');
+  assert.deepEqual([other.ok, other.reason, other.slot, other.replayed], [true, 'DOSSIER_DEJA_RESERVE', 1, true]);
+  const conflict = await trialClaim(P1, P1D2.id, 'cle-essai-0001');
+  assert.deepEqual([conflict.ok, conflict.reason], [false, 'CLE_IDEMPOTENCE_CONFLIT']);
+  assert.equal((await trialClaim(P1, P1D2.id, 'court')).reason, 'CLE_IDEMPOTENCE_INVALIDE');
+  assert.equal((await trialSlots(P1)).length, 1, 'un seul emplacement consommé');
+  assert.equal(await openJobs(P1D1.id, 'extract'), 2);
+  // Conditions exigées ; dossier d'autrui refusé.
+  assert.equal((await trialClaim(P1, P1D2.id, 'cle-essai-0002', ' ')).reason, 'CONDITIONS_REQUISES');
+  assert.equal((await trialClaim(P1, dossierA, 'cle-essai-0002')).reason, 'DOSSIER_INTROUVABLE');
+  const r2 = await trialClaim(P1, P1D2.id, 'cle-essai-0002');
+  assert.deepEqual([r2.ok, r2.slot], [true, 2]);
+  // Troisième : refusée, rien n'est activé ni mis en file.
+  const r3 = await trialClaim(P1, P1D3.id, 'cle-essai-0003');
+  assert.deepEqual([r3.ok, r3.reason, r3.slot], [false, 'EMPLACEMENTS_EPUISES', null]);
+  assert.equal((await trialSlots(P1)).length, 2);
+  assert.equal((await q('select 1 from public.dossier_ai_settings where dossier_id = $1', [P1D3.id])).length, 0);
+  assert.equal((await q('select 1 from public.ai_jobs where dossier_id = $1', [P1D3.id])).length, 0);
+  // Via l'API, en tant que prospect : aucune voie.
+  await asUser(P1);
+  await rejects(q('select public.enable_ai_processing($1, $2)', [P1D3.id, CGU_ESSAI]), /SUBSCRIPTION_REQUIRED/);
+  await asUser(P1);
+  await rejects(q('select * from public.trial_claim_slot($1, $2, $3, $4)', [P1, P1D3.id, 'cle-essai-0004', CGU_ESSAI]), /permission denied/);
+  await asUser(P1);
+  await rejects(q(`insert into public.trial_slots (trial_id, slot_no, idempotency_key, dossier_id, manifest, manifest_hash, piece_count)
+                   values ($1, 1, 'cle-directe-01', $2, '[]', 'x', 1)`, [s1.trial_id, P1D3.id]), /row-level security/);
+  await asUser(P1);
+  await rejects(q(`insert into public.ai_jobs (dossier_id, user_id, kind) values ($1, $2, 'consolidate')`, [P1D3.id, P1]), /row-level security/);
+  await asUser(P1);
+  await rejects(q('insert into public.dossier_ai_settings (dossier_id, user_id, enabled_at) values ($1, $2, now())', [P1D3.id, P1]), /row-level security/);
+  await asUser(P1);
+  await q(`update public.trial_accounts set budget_cents = 999999, expires_at = now() + interval '10 years' where user_id = $1`, [P1]);
+  await q('update public.trial_slots set analysis_done_at = null, pages_used = 0');
+  assert.equal((await trialRow(P1)).budget_cents, 500, 'écriture client sans effet (RLS)');
+  const motifs = await trialMotifs('emplacement_refuse');
+  assert.ok(motifs.includes('EMPLACEMENTS_EPUISES') && motifs.includes('CLE_IDEMPOTENCE_CONFLIT'), 'refus journalisés');
+});
+
+await test('Essai : concurrence simulée — la contrainte interdit tout 3e emplacement ou doublon, même hors RPC', async () => {
+  // PGlite n'a qu'une connexion : on rejoue ce que tenterait une transaction
+  // concurrente ayant franchi le contrôle (insertion directe, rôle serveur).
+  const [s1, s2] = await trialSlots(P1);
+  const ins = (no, key, dossier) => q(
+    `insert into public.trial_slots (trial_id, slot_no, idempotency_key, dossier_id, manifest, manifest_hash, piece_count)
+     values ($1, $2, $3, $4, '[]', 'x', 1)`, [s1.trial_id, no, key, dossier]);
+  await asService();
+  await rejects(ins(3, 'cle-course-0003', P1D3.id), /check constraint/);
+  await rejects(ins(2, 'cle-course-0002', P1D3.id), /unique|duplicate/);
+  await rejects(ins(1, 'cle-course-0001', P1D3.id), /unique|duplicate/);
+  await rejects(ins(0, 'cle-course-0000', P1D3.id), /check constraint/);
+  // Consommation jamais effacée ni réécrite, quel que soit le rôle.
+  await rejects(q('delete from public.trial_slots where id = $1', [s2.id]), /ESSAI_IMMUABLE/);
+  await rejects(q('update public.trial_slots set dossier_id = $1 where id = $2', [P1D3.id, s2.id]), /ESSAI_IMMUABLE/);
+  await rejects(q(`update public.trial_slots set manifest = '[]' where id = $1`, [s1.id]), /ESSAI_IMMUABLE/);
+  await rejects(q('delete from public.trial_accounts where id = $1', [s1.trial_id]), /ESSAI_IMMUABLE/);
+  await rejects(q('truncate public.trial_slots'), /ESSAI_IMMUABLE|permission denied/);
+  await asSuperuser();
+  await rejects(q('truncate public.trial_slots, public.trial_events, public.trial_accounts cascade'), /ESSAI_IMMUABLE/);
+  await rejects(q(`update public.trial_events set kind = 'efface'`), /ESSAI_JOURNAL_IMMUABLE/);
+  await rejects(q('delete from public.trial_events'), /ESSAI_JOURNAL_IMMUABLE/);
+  assert.equal((await trialSlots(P1)).length, 2);
+});
+
+await test('Essai : garde de mise en file et du worker — manifeste seul, pages, reprise sans double décompte, une analyse par emplacement', async () => {
+  // Pièce ajoutée APRÈS le lancement : jamais mise en file.
+  const late = await addPiece(P1, P1D1.id, 'ajout-tardif.pdf');
+  await asSuperuser();
+  assert.equal((await q('select 1 from public.ai_jobs where document_id = $1', [late])).length, 0, 'pièce hors manifeste : aucun travail');
+  assert.ok((await trialMotifs('mise_en_file_refusee')).includes('PIECE_HORS_MANIFESTE'));
+  assert.equal((await trialSlots(P1))[0].piece_count, 2, 'manifeste inchangé');
+  await asService();
+  const check = async (kind, doc, pages = null) => (await q('select public.trial_check($1, $2, $3, $4) as r', [P1D1.id, kind, doc, pages]))[0].r;
+  assert.equal(await check('extract', late), 'PIECE_HORS_MANIFESTE');
+  assert.equal(await check('extract', P1D1.docs[0], 5), null);
+  assert.equal(await check('extract', P1D1.docs[0], 61), 'PAGES_ESSAI_EPUISEES', 'plafond de pages par analyse (60)');
+  assert.equal(await check('render', null), null, 'rendu : aucun appel IA');
+  assert.equal(await check('publish', null), null);
+  // Worker : travail d'extraction du manifeste permis ; rien n'est décompté par le contrôle.
+  const jx = await jobOf(P1D1.id, 'extract');
+  const jc = await jobOf(P1D1.id, 'consolidate');
+  await asService();
+  assert.equal((await q('select public.trial_allows($1, 3) as r', [jx]))[0].r, null);
+  assert.equal((await q('select public.trial_allows($1, 61) as r', [jx]))[0].r, 'PAGES_ESSAI_EPUISEES');
+  // Consolidation : reprise du MÊME travail (tentatives 2, 3…) = un seul décompte.
+  for (let i = 0; i < 3; i++) assert.equal((await q('select public.trial_allows($1, null) as r', [jc]))[0].r, null);
+  let [s1] = await trialSlots(P1);
+  assert.deepEqual([s1.analysis_job_id, s1.analysis_job_count], [jc, 1], 'reprise technique : pas de double décompte');
+  // Résultats réels (écrits par le worker) : pages et dépense reportées sur l'essai.
+  await asService();
+  const ext = (doc, pages, cost) => q(
+    `insert into public.ai_extractions (dossier_id, user_id, document_id, status, pages, cost_cents, created_at)
+     values ($1, $2, $3, 'ok', $4, $5, clock_timestamp())
+     on conflict (document_id) do update set status = 'ok', pages = excluded.pages, cost_cents = excluded.cost_cents, created_at = excluded.created_at`,
+    [P1D1.id, P1, doc, pages, cost]);
+  await ext(P1D1.docs[0], 4, 12.5);
+  await ext(P1D1.docs[1], null, 7.5);
+  await q(`update public.ai_extractions set data = '{}' where document_id = $1`, [P1D1.docs[0]]);
+  [s1] = await trialSlots(P1);
+  assert.equal(s1.pages_used, 5, '4 pages + 1 pièce sans pagination ; mise à jour sans relecture non comptée');
+  assert.equal(Number((await trialRow(P1)).spent_cents), 20);
+  // « Aucune pièce exploitable » (model null) n'est pas une analyse ; l'analyse réelle clôt l'emplacement.
+  await asService();
+  await q(`insert into public.ai_analyses (dossier_id, user_id, revision, model, data) values ($1, $2, 1, null, '{}')`, [P1D1.id, P1]);
+  assert.equal((await trialSlots(P1))[0].analysis_done_at, null);
+  await asService();
+  await q(`insert into public.ai_analyses (dossier_id, user_id, revision, model, data, cost_cents) values ($1, $2, 2, 'modele-test', '{"summary_short":"x"}', 30)`, [P1D1.id, P1]);
+  [s1] = await trialSlots(P1);
+  assert.ok(s1.analysis_done_at, 'analyse livrée');
+  assert.equal(Number((await trialRow(P1)).spent_cents), 50);
+  await asService();
+  assert.equal((await q('select public.trial_allows($1, null) as r', [jc]))[0].r, 'ANALYSE_DEJA_LIVREE');
+  // Aucune nouvelle consolidation en file (corbeille / restauration d'une pièce, réouverture…).
+  await asSuperuser();
+  await q(`update public.ai_jobs set status = 'done', finished_at = now() where dossier_id = $1 and status in ('queued', 'running')`, [P1D1.id]);
+  await q(`select public.ai_enqueue($1, 'consolidate', null)`, [P1D1.id]);
+  await q(`select public.ai_enqueue($1, 'extract', $2)`, [P1D1.id, late]);
+  assert.equal(await openJobs(P1D1.id, 'consolidate'), 0, 'analyse déjà livrée : pas de seconde');
+  assert.equal(await openJobs(P1D1.id, 'extract'), 0);
+  await q(`select public.ai_enqueue($1, 'render', null)`, [P1D1.id]);
+  assert.equal(await openJobs(P1D1.id, 'render'), 1, 'rendu après correction toujours possible');
+  // Pièce du manifeste modifiée après coup (chemin / taille) : refusée.
+  await q(`update public.dossier_documents set size_bytes = 424242 where id = $1`, [P1D2.docs[0]]);
+  await asService();
+  assert.equal((await q(`select public.trial_check($1, 'extract', $2, 1) as r`, [P1D2.id, P1D2.docs[0]]))[0].r, 'PIECE_MODIFIEE');
+  await asSuperuser();
+  await q(`update public.dossier_documents set size_bytes = null where id = $1`, [P1D2.docs[0]]);
+  // Au plus trois travaux de consolidation distincts par emplacement (échecs compris).
+  for (let i = 1; i <= 4; i++) {
+    const j = await jobOf(P1D2.id, 'consolidate');
+    await asService();
+    const r = (await q('select public.trial_allows($1, null) as r', [j]))[0].r;
+    assert.equal(r, i <= 3 ? null : 'TENTATIVES_ANALYSE_EPUISEES', `travail distinct n° ${i}`);
+    await asSuperuser();
+    await q(`update public.ai_jobs set status = 'failed', finished_at = now() where id = $1`, [j]);
+    await q(`select public.ai_enqueue($1, 'consolidate', null)`, [P1D2.id]);
+  }
+  assert.equal((await trialSlots(P1))[1].analysis_job_count, 3);
+  assert.ok((await trialMotifs('controle_refuse')).includes('TENTATIVES_ANALYSE_EPUISEES'));
+});
+
+await test('Essai : suppression (pièces, dossier, compte) puis nouvelle tentative — toujours refusée, dépense conservée', async () => {
+  await asSuperuser();
+  await q('delete from public.dossier_documents where dossier_id = $1', [P1D1.id]);
+  await q('delete from public.dossiers where id = $1', [P1D1.id]);
+  await q('update public.dossiers set deleted_at = now() where id = $1', [P1D2.id]);
+  assert.equal((await q('select 1 from public.ai_extractions where dossier_id = $1', [P1D1.id])).length, 0, 'résultats partis avec le dossier');
+  assert.equal((await trialSlots(P1)).length, 2, 'emplacements conservés');
+  assert.equal(Number((await trialRow(P1)).spent_cents), 50, 'dépense conservée');
+  const D4 = await trialDossier(P1, 'Essai P1 — dossier 4');
+  const r = await trialClaim(P1, D4.id, 'cle-essai-0005');
+  assert.deepEqual([r.ok, r.reason], [false, 'EMPLACEMENTS_EPUISES']);
+  // Nouvelle session / réémission d'accès : rien n'est lié à la session.
+  assert.equal((await trialOpen(P1)).reason, 'DEJA_OUVERT');
+  // Compte supprimé puis recréé (alias de la même adresse) : l'essai existant est rattaché.
+  const before = await trialRow(P1);
+  await asSuperuser();
+  await q('delete from auth.users where id = $1', [P1]);
+  assert.equal((await q('select count(*)::int n from public.trial_accounts where id = $1', [before.id]))[0].n, 1, 'essai conservé sans le compte');
+  const P1BIS = await newUser('p.rospect.un+retour@gmail.com');
+  const o = await trialOpen(P1BIS);
+  assert.deepEqual([o.ok, o.reason, o.trial_id], [true, 'RATTACHE', before.id]);
+  assert.equal((await trialSlots(P1BIS)).length, 2);
+  const D5 = await trialDossier(P1BIS, 'Essai P1 bis');
+  assert.equal((await trialClaim(P1BIS, D5.id, 'cle-essai-0006')).reason, 'EMPLACEMENTS_EPUISES');
+  assert.equal((await q('select count(*)::int n from public.trial_accounts'))[0].n, 1);
+});
+
+const P2D1 = await trialDossier(P2, 'Essai P2 — dossier 1');
+const P2D2 = await trialDossier(P2, 'Essai P2 — dossier 2');
+await test('Essai : expiration — plus aucune réservation ni lecture, résultats conservés', async () => {
+  assert.equal((await trialOpen(P2)).reason, 'OUVERT');
+  assert.equal((await trialClaim(P2, P2D1.id, 'cle-p2-0001')).slot, 1);
+  const jx = await jobOf(P2D1.id, 'extract');
+  await asSuperuser();
+  await q(`update public.trial_accounts set expires_at = now() - interval '1 minute' where user_id = $1`, [P2]);
+  const r = await trialClaim(P2, P2D2.id, 'cle-p2-0002');
+  assert.deepEqual([r.ok, r.reason], [false, 'ESSAI_EXPIRE']);
+  await asService();
+  assert.equal((await q('select public.trial_allows($1, 1) as r', [jx]))[0].r, 'ESSAI_EXPIRE');
+  assert.equal((await q(`select public.trial_check($1, 'consolidate', null, null) as r`, [P2D1.id]))[0].r, 'ESSAI_EXPIRE');
+  assert.equal((await q(`select public.trial_check($1, 'render', null, null) as r`, [P2D1.id]))[0].r, null);
+  // Reprise d'une réservation déjà faite : toujours reconnue, sans rien relancer.
+  assert.equal((await trialClaim(P2, P2D1.id, 'cle-p2-0001')).reason, 'REJEU');
+  assert.equal((await trialSlots(P2)).length, 1);
+});
+
+const P3D1 = await trialDossier(P3, 'Essai P3 — dossier 1');
+const P3D2 = await trialDossier(P3, 'Essai P3 — dossier 2');
+await test('Essai : suspension par un administrateur, budget individuel, plafond global', async () => {
+  assert.equal((await trialOpen(P3)).reason, 'OUVERT');
+  const P4 = await newUser('prospect-quatre@test.local');
+  assert.equal((await trialOpen(P4)).reason, 'PLAFOND_GLOBAL_ATTEINT', '3 essais ouverts, plafond 3');
+  assert.equal((await trialClaim(P3, P3D1.id, 'cle-p3-0001')).slot, 1);
+  assert.equal(await openJobs(P3D1.id, 'extract'), 1);
+  await asUser(P3);
+  await rejects(q(`select public.trial_admin_suspend($1, 'auto-suspension')`, [P3]), /FORBIDDEN/);
+  await asUser(P3);
+  await rejects(q('select public.trial_admin_resume($1)', [P3]), /FORBIDDEN/);
+  await asUser(P3);
+  await rejects(q('select public.trial_admin_set_budget($1, 99999)', [P3]), /FORBIDDEN/);
+  await asUser(ADMIN);
+  await rejects(q(`select public.trial_admin_suspend($1, ' ')`, [P3]), /MOTIF_REQUIS/);
+  await asUser(ADMIN);
+  await q(`select public.trial_admin_suspend($1, 'usage abusif présumé')`, [P3]);
+  const jx = await jobOf(P3D1.id, 'extract');
+  assert.equal(await openJobs(P3D1.id, 'extract'), 0, 'travaux en attente annulés');
+  assert.equal(await openJobs(P3D1.id, 'consolidate'), 0);
+  assert.equal((await trialClaim(P3, P3D2.id, 'cle-p3-0002')).reason, 'ESSAI_SUSPENDU');
+  await asService();
+  assert.equal((await q('select public.trial_allows($1, 1) as r', [jx]))[0].r, 'ESSAI_SUSPENDU');
+  await asSuperuser();
+  await q(`select public.ai_enqueue($1, 'extract', $2)`, [P3D1.id, P3D1.docs[0]]);
+  assert.equal(await openJobs(P3D1.id, 'extract'), 0, 'suspendu : rien n\'est remis en file');
+  // Reprise, puis budget individuel épuisé.
+  await asUser(ADMIN);
+  await q('select public.trial_admin_resume($1)', [P3]);
+  await asUser(ADMIN);
+  await q('select public.trial_admin_set_budget($1, 0)', [P3]);
+  assert.equal((await trialClaim(P3, P3D2.id, 'cle-p3-0002')).reason, 'BUDGET_ESSAI_EPUISE');
+  await asService();
+  assert.equal((await q(`select public.trial_check($1, 'extract', $2, 1) as r`, [P3D1.id, P3D1.docs[0]]))[0].r, 'BUDGET_ESSAI_EPUISE');
+  await asUser(ADMIN);
+  await q('select public.trial_admin_set_budget($1, 500)', [P3]);
+  assert.equal((await trialClaim(P3, P3D2.id, 'cle-p3-0002')).slot, 2);
+  // Interrupteur global : fermeture = arrêt immédiat des lectures d'essai.
+  await asUser(ADMIN);
+  await q('select public.trial_admin_configure(false, null, null, null)');
+  await asService();
+  assert.equal((await q(`select public.trial_check($1, 'extract', $2, 1) as r`, [P3D2.id, P3D2.docs[0]]))[0].r, 'ESSAIS_FERMES');
+  await asUser(ADMIN);
+  await q('select public.trial_admin_configure(true, null, null, null)');
+  await asSuperuser();
+  const kinds = (await q(`select kind from public.trial_events where user_id = $1`, [P3])).map((e) => e.kind);
+  for (const k of ['ouverture', 'suspension', 'reprise', 'budget_modifie', 'emplacement_reserve', 'emplacement_refuse']) assert.ok(kinds.includes(k), `journal : ${k}`);
+});
+
+await test('Essai : isolation RLS — un prospect ne voit que son essai ; journal et réglages réservés à l\'administration', async () => {
+  await asUser(P2);
+  const mine = await q('select user_id from public.trial_accounts');
+  assert.deepEqual(mine.map((r) => r.user_id), [P2]);
+  const slots = await q('select dossier_id from public.trial_slots');
+  assert.deepEqual(slots.map((r) => r.dossier_id), [P2D1.id]);
+  assert.equal((await q('select 1 from public.trial_events')).length, 0, 'journal privé');
+  assert.equal((await q('select 1 from public.trial_settings')).length, 0);
+  await asUser(P3);
+  assert.deepEqual((await q('select user_id from public.trial_accounts')).map((r) => r.user_id), [P3]);
+  assert.equal((await q('select 1 from public.trial_slots where dossier_id = $1', [P2D1.id])).length, 0, 'P3 ne voit pas l\'emplacement de P2');
+  assert.equal((await q('select 1 from public.trial_events')).length, 0, 'motif de suspension invisible du prospect');
+  await asUser(A);
+  assert.equal((await q('select 1 from public.trial_accounts')).length, 0);
+  assert.equal((await q('select 1 from public.trial_slots')).length, 0);
+  await asAnon();
+  assert.equal((await q('select 1 from public.trial_accounts').catch(() => [])).length, 0);
+  assert.equal((await q('select 1 from public.trial_slots').catch(() => [])).length, 0);
+  await asUser(P3);
+  await rejects(q(`insert into public.trial_events (kind) values ('faux')`), /row-level security/);
+  await asUser(P3);
+  await rejects(q(`insert into public.trial_accounts (user_id, email_fingerprint, expires_at, budget_cents) values ($1, 'x', now() + interval '1 day', 1)`, [A]), /row-level security/);
+  await asUser(ADMIN);
+  assert.equal((await q('select 1 from public.trial_accounts')).length, 3);
+  assert.ok((await q('select 1 from public.trial_events')).length > 10);
+  assert.equal((await q('select 1 from public.trial_settings')).length, 1);
+});
+
+await test('Essai : abonnés strictement inchangés ; un prospect devenu abonné sort du périmètre de l\'essai', async () => {
+  // Abonné sans essai : même mise en file qu'avant, aucun passage par le journal d'essai.
+  await asSuperuser();
+  const events = (await q('select count(*)::int n from public.trial_events'))[0].n;
+  const SUB = await newUser('abonne-sans-essai@test.local');
+  await subscribe(SUB, 'essentiel');
+  const D = await insertDossier(SUB, { title: 'Abonné — dossier' });
+  await addPiece(SUB, D, 'avant.pdf');
+  await asUser(SUB);
+  await q('select public.enable_ai_processing($1, $2)', [D, 'ia-2026-10']);
+  const second = await addPiece(SUB, D, 'apres.pdf');
+  assert.equal(await openJobs(D, 'extract'), 2, 'pièce ajoutée après activation : mise en file (pas de manifeste)');
+  assert.equal(await openJobs(D, 'consolidate'), 1);
+  const jx = await jobOf(D, 'extract');
+  const jc = await jobOf(D, 'consolidate');
+  await asService();
+  assert.equal((await q('select public.trial_allows($1, 9999) as r', [jx]))[0].r, null);
+  assert.equal((await q('select public.trial_allows($1, null) as r', [jc]))[0].r, null);
+  assert.equal((await q(`select public.trial_check($1, 'extract', $2, 9999) as r`, [D, second]))[0].r, null);
+  assert.equal((await q('select public.ai_quota_allows_pages($1, 51) as a', [SUB]))[0].a, false, 'quota de l\'offre toujours appliqué');
+  await q(`insert into public.ai_extractions (dossier_id, user_id, document_id, status, pages, cost_cents) values ($1, $2, $3, 'ok', 2, 5)`, [D, SUB, second]);
+  await asSuperuser();
+  assert.equal((await q('select count(*)::int n from public.trial_events'))[0].n, events, 'aucune trace d\'essai pour un abonné');
+  assert.equal((await q('select count(*)::int n from public.trial_accounts where user_id = $1', [SUB]))[0].n, 0);
+  // Une fermeture des essais n'affecte pas l'abonné.
+  await asUser(ADMIN);
+  await q('select public.trial_admin_configure(false, null, null, null)');
+  await addPiece(SUB, D, 'encore.pdf');
+  assert.equal(await openJobs(D, 'extract'), 3);
+  await asUser(ADMIN);
+  await q('select public.trial_admin_configure(true, null, null, null)');
+  // Prospect P3 (2 emplacements pris) : pièce tardive refusée, puis il s'abonne → règles de l'offre.
+  const late = await addPiece(P3, P3D2.id, 'tardive.pdf');
+  await asSuperuser();
+  assert.equal((await q('select 1 from public.ai_jobs where document_id = $1', [late])).length, 0);
+  await subscribe(P3, 'essentiel');
+  const after = await addPiece(P3, P3D2.id, 'apres-abonnement.pdf');
+  await asSuperuser();
+  assert.equal((await q(`select 1 from public.ai_jobs where document_id = $1 and status = 'queued'`, [after])).length, 1, 'abonné : plus de manifeste');
+  const D3 = await insertDossier(P3, { title: 'P3 abonné — 3e dossier' });
+  await asUser(P3);
+  await q('select public.enable_ai_processing($1, $2)', [D3, 'ia-2026-10']);
+  assert.ok((await q('select enabled_at from public.dossier_ai_settings where dossier_id = $1', [D3]))[0].enabled_at, 'troisième dossier : par abonnement uniquement');
+});
+
+await test('Essai : prospect devenu abonné — paiement en retard ou résiliation en période payée = toujours abonné ; abonnement terminé = essai de nouveau', async () => {
+  // Revue adverse : la garde ne retenait que « active / trialing ». Or l'abonnement
+  // courant (dossier_entitlement, quotas de l'offre) couvre aussi la période de grâce
+  // Stripe (past_due) et la résiliation tant que la période payée court : un client
+  // payant voyait ses deux premiers dossiers (ceux de l'essai) cesser d'être traités,
+  // en silence, alors que ses autres dossiers continuaient.
+  for (const [status, label] of [['past_due', 'paiement en retard'], ['canceled', 'résilié, période payée en cours']]) {
+    await subscribe(P3, 'essentiel', { status });
+    await asService();
+    assert.ok((await q('select pages_limit from public.ai_quota_state($1)', [P3]))[0].pages_limit > 0, `${label} : quota de l'offre toujours ouvert`);
+    const piece = await addPiece(P3, P3D2.id, `client-${status}.pdf`);
+    await asSuperuser();
+    assert.equal((await q(`select 1 from public.ai_jobs where document_id = $1 and status = 'queued'`, [piece])).length, 1, `${label} : dossier d'essai traité comme les autres dossiers du client`);
+    const j = await jobOf(P3D2.id, 'extract');
+    await asService();
+    assert.equal((await q('select public.trial_allows($1, 9999) as r', [j]))[0].r, null, `${label} : worker non bloqué par l'essai`);
+  }
+  // Abonnement réellement terminé (période payée échue) : la garde d'essai s'applique de nouveau.
+  await subscribe(P3, 'essentiel', { status: 'canceled', start: new Date(Date.now() - 40 * 86400000).toISOString(), end: new Date(Date.now() - 86400000).toISOString() });
+  const apres = await addPiece(P3, P3D2.id, 'apres-fin-abonnement.pdf');
+  await asSuperuser();
+  assert.equal((await q('select 1 from public.ai_jobs where document_id = $1', [apres])).length, 0, 'abonnement terminé : pièce hors manifeste refusée');
+  await asUser(P3);
+  await rejects(q('select public.enable_ai_processing($1, $2)', [P3D1.id, 'ia-2026-10']), /SUBSCRIPTION_REQUIRED/);
+  // État attendu par le test de retour arrière : P3 abonné actif.
+  await subscribe(P3, 'essentiel');
+});
+
+await test('Essai : retour arrière niveau 1 — garde retirée, dossiers d\'essai non abonnés désactivés, compteurs conservés', async () => {
+  await asSuperuser();
+  const slots = (await q('select count(*)::int n from public.trial_slots'))[0].n;
+  const journal = (await q('select count(*)::int n from public.trial_events'))[0].n;
+  await db.exec(readFileSync(join(root, 'supabase', 'rollback', '20261125120000_essai_prospect.down.sql'), 'utf8'));
+  const [r] = await q(`select to_regprocedure('public.trial_claim_slot(uuid, uuid, text, text)') as c, to_regprocedure('public.trial_allows(uuid, integer)') as a,
+                              to_regclass('public.trial_slots') as t,
+                              (select count(*)::int from pg_trigger where tgname = 'ai_jobs_trial_gate') as g`);
+  assert.deepEqual([r.c, r.a, r.g], [null, null, 0]);
+  assert.ok(r.t, 'tables conservées');
+  assert.equal((await q('select count(*)::int n from public.trial_slots'))[0].n, slots);
+  assert.equal((await q('select count(*)::int n from public.trial_events'))[0].n, journal);
+  assert.equal((await q('select enabled from public.trial_settings'))[0].enabled, false);
+  assert.equal((await q('select enabled_at from public.dossier_ai_settings where dossier_id = $1', [P2D1.id]))[0].enabled_at, null, 'dossier d\'essai (non abonné) désactivé');
+  assert.equal(await openJobs(P2D1.id, 'extract'), 0);
+  assert.ok((await q('select enabled_at from public.dossier_ai_settings where dossier_id = $1', [P3D2.id]))[0].enabled_at, 'prospect devenu abonné : dossier laissé actif');
+  await rejects(q('delete from public.trial_slots'), /ESSAI_IMMUABLE/);
+});
+
 // Dernier test : le retour arrière modifie le schéma pour la suite.
 await test('IA : retour arrière niveau 1 — moteur neutralisé, données conservées', async () => {
   const D = await insertDossier(IA_C, { title: 'Avant retour arrière' });
