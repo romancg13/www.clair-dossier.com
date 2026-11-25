@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { DELIVERABLE_CATALOG, type DeliverableKey } from "../../../supabase/functions/_shared/analysis-model.ts";
 
 /** Fichier d'un livrable, quelle que soit sa source (stockage Supabase ou génération locale de démonstration). */
@@ -16,95 +17,109 @@ type Props = {
   emptyLabel: string;
   busy?: boolean;
   onDownloadAll?: () => void;
+  /** Actions placées à droite du titre (ex. bouton ClairDossier IA). */
+  actions?: ReactNode;
 };
 
 const VIEW_ORDER = ["pdf", "csv", "ics"];
 const ext = (n: string) => n.split(".").pop()?.toLowerCase() ?? "";
 
-/** Les six documents ClairDossier : Visualiser, Télécharger chaque format, Tout télécharger. */
-export function DeliverablesGrid({ files, caption, emptyLabel, busy, onDownloadAll }: Props) {
+/** Les six résultats ClairDossier : Voir, Télécharger, autres formats au clic, un seul ZIP. */
+export function DeliverablesGrid({ files, caption, emptyLabel, busy, onDownloadAll, actions }: Props) {
   const ready = files.length > 0;
   const missing = DELIVERABLE_CATALOG.filter((d) => !files.some((f) => f.key === d.key));
   return (
     <section aria-labelledby="livrables-title">
-      <div className="flex flex-wrap items-end justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h3 id="livrables-title" className="font-display text-xl text-navy-900">
-            Vos documents ClairDossier
+            Vos résultats
           </h3>
-          {caption && <p className="mt-1 text-xs text-slate-500">{caption}</p>}
+          {caption && <p className="mt-0.5 text-xs text-slate-500">{caption}</p>}
         </div>
-        {ready && onDownloadAll && (
-          <button
-            type="button"
-            onClick={onDownloadAll}
-            disabled={busy}
-            className="rounded-full bg-navy-900 px-4 py-2 text-xs font-semibold text-cream-50 transition-colors hover:bg-navy-800 disabled:opacity-60"
-          >
-            {busy ? "Préparation…" : "Tout télécharger (.zip)"}
-          </button>
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          {actions}
+          {ready && onDownloadAll && (
+            <button
+              type="button"
+              onClick={onDownloadAll}
+              disabled={busy}
+              className="rounded-full bg-navy-900 px-4 py-2 text-xs font-semibold text-cream-50 transition-colors hover:bg-navy-800 disabled:opacity-60"
+            >
+              {busy ? "Préparation…" : "Tout télécharger (.zip)"}
+            </button>
+          )}
+        </div>
       </div>
 
       {!ready ? (
         // Aucun document encore publié : une seule ligne au lieu de six cartes vides identiques.
-        // L'état (emptyLabel) reste une phrase à part ; les libellés gardent leur casse (« Résumé IA »).
-        <p className="mt-5 rounded-2xl border border-dashed hairline bg-cream-50/60 p-5 text-sm leading-relaxed text-slate-500">
+        <p className="mt-4 rounded-2xl border border-dashed hairline bg-cream-50/60 p-4 text-sm leading-relaxed text-slate-500">
           {emptyLabel} Vos six documents ({DELIVERABLE_CATALOG.map((d) => d.label).join(", ")}) apparaîtront ici dès leur publication.
         </p>
       ) : (
-      <>
-      <ul className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        {DELIVERABLE_CATALOG.filter((d) => files.some((f) => f.key === d.key)).map((d) => {
-          const i = DELIVERABLE_CATALOG.indexOf(d);
-          const own = files.filter((f) => f.key === d.key).sort((a, b) => ext(a.name).localeCompare(ext(b.name)));
-          const viewable = VIEW_ORDER.map((e) => own.find((f) => ext(f.name) === e)).find(Boolean);
-          return (
-            <li
-              key={d.key}
-              className={`group flex flex-col rounded-2xl border p-5 transition-shadow ${own.length ? "hairline bg-white shadow-card hover:shadow-card-hover" : "border-dashed hairline bg-cream-50/60"}`}
-            >
-              <div className="flex items-start gap-3">
-                <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl font-mono text-xs font-semibold ${own.length ? "bg-navy-900 text-gold-400" : "bg-cream-100 text-slate-400"}`}>
-                  {String(i + 1).padStart(2, "0")}
-                </span>
-                <div className="min-w-0">
-                  <p className="font-semibold text-navy-900">{d.label}</p>
-                  <p className="mt-1 text-xs leading-relaxed text-slate-500">{d.description}</p>
-                </div>
-              </div>
-              {own.length ? (
-                <div className="mt-4 flex flex-wrap items-center gap-2 border-t hairline pt-4">
-                  {viewable && (
-                    <button type="button" onClick={() => void viewable.open()} className="rounded-full bg-gold-500 px-3.5 py-1.5 text-xs font-semibold text-navy-900 transition-transform hover:-translate-y-0.5 motion-reduce:transform-none">
-                      Visualiser
-                    </button>
-                  )}
-                  {own.map((f) => (
+        <>
+          <ul className="mt-4 divide-y divide-slate-200/70 border-y hairline">
+            {DELIVERABLE_CATALOG.filter((d) => files.some((f) => f.key === d.key)).map((d) => {
+              const own = files.filter((f) => f.key === d.key).sort((a, b) => ext(a.name).localeCompare(ext(b.name)));
+              const viewable = VIEW_ORDER.map((e) => own.find((f) => ext(f.name) === e)).find(Boolean);
+              // Format principal : le PDF quand il existe (lisible partout), sinon le premier format.
+              const main = own.find((f) => ext(f.name) === "pdf") ?? own[0];
+              const others = own.filter((f) => f !== main);
+              return (
+                <li key={d.key} className="flex flex-wrap items-center gap-x-4 gap-y-2 py-3">
+                  <p className="min-w-0 flex-1 basis-40 text-sm font-semibold text-navy-900" title={d.description}>
+                    {d.label}
+                  </p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {viewable && (
+                      <button type="button" onClick={() => void viewable.open()} aria-label={`Voir ${d.label}`} className="rounded-full bg-gold-500 px-3.5 py-1.5 text-xs font-semibold text-navy-900 hover:bg-gold-400">
+                        Voir
+                      </button>
+                    )}
                     <button
-                      key={f.name}
                       type="button"
-                      onClick={() => void f.download()}
-                      aria-label={`Télécharger ${d.label} au format ${ext(f.name).toUpperCase()}`}
-                      className="rounded-full border hairline-strong px-3 py-1.5 font-mono text-[0.68rem] font-semibold uppercase tracking-wide text-navy-900 transition-colors hover:bg-cream-100"
+                      onClick={() => void main.download()}
+                      aria-label={`Télécharger ${d.label} au format ${ext(main.name).toUpperCase()}`}
+                      className="rounded-full border hairline-strong px-3.5 py-1.5 text-xs font-semibold text-navy-900 hover:bg-cream-100"
                     >
-                      {ext(f.name)} ↓
+                      Télécharger
                     </button>
-                  ))}
-                </div>
-              ) : (
-                <p className="mt-4 border-t border-dashed hairline pt-4 text-xs text-slate-500">{emptyLabel}</p>
-              )}
-            </li>
-          );
-        })}
-      </ul>
-      {missing.length > 0 && (
-        <p className="mt-3 text-xs leading-relaxed text-slate-500">
-          {missing.length === 1 ? "Document pas encore publié" : "Documents pas encore publiés"} : {missing.map((d) => d.label).join(" · ")}.
-        </p>
-      )}
-      </>
+                    <details className="relative text-xs">
+                      <summary className="cursor-pointer rounded-full px-2 py-1.5 font-medium text-slate-500 hover:text-navy-900" aria-label={`Détails et autres formats — ${d.label}`}>
+                        Détails
+                      </summary>
+                      <div className="mt-2 w-full max-w-sm rounded-xl bg-cream-50 p-3 text-slate-600 sm:absolute sm:right-0 sm:z-10 sm:w-72 sm:shadow-card">
+                        <p className="leading-relaxed">{d.description}</p>
+                        {others.length > 0 && (
+                          <p className="mt-2 flex flex-wrap items-center gap-1.5">
+                            <span>Autres formats :</span>
+                            {others.map((f) => (
+                              <button
+                                key={f.name}
+                                type="button"
+                                onClick={() => void f.download()}
+                                aria-label={`Télécharger ${d.label} au format ${ext(f.name).toUpperCase()}`}
+                                className="rounded-full border hairline-strong bg-white px-2.5 py-1 font-mono text-[0.68rem] font-semibold uppercase text-navy-900 hover:bg-cream-100"
+                              >
+                                {ext(f.name)}
+                              </button>
+                            ))}
+                          </p>
+                        )}
+                      </div>
+                    </details>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+          {missing.length > 0 && (
+            <p className="mt-3 text-xs leading-relaxed text-slate-500">
+              {missing.length === 1 ? "Document pas encore publié" : "Documents pas encore publiés"} : {missing.map((d) => d.label).join(" · ")}.
+            </p>
+          )}
+        </>
       )}
     </section>
   );

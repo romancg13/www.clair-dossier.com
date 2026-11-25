@@ -16,7 +16,7 @@ import { FACT_LABEL, KIND_LABEL, frDate, sources, type AnalysisData, type Covera
 /* ── Types ──────────────────────────────────────────────────────────────── */
 
 export type AttentionLevel = 'urgent' | 'important' | 'a_confirmer';
-export type AttentionNature = 'documented' | 'asserted_by_party' | 'hypothesis' | 'contradiction' | 'missing';
+export type AttentionNature = 'documented' | 'asserted_by_party' | 'hypothesis' | 'contradiction' | 'difference' | 'contested' | 'missing';
 export type AttentionCategory =
   | 'echeance_depassee'
   | 'paiement_a_verifier'
@@ -36,6 +36,8 @@ export const NATURE_LABEL: Record<AttentionNature, string> = {
   asserted_by_party: `Fait ${FACT_LABEL.asserted_by_party}`,
   hypothesis: KIND_LABEL.hypothesis,
   contradiction: 'Contradiction entre pièces',
+  difference: 'Différence entre documents',
+  contested: 'Point contesté',
   missing: 'Information absente',
 };
 
@@ -221,6 +223,26 @@ function deadlineItems(analysis: AnalysisData, rows: AttentionDeadline[] | undef
 
 /* ── Construction ───────────────────────────────────────────────────────── */
 
+
+/**
+ * Nature d'un écart relevé entre pièces. Deux documents différents ne sont pas
+ * « contradictoires » par défaut : une position adverse est une CONTESTATION,
+ * une simple variation (version, montant actualisé, date d'édition) est une
+ * DIFFÉRENCE documentaire ; seule une incompatibilité affirmée sur un même fait
+ * reste une contradiction. Règle déterministe, sur le texte de l'écart.
+ */
+export function divergenceNature(text: string): 'contradiction' | 'difference' | 'contested' {
+  const t = text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  if (/\b(contest\w*|conteste|invoqu\w*|reclam\w*|refus\w*|oppos\w*|reproch\w*|allegu\w*|soutien\w*|pretend\w*|litige)\b/.test(t)) return 'contested';
+  if (/\b(version\w*|differ\w*|ecart\w*|variante\w*|mise a jour|actualis\w*|n'est pas identique|autre date|autre montant)\b/.test(t) && !/\b(contradi\w*|incompatib\w*|alors que|tandis que)\b/.test(t)) return 'difference';
+  return 'contradiction';
+}
+const DIVERGENCE_CONSEQUENCE = {
+  contradiction: 'Deux pièces ne disent pas la même chose : tant que ce point n’est pas tranché, vos documents le signalent sans conclure.',
+  contested: 'L’autre partie conteste ce point : vos documents présentent les deux positions sans conclure.',
+  difference: 'Ces documents diffèrent sur ce point, sans se contredire : vos documents retiennent le plus récent et le signalent.',
+} as const;
+
 export function buildAttention(input: AttentionInput): AttentionResult {
   const { analysis: a, coverage: c, today } = input;
   const names = new Map(Object.entries(input.documentNames ?? {}));
@@ -228,7 +250,7 @@ export function buildAttention(input: AttentionInput): AttentionResult {
   const items: AttentionItem[] = deadlineItems(a, input.deadlines, today, names);
 
   a.contradictions.forEach((x, i) => {
-    items.push({ id: `contradiction:${i}`, level: 'important', category: 'contradiction', nature: 'contradiction', title: x.text, source: sources(x.evidence, names), evidence: x.evidence, consequence: 'Deux pièces ne disent pas la même chose : tant que ce point n’est pas tranché, vos documents le signalent sans conclure.', action: 'Relire les pièces citées et déposer celle qui tranche, ou préciser le point par écrit.' });
+    items.push({ id: `contradiction:${i}`, level: 'important', category: 'contradiction', nature: divergenceNature(x.text), title: x.text, source: sources(x.evidence, names), evidence: x.evidence, consequence: DIVERGENCE_CONSEQUENCE[divergenceNature(x.text)], action: 'Relire les pièces citées et déposer celle qui tranche, ou préciser le point par écrit.' });
   });
 
   if (!c.complete) {

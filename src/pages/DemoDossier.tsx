@@ -52,6 +52,8 @@ const now = () => new Date().toISOString();
 // lu ni écrit dans le stockage du navigateur.
 const DEMO_TODAY = "2026-11-06";
 const DEMO_LAST_VISIT = "2026-10-05T08:00:00Z";
+// Une seule date de référence pour l'écran ET les fichiers générés (date fictive du dossier).
+const DEMO_NOW = new Date(`${DEMO_TODAY}T09:00:00Z`);
 
 function initial(s: Scenario): State {
   const base: State = { enabled: true, pieces: DEMO_PIECES, read: DEMO_PIECES.length, consolidating: false, revision: 1, closed: false, paused: false, partial: false, bulk: false, overrides: [], journal: [] };
@@ -144,7 +146,7 @@ export function DemoDossier() {
     const exploited = s.pieces.filter((p) => p.id !== DEMO_UNSUPPORTED.id && p.id !== DEMO_FAILED.id);
     // Génération des fichiers : module chargé à la demande (pdf-lib et fflate
     // restent hors du bundle initial de la page démo).
-    void import("../../supabase/functions/_shared/deliverables.ts").then(({ buildDeliverables }) => buildDeliverables({ title: DEMO_TITLE, revision: s.revision, generatedAt: new Date(), analysis, coverage: { ...coverage, pending: 0 }, pieces: exploited, overrides: s.overrides, demo: true }).then((out) => {
+    void import("../../supabase/functions/_shared/deliverables.ts").then(({ buildDeliverables }) => buildDeliverables({ title: DEMO_TITLE, revision: s.revision, generatedAt: DEMO_NOW, analysis, coverage: { ...coverage, pending: 0 }, pieces: exploited, overrides: s.overrides, demo: true }).then((out) => {
       if (!live) return;
       urls.current.forEach((u) => URL.revokeObjectURL(u));
       const next = out.map((f) => ({ name: f.name, key: f.key, bytes: f.bytes, url: URL.createObjectURL(new Blob([f.bytes as BlobPart], { type: f.mime })) }));
@@ -223,15 +225,49 @@ export function DemoDossier() {
         </div>
 
         <header className="mt-8">
-          <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">Espace client · /compte/dossier/demo</p>
-          <h1 className="mt-2 font-display text-3xl leading-tight text-navy-900 sm:text-4xl">{DEMO_TITLE}</h1>
+                    <h1 className="mt-2 font-display text-3xl leading-tight text-navy-900 sm:text-4xl">{DEMO_TITLE}</h1>
           <p className="mt-2 text-sm text-slate-500">
             {s.pieces.length} pièce{s.pieces.length > 1 ? "s" : ""} · {s.revision ? `révision ${s.revision}` : "aucun document encore"} · {s.closed ? "clôturé" : "ouvert"}
           </p>
         </header>
 
-        <nav aria-label="Simuler un état" className="mt-6">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Simuler un état</p>
+        <div className="mt-6">
+          <DossierTracker step={step} detail={detail} updating={processing && s.revision > 0} progress={s.enabled ? { done: Math.min(s.read, s.pieces.length), total: s.pieces.length } : null} toCheck={coverage.unsupported + coverage.failed} />
+        </div>
+
+        {s.revision > 0 && (
+          <div className="mt-8">
+            <AttentionBox attention={attention} changes={changes} sinceNote="visite simulée" />
+          </div>
+        )}
+
+        {s.revision > 0 && (
+          <section className="mt-8 rounded-2xl border hairline bg-white p-5 shadow-card sm:p-6">
+            <AnalysisView analysis={analysis} coverage={coverage} revision={s.revision} createdAt={DEMO_NOW.toISOString()} today={DEMO_TODAY} documentNames={names} />
+          </section>
+        )}
+
+        <div className="mt-8 rounded-2xl border hairline bg-white p-6 shadow-card sm:p-8">
+          <DeliverablesGrid
+            files={deliverableFiles}
+            caption={s.revision ? `Six documents · révision ${s.revision}${generating ? " · préparation en cours…" : ""}` : null}
+            emptyLabel={processing ? "En préparation…" : s.enabled ? "Pas encore disponibles." : "Activez le traitement pour générer vos documents."}
+            busy={generating}
+            onDownloadAll={downloadAll}
+          />
+        </div>
+
+        {s.revision > 0 && (
+          <div className="mt-8">
+            <ChronologyEditor events={events} history={s.overrides} documentNames={names} canEdit={!s.closed} onSave={saveOverride} />
+          </div>
+        )}
+
+        {/* Réservé à la démonstration fictive : jamais présent dans l'espace client réel. */}
+        <details className="mt-8 rounded-2xl border border-dashed hairline bg-cream-50/60 px-5 py-3 text-sm">
+          <summary className="cursor-pointer font-medium text-slate-600 hover:text-navy-900">Outils de démonstration (simuler un état)</summary>
+          <div className="mt-3 space-y-3">
+        <nav aria-label="Simuler un état">
           <div className="mt-2 flex flex-wrap gap-2">
             {SCENARIOS.map((x) => (
               <button
@@ -246,10 +282,7 @@ export function DemoDossier() {
             ))}
           </div>
         </nav>
-
-        <div className="mt-6">
-          <DossierTracker step={step} detail={detail} updating={processing && s.revision > 0} />
-          <div className="mt-3 flex flex-wrap justify-end gap-2">
+          <div className="flex flex-wrap gap-2">
             {!s.enabled && !s.closed && (
               <button type="button" onClick={activate} className="rounded-full bg-navy-900 px-4 py-2 text-xs font-semibold text-cream-50 hover:bg-navy-800">
                 Activer le traitement automatique (simulé)
@@ -262,41 +295,11 @@ export function DemoDossier() {
               {s.closed ? "Rouvrir le dossier" : "Clôturer le dossier"}
             </button>
           </div>
-        </div>
-
-        {s.revision > 0 && (
-          <div className="mt-8">
-            <AttentionBox attention={attention} changes={changes} sinceNote="visite simulée" />
-            <p className="mt-2 text-xs text-slate-500">Démonstration : points calculés à la date fictive du 06/11/2026.</p>
           </div>
-        )}
+        </details>
 
-        {s.revision > 0 && (
-          <section className="mt-8 rounded-2xl border hairline bg-white p-5 shadow-card sm:p-6">
-            <AnalysisView analysis={analysis} coverage={coverage} revision={s.revision} createdAt={now()} documentNames={names} />
-          </section>
-        )}
-
-        <div className="mt-8 rounded-2xl border hairline bg-white p-6 shadow-card sm:p-8">
-          <DeliverablesGrid
-            files={deliverableFiles}
-            caption={s.revision ? `Révision ${s.revision} · générée dans votre navigateur${generating ? " · génération en cours…" : ""}` : null}
-            emptyLabel={processing ? "En préparation…" : s.enabled ? "Pas encore disponibles." : "Activez le traitement pour générer vos documents."}
-            busy={generating}
-            onDownloadAll={downloadAll}
-          />
-        </div>
-
-        {s.revision > 0 && (
-          <div className="mt-8">
-            <ChronologyEditor events={events} history={s.overrides} documentNames={names} canEdit={!s.closed} onSave={saveOverride} />
-          </div>
-        )}
-
-        <section aria-labelledby="journal-title" className="mt-8 rounded-2xl border hairline bg-white p-5 shadow-card sm:p-6">
-          <h3 id="journal-title" className="font-display text-lg text-navy-900">
-            Journal du dossier
-          </h3>
+        <details className="mt-4 rounded-2xl border hairline bg-white px-5 py-3 text-sm">
+          <summary className="cursor-pointer font-medium text-slate-600 hover:text-navy-900">Journal du dossier</summary>
           <ol className="mt-3 space-y-1.5 text-sm text-slate-700">
             {s.journal.map((j, i) => (
               <li key={i} className="flex gap-3">
@@ -305,7 +308,7 @@ export function DemoDossier() {
               </li>
             ))}
           </ol>
-        </section>
+        </details>
       </div>
     </>
   );

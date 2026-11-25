@@ -3,8 +3,9 @@ import assert from 'node:assert/strict';
 import {
   ATTENTION_MAX,
   NATURE_LABEL,
-  buildAttention,
+  buildAttention, divergenceNature,
   daysBetween,
+  divergenceNature,
   fingerprint,
   isPaymentDeadline,
   milestone,
@@ -130,7 +131,8 @@ test('échéances enregistrées : « faite » retirée, date corrigée retenue, 
 test('contradiction, pièce manquante (sans doublon avec le fait « manquant »), déclaration, hypothèse, fait non sourcé', () => {
   const r = buildAttention({ analysis: demoAnalysis(), coverage: cov, today: '2026-11-06', documentNames: names, max: 50 });
   const c = all(r).find((i) => i.category === 'contradiction');
-  assert.equal(c?.nature, 'contradiction');
+  // Le client « invoque » un défaut : c'est une contestation, pas une contradiction entre pièces.
+  assert.equal(c?.nature, 'contested');
   assert.equal(c?.level, 'important');
   assert.match(c?.source ?? '', /PV de réception des travaux\.pdf p\.1 ; Courrier de contestation du client\.pdf p\.1/);
   // Deux pièces manquantes ; le fait « Aucune preuve d'envoi… » ne crée pas un troisième point.
@@ -279,4 +281,11 @@ test('dernière visite : écriture, relecture, isolement par dossier, données c
   assert.doesNotThrow(() => writeVisit('d1', mark, broken));
   assert.equal(readVisit('d1', null), null);
   assert.doesNotThrow(() => writeVisit('d1', mark, null));
+});
+
+test('écart entre pièces : contestation, différence documentaire et contradiction réelle sont distinguées', () => {
+  assert.equal(divergenceNature('Le client conteste le montant de la facture.'), 'contested');
+  assert.equal(divergenceNature('Le devis signé et sa version du 12/05 diffèrent sur le délai.'), 'difference');
+  assert.equal(divergenceNature('Le bon de livraison indique 12 colis, la facture 14.'), 'contradiction');
+  assert.equal(divergenceNature('Deux versions, alors que la seconde contredit la première.'), 'contradiction');
 });
