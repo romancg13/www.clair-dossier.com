@@ -2061,6 +2061,191 @@ await test('Essai : retour arrière niveau 1 — garde retirée, dossiers d\'ess
   assert.equal(await openJobs(P2D1.id, 'extract'), 0);
   assert.ok((await q('select enabled_at from public.dossier_ai_settings where dossier_id = $1', [P3D2.id]))[0].enabled_at, 'prospect devenu abonné : dossier laissé actif');
   await rejects(q('delete from public.trial_slots'), /ESSAI_IMMUABLE/);
+// ── Messagerie directe (migration 20261125130000) ───────────────────────────
+const MAIL_ENC = 'v1.' + 'A'.repeat(16) + '.' + 'B'.repeat(40);
+await test('Messagerie directe : droit par offre, cloisonnement, jetons inaccessibles et jamais en clair', async () => {
+  const MA = await newUser('mail-a@test.local');
+  const MB = await newUser('mail-b@test.local');
+  await subscribe(MA, 'essentiel');
+  await asUser(MA);
+  assert.equal((await q('select public.mail_connect_access() as ok'))[0].ok, false, 'Essentiel : non inclus');
+  await rejects(q('select public.mail_connect_included($1)', [MA]), /permission denied/);
+  await rejects(q('select public.mail_connection_has_reception($1)', [MA]), /permission denied/);
+  await subscribe(MA, 'entrepreneur');
+  await asUser(MA);
+  assert.equal((await q('select public.mail_connect_access() as ok'))[0].ok, true, 'Entrepreneur : inclus');
+  await asAnon();
+  await rejects(q('select public.mail_connect_access()'), /permission denied/);
+
+  // Aucune écriture directe par un client : ni connexion, ni message, ni jeton.
+  await asUser(MA);
+  await rejects(q(`insert into public.mail_connections (user_id, provider) values ($1, 'gmail')`, [MA]), /row-level security/);
+  await asSuperuser();
+  const [c] = await q(`insert into public.mail_connections (user_id, provider, address) values ($1, 'gmail', 'a@example.com') returning id, status, history_import, import_since`, [MA]);
+  assert.equal(c.status, 'pending');
+  assert.equal(c.history_import, false, 'historique global désactivé par défaut');
+  assert.ok(Math.abs(Date.now() - new Date(c.import_since).getTime()) < 60_000, 'périmètre : à partir de la connexion');
+  await rejects(q(`insert into public.mail_connections (user_id, provider) values ($1, 'yahoo')`, [MB]), /check/);
+
+  // Jetons : format chiffré imposé par la base, table sans aucun accès client.
+  await rejects(q(`insert into public.mail_connection_tokens (connection_id, refresh_token_enc) values ($1, '1//jeton-en-clair')`, [c.id]), /check/);
+  await rejects(q(`insert into public.mail_connection_tokens (connection_id, refresh_token_enc, access_token_enc) values ($1, $2, 'ya29.en-clair')`, [c.id, MAIL_ENC]), /check/);
+  await q(`insert into public.mail_connection_tokens (connection_id, refresh_token_enc, access_token_enc) values ($1, $2, $2)`, [c.id, MAIL_ENC]);
+  for (const who of [MA, MB]) {
+    await asUser(who);
+    await rejects(q('select * from public.mail_connection_tokens'), /permission denied/);
+    await rejects(q(`insert into public.mail_connection_tokens (connection_id, refresh_token_enc) values ($1, $2)`, [c.id, MAIL_ENC]), /permission denied/);
+    await rejects(q('delete from public.mail_connection_tokens'), /permission denied/);
+  }
+  await asAnon();
+  await rejects(q('select * from public.mail_connection_tokens'), /permission denied/);
+  await asSuperuser();
+  const [rls] = await (q(`select relrowsecurity as on, (select count(*)::int from pg_policies where tablename = 'mail_connection_tokens') as policies from pg_class where oid = 'public.mail_connection_tokens'::regclass`));
+  assert.equal(rls.on, true);
+  assert.equal(rls.policies, 0, 'aucune policy : rôle serveur seul');
+
+  // Cloisonnement : le titulaire lit sa connexion, pas un autre compte.
+  await asUser(MA);
+  assert.equal((await q('select count(*)::int n from public.mail_connections'))[0].n, 1);
+  await q(`update public.mail_connections set status = 'connected', address = 'pirate@example.com'`);
+  await asUser(MB);
+  assert.equal((await q('select count(*)::int n from public.mail_connections'))[0].n, 0, 'B ne voit pas la connexion de A');
+  await asSuperuser();
+  const [still] = await q('select status, address from public.mail_connections where id = $1', [c.id]);
+  assert.deepEqual([still.status, still.address], ['pending', 'a@example.com'], 'aucune mise à jour directe par le client');
+
+  // Une boîte n'est reliée qu'à un compte ; une connexion active par fournisseur.
+  await rejects(q(`insert into public.mail_connections (user_id, provider, address) values ($1, 'gmail', 'A@Example.com')`, [MB]), /mail_connections_mailbox_once/);
+  await rejects(q(`insert into public.mail_connections (user_id, provider, address) values ($1, 'gmail', 'autre@example.com')`, [MA]), /mail_connections_one_active/);
+});
+
+await test('Messagerie directe : « connected » après réception réelle, dédup, classement, pause/reprise, déconnexion', async () => {
+  const MA = await newUser('mail-c@test.local');
+  const MB = await newUser('mail-d@test.local');
+  await subscribe(MA, 'entrepreneur');
+  await subscribe(MB, 'entrepreneur');
+  const DA = await insertDossier(MA, { title: 'Dossier messagerie' });
+  const DB = await insertDossier(MB, { title: 'Dossier de B' });
+  await asSuperuser();
+  const [c] = await q(`insert into public.mail_connections (user_id, provider, address, sync_cursor, subscription_id, watch_expires_at) values ($1, 'microsoft', 'c@contoso.com', 'https://graph.microsoft.com/v1.0/x', 'sub-1', now() + interval '3 days') returning id`, [MA]);
+  await q(`insert into public.mail_connection_tokens (connection_id, refresh_token_enc) values ($1, $2)`, [c.id, MAIL_ENC]);
+
+  // « connected » refusé tant qu'aucun message réel n'est enregistré.
+  await rejects(q(`update public.mail_connections set status = 'connected' where id = $1`, [c.id]), /MAIL_CONNECTED_REQUIRES_RECEPTION/);
+  await rejects(q(`insert into public.mail_connections (user_id, provider, status) values ($1, 'gmail', 'connected')`, [MA]), /MAIL_CONNECTED_REQUIRES_RECEPTION/);
+  // Un message hors périmètre (filtered) ou en cours (received) ne confirme rien.
+  await q(`insert into public.mail_messages (connection_id, user_id, provider, message_id, status) values ($1, $2, 'microsoft', 'hors-perimetre', 'filtered'), ($1, $2, 'microsoft', 'en-cours', 'received')`, [c.id, MA]);
+  await rejects(q(`update public.mail_connections set status = 'connected' where id = $1`, [c.id]), /MAIL_CONNECTED_REQUIRES_RECEPTION/);
+  const [m1] = await q(`insert into public.mail_messages (connection_id, user_id, provider, message_id, from_addr, subject, status, suggested_dossier_id) values ($1, $2, 'microsoft', 'M1', 'f@example.org', 'Contrat', 'a_classer', $3) returning id`, [c.id, MA, DA]);
+  await q(`update public.mail_connections set status = 'connected' where id = $1`, [c.id]);
+
+  // Dédup : fournisseur + identifiant, par compte.
+  await rejects(q(`insert into public.mail_messages (connection_id, user_id, provider, message_id) values ($1, $2, 'microsoft', 'M1')`, [c.id, MA]), /mail_messages_dedup/);
+  const [cb] = await q(`insert into public.mail_connections (user_id, provider, address) values ($1, 'microsoft', 'd@contoso.com') returning id`, [MB]);
+  await q(`insert into public.mail_messages (connection_id, user_id, provider, message_id, status) values ($1, $2, 'microsoft', 'M1', 'a_classer')`, [cb.id, MB]);
+
+  // Cloisonnement des messages et du journal ; aucune écriture directe.
+  await asUser(MB);
+  assert.equal((await q(`select count(*)::int n from public.mail_messages where user_id = $1`, [MA]))[0].n, 0, 'B ne voit pas les messages de A');
+  await rejects(q('select public.mail_message_assign($1, $2)', [m1.id, DB]), /FORBIDDEN/);
+  await rejects(q('select public.mail_message_ignore($1)', [m1.id]), /FORBIDDEN/);
+  await rejects(q('select public.mail_connection_pause($1)', [c.id]), /FORBIDDEN/);
+  await rejects(q('select public.mail_connection_resume($1)', [c.id]), /FORBIDDEN/);
+  await rejects(q('select public.mail_connection_disconnect($1)', [c.id]), /FORBIDDEN/);
+  await asUser(MA);
+  assert.equal((await q('select count(*)::int n from public.mail_messages'))[0].n, 3);
+  await q(`update public.mail_messages set status = 'stored', dossier_id = $1`, [DA]);
+  await rejects(q(`insert into public.mail_messages (connection_id, user_id, provider, message_id) values ($1, $2, 'microsoft', 'faux')`, [c.id, MA]), /row-level security/);
+  await rejects(q(`insert into public.mail_connection_events (connection_id, user_id, type) values ($1, $2, 'faux')`, [c.id, MA]), /row-level security/);
+  assert.equal((await q(`select status from public.mail_messages where id = $1`, [m1.id]))[0].status, 'a_classer', 'aucune mise à jour directe');
+  // Aucune remise à zéro par suppression directe (dédup, réception, journal).
+  await q('delete from public.mail_messages');
+  await q('delete from public.mail_connection_events');
+  await q('delete from public.mail_connections');
+  assert.equal((await q('select count(*)::int n from public.mail_messages'))[0].n, 3, 'aucune suppression directe');
+  assert.equal((await q('select count(*)::int n from public.mail_connections'))[0].n, 1, 'aucune suppression directe');
+  // Le classement ne vaut que pour SON message : celui d'un autre compte, même
+  // vers le dossier de ce compte, est refusé (paramètres d'un autre utilisateur).
+  await asUser(MB);
+  await rejects(q('select public.mail_message_assign($1, $2)', [m1.id, DA]), /FORBIDDEN/);
+  await asUser(MA);
+
+  // Classement par le titulaire : dossier d'un autre refusé, puis mise en file.
+  await rejects(q('select public.mail_message_assign($1, $2)', [m1.id, DB]), /FORBIDDEN/);
+  await q('select public.mail_message_assign($1, $2)', [m1.id, DA]);
+  const [queued] = await q('select status, dossier_id, classified_at from public.mail_messages where id = $1', [m1.id]);
+  assert.deepEqual([queued.status, queued.dossier_id], ['queued', DA]);
+  assert.ok(queued.classified_at);
+  await rejects(q('select public.mail_message_assign($1, $2)', [m1.id, DA]), /MAIL_MESSAGE_NOT_PENDING/);
+  await rejects(q('select public.mail_message_ignore($1)', [m1.id]), /MAIL_MESSAGE_NOT_PENDING/);
+  await asSuperuser();
+  const [m2] = await q(`insert into public.mail_messages (connection_id, user_id, provider, message_id, status) values ($1, $2, 'microsoft', 'M2', 'a_classer') returning id`, [c.id, MA]);
+  await q(`insert into public.dossier_events (dossier_id, user_id, type, label) values ($1, $2, 'dossier_cloture', 'Dossier clôturé')`, [DA, MA]);
+  await asUser(MA);
+  await rejects(q('select public.mail_message_assign($1, $2)', [m2.id, DA]), /DOSSIER_CLOTURE/);
+  await q('select public.mail_message_ignore($1)', [m2.id]);
+  assert.equal((await q('select status from public.mail_messages where id = $1', [m2.id]))[0].status, 'ignored');
+
+  // Pause puis reprise : le périmètre repart de maintenant, curseur remis à zéro.
+  await asSuperuser();
+  await q(`update public.mail_connections set import_since = now() - interval '10 days' where id = $1`, [c.id]);
+  await asUser(MA);
+  await q('select public.mail_connection_pause($1)', [c.id]);
+  await q('select public.mail_connection_pause($1)', [c.id]);
+  assert.equal((await q('select status from public.mail_connections where id = $1', [c.id]))[0].status, 'paused');
+  await subscribe(MA, 'essentiel');
+  await asUser(MA);
+  await rejects(q('select public.mail_connection_resume($1)', [c.id]), /FEATURE_NOT_INCLUDED/);
+  await subscribe(MA, 'entrepreneur');
+  await asUser(MA);
+  await q('select public.mail_connection_resume($1)', [c.id]);
+  const [res] = await q('select status, sync_cursor, watch_expires_at, import_since from public.mail_connections where id = $1', [c.id]);
+  assert.equal(res.status, 'connected', 'déjà confirmée par une réception réelle');
+  assert.equal(res.sync_cursor, null);
+  assert.equal(res.watch_expires_at, null);
+  assert.ok(Date.now() - new Date(res.import_since).getTime() < 60_000, 'rien de la pause n’est importé');
+  assert.equal((await q(`select count(*)::int n from public.mail_connection_events where connection_id = $1 and type in ('pause', 'reprise')`, [c.id]))[0].n, 2);
+  // Reprise d'une connexion jamais confirmée : retour à « pending », pas « connected ».
+  await asSuperuser();
+  await q(`delete from public.mail_messages where connection_id = $1`, [cb.id]);
+  await asUser(MB);
+  await q('select public.mail_connection_pause($1)', [cb.id]);
+  await q('select public.mail_connection_resume($1)', [cb.id]);
+  assert.equal((await q('select status from public.mail_connections where id = $1', [cb.id]))[0].status, 'pending');
+
+  // Déconnexion : statut révoqué ET jetons effacés ; historique conservé ; terminal.
+  await asUser(MA);
+  await q('select public.mail_connection_disconnect($1)', [c.id]);
+  const [rev] = await q('select status, revoked_at, sync_cursor, subscription_id from public.mail_connections where id = $1', [c.id]);
+  assert.equal(rev.status, 'revoked');
+  assert.ok(rev.revoked_at);
+  assert.deepEqual([rev.sync_cursor, rev.subscription_id], [null, null]);
+  assert.equal((await q('select count(*)::int n from public.mail_messages where connection_id = $1', [c.id]))[0].n, 4, 'historique conservé');
+  await rejects(q('select public.mail_connection_resume($1)', [c.id]), /MAIL_CONNECTION_REVOKED/);
+  await rejects(q('select public.mail_connection_pause($1)', [c.id]), /MAIL_CONNECTION_REVOKED/);
+  await q('select public.mail_connection_disconnect($1)', [c.id]);
+  await asSuperuser();
+  assert.equal((await q('select count(*)::int n from public.mail_connection_tokens where connection_id = $1', [c.id]))[0].n, 0, 'jetons effacés');
+  await rejects(q(`update public.mail_connections set status = 'pending' where id = $1`, [c.id]), /MAIL_CONNECTION_REVOKED/);
+  // Reconnecter = nouvelle connexion (nouvelle autorisation), même boîte possible.
+  await q(`insert into public.mail_connections (user_id, provider, address) values ($1, 'microsoft', 'c@contoso.com')`, [MA]);
+});
+
+await test('Messagerie directe : retour arrière niveau 1 — jetons effacés, connexions révoquées, historique conservé', async () => {
+  await asSuperuser();
+  const messages = (await q('select count(*)::int n from public.mail_messages'))[0].n;
+  assert.ok((await q(`select count(*)::int n from public.mail_connections where status <> 'revoked'`))[0].n > 0);
+  await db.exec(readFileSync(join(root, 'supabase', 'rollback', '20261125130000_messagerie_directe.down.sql'), 'utf8'));
+  assert.equal((await q('select count(*)::int n from public.mail_connection_tokens'))[0].n, 0);
+  assert.equal((await q(`select count(*)::int n from public.mail_connections where status <> 'revoked'`))[0].n, 0);
+  assert.equal((await q('select count(*)::int n from public.mail_messages'))[0].n, messages, 'historique conservé');
+  const [r] = await q(`select to_regprocedure('public.mail_connection_resume(uuid)') as r, to_regprocedure('public.mail_connect_access()') as a, to_regclass('public.mail_connections') as t`);
+  assert.equal(r.r, null);
+  assert.equal(r.a, null);
+  assert.ok(r.t, 'tables conservées');
+  // La migration est rejouable après le retour arrière (idempotente).
+  await db.exec(readFileSync(join(root, 'supabase', 'migrations', '20261125130000_messagerie_directe.sql'), 'utf8'));
+  assert.ok((await q(`select to_regprocedure('public.mail_connection_resume(uuid)') as r`))[0].r);
 });
 
 // Dernier test : le retour arrière modifie le schéma pour la suite.
