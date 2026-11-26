@@ -102,16 +102,16 @@ inventer. Les 26 autres comptes n'ont pas d'abonnement payant.
 | # | Étape | Qui | Écrit | Préalable |
 |---|---|---|---|---|
 | 6 | Refléter Stripe en base : `scripts/sync-stripe-subscriptions.ts` (simulation, puis `--apply`) | Gérard (session locale) | `subscriptions` seulement (upsert) | sauvegarde de l'étape 1 |
-| 7 | Déployer `stripe-webhook` + secrets | Gérard | fonction Supabase | 6 |
+| 7 | Déployer `stripe-webhook` (**fait le 26/11 par Claude**, code de `main`) ; reste : poser les 2 secrets | Gérard | secrets Supabase | 6 |
 | 8 | Enregistrer le webhook dans Stripe | fondateur ou Gérard (tableau de bord Stripe) | configuration Stripe (aucun prix, aucun lien) | 7 |
 | 9 | Fonction `dossier_is_closed` seule | Gérard | 1 fonction | — |
-| 10 | Activer `pg_cron` | Gérard | extension | — |
-| 11 | `20261126120000_intelligence_espace_client.sql` | Gérard | tables + planification | 6, 10, **accord du fondateur** |
+| 10 | Activer `pg_cron` (**fait le 26/11 par Claude**, accord écrit du fondateur : v1.6.4, exécution réelle constatée à 17:26 UTC, tâche d'essai retirée) | — | extension | — |
+| 11 | `20261126120000_intelligence_espace_client.sql` (essayée sur la base de production en transaction annulée : 10/10, aucune trace) | Gérard | tables + planification | 6, 10, **accord du fondateur** |
 
 ### 6. Reflet des abonnements (idempotent, ne modifie rien dans Stripe)
 
 ```bash
-export STRIPE_SECRET_KEY=rk_live_…   # clé RESTREINTE, lecture seule : Customers + Subscriptions (Stripe → Développeurs → Clés API)
+export STRIPE_SECRET_KEY=rk_live_…   # clé RESTREINTE, Lecture seule sur Customers, Subscriptions, Products et Prices ; tout le reste « Aucun » (Stripe → Développeurs → Clés API). Products et Prices : le script et le webhook lisent l'offre sur le produit.
 export SUPABASE_URL=https://buzgokfmxpmyceppvjpp.supabase.co
 export SUPABASE_SERVICE_ROLE_KEY=…    # jamais collée dans un chat ni un fichier versionné
 node --import tsx scripts/sync-stripe-subscriptions.ts          # simulation : doit annoncer 1 abonnement actif rattaché
@@ -135,6 +135,9 @@ Copier le secret de signature (`whsec_…`) **directement** dans Supabase → Ed
 `STRIPE_WEBHOOK_SECRET` (et `STRIPE_SECRET_KEY`, clé restreinte). Contrôle : « Envoyer un événement de test »
 depuis Stripe → réponse 200, puis une ligne dans `stripe_events`. Signature fausse → 400 (vérifié par les tests).
 Aucun prix, produit, lien de paiement ni abonnement n'est modifié par ces étapes.
+Déploiement fait le 26/11. Tant que `STRIPE_SECRET_KEY` n'est pas posé, la fonction répond 500 (`WORKER_ERROR` :
+la bibliothèque Stripe refuse une clé vide au démarrage) : rien n'est écrit, et Stripe renvoie l'événement plus tard.
+La même clé restreinte (lecture seule) suffit au webhook : il ne fait que relire l'abonnement.
 
 ### 9. `dossier_is_closed`
 
@@ -144,7 +147,7 @@ moteur IA, rejouable, aucun droit public. Contrôle : `select to_regprocedure('p
 
 ### 10. `pg_cron`
 
-Database → Extensions → `pg_cron` → **Enable** (gratuit, inclus dans toutes les offres). Contrôle :
+**Fait le 26/11.** Pour mémoire : Database → Extensions → `pg_cron` → **Enable** (gratuit, inclus dans toutes les offres). Contrôle :
 `select extname from pg_extension where extname = 'pg_cron';` → 1 ligne.
 
 ### 11. Espace client enrichi (seulement après accord du fondateur)

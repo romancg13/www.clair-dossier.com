@@ -138,6 +138,15 @@ Constats en lecture seule, à traiter avant les étapes suivantes :
 - Prêt pour Gérard (`DOSSIER_GERARD.md`, volet 2) : reflet Stripe (script existant), déploiement du webhook signé et idempotent, `dossier_is_closed` seule (`20261126100000`, 124 tests SQL verts), `pg_cron`, puis `20261126120000` sur accord.
 - Juridique : `DOSSIER_JURIDIQUE.md` (index) + projet de DPA `docs/ia/DPA_PROJET.md` ; rien publié.
 - `main` (PR #72, mobile) intégrée sans conflit ; commit candidat validé : typecheck ×2, 482 tests, 124 SQL, build 36 routes, aucun secret ni route de démonstration dans `dist/`, PWA présente.
+- Accord écrit du fondateur (26/11, soir), exécuté par Claude Code en session locale après une nouvelle sauvegarde (`pg_dump` vérifié, SHA-256 `d124e609…5e914c9239`) :
+  - correctif `20261125150000` reconfirmé (3 × `true`) ;
+  - `pg_cron` 1.6.4 activé, exécution réelle constatée à 17:26 UTC, tâche d'essai retirée ;
+  - `20261126120000` essayée sur la base de production en transaction annulée : 10/10 (abonné autorisé, non-abonné refusé, isolement, passage du planificateur, une seule exécution par échéance, arrêt si l'abonnement prend fin), aucune trace ;
+  - `stripe-webhook` déployée (code de `main`), inerte sans ses secrets ;
+  - commit candidat `fa20714` revalidé de façon indépendante (mêmes résultats, 12 liens Stripe, `pwa.json` actif, pas de `/demo`) ;
+  - conseillers Supabase : 0 erreur.
+  Reste pour la synchronisation Stripe : une clé restreinte en lecture seule (Customers, Subscriptions, Products, Prices), le point de terminaison du webhook dans Stripe, les 2 secrets, puis le reflet (simulation, puis `--apply`).
+- Décision du fondateur sur le moteur IA (26/11) : activation **après validation juridique**, avec un suivi automatique des coûts par client, des plafonds de sécurité ajustables et une consommation qui suit l'usage réel (quotas par offre). Mécanismes déjà en place : registre des coûts par appel, économie IA par client (V13), plafonds global et par compte, alerte de budget réglable (`ai_admin_set_budget_alert`, installée en production), `plan_entitlements`.
 
 ## Blocages — action minimale du propriétaire
 
