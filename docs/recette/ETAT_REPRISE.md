@@ -132,6 +132,13 @@ Constats en lecture seule, à traiter avant les étapes suivantes :
 - **`subscriptions` vide (0 ligne), 1 dérogation** : la règle « abonnement actif » de `20261126120000` n'autorise que **1 compte sur 27** ; il en va de même pour l'e-mail entrant (offre Entrepreneur et plus). Stripe n'est pas reflété en base : à résoudre sans toucher aux liens de paiement existants.
 - Interface de l'e-mail entrant : variable de build `VITE_INBOUND_EMAIL_DOMAIN=mail.clair-dossier.com`.
 
+## Suite V13 (26/11)
+
+- Stripe LIVE, **lecture seule** : 0 webhook enregistré ; 4 abonnements dont **1 actif** (PME 20, 49 €/mois), 3 `incomplete_expired`. `subscriptions` vide en base = 1 seul abonnement réel à refléter.
+- Prêt pour Gérard (`DOSSIER_GERARD.md`, volet 2) : reflet Stripe (script existant), déploiement du webhook signé et idempotent, `dossier_is_closed` seule (`20261126100000`, 124 tests SQL verts), `pg_cron`, puis `20261126120000` sur accord.
+- Juridique : `DOSSIER_JURIDIQUE.md` (index) + projet de DPA `docs/ia/DPA_PROJET.md` ; rien publié.
+- `main` (PR #72, mobile) intégrée sans conflit ; commit candidat validé : typecheck ×2, 482 tests, 124 SQL, build 36 routes, aucun secret ni route de démonstration dans `dist/`, PWA présente.
+
 ## Blocages — action minimale du propriétaire
 
 1. **Supabase isolé hébergé** — BLOQUÉ : organisation à la limite gratuite (2 projets actifs, tous deux étrangers à ClairDossier ; les 2 projets ClairDossier sont en pause). Une action : autoriser la reprise de « ClairDossier's Projet » à la place d'un projet actif, ou un projet payant.
