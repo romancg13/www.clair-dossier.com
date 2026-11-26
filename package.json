@@ -15,6 +15,7 @@
     "test": "tsx --test tests/*.test.ts",
     "ia:commission": "node scripts/mise-en-service-supabase.mjs --ia-seulement",
     "ia:corpus": "node --import tsx scripts/ia-corpus-test.ts",
+    "ia:evaluation": "tsx scripts/ia-evaluation.ts",
     "recette:vercel": "node scripts/recette/vercel-build.mjs",
     "typecheck:recette": "tsc -p tsconfig.recette.json --noEmit"
   },

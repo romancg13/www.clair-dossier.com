@@ -12,6 +12,7 @@ import { DossierAttention } from "../components/dossier/DossierAttention";
 import { EmailInbox } from "../components/dossier/EmailInbox";
 import { DossierTracker } from "../components/dossier/DossierTracker";
 import { DeliverablesGrid, type DeliverableFile } from "../components/dossier/DeliverablesGrid";
+import { DossierIntelligence } from "../components/intelligence/DossierIntelligence";
 import { deliverableKeyFromName, deliverableKeyOf } from "../../supabase/functions/_shared/analysis-model.ts";
 // Statuts, typologies, étapes et libellés de réponses : source unique partagée
 // avec l'application mobile (packages/core) — mêmes libellés des deux côtés.
@@ -60,6 +61,8 @@ import {
  * VITE_AI_ENGINE=1 (voir docs/MOTEUR_IA.md).
  */
 const AI_ENGINE = import.meta.env.VITE_AI_ENGINE === "1";
+// ClairDossier IA à droite de « Vos résultats » : build VITE_INTELLIGENCE=1 + migration 20261126120000.
+const INTELLIGENCE = import.meta.env.VITE_INTELLIGENCE === "1";
 
 type DossierRow = {
   id: string;
@@ -1636,6 +1639,21 @@ export function DossierDetail() {
                     caption={aiDeliverables.length ? `Dernière version publiée le ${fmtDate(aiDeliverables[aiDeliverables.length - 1].created_at)}` : null}
                     emptyLabel={aiProgress.processing ? "En préparation…" : "Pas encore disponibles."}
                     catalogHint={AI_ENGINE}
+                    actions={
+                      INTELLIGENCE ? (
+                        <DossierIntelligence
+                          dossierId={dossier.id}
+                          ownerId={dossier.user_id}
+                          title={dossier.title || "Dossier"}
+                          isOwner={dossier.user_id === user?.id}
+                          pieces={pieces.map((d) => ({ id: d.id, file_name: d.file_name }))}
+                          available={[...new Set(deliverableFiles.map((f) => f.key))]}
+                          deadlines={deadlines}
+                          onFile={(k) => void deliverableFiles.find((f) => f.key === k)?.download()}
+                          onChanged={() => void reloadDeadlines(dossier.id, setDeadlines)}
+                        />
+                      ) : undefined
+                    }
                     busy={zipping}
                     onDownloadAll={() => downloadZip(deliverables, `documents-${dossier.title || dossier.id}.zip`)}
                   />

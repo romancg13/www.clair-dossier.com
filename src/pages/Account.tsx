@@ -24,6 +24,11 @@ import { useMyProfile } from '../lib/profile';
 import { DraftsPanel, ProfilePanel, SubscriptionPanel } from '../components/account/AccountPanels';
 import { MailConnect } from '../components/account/MailConnect';
 import { PersonalizeSpace } from '../components/account/PersonalizeSpace';
+import { InstallApp } from '../components/pwa/InstallApp';
+import { EspaceIntelligence } from '../components/intelligence/EspaceIntelligence';
+
+// ClairDossier Intelligence (centre d'actions, automatisations, préférences) : build VITE_INTELLIGENCE=1 + migration 20261126120000.
+const INTELLIGENCE = import.meta.env.VITE_INTELLIGENCE === '1';
 import { greeting } from '../../packages/core/src/index';
 
 type DossierRow = {
@@ -310,6 +315,14 @@ export function Account() {
           {profile && extended && <MailConnect />}
           {/* Aperçu des options : inerte sans VITE_OPTIONS_PREVIEW=1. */}
           <PersonalizeSpace />
+          {/* Application installable : même espace, depuis l'écran d'accueil. */}
+          <InstallApp />
+
+          {INTELLIGENCE && (
+            <div className="mt-6">
+              <EspaceIntelligence dossiers={dossiers.map((d) => ({ id: d.id, title: d.title }))} />
+            </div>
+          )}
 
           <SubscriptionPanel paidReturn={Boolean(paidPlan)} />
 

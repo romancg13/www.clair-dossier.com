@@ -1,0 +1,193 @@
+{
+  "date": "2026-11-25T15:08:21.003Z",
+  "node": "v22.23.5",
+  "preparation_du_corpus_ms": 36,
+  "volet1": {
+    "parametres": {
+      "fichiers": 50,
+      "composition": {
+        "pdf": 20,
+        "texte": 16,
+        "csv": 9,
+        "doublon": 4,
+        "illisible": 1
+      },
+      "octets_corpus": 44629,
+      "latence_simulee_ms": null,
+      "sondage_client": false,
+      "formule": "essentiel"
+    },
+    "depot": {
+      "duree_ms": 189,
+      "requetes": {
+        "n": 50,
+        "mediane_ms": 4,
+        "p95_ms": 88,
+        "max_ms": 134
+      },
+      "refus": {},
+      "acces": {
+        "lecture": 1484,
+        "autorite": 0,
+        "ecriture": 476,
+        "octetsLus": 12,
+        "octetsEcrits": 50,
+        "liste": 12,
+        "suppression": 0,
+        "total": 2034
+      }
+    },
+    "attente": {
+      "n": 50,
+      "mediane_ms": 77,
+      "p95_ms": 161,
+      "max_ms": 166
+    },
+    "extraction": {
+      "par_piece": {
+        "n": 50,
+        "mediane_ms": 1,
+        "p95_ms": 22,
+        "max_ms": 107
+      },
+      "premiere_piece_lue_ms": 114,
+      "toutes_pieces_lues_ms": 231
+    },
+    "premier_resultat": {
+      "serveur_ms": 1320,
+      "client_ms": null
+    },
+    "analyse_complete": {
+      "derniere_analyse_ms": 1312,
+      "derniere_vue_ms": 1320,
+      "revisions_calculees": 1,
+      "consolidations_executees": 1
+    },
+    "six_rendus": {
+      "derniere_publication_ms": 4329,
+      "calcul_total_ms": 3008,
+      "calcul_derniere_revision_ms": 3008,
+      "revisions_rendues": 1,
+      "documents_fabriques": 14
+    },
+    "fin_du_dernier_travail_ms": 4331,
+    "telechargement": {
+      "ms": 10,
+      "fichiers": 14,
+      "octets": 727014,
+      "acces": {
+        "lecture": 112,
+        "autorite": 0,
+        "ecriture": 0,
+        "octetsLus": 14,
+        "octetsEcrits": 0,
+        "liste": 0,
+        "suppression": 0,
+        "total": 126
+      }
+    },
+    "archive": {
+      "ms": 34,
+      "statut": 200,
+      "octets": 568607,
+      "acces": {
+        "lecture": 5,
+        "autorite": 0,
+        "ecriture": 0,
+        "octetsLus": 14,
+        "octetsEcrits": 0,
+        "liste": 0,
+        "suppression": 0,
+        "total": 19
+      }
+    },
+    "etat_final": {
+      "etat": "pret",
+      "pieces": 50,
+      "lues": 45,
+      "illisibles": 1,
+      "doublons_detectes": 4,
+      "doublons_attendus": 4,
+      "rendus_disponibles": 6,
+      "revision": 1
+    },
+    "stockage": {
+      "acces_jusqu_a_la_fin": {
+        "lecture": 2193,
+        "autorite": 0,
+        "ecriture": 734,
+        "octetsLus": 46,
+        "octetsEcrits": 64,
+        "liste": 53,
+        "suppression": 0,
+        "total": 3090
+      },
+      "operations": {
+        "simples": 2239,
+        "avancees": 851
+      },
+      "par_cle": {
+        "lecture:jobs": 901,
+        "lecture:pieces": 355,
+        "ecriture:jobs": 219,
+        "lecture:queue": 215,
+        "lecture:extractions": 146,
+        "lecture:subs": 133,
+        "lecture:dossiers": 119,
+        "ecriture:queue": 102,
+        "lecture:jobkeys": 100,
+        "lecture:users": 82,
+        "lecture:sessions": 81,
+        "lecture:events": 56,
+        "ecriture:events": 55,
+        "liste:pieces": 55,
+        "ecriture:pieces": 54,
+        "lecture:limites": 53
+      },
+      "file_octets_max": 8235,
+      "parallelisme_max": 0
+    },
+    "executeur": {
+      "relances": 3,
+      "passages": 53
+    },
+    "consultation_du_dossier": {
+      "ms": 5,
+      "acces": {
+        "lecture": 109,
+        "autorite": 0,
+        "ecriture": 0,
+        "octetsLus": 0,
+        "octetsEcrits": 0,
+        "liste": 1,
+        "suppression": 0,
+        "total": 110
+      },
+      "pendant_le_traitement": {
+        "n": 0,
+        "mediane_ms": null,
+        "p95_ms": null,
+        "max_ms": null
+      }
+    },
+    "liste_des_dossiers": {
+      "ms": 1,
+      "acces": {
+        "lecture": 7,
+        "autorite": 0,
+        "ecriture": 0,
+        "octetsLus": 0,
+        "octetsEcrits": 0,
+        "liste": 1,
+        "suppression": 0,
+        "total": 8
+      }
+    },
+    "memoire": {
+      "rss_depart_Mo": 155.1,
+      "rss_pic_Mo": 282.4,
+      "tas_depart_Mo": 39.7,
+      "tas_pic_Mo": 87.1
+    }
+  }
+}

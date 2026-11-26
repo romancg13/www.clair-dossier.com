@@ -6,8 +6,15 @@ import { Seo } from '../lib/seo';
 import { api, ApiError, ETAT_LABEL, frDate, type DossierListe } from './api';
 import { useMoi } from './useMoi';
 import { Alert, Card, Chip, Field, Kicker, Page, Primary, Secondary, inputCls } from './ui';
+import { InstallApp } from '../components/pwa/InstallApp';
+import { CentreActions, CoupeCircuitAdmin, DernierPassage, Preferences } from './Pilotage';
 
-const safeNext = (n: string | null) => (n && n.startsWith('/') && !n.startsWith('//') ? n : null);
+// Page de tarifs ORIGINALE : après connexion elle renvoie vers /tarifs?formule=… ; en recette, le paiement de la même formule.
+const safeNext = (n: string | null) => {
+  if (!n || !n.startsWith('/') || n.startsWith('//')) return null;
+  const f = /^\/tarifs\?formule=([a-z0-9-]+)$/.exec(n)?.[1];
+  return f ? `/abonnement?formule=${f}` : n;
+};
 
 export function RecetteConnexion() {
   const [q] = useSearchParams();
@@ -77,6 +84,7 @@ export function RecetteConnexion() {
           <Secondary onClick={() => void demo('sans-abonnement')}>Sans abonnement</Secondary>
         </div>
       </Card>
+      <InstallApp discret />
     </Page>
   );
 }
@@ -147,18 +155,21 @@ export function RecetteCompte() {
         {ab?.active ? <Primary to="/dossier/nouveau">Nouveau dossier</Primary> : <Primary to="/tarifs">Choisir une formule</Primary>}
         <span className="text-[13.5px] text-slate-500">{ab?.active ? `Formule ${ab.plan_name}${ab.period_end ? ` · jusqu’au ${frDate(ab.period_end)}` : ''}${ab.cancel_at_period_end || ab.status === 'canceled' ? ' (résiliée à terme)' : ''}` : 'Aucun abonnement actif : le dépôt de pièces est réservé aux abonnés.'}</span>
       </div>
+      <CentreActions />
       <ul className="mt-6 grid gap-3">
         {list?.map((d) => (
           <li key={d.id}>
             <Link to={`/compte/dossier/${d.id}`} className="block rounded-2xl border border-cream-200 bg-white p-5 transition hover:border-gold-500">
               <div className="flex flex-wrap items-center justify-between gap-2"><span className="text-[17px] font-semibold text-navy-900">{d.titre}</span><Chip tone={d.etat === 'pret' ? 'ok' : d.etat === 'en_cours' ? 'busy' : 'neutral'}>{ETAT_LABEL[d.etat]}</Chip></div>
-              <p className="mt-1 text-[14px] text-slate-500">{d.action ? `Prochaine action : ${d.action}` : `${d.pieces} pièce(s)`}</p>
+              <p className="mt-1 text-[14px] text-slate-500">{d.action && !/^Rien à faire/i.test(d.action) ? `Prochaine action : ${d.action}` : `${d.pieces} pièce${d.pieces > 1 ? 's' : ''}`}</p>
             </Link>
           </li>
         ))}
         {list && !list.length && <li className="text-[15px] text-slate-500">Aucun dossier pour le moment.</li>}
       </ul>
       <Automatisations />
+      <Preferences />
+      <InstallApp />
       <details className="mt-4 rounded-2xl border border-cream-200 bg-white p-5">
         <summary className="cursor-pointer text-[15px] font-medium text-navy-900">Suivi depuis ChatGPT ou Claude (lecture seule)</summary>
         <p className="mt-3 text-[14px] text-slate-500">Adresse du serveur : <code className="rounded bg-cream-100 px-1.5 py-0.5">{window.location.origin}/mcp</code>. Accès en lecture seule à l’état de vos dossiers, sans les pièces ; vous l’autorisez à la première connexion et pouvez le retirer ici.</p>
@@ -255,6 +266,7 @@ function Automatisations() {
           </li>
         ))}
       </ul>
+      <DernierPassage />
     </section>
   );
 }
@@ -293,6 +305,7 @@ export function RecetteAdmin() {
           )}
         </section>
       )}
+      <CoupeCircuitAdmin />
       {x && (<><p className="mt-4 text-[14px]">Travaux en file : {x.file}</p><h2 className="mt-6 text-[18px] font-semibold">Travaux en échec ({x.travaux_en_echec.length})</h2><ul className="mt-2 text-[14px]">{x.travaux_en_echec.map((t) => <li key={t.id}>{t.kind} · dossier {t.dossier.slice(0, 8)} · {t.tentatives} tentatives · {t.erreur}</li>)}</ul><h2 className="mt-6 text-[18px] font-semibold">Alertes</h2><ul className="mt-2 text-[14px]">{x.alertes.map((a, i) => <li key={i}>{new Date(a.at).toLocaleString('fr-FR')} · {a.code} · {JSON.stringify(a.meta)}</li>)}</ul></>)}
     </Page>
   );

@@ -75,7 +75,8 @@ export interface ExtractionRec {
   /** Lecture reportée (lecture visuelle indisponible, budget du lot) : ce n'est pas au client d'agir. */
   deferred?: boolean;
   /** Pièce lue par les règles déterministes faute de budget IA (résultat partiel) ; la lecture IA reprend au cycle suivant. */
-  fallback?: BudgetScope;
+  /** Repli budget, ou 'progressif' : lecture par règles publiée en premiers résultats, remplacée par la lecture IA. */
+  fallback?: BudgetScope | 'progressif';
   /** Relectures automatiques déjà tentées après un échec définitif (plafonnées, attente croissante). */
   rereads?: number;
   data: StoredExtraction | null;
@@ -104,6 +105,8 @@ export interface CoverageRec {
   fallback?: number;
   /** Motif lisible d'un résultat partiel pour cause de budget IA (pièces ou consolidation en repli). */
   partial_reason?: string;
+  /** Premiers résultats (règles) publiés pendant que la lecture approfondie se poursuit. */
+  provisional?: boolean;
   complete: boolean;
 }
 
@@ -158,6 +161,11 @@ export interface EngineStore {
   /** Droits revérifiés côté serveur (abonnement actif ou résilié non échu). */
   entitlementActive(userId: string): Promise<boolean>;
   listPieces(dossierId: string): Promise<PieceRec[]>;
+  /**
+   * Facultatif : la pièce et celles du dossier de MÊME empreinte (elle comprise), triées par dépôt, sans lire les
+   * autres fiches. Absent : le moteur lit toutes les pièces du dossier (listPieces).
+   */
+  piecesOfSameContent?(dossierId: string, pieceId: string): Promise<{ piece: PieceRec | null; same: PieceRec[] }>;
   getPiece(id: string): Promise<PieceRec | null>;
   readPieceBytes(piece: PieceRec): Promise<Uint8Array>;
   /** Rattache une pièce à son original ; null la rend de nouveau principale. */
@@ -183,6 +191,11 @@ export interface EngineStore {
   getPublished(dossierId: string): Promise<Partial<Record<DeliverableKey, PublishedCategory>>>;
   /** Publication ATOMIQUE d'une catégorie : fichiers écrits, puis bascule du pointeur ; anciennes versions conservées. */
   publishCategory(dossierId: string, userId: string, category: DeliverableKey, revision: number, dataHash: string, files: OutFileLite[], status: 'approved' | 'pending'): Promise<void>;
+  /**
+   * Facultatif : publication groupée de plusieurs catégories (fichiers écrits de front, pointeurs basculés ensemble),
+   * mêmes garanties que publishCategory pour chacune. Absent : une publication par catégorie.
+   */
+  publishCategories?(dossierId: string, userId: string, revision: number, items: { category: DeliverableKey; dataHash: string; files: OutFileLite[] }[], status: 'approved' | 'pending'): Promise<void>;
   /** Jeu de données d'affichage (web) de la révision publiée. */
   putView(dossierId: string, revision: number, view: unknown, status: 'approved' | 'pending'): Promise<void>;
 
@@ -222,6 +235,12 @@ export interface EngineConfig {
   consolidateDelayMs: number;
   /** Attente avant de retenter une consolidation dont des lectures sont encore en cours (défaut 20 s). */
   extractionWaitMs?: number;
+  /** Analyse progressive : premiers résultats par règles publiés aussitôt, puis remplacés par l'analyse IA. */
+  progressive?: boolean;
+  /** Attente avant la lecture IA qui suit les premiers résultats (laisse passer la première synthèse). */
+  progressiveDelayMs?: number;
+  /** Attente maximale de la première synthèse avant de lancer la lecture IA d'une pièce. */
+  progressiveMaxWaitMs?: number;
   now: () => Date;
   workerId: string;
   /** Attentes successives avant relecture automatique d'une pièce en échec définitif (défaut : 1 h, 6 h, 24 h ; [] = aucune). */

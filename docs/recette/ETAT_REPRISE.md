@@ -1,10 +1,30 @@
-# État de reprise — recette ClairDossier (V5)
+# État de reprise — recette ClairDossier (V6)
 
-Mis à jour : 2026-11-25 · branche unique `claude/clairdossier-optimization-85z7y5` (PR brouillon #70, NON fusionnée) · base `main@6f8f788`.
-La PR #68 (`claude/clair-dossier-workflow-63mjz1@c9753d6`) y est fusionnée : #70 est la seule référence.
-Production : inchangée. Aucune migration appliquée à un Supabase distant, aucun paiement, aucun DNS.
+Mis à jour : 2026-11-25 · PR #70 **fusionnée** (production `85bbb4e`) · travaux V6 : branche `claude/clairdossier-optimization-85z7y5`, PR brouillon #71, NON fusionnée · commit déployé : voir `ETAT_FONCTIONNALITES.md`.
+Source unique de l'état de chaque fonctionnalité : `ETAT_FONCTIONNALITES.md` (122 lignes, synthèse calculée). Sécurité de la production : `SECURITE_ISOLATION.md`.
+Production : site inchangé depuis la fusion ; base : correctif `20261125150000` et supervision `20261125140000` appliqués le 26/11 (section « Production Supabase — 26/11 »). Aucun paiement. Appels d'API payants : recette uniquement (clé installée le 25/11), environ 1,41 € de lecture (plafond 1,50 €) et environ 0,2 USD d'assistant — total ≈ 1,75 USD sur 2 autorisés.
+Décisions du propriétaire (25/11, V12) : budget IA +0,60 USD accordé ; Supabase de recette : rester en local ; correctif de production 20261125150000 : PRÉ-AUTORISÉ s'il manque, après sauvegarde (accès à l'organisation toujours absent) ; Stripe bac à sable : différé.
 
 Légende : VÉRIFIÉ EN LOCAL · VÉRIFIÉ SUR RECETTE HÉBERGÉE · IMPLÉMENTÉ NON TESTÉ · SIMULÉ · BLOQUÉ · DIFFÉRÉ.
+
+## Travaux V6 (2026-11-25)
+
+| Lot | Statut | Preuve |
+|---|---|---|
+| Diagnostic d'isolation en lecture seule pour la production | VÉRIFIÉ EN LOCAL · production BLOQUÉ (aucun accès) | `supabase/verification/`, 118 tests SQL |
+| Centre d'actions multidossiers, préférences de l'assistant | VÉRIFIÉ SUR RECETTE | `tests/recette-pilotage.test.ts`, `captures/v6-recette-compte.png` |
+| « Depuis votre dernière visite », coupe-circuit, alertes de budget 70/90/100 % | VÉRIFIÉ EN LOCAL | idem, `tests/recette-assistant.test.ts` (16) |
+| Premier résultat plus tôt (exécuteur, accès au stockage, sondage adaptatif) | VÉRIFIÉ SUR RECETTE : 15 s (premier résultat), 23 s (six rendus) contre 37–39 s | `tests/recette-performance.test.ts`, `scripts/recette/latence.ts` |
+| Preuve de passage du planificateur | VÉRIFIÉ EN LOCAL ; recette : automatisation quotidienne créée, passage du 26/11 07:05 UTC à lire | `/api/planificateur` |
+| Évaluation continue du moteur ; correctif « partie inventée » | VÉRIFIÉ EN LOCAL (exactitude 100 %, citations 100 %) | `npm run ia:evaluation`, `tests/evaluation-moteur.test.ts` |
+| Rentabilité : gros consommateur, seuil, croissance, avec/sans crédits | VÉRIFIÉ EN LOCAL (consommations ESTIMÉES) | `RENTABILITE.md` |
+| Capacité 10 → 250 fichiers et 20 × 250 | VÉRIFIÉ EN LOCAL ; recette hébergée : NON TESTÉ | `CAPACITE.md`, `mesures/` ; correctif du rendu « Résumé » (288 s → 14 s à 250 fichiers) |
+| Build de production contrôlé, procédure de mise en production | VÉRIFIÉ EN LOCAL, non exécutée | `DEPLOIEMENT_PRODUCTION.md` |
+| Exécution par le planificateur hébergé, navigateur fermé | VÉRIFIÉ SUR RECETTE : passage du 25/11 à 16:10:36 UTC, 1 automatisation exécutée | `/api/planificateur`, preuve d'exécution datée |
+| Application installable (PWA) | VÉRIFIÉ EN LOCAL et par émulation sur la recette ; aucun appareil physique | `PWA.md`, `tests/pwa.test.ts` |
+| Clé API Claude, Supabase de production, Stripe bac à sable, OAuth Gmail/Outlook | BLOQUÉ | actions propriétaire ci-dessous |
+
+Tests : 467 unitaires, 118 SQL, typecheck site + recette, build recette OK.
 
 ## Environnements (une seule branche, un seul build : `scripts/vercel-build.mjs`)
 
@@ -68,10 +88,70 @@ Lot fusionné (`2b88a05`), chaque point avec un test qui échoue sans le correct
 
 Le gain de latence réel sur la recette hébergée est à lire dans la remise (mesure navigateur), pas dans ces compteurs.
 
+## Travaux V11 (2026-11-25) — IA réelle sur la recette
+
+| Lot | Statut | Preuve |
+|---|---|---|
+| Clé `ANTHROPIC_API_KEY` (sensible, recette seulement), redéploiement | VÉRIFIÉ SUR RECETTE | commit déployé `74767fa`, aucune valeur affichée |
+| Assistant avec modèle : routage Haiku / Sonnet / Opus, outils, sources | VÉRIFIÉ SUR RECETTE | 9–25 s par réponse ; 0,085 puis 0,067 USD pour 3 questions |
+| Lecture des pièces par le modèle | VÉRIFIÉ SUR RECETTE | 2,5 à 32 c€ par pièce |
+| Synthèse par le modèle | VÉRIFIÉ SUR RECETTE après 2 correctifs | API : « compiled grammar is too large » → outil non strict + validation zod ; `tests/schema-filaire.test.ts` |
+| Plafond global de lecture (1 €/mois) | ATTEINT le 25/11, repli par règles VÉRIFIÉ | alerte BUDGET ; plus de lecture IA avant décembre sans accord |
+| Rentabilité avec coûts mesurés | VÉRIFIÉ (petit échantillon) | `RENTABILITE.md` : usage normal 84–89 %, intensif 14–62 %, seuil 6 clients |
+| Unification sur Supabase (pages originales + IA + automatisations pg_cron) | VÉRIFIÉ SUR SUPABASE LOCAL | `UNIFICATION.md`, captures `v11-*` |
+
+V12 (25/11) — analyse progressive : avec l'IA, les règles publient des « Premiers résultats — analyse en cours » sans aucun appel payant, puis la lecture et la synthèse IA les remplacent (une notification, avec l'analyse complète ; jamais par-dessus une synthèse IA déjà publiée). `tests/moteur-progressif.test.ts` (3), drapeau `progressive` de la configuration du moteur, actif sur la recette seulement. Mesure réelle sur la recette hébergée (accord du propriétaire : 0,60 USD ; plafond de lecture porté à 150 c€ par `RECETTE_BUDGET_GLOBAL_CENTIMES`) : 3 pièces, avant correctif d'ordre : premiers résultats 38 s, analyse IA 168 s, 26,6 c€ ; 2 pièces, après correctif (première synthèse avant toute lecture IA, 3 lectures de front) : premiers résultats **10 s**, analyse IA **86 s**, six rendus 93 s, 14,6 c€. Dépensé sur cet accord : 41,2 c€ (≈ 0,45 USD) ; reste ≈ 9 c€ sous le plafond : plus d'essai IA sans nouvel accord. Captures `v12-premiers-resultats.png`, `v12-analyse-complete.png`.
+
+Point faible : premier résultat avec IA 142–207 s (30 s par règles). Piste : publier d'abord l'aperçu par règles puis remplacer par la synthèse du modèle, effort réduit pour la consolidation.
+
+## Travaux V13 (2026-11-25)
+
+| Lot | Statut | Preuve |
+|---|---|---|
+| Dossier unique pour Gérard (sauvegarde, diagnostic, correctif, contrôle, capacité) | PRÊT, en attente de Gérard | `DOSSIER_GERARD.md` |
+| Économie de l'IA : marge par client, projection, anomalies, recommandations (lecture seule) | VÉRIFIÉ EN LOCAL | `tests/economie-ia.test.ts`, `AdminEconomieIa.tsx` |
+| Budget IA : pas de budget mensuel définitif (décision du fondateur) ; plafonds actuels conservés | CONSIGNÉ | recette : 150 c€/mois lecture, 0,80 USD assistant |
+| Gmail / Outlook / Resend | BLOQUÉ : aucun outil de navigateur dans la session ; comptes à créer par le fondateur | `MESSAGERIE_DIRECTE.md`, `EMAIL_ENTRANT.md` |
+
+## Production Supabase — 26/11/2026 (accord écrit du fondateur)
+
+Fait par Claude Code (session locale), psql 17 en transaction, ligne d'historique au numéro du dépôt (jamais `db push`).
+
+| Étape | Statut | Preuve |
+|---|---|---|
+| Sauvegarde avant écriture (`pg_dump` complet, restauration relue) | VÉRIFIÉ | 27 comptes, 15 dossiers, 353 pièces ; SHA-256 `772700fd…3812bce` ; copie chiffrée vers un stockage du fondateur : en attente de sa clé publique GPG et de la destination |
+| Diagnostic d'isolation | VÉRIFIÉ | blocs [2]–[4] = 0 : aucune pièce ni échéance rattachée au dossier d'un autre compte ; RLS active sur 17/17 tables |
+| Correctif `20261125150000` | VÉRIFIÉ EN PRODUCTION | contrôle 3 × `true` ; 2 comptes fictifs en transaction annulée : avant, T2–T4 autorisés (faille reproduite) ; après, refusés (42501), dépôt dans son propre dossier toujours autorisé ; 0 résidu |
+| Supervision `20261125140000` | VÉRIFIÉ EN PRODUCTION | admin : lecture, pause et reprise ; client : FORBIDDEN, 0 ligne ; visiteur : 42501 ; conseillers Supabase : 0 erreur |
+| Dépôt réel depuis le site avec un compte client de test | À FAIRE (fondateur) | aucune connexion par mot de passe en production côté Claude |
+
+Constats en lecture seule, à traiter avant les étapes suivantes :
+
+- **`public.dossier_is_closed` absente en production** (définie seulement dans `20261023120000`, moteur IA). `20261118130000` et `email-inbound` l'appellent : la créer seule d'abord (elle ne lit que `dossier_events` et `dossiers`).
+- **`pg_cron` non installé en production** : `20261126120000` s'appliquerait sans erreur mais ne planifierait rien ; activer l'extension avant, sinon aucune automatisation ne s'exécute.
+- **`subscriptions` vide (0 ligne), 1 dérogation** : la règle « abonnement actif » de `20261126120000` n'autorise que **1 compte sur 27** ; il en va de même pour l'e-mail entrant (offre Entrepreneur et plus). Stripe n'est pas reflété en base : à résoudre sans toucher aux liens de paiement existants.
+- Interface de l'e-mail entrant : variable de build `VITE_INBOUND_EMAIL_DOMAIN=mail.clair-dossier.com`.
+
+## Suite V13 (26/11)
+
+- Stripe LIVE, **lecture seule** : 0 webhook enregistré ; 4 abonnements dont **1 actif** (PME 20, 49 €/mois), 3 `incomplete_expired`. `subscriptions` vide en base = 1 seul abonnement réel à refléter.
+- Prêt pour Gérard (`DOSSIER_GERARD.md`, volet 2) : reflet Stripe (script existant), déploiement du webhook signé et idempotent, `dossier_is_closed` seule (`20261126100000`, 124 tests SQL verts), `pg_cron`, puis `20261126120000` sur accord.
+- Juridique : `DOSSIER_JURIDIQUE.md` (index) + projet de DPA `docs/ia/DPA_PROJET.md` ; rien publié.
+- `main` (PR #72, mobile) intégrée sans conflit ; commit candidat validé : typecheck ×2, 482 tests, 124 SQL, build 36 routes, aucun secret ni route de démonstration dans `dist/`, PWA présente.
+- Accord écrit du fondateur (26/11, soir), exécuté par Claude Code en session locale après une nouvelle sauvegarde (`pg_dump` vérifié, SHA-256 `d124e609…5e914c9239`) :
+  - correctif `20261125150000` reconfirmé (3 × `true`) ;
+  - `pg_cron` 1.6.4 activé, exécution réelle constatée à 17:26 UTC, tâche d'essai retirée ;
+  - `20261126120000` essayée sur la base de production en transaction annulée : 10/10 (abonné autorisé, non-abonné refusé, isolement, passage du planificateur, une seule exécution par échéance, arrêt si l'abonnement prend fin), aucune trace ;
+  - `stripe-webhook` déployée (code de `main`), inerte sans ses secrets ;
+  - commit candidat `fa20714` revalidé de façon indépendante (mêmes résultats, 12 liens Stripe, `pwa.json` actif, pas de `/demo`) ;
+  - conseillers Supabase : 0 erreur.
+  Reste pour la synchronisation Stripe : une clé restreinte en lecture seule (Customers, Subscriptions, Products, Prices), le point de terminaison du webhook dans Stripe, les 2 secrets, puis le reflet (simulation, puis `--apply`).
+- Décision du fondateur sur le moteur IA (26/11) : activation **après validation juridique**, avec un suivi automatique des coûts par client, des plafonds de sécurité ajustables et une consommation qui suit l'usage réel (quotas par offre). Mécanismes déjà en place : registre des coûts par appel, économie IA par client (V13), plafonds global et par compte, alerte de budget réglable (`ai_admin_set_budget_alert`, installée en production), `plan_entitlements`.
+
 ## Blocages — action minimale du propriétaire
 
 1. **Supabase isolé hébergé** — BLOQUÉ : organisation à la limite gratuite (2 projets actifs, tous deux étrangers à ClairDossier ; les 2 projets ClairDossier sont en pause). Une action : autoriser la reprise de « ClairDossier's Projet » à la place d'un projet actif, ou un projet payant.
-2. **Analyse IA réelle** — BLOQUÉ : aucune clé d'API dans le coffre de la recette. Une action, détaillée dans `ACTIVATION_API.md` : créer la clé (workspace dédié, limite 2 USD) et l'ajouter comme `ANTHROPIC_API_KEY` du projet Vercel de recette. Tout le reste est prêt.
+2. **Analyse IA réelle** — ACTIVE sur la recette (25/11). Plafond de lecture de 1 €/mois atteint : poursuivre les essais demande l'accord du propriétaire pour relever ce plafond (dans la limite totale de 2 USD).
 3. **Messagerie** — BLOQUÉ : applications OAuth Google Cloud et Microsoft Entra, compte Resend.
 4. **Stripe bac à sable** — DIFFÉRÉ : paiement simulé sur la recette ; aucune option n'est vendue.
 5. **Juridique** — CGV art. 6, confidentialité, AIPD : projets dans `MOTEUR_ET_CONFORMITE.md` et `REMISE.md` §6, rien publié.
@@ -84,8 +164,11 @@ MCP depuis l'interface ChatGPT/Claude, démonstration universelle (protections p
 
 - Tests : `npm run typecheck && npm run typecheck:recette && npm test` ; SQL : `npm install --no-save @electric-sql/pglite && node tests/sql/migrations.pglite.mjs`.
 - Recette Supabase locale : voir `RECETTE_LOCALE.md`.
-- Retour arrière : rien n'est fusionné. Preview : redéployer `0f4d057` (V3) sur les deux projets. Chaque migration a son fichier dans `supabase/rollback/`.
+- Retour arrière : la PR #71 n'est pas fusionnée. Recette et preview : redéployer `a5a152b` (V5) sur les deux projets. Production : revert de `85bbb4e`. Chaque migration a son fichier dans `supabase/rollback/`.
 
 ## Prochaine action
 
-Attendre l'accord explicite du propriétaire avant toute fusion dans `main`, toute migration réelle et toute activation du lien commercial universel.
+1. Fait le 26/11 (diagnostic, correctif, supervision). Reste : dépôt réel depuis le site par le fondateur ; `dossier_is_closed`, `pg_cron` et reflet des abonnements Stripe en base avant l'e-mail entrant et `20261126120000`.
+2. Propriétaire : clé API (`ACTIVATION_API.md`), puis `npm run ia:evaluation` avec modèle.
+3. Lire le passage du planificateur du 26/11 ; relancer la mesure de capacité.
+Aucune fusion dans `main`, migration réelle ou activation du lien universel sans accord explicite.

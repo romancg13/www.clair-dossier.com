@@ -1,4 +1,6 @@
 import { StrictMode } from 'react';
+import { demarrerPwa } from './lib/pwa';
+import { MiseAJourDisponible } from './components/pwa/InstallApp';
 import { createRoot, hydrateRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App, { preloadForPath } from './App';
@@ -18,6 +20,7 @@ const app = (
     <BrowserRouter>
       <AuthProvider>
         <App />
+        <MiseAJourDisponible />
       </AuthProvider>
     </BrowserRouter>
   </StrictMode>
@@ -28,6 +31,7 @@ const app = (
 // frontière Suspense n'affiche jamais son fallback par-dessus le contenu
 // serveur. Coquille SPA vierge (routes privées, fallback) : rendu client
 // classique, comportement inchangé.
+demarrerPwa();
 if (container.firstElementChild) {
   void preloadForPath(window.location.pathname).finally(() => hydrateRoot(container, app));
 } else {

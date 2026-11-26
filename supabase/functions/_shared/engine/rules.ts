@@ -115,7 +115,13 @@ function partiesOf(units: Unit[], all: string): ExtractionOutput['parties'] {
   for (const u of units) {
     for (const m of u.text.matchAll(/\bSCI(?: des| de la| du| de)? [A-ZÉ][\wÀ-ÿ'-]+/g)) add(m[0], /bailleur|proprietaire/.test(fall) ? 'bailleur' : 'société civile immobilière', u, m[0]);
     for (const m of u.text.matchAll(/\bCabinet [A-ZÉ][\wÀ-ÿ-]+(?: [A-ZÉ][\wÀ-ÿ-]+){0,2}/g)) add(m[0], /gestion/.test(fold(m[0])) ? 'gestionnaire pour le bailleur' : 'cabinet', u, m[0]);
-    for (const m of u.text.matchAll(/\b([A-ZÉ][\wÀ-ÿ'-]+(?: [A-ZÉ][\wÀ-ÿ'-]+){0,2}) (SARL|SAS|SASU|EURL|EI)\b/g)) add(m[0], /(preneur|locataire)/.test(fall) ? 'locataire (preneur)' : 'société', u, m[0]);
+    // Fin de chaque nom de SCI de l'unité : « SCI des Tilleuls Atelier Lumen SARL » (colonnes accolées) = deux parties, pas une.
+    const finsSci = new Set([...u.text.matchAll(/\bSCI(?: des| de la| du| de)? [A-ZÉ][\wÀ-ÿ'-]+/g)].map((m) => m.index + m[0].length));
+    for (const m of u.text.matchAll(/\b([A-ZÉ][\wÀ-ÿ'-]+(?: [A-ZÉ][\wÀ-ÿ'-]+){0,2}) (SARL|SAS|SASU|EURL|EI)\b/g)) {
+      const premier = m[1].split(' ')[0];
+      const nom = finsSci.has(m.index + premier.length) && m[1].includes(' ') ? m[0].slice(premier.length + 1) : m[0];
+      add(nom, /(preneur|locataire)/.test(fall) ? 'locataire (preneur)' : 'société', u, nom);
+    }
     if (u.locator === 'en-tête De') {
       const m = /^"?([^"<]+?)"?\s*</.exec(u.text);
       if (m) add(m[1], 'expéditeur du courriel', u, m[1].trim());
@@ -273,6 +279,10 @@ export function consolidateByRules(input: ConsolidationInput): AnalysisOutput {
   // Les pièces émises par un tiers (courrier, facture, relevé) priment sur les déclarations du titulaire (courriel).
   const rank = (t: string) => ['courrier', 'facture', "avis d'échéance", 'relevé de charges', 'bail commercial', 'contrat', 'devis', 'document'].indexOf(t) + 1 || 9;
   const cmp = allAmounts.filter((a) => a.kind === 'claimed' || a.kind === 'due').sort((a, b) => rank(a.docType) - rank(b.docType));
+  // Mise en forme des montants gardée en mémoire le temps de la comparaison : chaque paire relit les écarts déjà
+  // relevés, et la mise en forme (Intl) dominait le calcul d'un gros dossier. Résultat strictement identique.
+  const euros = new Map<number, string>();
+  const euro = (v: number) => euros.get(v) ?? (euros.set(v, frEuro(v)), euros.get(v)!);
   for (let i = 0; i < cmp.length; i++) {
     for (let j = i + 1; j < cmp.length; j++) {
       const a = cmp[i], b = cmp[j];
@@ -283,7 +293,8 @@ export function consolidateByRules(input: ConsolidationInput): AnalysisOutput {
       const ya = yearsOf(`${a.label} ${a.evidence[0]?.quote ?? ''}`), yb = yearsOf(`${b.label} ${b.evidence[0]?.quote ?? ''}`);
       if (ya.length && yb.length && !ya.some((y) => yb.includes(y))) continue;
       const pair = [a.amount, b.amount].sort((x, y) => x - y).join('/');
-      const existing = contradictions.find((c) => c.kind === 'amount' && c.text.includes(frEuro(Math.max(a.amount, b.amount))) && c.text.includes(frEuro(Math.min(a.amount, b.amount))));
+      const haut = euro(Math.max(a.amount, b.amount)), bas = euro(Math.min(a.amount, b.amount));
+      const existing = contradictions.find((c) => c.kind === 'amount' && c.text.includes(haut) && c.text.includes(bas));
       if (existing) {
         for (const x of [a, b]) if (!existing.evidence.some((e) => e.document_id === x.id && e.quote === x.evidence[0].quote)) existing.evidence.push(dq(x.id, x.evidence[0]));
         continue;

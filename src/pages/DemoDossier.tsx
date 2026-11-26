@@ -250,6 +250,10 @@ export function DemoDossier() {
               <a className="font-semibold text-navy-900 underline" href="https://clairdossier-recette-20b5a2.vercel.app/connexion" rel="noopener noreferrer">
                 ouvrir la recette
               </a>
+              {" "}— vous pourrez aussi y{" "}
+              <a className="font-semibold text-navy-900 underline" href="https://clairdossier-recette-20b5a2.vercel.app/connexion#installer" rel="noopener noreferrer">
+                installer l’application
+              </a>
               .
             </span>
           </details>

@@ -3,7 +3,7 @@
 // Aucun outil n'est exposé au modèle ; sortie à schéma strict, revalidée localement.
 import type Anthropic from '@anthropic-ai/sdk';
 import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
-import { AnalysisOutputSchema, ExtractionOutputSchema, validate, type AnalysisOutput, type ExtractionOutput } from './schemas.ts';
+import { AnalysisWireSchema, ExtractionOutputSchema, fromWire, validate, type AnalysisOutput, type AnalysisWire, type ExtractionOutput } from './schemas.ts';
 import { consolidationSystem, extractionSystem, wrapData } from './prompts.ts';
 import type { PreparedPiece } from './reading.ts';
 import type { ConsolidationInput } from './rules.ts';
@@ -32,9 +32,31 @@ export interface AnthropicOptions {
   timeoutMs?: number;
 }
 
+/**
+ * Un outil non strict peut rendre un tableau ou un objet SOUS FORME DE TEXTE JSON (« "[{…}]" ») : on relit ce texte,
+ * champ de premier niveau par champ, avant la validation stricte. Rien n'est inventé ni assoupli : un texte qui n'est
+ * pas un JSON valide reste tel quel et la validation le refuse.
+ */
+export function relireChampsJson(input: unknown): unknown {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) return input;
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(input as Record<string, unknown>)) {
+    if (typeof v === 'string' && /^\s*[[{]/.test(v)) {
+      try {
+        out[k] = JSON.parse(v);
+        continue;
+      } catch {
+        /* texte ordinaire */
+      }
+    }
+    out[k] = v;
+  }
+  return out;
+}
+
 export function createAnthropicProvider(o: AnthropicOptions): ModelProvider {
   const timeout = o.timeoutMs ?? 120_000;
-  async function call<T>(model: string, system: string, content: Anthropic.MessageParam['content'], schema: typeof ExtractionOutputSchema | typeof AnalysisOutputSchema): Promise<ModelResult<T>> {
+  async function call<T>(model: string, system: string, content: Anthropic.MessageParam['content'], schema: typeof ExtractionOutputSchema | typeof AnalysisWireSchema): Promise<ModelResult<T>> {
     try {
       const res = await o.client.messages.parse(
         { model, max_tokens: 16000, system, messages: [{ role: 'user', content }], output_config: { format: zodOutputFormat(schema as never) } } as never,
@@ -51,7 +73,44 @@ export function createAnthropicProvider(o: AnthropicOptions): ModelProvider {
       const status = err.status ?? 0;
       // Type d'erreur du fournisseur (jamais le contenu de la pièce) : diagnostic d'exploitation.
       const type = (err.error?.error?.type ?? err.error?.type ?? '').slice(0, 40);
-      return { ok: false, kind: t ? 'timeout' : 'unavailable', message: `${t ? 'délai dépassé' : `fournisseur indisponible (${status || 'réseau'}${type ? ` ${type}` : ''})`}`, retryable: t || status === 0 || status === 429 || status >= 500 };
+      return { ok: false, kind: t ? 'timeout' : 'unavailable', message: `${t ? 'délai dépassé' : `fournisseur indisponible (${status || 'réseau'}${type ? ` ${type}` : ''})`}${status === 400 ? ` : ${String((err.error as { error?: { message?: string } } | undefined)?.error?.message ?? '').slice(0, 200)}` : ''}`, retryable: t || status === 0 || status === 429 || status >= 500 };
+    }
+  }
+  /**
+   * Synthèse : objet rendu par un outil non strict, puis validé STRICTEMENT ici (même schéma). Les sorties structurées
+   * à grammaire sont refusées pour ce schéma (« The compiled grammar is too large », 400, recette du 25/11/2026) ; une
+   * sortie non conforme est traitée comme « invalid » (nouvelle tentative, puis repli annoncé sur les règles).
+   */
+  async function callJson<T>(model: string, system: string, content: Anthropic.MessageParam['content'], schema: typeof AnalysisWireSchema): Promise<ModelResult<T>> {
+    // Outil NON strict : l'API rend toujours un objet JSON bien formé (aucune grammaire compilée) ; le contenu est
+    // ensuite validé strictement ici. Choix d'outil « auto » (le choix forcé est refusé par les modèles récents).
+    const input_schema = (zodOutputFormat(schema as never) as unknown as { schema: Record<string, unknown> }).schema;
+    try {
+      const res = (await o.client.messages.create(
+        {
+          model,
+          max_tokens: 16000,
+          system: `${system}\n\nRends ta synthèse en appelant UNE seule fois l'outil enregistrer_synthese, sans autre texte.`,
+          tools: [{ name: 'enregistrer_synthese', description: 'Enregistre la synthèse du dossier (forme imposée).', input_schema }],
+          tool_choice: { type: 'auto' },
+          messages: [{ role: 'user', content }],
+        } as never,
+        { timeout },
+      )) as Anthropic.Message;
+      const usage = { input_tokens: res.usage?.input_tokens ?? 0, output_tokens: res.usage?.output_tokens ?? 0, model: res.model ?? model };
+      if (res.stop_reason === 'refusal') return { ok: false, kind: 'refusal', message: 'refus du modèle', retryable: false, ...usage };
+      if (res.stop_reason === 'max_tokens') return { ok: false, kind: 'invalid', message: 'sortie tronquée (limite de jetons)', retryable: true, ...usage };
+      const appel = res.content.find((b): b is Anthropic.ToolUseBlock => b.type === 'tool_use' && b.name === 'enregistrer_synthese');
+      if (!appel) return { ok: false, kind: 'invalid', message: 'sortie non conforme : synthèse non rendue par l’outil', retryable: true, ...usage };
+      const v = validate(schema as never, relireChampsJson(appel.input));
+      if (!v.ok) return { ok: false, kind: 'invalid', message: `sortie non conforme : ${v.error}`, retryable: true, ...usage };
+      return { ok: true, data: v.data as T, ...usage };
+    } catch (e) {
+      const err = e as { status?: number; name?: string; message?: string; error?: { error?: { type?: string; message?: string }; type?: string } };
+      const t = /timeout|timed out|aborted/i.test(`${err.name} ${err.message}`);
+      const status = err.status ?? 0;
+      const type = (err.error?.error?.type ?? err.error?.type ?? '').slice(0, 40);
+      return { ok: false, kind: t ? 'timeout' : 'unavailable', message: `${t ? 'délai dépassé' : `fournisseur indisponible (${status || 'réseau'}${type ? ` ${type}` : ''})`}${status === 400 ? ` : ${String(err.error?.error?.message ?? '').slice(0, 200)}` : ''}`, retryable: t || status === 0 || status === 429 || status >= 500 };
     }
   }
   return {
@@ -76,7 +135,10 @@ export function createAnthropicProvider(o: AnthropicOptions): ModelProvider {
         evenements: input.events.map((e) => ({ cle: e.key, date: e.date, nature: e.kind, libelle: e.label })),
         pieces: corpus,
       };
-      return call<AnalysisOutput>(o.modelConsolidate, consolidationSystem(input.today), [{ type: 'text', text: wrapData(boundary, 'dossier', JSON.stringify(payload)) }], AnalysisOutputSchema);
+      // Forme filaire (chaîne vide = absent), validée strictement puis convertie vers la forme stockée.
+      return callJson<AnalysisWire>(o.modelConsolidate, consolidationSystem(input.today), [{ type: 'text', text: wrapData(boundary, 'dossier', JSON.stringify(payload)) }], AnalysisWireSchema).then(
+        (r): ModelResult<AnalysisOutput> => (r.ok ? { ...r, data: fromWire(r.data) } : r),
+      );
     },
   };
 }

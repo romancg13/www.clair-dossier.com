@@ -2,7 +2,7 @@
 
 Code : `recette/server/automations.ts` · Tests : `tests/recette-automatisations.test.ts` (13 tests, magasin en mémoire, horloge injectée).
 
-## Ce qui est réel (dès que le module est branché dans `api.ts`)
+## Ce qui est réel (branché dans `api.ts` : création, liste, pause, annulation, exécution par `/api/cron`)
 
 - **Enregistrement** : une demande confirmée (« Chaque vendredi, … ») devient une fiche `auto/<compte>/<id>.json` avec une planification vérifiable (`hebdo` / `quotidien` / `mensuel`, heure de Paris, changements d'heure gérés par `Intl`).
 - **Exécution navigateur fermé** : `tickAutomations(store)` est appelé par la tâche planifiée du serveur (`/api/cron`). Il exécute ce qui est dû, laisse une preuve par exécution (`auto-runs/<id>/<échéance>.json` : date, échéance, statut, résumé, durée, compteurs) et calcule la prochaine échéance.
@@ -14,11 +14,12 @@ Code : `recette/server/automations.ts` · Tests : `tests/recette-automatisations
 - **Une seule exécution par échéance** : la preuve est créée par écriture conditionnelle AVANT l'action ; un second passage simultané ne refait rien. Échéances manquées : un seul rattrapage (marqué `rattrapage`), pas un par période.
 - **Isolement** : la clé de stockage porte le compte ; l'automatisation d'un autre titulaire répond « introuvable », comme un identifiant inexistant. L'identité vient de la session, jamais du corps de la requête.
 
-## Ce qui n'est PAS réel aujourd'hui
+## Limites et points à connaître
 
-- **Rien n'est branché** tant que `api.ts` n'appelle pas `handleAutomations` et `tickAutomations` (câblage remis à l'agent principal). Aucun écran ne liste encore les automatisations.
-- **Déclencheur « à chaque pièce reçue »** : la fiche est enregistrée, mais elle ne devient due que si le dépôt appelle `onPieceRecue(store, compte)`. Sans cet appel, elle ne s'exécute jamais. Même branchée, elle s'exécute au passage suivant du planificateur, pas à la seconde.
-- **Heure d'exécution** : la tâche planifiée de la recette passe UNE fois par jour (`17 6 * * *` UTC, `scripts/recette/vercel-build.mjs`). Une échéance « 8 h à Paris » est donc exécutée à 8 h 17 en été, et **le lendemain à 7 h 17 en hiver**. Pour respecter l'heure annoncée, il faut un passage toutes les heures (à décider : dépend de l'offre d'hébergement).
+- **Déclencheur « à chaque pièce reçue »** : le dépôt appelle `onPieceRecue` ; l'automatisation devient due, mais elle s'exécute au passage suivant du planificateur, pas à la seconde.
+- **Heure d'exécution** : la tâche planifiée de la recette passe UNE fois par jour (`5 7 * * *` UTC, soit 8 h 05 à Paris en hiver, 9 h 05 en été — limite de l'offre d'hébergement gratuite). Une échéance « 8 h » est donc exécutée au passage du jour. Pour respecter l'heure annoncée, il faut un passage toutes les heures (offre payante : décision du propriétaire).
+- **Preuve de passage** : chaque passage est daté dans `ops/planificateur.json` (30 derniers) et affiché sous la liste des automatisations (« Dernier passage automatique »). `source = planificateur` quand l'appel vient de l'hébergeur. Première exécution réelle constatée sur la recette hébergée : voir `ETAT_FONCTIONNALITES.md` (G).
+- **Coupe-circuit** : l'exploitant peut suspendre toutes les automatisations (`/api/admin/coupe-circuit`) ; les fiches et les résultats sont conservés, le client en est informé.
 - **« Analyser la pièce reçue »** : l'automatisation ne lance aucune analyse ; l'analyse est faite au dépôt par le moteur. Le bilan en rapporte le résultat.
 - **Relances** : « préparer un projet de relance » n'est pas automatisable ; la demande est refusée clairement (400), jamais simulée.
 - **Envoi par e-mail** : aucun. Les messages arrivent dans la boîte de recette (`/api/boite`).

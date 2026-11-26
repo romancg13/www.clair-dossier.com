@@ -14,7 +14,6 @@ const P = {
   Boite: /* @__PURE__ */ lazy(() => import('./pages').then((m) => ({ default: m.RecetteBoite }))),
   Admin: /* @__PURE__ */ lazy(() => import('./pages').then((m) => ({ default: m.RecetteAdmin }))),
   Dossier: /* @__PURE__ */ lazy(() => import('./DossierPage').then((m) => ({ default: m.DossierPage }))),
-  Tarifs: /* @__PURE__ */ lazy(() => import('./tarifs').then((m) => ({ default: m.TarifsLisibles }))),
   Paiement: /* @__PURE__ */ lazy(() => import('./tarifs').then((m) => ({ default: m.PaiementRecette }))),
 };
 
@@ -37,7 +36,6 @@ export function recetteRoutes() {
     <>
       <Route path="connexion" element={wrap(<P.Connexion />, false)} />
       <Route path="inscription" element={wrap(<P.Inscription />, false)} />
-      <Route path="tarifs" element={wrap(<P.Tarifs />, false)} />
       <Route path="abonnement" element={wrap(<P.Paiement />, true)} />
       <Route path="compte" element={wrap(<P.Compte />, true)} />
       <Route path="compte/dossier/:id" element={wrap(<P.Dossier />, true)} />

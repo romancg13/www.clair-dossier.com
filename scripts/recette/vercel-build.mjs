@@ -13,7 +13,8 @@ const out = join(root, '.vercel/output');
 const sh = (cmd, env = {}) => execSync(cmd, { cwd: root, stdio: 'inherit', env: { ...process.env, ...env } });
 
 rmSync(out, { recursive: true, force: true });
-const flags = { VITE_RECETTE: '1', VITE_HOME_CLARTE: '1', VITE_PARCOURS_CLAIR: '1', VITE_TARIFS_LISIBLES: '1', VITE_NOINDEX: '1', VITE_BASE_PATH: '/', NODE_ENV: 'production' };
+// Un seul ClairDossier : la recette sert l'accueil et les tarifs ORIGINAUX du site (aucune variante « clarté » ni tarifs de remplacement).
+const flags = { VITE_RECETTE: '1', VITE_NOINDEX: '1', VITE_BASE_PATH: '/', NODE_ENV: 'production' };
 if (process.env.SKIP_SITE !== '1') {
   sh('npx vite build', flags);
   sh('npx tsx scripts/prerender.ts', flags);
@@ -77,12 +78,15 @@ writeFileSync(
       routes: [
         { src: '^/(.*)$', headers, continue: true },
         { src: '^/assets/(.*)$', headers: { 'cache-control': 'public, max-age=31536000, immutable' }, continue: true },
+        // Application installable : service worker, coupe-circuit et manifeste toujours revalidés (mises à jour et retour arrière immédiats).
+        { src: '^/(sw\\.js|pwa\\.json|manifest\\.webmanifest)$', headers: { 'cache-control': 'no-cache' }, continue: true },
         { src: '^/((?:api|mcp|oauth|\\.well-known)(?:/.*)?)$', dest: '/api?__p=$1' },
         { handle: 'filesystem' },
         { src: '^/compte/dossier/.*$', dest: '/compte/index.html' },
         { src: '^/(.*)$', dest: existsSync(join(st, 'spa-shell.html')) ? '/spa-shell.html' : '/index.html' },
       ],
-      crons: [{ path: cronPath, schedule: '5 7 * * *' }],
+      // Deux passages quotidiens (8 h 05 et 17 h 10 à Paris en hiver) : le second exécute dans la journée ce qu'un dépôt a rendu dû.
+      crons: [{ path: cronPath, schedule: '5 7 * * *' }, { path: cronPath, schedule: '10 16 * * *' }],
     },
     null,
     2,

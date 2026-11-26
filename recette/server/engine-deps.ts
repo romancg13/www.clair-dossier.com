@@ -21,8 +21,12 @@ export function engineDeps(store: RecetteStore, o: { ai: ModelProvider | null; c
     maxAttempts: 4,
     // Bail court : un exécuteur interrompu ne bloque un travail que le temps de l’appel le plus long (IA : délai 110 s).
     leaseMs: o.ai ? 150_000 : 60_000,
-    consolidateDelayMs: 2_000,
-    extractionWaitMs: 3_000,
+    // Avec l'IA, chaque synthèse est un appel payant : on attend que le lot se stabilise (2 s) et on réessaie posément
+    // (3 s). Par règles (aucun appel, aucun coût), ces attentes fixes ne protègent rien : elles sont réduites à 1 s.
+    consolidateDelayMs: o.ai ? 2_000 : 1_000,
+    extractionWaitMs: o.ai ? 3_000 : 1_000,
+    // Analyse progressive (avec IA seulement) : premiers résultats par règles en quelques secondes, puis l'analyse IA.
+    progressive: Boolean(o.ai),
     now: store.now,
     workerId: `w-${crypto.randomUUID().slice(0, 8)}`,
     dossierLink: (id) => `${o.siteUrl ?? ''}/compte/dossier/${id}`,

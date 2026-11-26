@@ -7,6 +7,7 @@ import { plans } from '../../src/data/pricing.ts';
 import { DELIVERABLE_CATALOG, type DeliverableKey } from '../../supabase/functions/_shared/analysis-model.ts';
 import { drain } from '../../supabase/functions/_shared/engine/runner.ts';
 import type { EngineDeps } from '../../supabase/functions/_shared/engine/runner.ts';
+import type { Job } from '../../supabase/functions/_shared/engine/ports.ts';
 import { isCalendarDate, readDatesForm, type RenduView } from '../../supabase/functions/_shared/rendus/index.ts';
 import { demandeJustificatifs, ficheRendezVous } from '../../supabase/functions/_shared/prestations/index.ts';
 import { checkPassword, emailKey, hashPassword, safeEqual, sha, signEvent, signLink, token, verifyEvent, verifyLink } from './security.ts';
@@ -15,7 +16,8 @@ import { RecetteStore, jobEnCours, type DossierRec, type Subscription, type User
 import { sha256 } from './engine-deps.ts';
 import { handleMcp, handleOAuth, listConnections } from './mcp.ts';
 import { handleAutomations, onPieceRecue, tickAutomations } from './automations.ts';
-import { answer, forget, history, remember, viewToContext, type AssistantDeps } from './assistant.ts';
+import { addPreference, answer, forget, history, preferences, remember, removePreference, viewToContext, type AssistantDeps } from './assistant.ts';
+import { alerteBudget, centreActions, coupeCircuit, noterPassage, passages, reglerCoupeCircuit } from './pilotage.ts';
 import { DOMAINE_RECETTE, seedDemo } from './seed.ts';
 
 export interface ApiEnv {
@@ -43,6 +45,12 @@ const MAX_DIRECT = 25 * 1024 * 1024;
 const DIRECT_VALID_MS = 10 * 60 * 1000;
 /** Fichiers par envoi : borne le travail d'une requête (l'interface envoie un fichier par requête). */
 const MAX_FILES = 20;
+/**
+ * Nombre de fichiers qu'un lot peut annoncer (valeur fournie par le navigateur, donc bornée). 200 auparavant : un lot
+ * de 250 pièces était tenu pour complet — et notifié — dès la 200e. La borne ne protège ni budget ni stockage
+ * (le volume par compte et la taille par fichier s'en chargent) : elle écarte seulement une valeur absurde.
+ */
+const MAX_LOT = 1000;
 const SESSION_DAYS = 30;
 const MINUTE = 60_000;
 
@@ -97,22 +105,22 @@ function entitlementView(s: Subscription, now: Date) {
 }
 
 /** Statut affiché d'un dossier : réel, dérivé des travaux et de la dernière publication. */
-async function dossierStatus(env: ApiEnv, d: DossierRec) {
-  const jobs = await env.store.openJobs(d.id);
-  const view = await env.store.getView(d.id);
-  const pieces = (await env.store.listPieces(d.id)).filter((p) => !p.deleted_at);
+async function dossierStatus(env: ApiEnv, d: DossierRec, lu?: { jobs: Job[]; view: Awaited<ReturnType<RecetteStore['getView']>>; pieces: number }) {
+  // Données déjà lues par l'appelant (écran du dossier) : aucune relecture. Sinon (liste des dossiers) : trois
+  // lectures indépendantes menées de front, et les pièces sont COMPTÉES sans lire leurs fiches.
+  const [jobs, view, pieces] = lu ? [lu.jobs, lu.view, lu.pieces] : await Promise.all([env.store.openJobs(d.id), env.store.getView(d.id), env.store.countPieces(d.id)]);
   const failed = jobs.filter((j) => j.status === 'failed');
   // Lecture reportée au mois suivant (plafond) ou contrôle de fin de lot : rien n'est en cours pour le client.
   const running = jobs.filter((j) => jobEnCours(j, env.store.now()));
   let etat: 'vide' | 'en_cours' | 'pret' | 'en_verification' | 'cloture' | 'incident';
   if (d.closed) etat = 'cloture';
-  else if (!pieces.length) etat = 'vide';
+  else if (!pieces) etat = 'vide';
   else if (running.length) etat = 'en_cours';
   else if (failed.length && !view) etat = 'incident';
   else if (view?.status === 'pending') etat = 'en_verification';
   else if (view) etat = 'pret';
   else etat = 'en_cours';
-  return { etat, travaux: running.length, pieces: pieces.length, revision: view?.revision ?? null };
+  return { etat, travaux: running.length, pieces, revision: view?.revision ?? null, vue: view };
 }
 
 async function body<T>(req: Request): Promise<T> {
@@ -184,10 +192,13 @@ export async function handle(env: ApiEnv, req: Request): Promise<Response> {
     if (!parSecret && !parCle) return err(401, 'non autorisé');
     await reconcile(env);
     // Automatisations dues (navigateur fermé) : exécution bornée, idempotente, équitable entre comptes.
-    const automatisations = await tickAutomations(store).catch(async (e) => {
+    const coupe = await coupeCircuit(store);
+    const automatisations = coupe.automatisations ? null : await tickAutomations(store).catch(async (e) => {
       await store.alert('AUTOMATISATIONS_INTERROMPUES', { erreur: String(e instanceof Error ? e.message : e).slice(0, 200) });
       return null;
     });
+    // Preuve de passage (navigateur fermé) : « planificateur » = appel de l'hébergeur, « manuel » = tout autre appel autorisé.
+    await noterPassage(store, { executees: automatisations ? automatisations.executees : null, source: (req.headers.get('user-agent') ?? '').startsWith('vercel-cron') ? 'planificateur' : 'manuel' });
     env.waitUntil(runNow(env));
     return json({ ok: true, automatisations });
   }
@@ -300,7 +311,10 @@ export async function handle(env: ApiEnv, req: Request): Promise<Response> {
   }
 
   /* ── Dossiers ───────────────────────────────────────────────────────── */
-  const ent = entitlementView(await store.getSub(user.id), now);
+  // Abonnement et dossier visé : deux lectures indépendantes, menées de front (droits vérifiés ensuite, comme avant).
+  const dm = /^\/api\/dossiers\/([0-9a-f-]{36})(\/.*)?$/.exec(path);
+  const [abonnement, dossierVise] = await Promise.all([store.getSub(user.id), dm ? store.getDossierRec(dm[1]) : null]);
+  const ent = entitlementView(abonnement, now);
 
   /* ── Automatisations du compte (création après confirmation, suspension, annulation, preuves d'exécution) ── */
   if (path.startsWith('/api/automatisations')) {
@@ -346,32 +360,39 @@ export async function handle(env: ApiEnv, req: Request): Promise<Response> {
 
   if (path === '/api/dossiers' && m === 'GET') {
     const list = await store.listUserDossiers(user.id);
-    return json({ dossiers: await Promise.all(list.map(async (d) => ({ id: d.id, titre: d.title, objectif: d.objective, cree_le: d.created_at, ...(await dossierStatus(env, d)), action: ((await store.getView(d.id))?.view as RenduView | undefined)?.tableau.action.label ?? null }))) });
+    return json({
+      dossiers: await Promise.all(
+        list.map(async (d) => {
+          // La vue lue pour le statut sert aussi au geste affiché (une seule lecture).
+          const { vue, ...statut } = await dossierStatus(env, d);
+          return { id: d.id, titre: d.title, objectif: d.objective, cree_le: d.created_at, ...statut, action: (vue?.view as RenduView | undefined)?.tableau.action.label ?? null };
+        }),
+      ),
+    });
   }
 
-  const dm = /^\/api\/dossiers\/([0-9a-f-]{36})(\/.*)?$/.exec(path);
   if (dm) {
-    const d = await store.getDossierRec(dm[1]);
+    const d = dossierVise;
     // Isolement : un dossier d'un autre titulaire est INTROUVABLE (même réponse qu'un identifiant inexistant).
     if (!d || d.deleted || (d.user_id !== user.id && user.role !== 'admin')) return err(404, 'Dossier introuvable.');
     const sub = dm[2] ?? '';
     if (sub === '' && m === 'GET') {
-      const open = await store.openJobs(d.id);
+      // Lectures indépendantes menées de front (un aller-retour au lieu de six en série) ; le statut réemploie ces données.
+      const [open, v, toutes, published, echeances, evenements] = await Promise.all([store.openJobs(d.id), store.getView(d.id), store.listPieces(d.id), store.getPublished(d.id), store.listDeadlines(d.id), store.listEvents(d.id)]);
       if (open.some((j) => (j.status === 'queued' && j.run_after <= now.toISOString()) || (j.status === 'running' && (j.lease_until ?? '') < now.toISOString()))) env.waitUntil(runNow(env));
-      const v = await store.getView(d.id);
-      const pieces = (await store.listPieces(d.id)).filter((p) => !p.deleted_at);
+      const pieces = toutes.filter((p) => !p.deleted_at);
       const extractions = await Promise.all(pieces.map((p) => store.getExtraction(p.id)));
-      const published = await store.getPublished(d.id);
+      const { vue: _vue, ...statut } = await dossierStatus(env, d, { jobs: open, view: v, pieces: pieces.length });
       return json({
         dossier: { id: d.id, titre: d.title, objectif: d.objective, cree_le: d.created_at, cloture: d.closed },
-        statut: await dossierStatus(env, d),
+        statut,
         abonnement: ent,
         vue: v && v.status === 'approved' ? v.view : null,
         en_verification: v?.status === 'pending',
         pieces: pieces.map((p, i) => ({ id: p.id, nom: p.file_name, taille: p.size_bytes, deposee_le: p.created_at, doublon_de: p.duplicate_of, lecture: extractions[i] ? { statut: extractions[i]!.status, motif: extractions[i]!.reason, report: Boolean(extractions[i]!.deferred), moteur: extractions[i]!.provider } : null })),
         rendus: DELIVERABLE_CATALOG.map((c) => ({ cle: c.key, libelle: c.key === 'dashboard' ? 'Tableau de bord' : c.key === 'resume' ? 'Résumé' : c.label, revision: published[c.key]?.revision ?? null, statut: published[c.key]?.status ?? null, fichiers: published[c.key]?.status === 'approved' ? published[c.key]!.files.map((f) => ({ nom: f.name, taille: f.size_bytes })) : [], versions: published[c.key]?.previous.length ?? 0 })),
-        echeances: await store.listDeadlines(d.id),
-        historique: (await store.listEvents(d.id)).slice(0, 60),
+        echeances,
+        historique: evenements.slice(0, 60),
       });
     }
     if (sub === '/pieces' && m === 'POST') {
@@ -391,17 +412,18 @@ export async function handle(env: ApiEnv, req: Request): Promise<Response> {
       // Volume total par compte : réservé avant tout stockage (écriture conditionnelle).
       if (!(await consume(store, `limites/stockage/${d.user_id}.json`, LIMITES.octetsParCompte, Infinity, files.reduce((n, f) => n + f.size, 0)))) return err(413, `Espace de stockage plein : un compte de recette conserve au plus ${Math.round(LIMITES.octetsParCompte / 1048576)} Mo de pièces.`);
       // Lot envoyé fichier par fichier : nombre annoncé, pour notifier une seule fois, sur le lot complet.
-      await store.declareLot(d.id, lot, Math.min(200, Math.max(files.length, Math.floor(Number(form.get('total')) || 0))));
-      // Stockage des pièces en parallèle, puis mise en file (durable avant la réponse).
-      const added = await Promise.all(
-        files.map(async (f) => {
+      // Déclaration du lot et stockage des pièces de front (clés distinctes) ; la mise en file ne vient qu'ensuite,
+      // si bien qu'aucune pièce n'est traitée avant que son lot soit déclaré (durable avant la réponse).
+      const [, added] = await Promise.all([
+        store.declareLot(d.id, lot, Math.min(MAX_LOT, Math.max(files.length, Math.floor(Number(form.get('total')) || 0)))),
+        Promise.all(files.map(async (f) => {
           const bytes = new Uint8Array(await f.arrayBuffer());
           const id = uuid();
           const name = f.name.replace(/[\u0000-\u001f\\/]/g, '_').slice(0, 160) || 'piece';
           await store.addPiece({ id, dossier_id: d.id, user_id: d.user_id, lot_id: lot, file_name: name, mime: f.type || null, size_bytes: bytes.byteLength, sha256: await sha256(bytes), duplicate_of: null, created_at: store.now().toISOString(), deleted_at: null }, bytes);
           return { id, nom: name };
-        }),
-      );
+        })),
+      ]);
       for (const a of added) await store.enqueue({ key: `x:${a.id}`, kind: 'extract', user_id: d.user_id, dossier_id: d.id, piece_id: a.id });
       env.waitUntil(store.addEvent(d.id, user.id, 'pieces_deposees', `${added.length} pièce${added.length > 1 ? 's' : ''} déposée${added.length > 1 ? 's' : ''}`));
       env.waitUntil(onPieceRecue(store, d.user_id));
@@ -435,7 +457,10 @@ export async function handle(env: ApiEnv, req: Request): Promise<Response> {
             ? viewToContext(v.view as RenduView, { rights, available })
             : { title: d.title, today: now.toISOString().slice(0, 10), analysis: null, pieces: pieces.map((x) => ({ id: x.id, file_name: x.file_name })), attention: null, available, processing: null, rights };
           const past = await history(store.kv, user.id, d.id);
-          const r = await answer(env.assistant, user.id, message, ctx, past);
+          // Coupe-circuit de l'exploitant : réponse par les règles, sans appel de modèle.
+          const deps = env.assistant.client && (await coupeCircuit(store)).ia ? { ...env.assistant, client: null } : env.assistant;
+          const r = await answer(deps, user.id, message, ctx, past, { preferences: (await preferences(store.kv, user.id)).map((x) => x.text) });
+          if (r.mode === 'modele') env.waitUntil(env.assistant.finops.palier().then((p) => alerteBudget(store, p)).then(() => undefined, () => undefined));
           await remember(store.kv, user.id, d.id, [{ from: 'vous', text: message, at: now.toISOString() }, { from: 'ia', text: r.text.slice(0, 4000), at: store.now().toISOString() }]);
           return json({ reponse: r });
         } finally {
@@ -462,7 +487,7 @@ export async function handle(env: ApiEnv, req: Request): Promise<Response> {
       // Chemin imposé par le serveur, dans l'espace du compte : le client ne choisit rien.
       const cle = `depots/${d.user_id}/${d.id}/${id}`;
       await store.kv.putJson(`depots-attente/${id}.json`, { id, cle, dossier_id: d.id, user_id: d.user_id, lot, nom, mime: typeof b.type === 'string' ? b.type.slice(0, 120) : null, taille, cree: store.now().toISOString() }, { create: true });
-      await store.declareLot(d.id, lot, Math.min(200, Math.max(1, Math.floor(Number(b.total)) || 1)));
+      await store.declareLot(d.id, lot, Math.min(MAX_LOT, Math.max(1, Math.floor(Number(b.total)) || 1)));
       const acces = await store.kv.directUpload(cle, { maxBytes: taille, validMs: DIRECT_VALID_MS });
       return json({ mode: 'direct', id, lot, ...acces }, 201);
     }
@@ -616,6 +641,29 @@ export async function handle(env: ApiEnv, req: Request): Promise<Response> {
     return new Response(new Uint8Array(bytes), { headers: { "content-type": type, 'content-disposition': `${inline ? 'inline' : 'attachment'}; filename*=UTF-8''${encodeURIComponent(p.name)}`, 'cache-control': 'private, no-store', 'x-content-type-options': 'nosniff', 'x-robots-tag': 'noindex' } });
   }
 
+  /* ── Centre d'actions : trois priorités, ce qui a changé, ce qui a été fait ; preuve de passage du planificateur ── */
+  if (path === '/api/actions' && m === 'GET') return json(await centreActions(store, user.id));
+  if (path === '/api/planificateur' && m === 'GET') {
+    const p = await passages(store);
+    return json({ dernier_passage: p[0] ?? null, dernier_passage_planifie: p.find((x) => x.source === 'planificateur') ?? null, suspendu: (await coupeCircuit(store)).automatisations });
+  }
+  /* ── Mémoire professionnelle : préférences du titulaire, consultables et supprimables ── */
+  if (path === '/api/memoire' && m === 'GET') return json({ preferences: await preferences(store.kv, user.id) });
+  if (path === '/api/memoire' && m === 'POST') {
+    const b = await body<{ texte?: string }>(req);
+    const p = await addPreference(store.kv, user.id, typeof b.texte === 'string' ? b.texte : '', now);
+    return p ? json({ preference: p }, 201) : err(400, 'Préférence vide, ou mémoire pleine (12 au plus) : supprimez-en une.');
+  }
+  const mp = /^\/api\/memoire\/([0-9a-f]{8})$/.exec(path);
+  if (mp && m === 'DELETE') {
+    await removePreference(store.kv, user.id, mp[1]);
+    return json({ ok: true });
+  }
+  /* ── Ma consommation IA du mois (mes appels seulement) : assistant (registre) + lecture des pièces (compteur du moteur) ── */
+  if (path === '/api/moi/consommation' && m === 'GET') {
+    const lecture = await store.costs(user.id, []);
+    return json({ assistant: env.assistant ? await env.assistant.finops.compte(user.id) : null, lecture_pieces_centimes: lecture.userMonth });
+  }
   if (path === '/api/boite' && m === 'GET') return json({ messages: await store.mailbox(user.id) });
   if (path === '/api/connexions' && m === 'GET') return json({ connexions: await listConnections(store, user.id) });
   const cx = /^\/api\/connexions\/(cd_[A-Za-z0-9_-]+)$/.exec(path);
@@ -628,6 +676,11 @@ export async function handle(env: ApiEnv, req: Request): Promise<Response> {
   if (path === '/api/admin/ia' && m === 'GET') {
     if (user.role !== 'admin') return err(404, 'introuvable');
     return json({ couts: env.assistant ? await env.assistant.finops.overview() : null, sante: env.aiHealth ? await env.aiHealth() : { configure: false }, modeles: env.assistant?.models ?? null });
+  }
+  if (path === '/api/admin/coupe-circuit') {
+    if (user.role !== 'admin') return err(404, 'introuvable');
+    if (m === 'GET') return json(await coupeCircuit(store));
+    if (m === 'POST') return json(await reglerCoupeCircuit(store, await body<Record<string, unknown>>(req)));
   }
   /* ── Exceptions (administration de la recette : métadonnées uniquement) ── */
   if (path === '/api/admin/exceptions' && m === 'GET') {
@@ -659,21 +712,36 @@ export async function applyEvent(store: RecetteStore, ev: { id: string; type: st
 async function runNow(env: ApiEnv) {
   try {
     const deps = await env.deps();
-    const reports = await drain(deps, 200_000, 120);
+    const reports = await drain(deps, 200_000, 120, deps.ai ? 3 : 1); // avec l'IA : trois lectures de front (appels longs, indépendants)
     // Journal technique (sans contenu de pièce) : type de travail, issue, motif d'erreur.
     for (const r of reports) {
       if (r.outcome !== 'requeued' && r.outcome !== 'failed') continue;
       const j = await env.store.kv.getJson<{ last_error: string | null; attempts: number }>(`jobs/${r.job}.json`);
       console.error(JSON.stringify({ evt: 'travail', kind: r.kind, outcome: r.outcome, tentatives: j?.value.attempts, erreur: j?.value.last_error?.slice(0, 300) }));
     }
+    // Exécuteur en pause : aucune relance (elle tournerait à vide, sans fin) ; la reprise vient d'une consultation ou du planificateur.
+    if (deps.config.paused) return;
     // Travaux encore prêts (lot volumineux) : nouvelle invocation ; travaux différés : repris par la consultation ou la tâche planifiée.
     // Relance unique, à l'échéance du prochain travail (≤ 30 s) : pas de rafale d'invocations à vide.
+    // Passage à vide (rien n'a pu être pris) alors qu'un veilleur patiente déjà : on s'arrête là, sans relire la file.
+    // Sans cela, chaque dépôt d'un gros lot lancerait sa propre chaîne d'invocations, chacune relisant tous les travaux.
+    const aVide = !reports.length;
+    if (aVide && (await env.store.watchHeld())) return;
     const now = env.store.now().getTime();
-    const next = (await env.store.allOpenJobs()).filter((j) => j.status === 'queued').map((j) => Date.parse(j.run_after)).sort((x, y) => x - y)[0];
-    if (next !== undefined && next <= now + 30_000) {
-      if (next > now) await new Promise((res) => setTimeout(res, next - now + 50));
-      await env.kickWorker();
+    const ouverts = await env.store.allOpenJobs();
+    const next = ouverts.filter((j) => j.status === 'queued').map((j) => Date.parse(j.run_after)).sort((x, y) => x - y)[0];
+    if (next === undefined || next > now + 30_000) return;
+    let reveil = next;
+    if (aVide) {
+      // Travaux prêts que ce passage n'a pas pu prendre : ils attendent la fin de travaux en cours (deux au plus par
+      // compte), et l'exécuteur qui les tient enchaînera. UN seul veilleur patiente — jusqu'à l'échéance du prochain
+      // travail, ou jusqu'à la fin du bail le plus proche (reprise d'un exécuteur interrompu) — puis relance.
+      const bail = ouverts.filter((j) => j.status === 'running' && j.lease_until).map((j) => Date.parse(j.lease_until!)).sort((x, y) => x - y)[0];
+      if (next <= now) reveil = Math.min(now + 30_000, Math.max(now + 1_000, bail ?? 0));
+      if (!(await env.store.claimWatch(reveil))) return;
     }
+    if (reveil > now) await new Promise((res) => setTimeout(res, reveil - now + 50));
+    await env.kickWorker();
   } catch (e) {
     console.error(JSON.stringify({ evt: 'executeur', erreur: String(e instanceof Error ? e.stack ?? e.message : e).slice(0, 600) }));
     await env.store.alert('EXECUTEUR_INTERROMPU', { at: env.store.now().toISOString() });

@@ -11,7 +11,7 @@
  *   3. Bandeau visible « prévisualisation ».
  * Garde-fou : refuse de s'exécuter hors Vercel sauf --force (tests locaux).
  */
-import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const dirArg = process.argv.find((a) => a.startsWith('--dir='))?.slice(6) ?? 'dist';
@@ -37,11 +37,22 @@ function* fichiers(dir) {
   }
 }
 
+// Recette : chaque lien Stripe LIVE devient le paiement de recette (bac à sable interne) de LA MÊME formule ;
+// correspondance lue dans src/data/pricing.ts (fichier gelé, lu sans être modifié). Démonstration : lien inerte.
+const formules = new Map();
+if (process.argv.includes('--pwa=recette')) {
+  const pricing = readFileSync(new URL('../src/data/pricing.ts', import.meta.url), 'utf8');
+  for (const bloc of pricing.split(/\n\s*\{\s*\n/).slice(1)) {
+    const id = /id:\s*["']([^"']+)["']/.exec(bloc)?.[1];
+    if (id) for (const m of bloc.matchAll(/https:\/\/buy\.stripe\.com\/[A-Za-z0-9]+/g)) formules.set(m[0], id);
+  }
+}
+const versRecette = (lien) => (formules.has(lien) ? `/abonnement?formule=${formules.get(lien)}` : INERTE);
 let liens = 0;
 let pages = 0;
 for (const f of fichiers(DIST)) {
   const avant = readFileSync(f, 'utf8');
-  let apres = avant.replace(LIVE, () => (liens++, INERTE));
+  let apres = avant.replace(LIVE, (lien) => (liens++, versRecette(lien)));
   if (f.endsWith('.html')) {
     apres = apres
       .replace(/(<meta name="robots" content=")[^"]*(")/, '$1noindex, nofollow$2')
@@ -52,6 +63,26 @@ for (const f of fichiers(DIST)) {
   if (apres !== avant) writeFileSync(f, apres);
 }
 writeFileSync(join(DIST, 'robots.txt'), 'User-agent: *\nDisallow: /\n');
+
+// Application installable : la recette et la démonstration ne doivent JAMAIS se confondre avec la production
+// sur un écran d'accueil — nom, identifiant et icônes distincts (bandeau « RECETTE » sur l'icône).
+const pwa = process.argv.find((a) => a.startsWith('--pwa='))?.slice(6);
+const manifeste = join(DIST, 'manifest.webmanifest');
+if (pwa && existsSync(manifeste)) {
+  const m = JSON.parse(readFileSync(manifeste, 'utf8'));
+  const nom = pwa === 'recette' ? 'ClairDossier Recette' : 'ClairDossier Démo';
+  Object.assign(m, { id: `/?app=clairdossier-${pwa}`, name: nom, short_name: pwa === 'recette' ? 'CD Recette' : 'CD Démo', description: `${nom} — données fictives, aucun paiement réel.` });
+  if (pwa === 'demo') Object.assign(m, { start_url: '/demo?source=application', shortcuts: [] });
+  writeFileSync(manifeste, JSON.stringify(m, null, 2));
+  const icones = new URL('../recette/pwa/', import.meta.url).pathname;
+  for (const f of ['icon-192.png', 'icon-512.png', 'icon-maskable-512.png', 'apple-touch-icon.png']) copyFileSync(join(icones, f), join(DIST, f));
+  for (const f of fichiers(DIST)) {
+    if (!f.endsWith('.html')) continue;
+    const h = readFileSync(f, 'utf8');
+    const n = h.replace(/(<meta name="apple-mobile-web-app-title" content=")[^"]*(")/, `$1${pwa === 'recette' ? 'CD Recette' : 'CD Démo'}$2`);
+    if (n !== h) writeFileSync(f, n);
+  }
+}
 
 const restants = [...fichiers(DIST)].filter((f) => /https:\/\/buy\.stripe\.com\/[A-Za-z0-9]/.test(readFileSync(f, 'utf8')));
 if (restants.length) {
