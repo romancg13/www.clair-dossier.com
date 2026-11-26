@@ -2,7 +2,7 @@
 
 Mis à jour : 2026-11-25 · PR #70 **fusionnée** (production `85bbb4e`) · travaux V6 : branche `claude/clairdossier-optimization-85z7y5`, PR brouillon #71, NON fusionnée · commit déployé : voir `ETAT_FONCTIONNALITES.md`.
 Source unique de l'état de chaque fonctionnalité : `ETAT_FONCTIONNALITES.md` (122 lignes, synthèse calculée). Sécurité de la production : `SECURITE_ISOLATION.md`.
-Production : inchangée depuis la fusion. Aucune migration appliquée, aucun paiement. Appels d'API payants : recette uniquement (clé installée le 25/11), environ 1,41 € de lecture (plafond 1,50 €) et environ 0,2 USD d'assistant — total ≈ 1,75 USD sur 2 autorisés.
+Production : site inchangé depuis la fusion ; base : correctif `20261125150000` et supervision `20261125140000` appliqués le 26/11 (section « Production Supabase — 26/11 »). Aucun paiement. Appels d'API payants : recette uniquement (clé installée le 25/11), environ 1,41 € de lecture (plafond 1,50 €) et environ 0,2 USD d'assistant — total ≈ 1,75 USD sur 2 autorisés.
 Décisions du propriétaire (25/11, V12) : budget IA +0,60 USD accordé ; Supabase de recette : rester en local ; correctif de production 20261125150000 : PRÉ-AUTORISÉ s'il manque, après sauvegarde (accès à l'organisation toujours absent) ; Stripe bac à sable : différé.
 
 Légende : VÉRIFIÉ EN LOCAL · VÉRIFIÉ SUR RECETTE HÉBERGÉE · IMPLÉMENTÉ NON TESTÉ · SIMULÉ · BLOQUÉ · DIFFÉRÉ.
@@ -113,6 +113,25 @@ Point faible : premier résultat avec IA 142–207 s (30 s par règles). Piste :
 | Budget IA : pas de budget mensuel définitif (décision du fondateur) ; plafonds actuels conservés | CONSIGNÉ | recette : 150 c€/mois lecture, 0,80 USD assistant |
 | Gmail / Outlook / Resend | BLOQUÉ : aucun outil de navigateur dans la session ; comptes à créer par le fondateur | `MESSAGERIE_DIRECTE.md`, `EMAIL_ENTRANT.md` |
 
+## Production Supabase — 26/11/2026 (accord écrit du fondateur)
+
+Fait par Claude Code (session locale), psql 17 en transaction, ligne d'historique au numéro du dépôt (jamais `db push`).
+
+| Étape | Statut | Preuve |
+|---|---|---|
+| Sauvegarde avant écriture (`pg_dump` complet, restauration relue) | VÉRIFIÉ | 27 comptes, 15 dossiers, 353 pièces ; SHA-256 `772700fd…3812bce` ; copie chiffrée vers un stockage du fondateur : en attente de sa clé publique GPG et de la destination |
+| Diagnostic d'isolation | VÉRIFIÉ | blocs [2]–[4] = 0 : aucune pièce ni échéance rattachée au dossier d'un autre compte ; RLS active sur 17/17 tables |
+| Correctif `20261125150000` | VÉRIFIÉ EN PRODUCTION | contrôle 3 × `true` ; 2 comptes fictifs en transaction annulée : avant, T2–T4 autorisés (faille reproduite) ; après, refusés (42501), dépôt dans son propre dossier toujours autorisé ; 0 résidu |
+| Supervision `20261125140000` | VÉRIFIÉ EN PRODUCTION | admin : lecture, pause et reprise ; client : FORBIDDEN, 0 ligne ; visiteur : 42501 ; conseillers Supabase : 0 erreur |
+| Dépôt réel depuis le site avec un compte client de test | À FAIRE (fondateur) | aucune connexion par mot de passe en production côté Claude |
+
+Constats en lecture seule, à traiter avant les étapes suivantes :
+
+- **`public.dossier_is_closed` absente en production** (définie seulement dans `20261023120000`, moteur IA). `20261118130000` et `email-inbound` l'appellent : la créer seule d'abord (elle ne lit que `dossier_events` et `dossiers`).
+- **`pg_cron` non installé en production** : `20261126120000` s'appliquerait sans erreur mais ne planifierait rien ; activer l'extension avant, sinon aucune automatisation ne s'exécute.
+- **`subscriptions` vide (0 ligne), 1 dérogation** : la règle « abonnement actif » de `20261126120000` n'autorise que **1 compte sur 27** ; il en va de même pour l'e-mail entrant (offre Entrepreneur et plus). Stripe n'est pas reflété en base : à résoudre sans toucher aux liens de paiement existants.
+- Interface de l'e-mail entrant : variable de build `VITE_INBOUND_EMAIL_DOMAIN=mail.clair-dossier.com`.
+
 ## Blocages — action minimale du propriétaire
 
 1. **Supabase isolé hébergé** — BLOQUÉ : organisation à la limite gratuite (2 projets actifs, tous deux étrangers à ClairDossier ; les 2 projets ClairDossier sont en pause). Une action : autoriser la reprise de « ClairDossier's Projet » à la place d'un projet actif, ou un projet payant.
@@ -133,7 +152,7 @@ MCP depuis l'interface ChatGPT/Claude, démonstration universelle (protections p
 
 ## Prochaine action
 
-1. Propriétaire : exécuter le diagnostic d'isolation (`SECURITE_ISOLATION.md`) — priorité.
+1. Fait le 26/11 (diagnostic, correctif, supervision). Reste : dépôt réel depuis le site par le fondateur ; `dossier_is_closed`, `pg_cron` et reflet des abonnements Stripe en base avant l'e-mail entrant et `20261126120000`.
 2. Propriétaire : clé API (`ACTIVATION_API.md`), puis `npm run ia:evaluation` avec modèle.
 3. Lire le passage du planificateur du 26/11 ; relancer la mesure de capacité.
 Aucune fusion dans `main`, migration réelle ou activation du lien universel sans accord explicite.

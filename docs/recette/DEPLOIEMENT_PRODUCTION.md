@@ -12,6 +12,8 @@ pas de `/demo`, 12 liens Stripe inchangés (`tests/paiements-geles.test.ts`).
 
 ## Ordre
 
+État au 26/11 : étapes 1, 2 et 6 faites et vérifiées (détail dans `ETAT_REPRISE.md`, « Production Supabase — 26/11 »). Avant l'étape 7 : activer `pg_cron` (absent en production) et refléter les abonnements Stripe en base (`subscriptions` vide : 1 compte sur 27 autorisé).
+
 | # | Étape | Qui | Vérification | Retour arrière |
 |---|---|---|---|---|
 | 1 | Sauvegarde : Supabase → Database → Backups (sauvegarde du jour présente) | propriétaire | date de la sauvegarde | — |
