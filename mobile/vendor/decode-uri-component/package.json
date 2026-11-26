@@ -1,0 +1,11 @@
+{
+	"name": "decode-uri-component",
+	"version": "0.5.1",
+	"description": "decode-uri-component 0.5.1 (correctifs GHSA-vcc3-ghjq-m6fr et GHSA-qr28-fpjm-wq7f), portage CommonJS pour query-string 7 (expo-router 57)",
+	"license": "MIT",
+	"main": "index.js",
+	"sideEffects": false,
+	"author": "Sam Verschueren <sam.verschueren@gmail.com> (github.com/SamVerschueren)",
+	"repository": "SamVerschueren/decode-uri-component",
+	"engines": { "node": ">=14.16" }
+}
