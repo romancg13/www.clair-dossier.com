@@ -68,6 +68,9 @@ jobs:
           # Espace client enrichi (rappels, bilans, préférences ; aucune IA) — variable de dépôt.
           # Absente ou ≠ "1" : composants inertes. Ne la passer à "1" qu'APRÈS la migration 20261126120000.
           VITE_INTELLIGENCE: ${{ vars.VITE_INTELLIGENCE }}
+          # Moteur documentaire IA côté client (panneau, résultats) — variable de dépôt. Sans effet
+          # pour les clients tant que l'interrupteur serveur ai_auto_gate est fermé (20261128120000).
+          VITE_AI_ENGINE: ${{ vars.VITE_AI_ENGINE }}
 
       # Repère de version public (aucun secret) : prouve quel commit est servi
       # par le domaine — https://www.clair-dossier.com/version.json

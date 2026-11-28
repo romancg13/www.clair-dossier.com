@@ -1,6 +1,7 @@
 import { Fragment, type ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
+import { AiAccountConsent } from './account/AiAccountConsent';
 
 /** Protège une route : redirige vers /connexion si non authentifié. */
 export function RequireAuth({ children }: { children: ReactNode }) {
@@ -30,5 +31,10 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   // Remonte la page à chaque changement de compte (autre onglet, sans
   // déconnexion) : aucun état du compte précédent (brouillon en saisie,
   // liste de brouillons) ne survit chez le nouveau compte.
-  return <Fragment key={session?.user.id ?? 'anonyme'}>{children}</Fragment>;
+  return (
+    <Fragment key={session?.user.id ?? 'anonyme'}>
+      {children}
+      {session && <AiAccountConsent userId={session.user.id} />}
+    </Fragment>
+  );
 }

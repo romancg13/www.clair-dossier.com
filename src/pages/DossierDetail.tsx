@@ -612,6 +612,8 @@ export function DossierDetail() {
   // mêmes liens privés, jamais présenté comme un dépôt manuel de l'équipe.
   const otherGenerated = aiDeliverables.filter((d) => !gridKeyOf(d));
   const manualDeliverables = deliverables.filter((d) => !aiDeliverables.includes(d));
+  // L'IA ne change l'écran que des dossiers où elle est activée ou a déjà produit des documents.
+  const aiActive = AI_ENGINE && (aiProgress.enabled || aiDeliverables.length > 0);
   // Clôture = dernier événement de cycle de vie (journal), à défaut statut historique « archive ».
   const lifecycle = events.find((e) => e.type === "dossier_cloture" || e.type === "dossier_rouvert");
   const closed = lifecycle ? lifecycle.type === "dossier_cloture" : dossier?.status === "archive";
@@ -621,7 +623,8 @@ export function DossierDetail() {
     ? trackingStep({
         status: dossier.status,
         forcedStep: dossier.current_step,
-        hasDeliverables: (AI_ENGINE ? aiDeliverables : deliverables).length > 0,
+        // IA active sur ce dossier : règle du catalogue (C04) ; sinon tous les dépôts de l'équipe comptent.
+        hasDeliverables: (aiActive ? aiDeliverables : deliverables).length > 0,
         processing: aiProgress.processing,
         closed,
       })
@@ -1638,7 +1641,7 @@ export function DossierDetail() {
                     files={deliverableFiles}
                     caption={aiDeliverables.length ? `Dernière version publiée le ${fmtDate(aiDeliverables[aiDeliverables.length - 1].created_at)}` : null}
                     emptyLabel={aiProgress.processing ? "En préparation…" : "Pas encore disponibles."}
-                    catalogHint={AI_ENGINE}
+                    catalogHint={aiActive}
                     actions={
                       INTELLIGENCE ? (
                         <DossierIntelligence
@@ -1687,7 +1690,7 @@ export function DossierDetail() {
                   <div className="mt-8 border-t hairline pt-6">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">
-                      {AI_ENGINE ? "Autres documents" : "Documents déposés par l'équipe ClairDossier"}
+                      {aiActive ? "Autres documents" : "Documents déposés par l'équipe ClairDossier"}
                     </p>
                   </div>
 

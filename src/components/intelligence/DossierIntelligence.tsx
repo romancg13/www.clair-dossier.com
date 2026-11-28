@@ -5,7 +5,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { IntelligenceLauncher } from "./IntelligencePanel";
-import { runAssistant, suggestions, type Context, type PendingAction } from "../../../supabase/functions/_shared/intelligence/core.ts";
+import { runAssistant, suggestions, type Context, type PendingAction, type Reply } from "../../../supabase/functions/_shared/intelligence/core.ts";
 import { planificationDe } from "../../../supabase/functions/_shared/intelligence/planification.ts";
 import { buildAttention } from "../../../supabase/functions/_shared/attention.ts";
 import type { AnalysisData, CoverageInfo, DeliverableKey } from "../../../supabase/functions/_shared/analysis-model.ts";
@@ -32,18 +32,23 @@ const today = () => {
 export function DossierIntelligence(p: Props) {
   const [analysis, setAnalysis] = useState<{ coverage: CoverageInfo; data: AnalysisData } | null>(null);
   const [history, setHistory] = useState<{ from: "vous" | "ia"; text: string }[] | null>(null);
+  // Assistant avec modèle côté serveur : seulement si l'analyse est ouverte pour ce compte et acceptée.
+  const [serveur, setServeur] = useState(false);
 
   useEffect(() => {
     if (!p.isOwner) return;
     let live = true;
     void (async () => {
-      const [a, h] = await Promise.all([
+      const [a, h, acc] = await Promise.all([
         supabase.from("ai_analyses").select("coverage,data").eq("dossier_id", p.dossierId).order("revision", { ascending: false }).limit(1).maybeSingle(),
         supabase.from("assistant_turns").select("author,body").eq("dossier_id", p.dossierId).order("created_at", { ascending: true }).limit(40),
+        supabase.rpc("my_ai_account"),
       ]);
       if (!live) return;
       setAnalysis(a.error || !a.data ? null : (a.data as { coverage: CoverageInfo; data: AnalysisData }));
       setHistory(h.error ? [] : ((h.data ?? []) as { author: "vous" | "ia"; body: string }[]).map((t) => ({ from: t.author, text: t.body })));
+      const row = Array.isArray(acc.data) ? acc.data[0] : acc.data;
+      setServeur(!acc.error && row?.gate_allows === true && row?.enabled === true);
     })();
     return () => {
       live = false;
@@ -107,8 +112,12 @@ export function DossierIntelligence(p: Props) {
       onFile={p.onFile}
       onConfirm={confirm}
       transport={async (m) => {
-        // Règles déterministes sur l'analyse du dossier (aucun appel de modèle) : le serveur avec modèle prendra le relais
-        // une fois la clé d'API installée (même composant, autre transport).
+        // Serveur avec modèle (fonction Edge « assistant », qui écrit lui-même l'historique) quand il est ouvert
+        // pour ce compte ; sinon, ou s'il refuse (409 : réglages, interrupteur, abonnement), règles locales.
+        if (serveur) {
+          const { data, error } = await supabase.functions.invoke("assistant", { body: { dossier_id: p.dossierId, message: m, available: p.available } });
+          if (!error && data && typeof data === "object" && typeof (data as Reply).text === "string") return data as Reply;
+        }
         const r = runAssistant(m, ctx);
         void remember(m, r.text);
         return r;

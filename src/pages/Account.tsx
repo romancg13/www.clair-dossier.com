@@ -26,6 +26,7 @@ import { MailConnect } from '../components/account/MailConnect';
 import { PersonalizeSpace } from '../components/account/PersonalizeSpace';
 import { InstallApp } from '../components/pwa/InstallApp';
 import { EspaceIntelligence } from '../components/intelligence/EspaceIntelligence';
+import { AiAccountPanel } from '../components/account/AiAccountConsent';
 
 // ClairDossier Intelligence (centre d'actions, automatisations, préférences) : build VITE_INTELLIGENCE=1 + migration 20261126120000.
 const INTELLIGENCE = import.meta.env.VITE_INTELLIGENCE === '1';
@@ -317,6 +318,13 @@ export function Account() {
           <PersonalizeSpace />
           {/* Application installable : même espace, depuis l'écran d'accueil. */}
           <InstallApp />
+
+          {/* Analyse automatique par compte : masquée tant que l'interrupteur serveur ne l'autorise pas. */}
+          {user && (
+            <div className="mt-6">
+              <AiAccountPanel userId={user.id} />
+            </div>
+          )}
 
           {INTELLIGENCE && (
             <div className="mt-6">
