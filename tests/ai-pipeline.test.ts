@@ -8,6 +8,7 @@ import {
   deadlineKey,
   detectInputKind,
   estimateCostCents,
+  isSimpleRead,
   safeFileName,
   toCsv,
 } from '../supabase/functions/_shared/ai-pipeline.ts';
@@ -103,4 +104,13 @@ test("clé d'échéance stable et nom de fichier sûr", () => {
   assert.equal(deadlineKey('Réponse à la mise en demeure', '2026-11-03'), deadlineKey('reponse a la mise en demeure', '2026-11-03'));
   assert.equal(deadlineKey('Échéance', '2026-11-03'), '2026-11-03:echeance');
   assert.equal(safeFileName('Résumé IA r1 (final).pdf'), 'Resume_IA_r1_final_.pdf');
+});
+
+test('lecture simple (modèle rapide) : texte court ou PDF ≤ 2 pages ≤ 300 Ko, jamais une image', () => {
+  assert.equal(isSimpleRead('text', null, 20_000), true);
+  assert.equal(isSimpleRead('pdf', 2, 300_000), true);
+  assert.equal(isSimpleRead('pdf', 3, 50_000), false, 'trop de pages');
+  assert.equal(isSimpleRead('pdf', 1, 300_001), false, 'trop lourd (numérisation probable)');
+  assert.equal(isSimpleRead('image', 1, 10_000), false);
+  assert.equal(isSimpleRead('unsupported', null, 10), false);
 });

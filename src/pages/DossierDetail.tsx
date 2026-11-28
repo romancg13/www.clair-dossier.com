@@ -1711,6 +1711,8 @@ export function DossierDetail() {
                     </div>
                   )}
 
+                  {/* Analyse automatique active : le client ne voit ce bloc que s'il contient un document (aucune attente d'un dépôt manuel). */}
+                  {(isAdmin || !aiActive || manualDeliverables.length > 0) && (
                   <div className="mt-8 border-t hairline pt-6">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">
@@ -1764,6 +1766,7 @@ export function DossierDetail() {
                     </div>
                   )}
                   </div>
+                  )}
                   </div>
                 </div>
               )}

@@ -18,6 +18,19 @@ export function detectInputKind(fileName: string, mime: string | null | undefine
   return 'unsupported';
 }
 
+/** Plafonds d'une « lecture simple », seule éligible au modèle rapide (AI_MODEL_EXTRACT_FAST). */
+export const SIMPLE_READ_MAX_BYTES = 300_000;
+export const SIMPLE_READ_MAX_PAGES = 2;
+
+/**
+ * Lecture simple : texte natif court, ou PDF d'au plus deux pages et 300 Ko.
+ * Jamais une image (photo ou numérisation : la lecture visuelle reste au modèle principal).
+ */
+export function isSimpleRead(kind: InputKind, pages: number | null, bytes: number): boolean {
+  if (kind === 'image' || kind === 'unsupported') return false;
+  return bytes <= SIMPLE_READ_MAX_BYTES && (pages === null || pages <= SIMPLE_READ_MAX_PAGES);
+}
+
 /** Référence à une pièce : document, page (si connue) et extrait justificatif. */
 export interface Evidence {
   document_id: string;
