@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { MAX_ACTIONS, TOOLS, isForbiddenRequest, planDeterministic, runAssistant, suggestions, toWorkflow, type Context } from '../supabase/functions/_shared/intelligence/core.ts';
 import { buildAttention } from '../supabase/functions/_shared/attention.ts';
 import { DEMO_PIECES, demoAnalysis } from '../src/demo/fixture.ts';
+import { usableAnalysis } from '../supabase/functions/_shared/analysis-model.ts';
 
 const analysis = demoAnalysis();
 const names = Object.fromEntries(DEMO_PIECES.map((p) => [p.id, p.file_name]));
@@ -150,4 +151,15 @@ test('automatisations en langage naturel : surveillance des renouvellements, « 
   assert.equal(isForbiddenRequest('Tous les lundis, envoie-moi le point sur mes dossiers'), false);
   assert.equal(isForbiddenRequest('Envoie le dossier à mon avocat'), true, 'une transmission à un tiers reste refusée');
   assert.equal(isForbiddenRequest('Transmets-moi le bilan chaque vendredi'), false);
+});
+
+test('analyse vide (aucune pièce lisible) : traitée comme absente, jamais comme une analyse', () => {
+  assert.equal(usableAnalysis({}), null);
+  assert.equal(usableAnalysis(null), null);
+  assert.equal(usableAnalysis({ summary_short: '' }), null);
+  assert.equal(usableAnalysis(analysis), analysis);
+  // Régression production du 28/11 : data = {} faisait planter la page du dossier.
+  const vide = ctx({ analysis: usableAnalysis({}), attention: null, available: [], pieces: DEMO_PIECES.slice(0, 1), processing: null });
+  assert.deepEqual(suggestions(vide), ['Où en est mon dossier ?']);
+  assert.match(runAssistant('Résume ce dossier.', vide).text, /1 pièce déposée/);
 });

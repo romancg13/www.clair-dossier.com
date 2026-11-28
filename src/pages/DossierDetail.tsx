@@ -7,6 +7,8 @@ import { supabase } from "../lib/supabase";
 import { ArrowRightIcon } from "../components/icons";
 import { hasDossierTrash, logAudit } from "../lib/admin";
 import { hasQuotaEngine } from "../lib/dossier-workspace";
+import { SectionBoundary } from "../components/SectionBoundary";
+import { expandArchives } from "../lib/archives";
 import { AiPanel, type AiProgress } from "../components/dossier/AiPanel";
 import { DossierAttention } from "../components/dossier/DossierAttention";
 import { EmailInbox } from "../components/dossier/EmailInbox";
@@ -725,7 +727,12 @@ export function DossierDetail() {
   async function handleUpload(fileList: FileList | null) {
     if (!fileList || fileList.length === 0 || !dossier || !user || !ownerId) return;
     setActionError(null);
-    const files = Array.from(fileList);
+    // Archive ZIP (même renommée) : ouverte ici, ses fichiers sont déposés un par un.
+    const { files, skipped } = await expandArchives(Array.from(fileList));
+    if (files.length === 0) {
+      setActionError(`Aucun fichier exploitable dans l'archive déposée${skipped.length ? ` (ignorés : ${skipped.slice(0, 5).join(", ")})` : ""}.`);
+      return;
+    }
     for (const f of files) {
       const err = validateUpload(f);
       if (err) {
@@ -752,6 +759,7 @@ export function DossierDetail() {
       }
       await refreshDocs();
       setActiveTab("pieces");
+      if (skipped.length) setActionError(`${files.length} fichier${files.length > 1 ? "s" : ""} déposé${files.length > 1 ? "s" : ""}. Ignorés (format non accepté) : ${skipped.slice(0, 5).join(", ")}${skipped.length > 5 ? "…" : ""}.`);
     } catch (e) {
       await refreshDocs();
       setActionError(
@@ -1255,7 +1263,9 @@ export function DossierDetail() {
               {/* Boîte d'attention (règles fixes, sans IA) : n'apparaît que si une analyse existe. */}
               {AI_ENGINE && (
                 <div className="mt-6 empty:hidden">
-                  <DossierAttention dossierId={dossier.id} documents={[...pieces, ...deliverables]} deadlines={deadlines} refreshKey={deliverables.length} />
+                  <SectionBoundary>
+                    <DossierAttention dossierId={dossier.id} documents={[...pieces, ...deliverables]} deadlines={deadlines} refreshKey={deliverables.length} />
+                  </SectionBoundary>
                 </div>
               )}
 
@@ -1373,7 +1383,7 @@ export function DossierDetail() {
                           ref={fileInputRef}
                           type="file"
                           multiple
-                          accept={ACCEPT_ATTR}
+                          accept={`${ACCEPT_ATTR},.zip`}
                           className="hidden"
                           disabled={uploading}
                           onChange={(e) => {
@@ -1622,19 +1632,31 @@ export function DossierDetail() {
                 </div>
               )}
 
+              {/* Suivi du traitement : monté quel que soit l'onglet (l'état et l'actualisation continuent),
+                  affiché dans le tableau de bord. Une erreur de ce bloc ne bloque jamais le dossier. */}
+              {AI_ENGINE && (
+                <div hidden={activeTab !== "dashboard"} className="mt-6">
+                  <SectionBoundary fallback={<p className="rounded-2xl border hairline bg-cream-50/60 p-4 text-sm text-slate-600">Le suivi du traitement est momentanément indisponible. Vos pièces et vos documents restent accessibles.</p>}>
+                    <AiPanel
+                      dossierId={dossier.id}
+                      ownerId={dossier.user_id}
+                      canManage={isAdmin || dossier.user_id === user?.id}
+                      isAdmin={isAdmin}
+                      closed={closed}
+                      pieceCount={pieces.length}
+                      documentNames={Object.fromEntries(documents.map((d) => [d.id, d.file_name]))}
+                      onProgress={setAiProgress}
+                      onPublished={() => {
+                        void refreshDocs();
+                        void reloadDeadlines(dossier.id, setDeadlines);
+                      }}
+                    />
+                  </SectionBoundary>
+                </div>
+              )}
+
               {activeTab === "dashboard" && (
                 <div className="mt-6 space-y-6">
-                  {AI_ENGINE && <AiPanel
-                    dossierId={dossier.id}
-                    ownerId={dossier.user_id}
-                    canManage={isAdmin || dossier.user_id === user?.id}
-                    isAdmin={isAdmin}
-                    closed={closed}
-                    pieceCount={pieces.length}
-                    documentNames={Object.fromEntries(documents.map((d) => [d.id, d.file_name]))}
-                    onProgress={setAiProgress}
-                    onPublished={() => void refreshDocs()}
-                  />}
 
                   <div className="rounded-2xl border hairline bg-white p-6 shadow-card sm:p-8">
                   <DeliverablesGrid
@@ -1644,6 +1666,7 @@ export function DossierDetail() {
                     catalogHint={aiActive}
                     actions={
                       INTELLIGENCE ? (
+                        <SectionBoundary>
                         <DossierIntelligence
                           dossierId={dossier.id}
                           ownerId={dossier.user_id}
@@ -1655,6 +1678,7 @@ export function DossierDetail() {
                           onFile={(k) => void deliverableFiles.find((f) => f.key === k)?.download()}
                           onChanged={() => void reloadDeadlines(dossier.id, setDeadlines)}
                         />
+                        </SectionBoundary>
                       ) : undefined
                     }
                     busy={zipping}

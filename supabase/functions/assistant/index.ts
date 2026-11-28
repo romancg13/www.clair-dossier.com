@@ -6,7 +6,7 @@
 import Anthropic from 'npm:@anthropic-ai/sdk@1.1.0';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { buildAttention } from '../_shared/attention.ts';
-import type { AnalysisData, CoverageInfo } from '../_shared/analysis-model.ts';
+import { usableAnalysis, type AnalysisData, type CoverageInfo } from '../_shared/analysis-model.ts';
 import type { Context } from '../_shared/intelligence/core.ts';
 import { answer, type AssistantFinops, type LedgerEntry } from '../_shared/intelligence/assistant-model.ts';
 import { ASSISTANT_MESSAGES_PER_HOUR, assistantSettings, modelUsable, parseAssistantRequest } from '../_shared/intelligence/assistant-request.ts';
@@ -89,7 +89,9 @@ Deno.serve(async (req: Request): Promise<Response> => {
     caller.from('assistant_preferences').select('body').limit(12),
   ]);
   // L'analyse n'est transmise au modèle que si l'analyse est activée sur CE dossier.
-  const analysis = s.data?.enabled_at ? ((a.data as { coverage: CoverageInfo; data: AnalysisData } | null) ?? null) : null;
+  const row = s.data?.enabled_at ? (a.data as { coverage: CoverageInfo; data: unknown } | null) : null;
+  const usable = usableAnalysis(row?.data);
+  const analysis: { coverage: CoverageInfo; data: AnalysisData } | null = row && usable ? { coverage: row.coverage, data: usable } : null;
   const pieceList = ((pieces.data ?? []) as { id: string; file_name: string }[]);
   const t = today();
   const ctx: Context = {

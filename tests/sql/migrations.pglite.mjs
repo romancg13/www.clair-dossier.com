@@ -1670,7 +1670,8 @@ async function trialMotifs(kind) {
 }
 const jobOf = async (dossierId, kind) => {
   await asSuperuser();
-  return (await q(`select id from public.ai_jobs where dossier_id = $1 and kind = $2 order by created_at desc limit 1`, [dossierId, kind]))[0]?.id;
+  // Travail ouvert d'abord : deux travaux créés au même instant ne se départagent pas par la date.
+  return (await q(`select id from public.ai_jobs where dossier_id = $1 and kind = $2 order by (status in ('queued', 'running')) desc, created_at desc limit 1`, [dossierId, kind]))[0]?.id;
 };
 const P1 = await newUser('Prospect.Un+promo@GoogleMail.com');
 const P2 = await newUser('prospect-deux@test.local');
@@ -2782,7 +2783,7 @@ console.log('\nAnalyse automatique par compte (20261128120000)');
     assert.equal((await extractJobs(d)).length, 1, 'seule la pièce déposée sous abonnement');
   });
 
-  await test('compte : pilote → relecture manuelle ; désactivation explicite d’un dossier respectée', async () => {
+  await test('compte : pilote → publication automatique (20261129) ; désactivation explicite d’un dossier respectée', async () => {
     await setGate('pilote');
     await asUser(ADMIN);
     await q(`select public.accept_ai_account('ia-2026-11')`);
@@ -2790,7 +2791,7 @@ console.log('\nAnalyse automatique par compte (20261128120000)');
     await q(`insert into public.entitlement_overrides (user_id, mode, reason, active) values ($1, 'unlimited', 'test pilote', true)`, [ADMIN]);
     const d = await insertDossier(ADMIN, { title: 'Pilote' });
     await addPiece(ADMIN, d, 'p.pdf');
-    assert.equal((await settings(d))?.review_mode, 'manual');
+    assert.equal((await settings(d))?.review_mode, 'auto');
     await asUser(ADMIN);
     await q(`select public.disable_ai_processing($1)`, [d]);
     await addPiece(ADMIN, d, 'p2.pdf');
@@ -2900,6 +2901,89 @@ console.log('\nAssistant avec modèle : comptabilité (20261128130000)');
     assert.equal((await q(`select to_regclass('public.assistant_pots') as t`))[0].t, null);
     await db.exec(readFileSync(join(root, 'supabase', 'migrations', '20261128130000_assistant_budget.sql'), 'utf8'));
     assert.equal((await q(`select to_regclass('public.assistant_usage') as t`))[0].t, 'assistant_usage');
+  });
+}
+
+console.log('\nAutopilote : réveil immédiat, synthèse sans attente, publication automatique (20261129120000)');
+{
+  await asSuperuser();
+  // Les retours arrière testés plus haut ont réinstallé d'anciennes versions : on rejoue la migration.
+  await db.exec(readFileSync(join(root, 'supabase', 'migrations', '20261129120000_autopilot.sql'), 'utf8'));
+  await q(`update public.ai_auto_gate set mode = 'ouvert' where id = 1`);
+  await q(`update public.ai_jobs set status = 'cancelled', finished_at = now() where status in ('queued', 'running')`);
+  const kicks = async () => { await asSuperuser(); return (await q(`select count(*)::int as n from net.calls where body->>'source' = 'depot'`))[0].n; };
+  const job = async (d, kind) => { await asSuperuser(); return (await q(`select id, status, run_after <= now() as du from public.ai_jobs where dossier_id = $1 and kind = $2 and status in ('queued','running') limit 1`, [d, kind]))[0] ?? null; };
+  const P = await newUser('autopilote@test.fr');
+  await subscribe(P, 'essentiel', { status: 'active' });
+  await asSuperuser();
+  await q(`insert into public.entitlement_overrides (user_id, mode, reason, active) values ($1, 'unlimited', 'tests autopilote', true)`, [P]);
+  await asUser(P);
+  await q(`select public.accept_ai_account('ia-2026-11')`);
+
+  await test('autopilote : un dépôt réveille le worker aussitôt, sans clic ; publication automatique par défaut', async () => {
+    const avant = await kicks();
+    const d = await insertDossier(P, { title: 'Dépôt simple' });
+    await addPiece(P, d, 'contrat.pdf');
+    assert.equal((await kicks()) - avant, 1, 'un réveil pour la pièce déposée');
+    await asSuperuser();
+    assert.equal((await q(`select review_mode from public.dossier_ai_settings where dossier_id = $1`, [d]))[0].review_mode, 'auto');
+    assert.equal((await job(d, 'consolidate')).du, false, 'synthèse différée tant que la lecture est en cours');
+  });
+
+  await test('autopilote : dernière lecture terminée → synthèse immédiate et nouveau réveil', async () => {
+    await asSuperuser();
+    await q(`update public.ai_jobs set status = 'cancelled', finished_at = now() where status in ('queued', 'running')`);
+    const d = await insertDossier(P, { title: 'Deux pièces' });
+    await addPiece(P, d, 'a.pdf');
+    await addPiece(P, d, 'b.pdf');
+    await asSuperuser();
+    const [e1, e2] = await q(`select id from public.ai_jobs where dossier_id = $1 and kind = 'extract' order by created_at, id`, [d]);
+    await q(`update public.ai_jobs set status = 'running' where id in ($1, $2)`, [e1.id, e2.id]);
+    await q(`update public.ai_jobs set status = 'done', finished_at = now() where id = $1`, [e1.id]);
+    assert.equal((await job(d, 'consolidate')).du, false, 'une lecture reste en cours : pas encore de synthèse');
+    const avant = await kicks();
+    await q(`update public.ai_jobs set status = 'done', finished_at = now() where id = $1`, [e2.id]);
+    assert.equal((await job(d, 'consolidate')).du, true, 'synthèse avancée');
+    assert.equal((await kicks()) - avant, 1, 'un seul réveil pour la synthèse');
+  });
+
+  await test('autopilote : rafale de dépôts → 3 réveils au plus ; aucun réveil au-delà de 3 travaux en cours', async () => {
+    await asSuperuser();
+    await q(`update public.ai_jobs set status = 'cancelled', finished_at = now() where status in ('queued', 'running')`);
+    const d = await insertDossier(P, { title: 'Rafale' });
+    const avant = await kicks();
+    for (let i = 0; i < 8; i++) await addPiece(P, d, `piece-${i}.pdf`);
+    assert.equal((await kicks()) - avant, 3);
+    await asSuperuser();
+    await q(`update public.ai_jobs set status = 'running' where id in (select id from public.ai_jobs where dossier_id = $1 and kind = 'extract' and status = 'queued' limit 3)`, [d]);
+    const milieu = await kicks();
+    await addPiece(P, d, 'encore.pdf');
+    assert.equal((await kicks()) - milieu, 0, '3 travaux en cours : les workers enchaînent seuls');
+  });
+
+  await test('autopilote : réveil jamais bloquant (réseau absent) ; fonctions internes non appelables par un client', async () => {
+    await asSuperuser();
+    await q(`update public.ai_jobs set status = 'cancelled', finished_at = now() where status in ('queued', 'running')`);
+    await db.exec(`alter function net.http_post(text, jsonb, jsonb, jsonb, integer) rename to http_post_absent`);
+    const d = await insertDossier(P, { title: 'Sans réseau' });
+    await addPiece(P, d, 'ok.pdf');
+    assert.ok(await job(d, 'extract'), 'le dépôt aboutit et le travail est en file');
+    await db.exec(`alter function net.http_post_absent(text, jsonb, jsonb, jsonb, integer) rename to http_post`);
+    await asUser(P);
+    await rejects(q(`select public.ai_worker_kick()`), /permission denied/);
+  });
+
+  await test('autopilote : retour arrière propre puis réinstallation', async () => {
+    await asSuperuser();
+    await db.exec(readFileSync(join(root, 'supabase', 'rollback', '20261129120000_autopilot.down.sql'), 'utf8'));
+    assert.equal((await q(`select to_regprocedure('public.ai_worker_kick()') as f`))[0].f, null);
+    const avant = await kicks();
+    const d = await insertDossier(P, { title: 'Sans autopilote' });
+    await addPiece(P, d, 'x.pdf');
+    assert.equal((await kicks()) - avant, 0);
+    assert.ok(await job(d, 'extract'), 'la file et pg_cron suffisent');
+    await db.exec(readFileSync(join(root, 'supabase', 'migrations', '20261129120000_autopilot.sql'), 'utf8'));
+    assert.equal((await q(`select to_regprocedure('public.ai_worker_kick()')::text as f`))[0].f, 'ai_worker_kick()');
   });
 }
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { applyOverrides, type AnalysisData, type CoverageInfo, type EventOverride } from "../../../supabase/functions/_shared/analysis-model.ts";
 import { AnalysisView } from "./AnalysisView";
@@ -55,7 +55,6 @@ export function AiPanel({ dossierId, ownerId, canManage, isAdmin, closed, pieceC
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [consent, setConsent] = useState(false);
-  const [seenRevision, setSeenRevision] = useState<number | null>(null);
   const [quota, setQuota] = useState<QuotaRow | null>(null);
   // Interrupteur serveur (20261128120000) et acceptation par compte ; null si la migration est absente.
   const [account, setAccount] = useState<{ gateAllows: boolean; enabled: boolean } | null>(null);
@@ -90,16 +89,17 @@ export function AiPanel({ dossierId, ownerId, canManage, isAdmin, closed, pieceC
     }
   }, [dossierId, isAdmin]);
 
+  // Rechargé à chaque nouvelle pièce : le traitement démarre côté serveur dès le dépôt.
   useEffect(() => {
     void load();
-  }, [load]);
+  }, [load, pieceCount]);
 
   const open = jobs.filter((j) => j.status === "queued" || j.status === "running");
   const hasOpen = open.length > 0;
   // Suivi en direct tant que des travaux sont ouverts ; l'état vit en base (reprise après fermeture du navigateur).
   useEffect(() => {
     if (!hasOpen) return;
-    const id = setInterval(() => void load(), 15_000);
+    const id = setInterval(() => void load(), 5_000);
     return () => clearInterval(id);
   }, [hasOpen, load]);
 
@@ -120,11 +120,16 @@ export function AiPanel({ dossierId, ownerId, canManage, isAdmin, closed, pieceC
     onProgress?.({ processing: Boolean(settings?.enabled_at) && hasOpen, detail, enabled: Boolean(settings?.enabled_at) });
   }, [settings, hasOpen, detail, onProgress]);
 
+  // Rafraîchit documents et échéances de la page dès qu'une révision paraît (la PREMIÈRE comprise)
+  // et à la fin des travaux (les documents sont publiés juste après l'analyse).
+  const seen = useRef<{ revision: number | null; open: boolean } | null>(null);
   useEffect(() => {
-    if (!analysis) return;
-    if (seenRevision !== null && analysis.revision !== seenRevision) onPublished?.();
-    setSeenRevision(analysis.revision);
-  }, [analysis, seenRevision, onPublished]);
+    if (available !== true) return;
+    const now = { revision: analysis?.revision ?? null, open: hasOpen };
+    const before = seen.current;
+    seen.current = now;
+    if (before && (before.revision !== now.revision || (before.open && !now.open))) onPublished?.();
+  }, [available, analysis, hasOpen, onPublished]);
 
   const history: EventOverride[] = useMemo(
     () => overrides.map((o) => ({ ...o, author: o.author_role === "equipe" ? "Équipe ClairDossier" : "Titulaire du dossier" })),
@@ -209,6 +214,12 @@ export function AiPanel({ dossierId, ownerId, canManage, isAdmin, closed, pieceC
         {error && (
           <p role="alert" className="mt-3 text-sm text-red-700">
             {error}
+          </p>
+        )}
+        {settings?.enabled_at && analysis && !analysis.data?.summary_short && !hasOpen && (
+          <p className="mt-3 text-sm text-amber-800">
+            Aucune pièce de ce dossier n'a pu être lue. Déposez vos documents eux-mêmes, en PDF, image (JPG, PNG), Word ou texte : l'analyse
+            reprend automatiquement.
           </p>
         )}
         {failed.length > 0 && !hasOpen && (
