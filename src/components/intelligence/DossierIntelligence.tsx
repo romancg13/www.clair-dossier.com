@@ -8,7 +8,7 @@ import { IntelligenceLauncher } from "./IntelligencePanel";
 import { runAssistant, suggestions, type Context, type PendingAction, type Reply } from "../../../supabase/functions/_shared/intelligence/core.ts";
 import { planificationDe } from "../../../supabase/functions/_shared/intelligence/planification.ts";
 import { buildAttention } from "../../../supabase/functions/_shared/attention.ts";
-import type { AnalysisData, CoverageInfo, DeliverableKey } from "../../../supabase/functions/_shared/analysis-model.ts";
+import { usableAnalysis, type AnalysisData, type CoverageInfo, type DeliverableKey } from "../../../supabase/functions/_shared/analysis-model.ts";
 
 type Props = {
   dossierId: string;
@@ -45,10 +45,13 @@ export function DossierIntelligence(p: Props) {
         supabase.rpc("my_ai_account"),
       ]);
       if (!live) return;
-      setAnalysis(a.error || !a.data ? null : (a.data as { coverage: CoverageInfo; data: AnalysisData }));
+      // Analyse vide (aucune pièce lisible) = pas d'analyse : jamais transmise aux outils de l'assistant.
+      const row = a.error ? null : (a.data as { coverage: CoverageInfo; data: unknown } | null);
+      const data = usableAnalysis(row?.data);
+      setAnalysis(row && data ? { coverage: row.coverage, data } : null);
       setHistory(h.error ? [] : ((h.data ?? []) as { author: "vous" | "ia"; body: string }[]).map((t) => ({ from: t.author, text: t.body })));
-      const row = Array.isArray(acc.data) ? acc.data[0] : acc.data;
-      setServeur(!acc.error && row?.gate_allows === true && row?.enabled === true);
+      const compte = Array.isArray(acc.data) ? acc.data[0] : acc.data;
+      setServeur(!acc.error && compte?.gate_allows === true && compte?.enabled === true);
     })();
     return () => {
       live = false;

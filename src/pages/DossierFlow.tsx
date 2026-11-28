@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { expandArchives } from "../lib/archives";
 import { AnimatePresence, motion } from "motion/react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { Seo, breadcrumbSchema } from "../lib/seo";
@@ -354,11 +355,14 @@ export function DossierFlow() {
                 {draft.step === 4 && draft.typology && (
                   <StepDocuments
                     files={files}
-                    onAdd={(fl) => {
-                      const rejected = fl.map(validateUpload).find(Boolean);
-                      setUploadError(rejected ?? null);
-                      const ok = fl.filter((f) => !validateUpload(f));
-                      if (ok.length) setFiles((cur) => [...cur, ...ok]);
+                    onAdd={(added) => {
+                      // Archive ZIP (même renommée) : ouverte ici, ses fichiers sont ajoutés un par un.
+                      void expandArchives(added).then(({ files: fl, skipped }) => {
+                        const rejected = fl.map(validateUpload).find(Boolean);
+                        setUploadError(rejected ?? (skipped.length ? `Ignorés (format non accepté) : ${skipped.slice(0, 5).join(", ")}.` : null));
+                        const ok = fl.filter((f) => !validateUpload(f));
+                        if (ok.length) setFiles((cur) => [...cur, ...ok]);
+                      });
                     }}
                     onRemove={(i) => setFiles((cur) => cur.filter((_, idx) => idx !== i))}
                     uploadError={uploadError}
@@ -664,7 +668,7 @@ function StepDocuments({
         <input
           type="file"
           multiple
-          accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.txt"
+          accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.txt,.zip"
           className="hidden"
           onChange={(e) => {
             if (e.target.files) onAdd(Array.from(e.target.files));

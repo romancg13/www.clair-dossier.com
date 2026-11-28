@@ -201,3 +201,12 @@ export function coverageLabel(c: CoverageInfo): string {
     ? `Analyse complète — ${c.extracted} pièce${c.extracted > 1 ? 's' : ''} exploitée${c.extracted > 1 ? 's' : ''}${c.unsupported ? `, ${c.unsupported} format(s) non pris en charge` : ''}`
     : `Analyse PARTIELLE — ${c.extracted}/${c.total} pièces exploitées${c.pending ? `, ${c.pending} en attente` : ''}${c.failed ? `, ${c.failed} en échec` : ''}${c.unsupported ? `, ${c.unsupported} non prise(s) en charge` : ''}`;
 }
+
+/**
+ * Analyse exploitable, ou null. Le moteur enregistre `data = {}` quand aucune pièce n'a pu être lue :
+ * cette ligne décrit une couverture, pas une analyse (aucun champ à lire).
+ */
+export function usableAnalysis(data: unknown): AnalysisData | null {
+  const a = data as Partial<AnalysisData> | null | undefined;
+  return a && typeof a.summary_short === 'string' && a.summary_short.trim() ? (a as AnalysisData) : null;
+}
