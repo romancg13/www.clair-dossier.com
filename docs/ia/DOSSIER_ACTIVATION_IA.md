@@ -181,3 +181,23 @@ Proposition d'art. 6, §1 (le §2 actuel sur la transmission est conservé) — 
 > le Service n'envoie aucun message ni aucune pièce à des tiers. L'analyse est réalisée par le sous-traitant
 > mentionné dans la politique de confidentialité ; le traitement peut impliquer un transfert hors de l'Union
 > européenne, encadré par [mécanisme — À CONFIRMER].
+
+## 8. Mise en production de la PR « analyse par compte + assistant » — procédure (28/11/2026)
+
+Préalable : sauvegarde physique Pro du jour (Database → Backups) ; accord explicite du fondateur dans la session.
+
+1. Fusion de la PR (contrôle « verifier » vert) → déploiement GitHub Pages ; vérifier `version.json`.
+2. Migrations, chacune en transaction avec sa ligne d'historique, dans l'ordre : `20261118120000`
+   (quotas par offre — **indispensable** : sans elle le worker met chaque lecture en pause « par prudence »),
+   `20261128120000` (interrupteur, **fermé** à l'installation), `20261128130000` (comptabilité de l'assistant).
+3. Fonction Edge `assistant` déployée ; secrets `ASSISTANT_BUDGET_MICRO_USD_GLOBAL_MONTH` = 5 000 000 (5 USD)
+   et `ASSISTANT_BUDGET_MICRO_USD_PER_USER_MONTH` = 1 000 000 (1 USD) — coupe-circuits, relevés selon l'usage.
+4. Variable de dépôt `VITE_AI_ENGINE=1` puis redéploiement (panneau IA ; invisible des clients tant que fermé).
+5. Pilote : dérogation `unlimited` journalisée sur le compte administrateur du fondateur (motif « pilote IA,
+   pièces fictives »), interrupteur → **pilote**. Le fondateur se connecte, accepte, dépose des pièces fictives
+   (ZIP fourni) ou demande l'analyse des pièces déjà déposées du dossier « TEST IA » ; contrôle des travaux, du
+   coût réel, des six rendus et d'une question à l'assistant.
+6. Ouverture à tous (**ouvert**) seulement après validation juridique (§7) et achat de crédits Anthropic.
+
+Retour arrière : interrupteur → fermé (coupe-circuit immédiat) ; fichiers `supabase/rollback/2026112812*` et
+`20261128130000` ; revert de la PR ; `ASSISTANT_PAUSED=1` / `AI_ENGINE_PAUSED=1` en secrets.
