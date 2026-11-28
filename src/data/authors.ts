@@ -18,7 +18,7 @@ export const authors: Record<string, Author> = {
     name: 'Équipe ClairDossier',
     role: 'Contenus pédagogiques',
     bio:
-      "Articles rédigés par l'équipe ClairDossier à partir des textes officiels cités en sources. Contenus pédagogiques : ils ne constituent pas un conseil juridique personnalisé. ClairDossier ne lit pas les documents de ses utilisateurs.",
+      "Articles rédigés par l'équipe ClairDossier à partir des textes officiels cités en sources. Contenus pédagogiques : ils ne constituent pas un conseil juridique personnalisé. ClairDossier ne lit les documents de ses utilisateurs que s'ils ont accepté l'analyse automatique.",
     initials: 'CD',
   },
 };

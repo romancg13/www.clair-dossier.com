@@ -81,7 +81,7 @@ export function AiAccountConsent({ userId }: { userId: string }) {
         <label className="mt-5 flex items-start gap-3 text-sm leading-relaxed text-slate-700">
           <input type="checkbox" className="mt-1" checked={checked} onChange={(e) => setChecked(e.target.checked)} disabled={pending} />
           <span>
-            J'accepte que le contenu de mes pièces soit transmis à notre prestataire d'intelligence artificielle (sous-traitant) pour produire
+            J'accepte que le contenu de mes pièces soit transmis à notre prestataire d'intelligence artificielle (Anthropic, sous-traitant, États-Unis) pour produire
             ces documents, générés automatiquement, à vérifier, et qui ne constituent pas un conseil juridique (
             <Link to="/cgv" className="underline underline-offset-2">
               CGV, art. 6
@@ -152,7 +152,7 @@ export function AiAccountPanel({ userId }: { userId: string }) {
           <label className="mt-4 flex items-start gap-3 text-sm leading-relaxed text-slate-700">
             <input type="checkbox" className="mt-1" checked={checked} onChange={(e) => setChecked(e.target.checked)} disabled={pending} />
             <span>
-              J'accepte la transmission du contenu de mes pièces à notre prestataire d'intelligence artificielle (sous-traitant) selon les{' '}
+              J'accepte la transmission du contenu de mes pièces à notre prestataire d'intelligence artificielle (Anthropic, sous-traitant, États-Unis) selon les{' '}
               <Link to="/cgv" className="underline underline-offset-2">
                 CGV, art. 6
               </Link>

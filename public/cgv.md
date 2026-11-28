@@ -1,13 +1,13 @@
 ---
 title: "Conditions générales de vente"
 description: "Conditions générales de vente du service ClairDossier — souscription, tarifs, durée, résiliation, responsabilité, propriété intellectuelle."
-lastUpdate: 2026-09-20
+lastUpdate: 2026-11-28
 url: https://www.clair-dossier.com/cgv
 ---
 
 # Conditions générales de vente
 
-*Dernière mise à jour : 20 septembre 2026*
+*Dernière mise à jour : 28 novembre 2026*
 
 Les présentes conditions générales de vente (« CGV ») régissent l'accès au service ClairDossier et son utilisation par tout client souscrivant à une offre. La création de compte est gratuite ; seul l'abonnement est payant. Toute souscription emporte acceptation pleine et entière des présentes CGV.
 
@@ -41,7 +41,9 @@ ClairDossier met en œuvre les moyens raisonnables pour assurer la disponibilit�
 
 ## Article 6 — Traitement des dossiers
 
-Le Service organise les dossiers à partir des informations et des pièces renseignées par le Client. Il ne procède à aucune lecture, extraction ou analyse automatique des documents : le contenu des dossiers est saisi et structuré par le Client lui-même.
+Le Service organise les dossiers à partir des informations et des pièces renseignées par le Client. Sous réserve d'une acceptation expresse, donnée une seule fois pour l'ensemble du compte, ClairDossier procède à une lecture et à une analyse automatiques des pièces déposées après cette acceptation, afin de produire des documents de travail : résumé, tableau de bord, chronologie, dates, échéances et projets de relances. Les pièces déposées avant l'acceptation ne sont analysées qu'à la demande du Client, dossier par dossier. Sans acceptation, aucune pièce n'est lue. Le Client peut désactiver l'analyse à tout moment depuis son espace « Mon compte » : aucune nouvelle pièce n'est alors analysée et les documents déjà produits restent disponibles jusqu'à la suppression du dossier.
+
+Ces documents sont générés par un système d'intelligence artificielle et signalés comme tels. Ils mentionnent les pièces sur lesquelles ils reposent, signalent les informations incertaines ou manquantes et doivent être vérifiés par le Client. Ils ne constituent ni un conseil juridique, ni un acte juridique, ni une garantie d'exhaustivité. Les projets de relances restent des brouillons. L'analyse est réalisée par le sous-traitant Anthropic, mentionné dans la politique de confidentialité, dans la limite du volume inclus dans l'offre souscrite.
 
 La validation d'un dossier l'enregistre dans le compte du Client : le Service n'envoie pas le dossier à des tiers, ni par e-mail ni par WhatsApp. Toute transmission à un tiers est effectuée par le Client lui-même, à son initiative. ClairDossier ne saurait être tenue responsable de l'usage fait des dossiers une fois transmis par le Client à un tiers.
 

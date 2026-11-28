@@ -42,7 +42,7 @@ Une copie numérique a de la valeur : l'écrit électronique a la même force pr
 
 Exemple fictif. Sonia, menuisière, n'a pas été payée pour un chantier. Elle réunit le devis signé, deux factures, trois e-mails et les photos de fin de travaux, puis renomme chaque fichier, par exemple 2026-01-10_devis-signe_client-martin.pdf. Elle écrit ensuite six lignes de chronologie. En relisant, elle constate que sa relance téléphonique de février n'est prouvée par rien : elle retrouve le SMS de confirmation et l'ajoute. Son dossier tient désormais sur une page et un dossier de fichiers, prêt à être montré à un conseil ou à un conciliateur de justice.
 
-> **Note —** ClairDossier vous aide à rassembler vos pièces, les informations et les échéances que vous renseignez, avec un récapitulatif relu avant validation. La plateforme ne lit pas vos documents et ne donne pas de conseil juridique : pour analyser votre situation, adressez-vous à un professionnel du droit.
+> **Note —** ClairDossier vous aide à rassembler vos pièces, les informations et les échéances que vous renseignez, avec un récapitulatif relu avant validation. La plateforme ne lit vos documents que si vous avez accepté l'analyse automatique, et ne donne pas de conseil juridique : pour analyser votre situation, adressez-vous à un professionnel du droit.
 
 ## À retenir
 

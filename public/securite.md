@@ -16,7 +16,7 @@ Ce centre de confiance expose ce que nous faisons concrètement : chiffrement, i
 - Connexion chiffrée (HTTPS) entre le navigateur et l'application ; données chiffrées au repos côté hébergeur.
 - Isolation des données par utilisateur appliquée en base (Row Level Security) — y compris pour le stockage des pièces (bucket privé, liens signés temporaires).
 - Accès à l'espace par authentification (compte confirmé par e-mail) ; consultation support limitée à un administrateur unique.
-- Aucune lecture, extraction ou analyse automatique des documents déposés — engagement contractuel (CGV).
+- Aucune lecture, extraction ou analyse automatique des documents déposés sans votre acceptation expresse — engagement contractuel (CGV, art. 6).
 - Transmission d'un dossier uniquement sur action explicite de l'utilisateur (e-mail ou WhatsApp).
 
 ## Sous-traitants
@@ -25,9 +25,17 @@ Ce centre de confiance expose ce que nous faisons concrètement : chiffrement, i
 
 - **Finalité** : Base de données, authentification, stockage privé des pièces, fonctions serveur (dont la notification interne de l’équipe).
 - **Données** : Comptes et profils, dossiers, pièces déposées, notifications internes.
-- **Localisation** : Région cloud du projet : en cours de confirmation — sera affichée ici. *(À CONFIRMER)*
+- **Localisation** : Union européenne — Francfort, Allemagne (région eu-central-1), vérifiée le 28/11/2026.
 - **Conservation** : Durée du contrat, puis délais de la politique de confidentialité (comptes : 12 mois après résiliation).
 - **DPA** : Cadre de sous-traitance Supabase : référence à publier ici. *(À CONFIRMER)*
+
+### Anthropic
+
+- **Finalité** : Analyse automatique des pièces et assistant, uniquement pour les comptes qui l’ont acceptée (CGV, art. 6).
+- **Données** : Contenu des pièces analysées et extraits utiles aux questions posées à l’assistant. Aucune donnée de compte ni de paiement.
+- **Localisation** : États-Unis ; transfert encadré par les clauses contractuelles types de la Commission européenne.
+- **Conservation** : Suppression sous 30 jours par Anthropic, sauf exceptions prévues par ses conditions ; pas d’entraînement de modèles sur ces données (engagements publics d’Anthropic, consultés le 28/11/2026).
+- **DPA** : Accord de traitement des données Anthropic (public, anthropic.com/legal/data-processing-addendum).
 
 ### Stripe Payments Europe Ltd
 
@@ -78,7 +86,7 @@ Ce centre de confiance expose ce que nous faisons concrètement : chiffrement, i
 
 ## Secret professionnel
 
-Aucune lecture automatique des pièces (engagement contractuel, CGV). Cloisonnement entre comptes appliqué en base, pas seulement dans l'interface. Rien ne sort de l'espace d'un utilisateur sans son action explicite ; le professionnel destinataire, choisi par l'utilisateur, reste responsable de son propre cadre déontologique. Accès support limité à un administrateur unique et identifié.
+Aucune lecture automatique des pièces sans acceptation expresse du titulaire du compte (CGV, art. 6) ; l'analyse, lorsqu'elle est acceptée, est confiée à un sous-traitant d'intelligence artificielle (Anthropic, États-Unis) : il appartient au professionnel soumis au secret d'apprécier s'il peut l'activer. Cloisonnement entre comptes appliqué en base, pas seulement dans l'interface. Rien ne sort de l'espace d'un utilisateur sans son action explicite ; le professionnel destinataire, choisi par l'utilisateur, reste responsable de son propre cadre déontologique. Accès support limité à un administrateur unique et identifié.
 
 ## Sauvegarde, restauration & incident
 
@@ -100,9 +108,8 @@ Le DPA s'obtient sans formulaire : demande par e-mail à contact.clairdossier@ic
 
 ## En attente de vérification (affiché tel quel)
 
-- À CONFIRMER : Localisation exacte (région cloud) du projet de base de données : à confirmer puis afficher.
 - À CONFIRMER : DPA ClairDossier téléchargeable directement depuis cette page (aujourd’hui : envoyé par e-mail sur simple demande).
-- À CONFIRMER : Analyse d’impact (AIPD) : évaluation de la nécessité à documenter.
+- À CONFIRMER : Analyse d’impact (AIPD) de l’analyse automatique : projet rédigé, conclusion à signer.
 - À CONFIRMER : Procédure d’incident rédigée et publiée (l’engagement réglementaire s’applique déjà — voir Continuité).
 - À CONFIRMER : Test de restauration des sauvegardes : à réaliser puis dater ici.
 - À CONFIRMER : Encadrement des transferts hors Union européenne (Resend, GitHub) : mécanisme à confirmer puis afficher.

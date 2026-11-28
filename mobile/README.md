@@ -48,7 +48,7 @@ mobile/
 
 - **Aucun secret dans le bundle.** Seules des variables `EXPO_PUBLIC_*` (publiques par nature).
   La clé Supabase « anon » est protégée par les policies RLS.
-- **Aucune lecture automatique des documents** : engagement contractuel ClairDossier.
+- **Aucune lecture automatique des documents sans acceptation expresse** (CGV, art. 6) : engagement contractuel ClairDossier.
   L'application ne contient donc aucune fonction d'analyse de contenu.
 - **Le serveur est la source de vérité** pour les droits et l'abonnement ; l'application
   n'en déduit rien par elle-même.

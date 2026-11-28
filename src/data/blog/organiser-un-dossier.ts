@@ -67,7 +67,7 @@ export const organiserUnDossier: BlogPostInput = {
     {
       type: 'callout',
       text:
-        "ClairDossier vous aide à rassembler vos pièces, les informations et les échéances que vous renseignez, avec un récapitulatif relu avant validation. La plateforme ne lit pas vos documents et ne donne pas de conseil juridique : pour analyser votre situation, adressez-vous à un professionnel du droit.",
+        "ClairDossier vous aide à rassembler vos pièces, les informations et les échéances que vous renseignez, avec un récapitulatif relu avant validation. La plateforme ne lit vos documents que si vous avez accepté l'analyse automatique, et ne donne pas de conseil juridique : pour analyser votre situation, adressez-vous à un professionnel du droit.",
       tone: 'gold',
     },
   ],

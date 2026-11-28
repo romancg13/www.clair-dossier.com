@@ -63,7 +63,7 @@ export const operational: ProductStatusEntry[] = [
   {
     label: 'Transmission déclenchée par vous, jamais automatique',
     detail:
-      'Le dossier validé est enregistré dans votre compte ; rien n’est envoyé par e-mail ou WhatsApp. Vous téléchargez vos pièces et transmettez le dossier vous-même au destinataire de votre choix. L’équipe reçoit une notification interne, sans pièce ni contenu de dossier. Aucune lecture ni exploitation automatique des pièces (engagement contractuel).',
+      'Le dossier validé est enregistré dans votre compte ; rien n’est envoyé par e-mail ou WhatsApp. Vous téléchargez vos pièces et transmettez le dossier vous-même au destinataire de votre choix. L’équipe reçoit une notification interne, sans pièce ni contenu de dossier. Aucune lecture automatique des pièces sans votre acceptation expresse (CGV, art. 6).',
     verification: '/fonctionnalites/transmission-validee · /cgv',
   },
   {

@@ -410,7 +410,7 @@ function generateSecurity(): void {
     '- Connexion chiffrée (HTTPS) entre le navigateur et l\'application ; données chiffrées au repos côté hébergeur.',
     '- Isolation des données par utilisateur appliquée en base (Row Level Security) — y compris pour le stockage des pièces (bucket privé, liens signés temporaires).',
     "- Accès à l'espace par authentification (compte confirmé par e-mail) ; consultation support limitée à un administrateur unique.",
-    "- Aucune lecture, extraction ou analyse automatique des documents déposés — engagement contractuel (CGV).",
+    "- Aucune lecture, extraction ou analyse automatique des documents déposés sans votre acceptation expresse — engagement contractuel (CGV, art. 6).",
     "- Transmission d'un dossier uniquement sur action explicite de l'utilisateur (e-mail ou WhatsApp).",
     '',
     '## Sous-traitants',
@@ -437,7 +437,7 @@ function generateSecurity(): void {
   lines.push('## Secret professionnel');
   lines.push('');
   lines.push(
-    "Aucune lecture automatique des pièces (engagement contractuel, CGV). Cloisonnement entre comptes appliqué en base, pas seulement dans l'interface. Rien ne sort de l'espace d'un utilisateur sans son action explicite ; le professionnel destinataire, choisi par l'utilisateur, reste responsable de son propre cadre déontologique. Accès support limité à un administrateur unique et identifié."
+    "Aucune lecture automatique des pièces sans acceptation expresse du titulaire du compte (CGV, art. 6) ; l'analyse, lorsqu'elle est acceptée, est confiée à un sous-traitant d'intelligence artificielle (Anthropic, États-Unis) : il appartient au professionnel soumis au secret d'apprécier s'il peut l'activer. Cloisonnement entre comptes appliqué en base, pas seulement dans l'interface. Rien ne sort de l'espace d'un utilisateur sans son action explicite ; le professionnel destinataire, choisi par l'utilisateur, reste responsable de son propre cadre déontologique. Accès support limité à un administrateur unique et identifié."
   );
   lines.push('');
   lines.push('## Sauvegarde, restauration & incident');

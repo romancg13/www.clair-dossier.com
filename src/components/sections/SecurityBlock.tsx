@@ -14,7 +14,7 @@ export const TRUST = [
   {
     Icon: HostingFranceIcon,
     title: "Hébergeur conforme RGPD",
-    body: "Vos données sont hébergées chez un sous-traitant conforme au RGPD. Aucune lecture ni exploitation automatique de vos pièces.",
+    body: "Vos données sont hébergées chez un sous-traitant conforme au RGPD. Aucune lecture automatique de vos pièces sans votre acceptation expresse.",
   },
   {
     Icon: EncryptionIcon,

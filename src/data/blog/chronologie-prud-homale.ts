@@ -88,7 +88,7 @@ export const chronologiePrudHomale: BlogPostInput = {
     { type: 'h2', text: "Outil ou méthode" },
     {
       type: 'p',
-      text: "Construire une chronologie est une discipline avant d'être un outil. ClairDossier rassemble les pièces déposées et les dates renseignées par le client sur la page d'avancement du dossier. La plateforme ne lit pas les pièces et ne construit pas la chronologie à la place de quiconque : la méthode et l'analyse restent celles du professionnel.",
+      text: "Construire une chronologie est une discipline avant d'être un outil. ClairDossier rassemble les pièces déposées et les dates renseignées par le client sur la page d'avancement du dossier. Si l'utilisateur a accepté l'analyse automatique, la plateforme propose une chronologie de travail à partir des pièces, à vérifier ; elle ne remplace ni la méthode ni l'analyse du professionnel.",
     },
     {
       type: 'callout',

@@ -46,9 +46,9 @@ const PROOF_VALIDATION: SegmentProof = {
 };
 
 const PROOF_NO_AI_READING: SegmentProof = {
-  title: 'Aucune lecture automatique de vos pièces',
+  title: 'Aucune lecture automatique sans votre accord',
   body:
-    "Le service organise les dossiers à partir de ce que vous saisissez. Il ne procède à aucune lecture, extraction ou analyse automatique des documents déposés — c'est un engagement contractuel, pas un réglage.",
+    "Le service organise les dossiers à partir de ce que vous saisissez. Vos pièces ne sont lues et analysées automatiquement que si vous l'acceptez expressément, une seule fois pour votre compte ; vous pouvez désactiver l'analyse à tout moment — c'est un engagement contractuel (CGV, art. 6).",
   verification: 'Vérifiable : CGV, article « Nature du service » (/cgv).',
 };
 
@@ -75,7 +75,7 @@ export const segmentPages: SegmentPageData[] = [
     title: 'Des dossiers clients qui arrivent déjà structurés.',
     metaTitle: "Cabinets d'avocats",
     metaDescription:
-      "ClairDossier pour les cabinets d'avocats : des dossiers clients constitués, datés et ordonnés avant le premier rendez-vous. Cloisonnement par compte, validation humaine, aucune lecture automatique des pièces.",
+      "ClairDossier pour les cabinets d'avocats : des dossiers clients constitués, datés et ordonnés avant le premier rendez-vous. Cloisonnement par compte, validation humaine, aucune lecture automatique des pièces sans votre accord.",
     promesse:
       "Le temps passé à réclamer des pièces, reconstituer une chronologie ou trier une boîte mail n'est pas du temps de droit. ClairDossier fait arriver le dossier constitué : pièces déposées, dates renseignées, récapitulatif relu — par le client, avant vous.",
     frictions: [

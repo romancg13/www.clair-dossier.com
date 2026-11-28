@@ -123,7 +123,7 @@ const cgv: LegalPage = {
   title: "Conditions générales de vente",
   metaDescription:
     "Conditions générales de vente du service ClairDossier — souscription, tarifs, durée, résiliation, responsabilité, propriété intellectuelle.",
-  lastUpdate: "2026-09-20",
+  lastUpdate: "2026-11-28",
   intro:
     "Les présentes conditions générales de vente (« CGV ») régissent l'accès au service ClairDossier et son utilisation par tout client souscrivant à une offre. La création de compte est gratuite ; seul l'abonnement est payant. Toute souscription emporte acceptation pleine et entière des présentes CGV.",
   sections: [
@@ -199,7 +199,11 @@ const cgv: LegalPage = {
       blocks: [
         {
           type: "p",
-          text: "Le Service organise les dossiers à partir des informations et des pièces renseignées par le Client. Il ne procède à aucune lecture, extraction ou analyse automatique des documents : le contenu des dossiers est saisi et structuré par le Client lui-même.",
+          text: "Le Service organise les dossiers à partir des informations et des pièces renseignées par le Client. Sous réserve d'une acceptation expresse, donnée une seule fois pour l'ensemble du compte, ClairDossier procède à une lecture et à une analyse automatiques des pièces déposées après cette acceptation, afin de produire des documents de travail : résumé, tableau de bord, chronologie, dates, échéances et projets de relances. Les pièces déposées avant l'acceptation ne sont analysées qu'à la demande du Client, dossier par dossier. Sans acceptation, aucune pièce n'est lue. Le Client peut désactiver l'analyse à tout moment depuis son espace « Mon compte » : aucune nouvelle pièce n'est alors analysée et les documents déjà produits restent disponibles jusqu'à la suppression du dossier.",
+        },
+        {
+          type: "p",
+          text: "Ces documents sont générés par un système d'intelligence artificielle et signalés comme tels. Ils mentionnent les pièces sur lesquelles ils reposent, signalent les informations incertaines ou manquantes et doivent être vérifiés par le Client. Ils ne constituent ni un conseil juridique, ni un acte juridique, ni une garantie d'exhaustivité. Les projets de relances restent des brouillons. L'analyse est réalisée par le sous-traitant Anthropic, mentionné dans la politique de confidentialité, dans la limite du volume inclus dans l'offre souscrite.",
         },
         {
           type: "p",
@@ -249,7 +253,7 @@ const politiqueConfidentialite: LegalPage = {
   title: "Politique de confidentialité",
   metaDescription:
     "Politique de confidentialité ClairDossier — données collectées, finalités, base légale, durées de conservation, vos droits RGPD.",
-  lastUpdate: "2026-11-04",
+  lastUpdate: "2026-11-28",
   intro:
     "ClairDossier traite des données personnelles dans le strict respect du Règlement général sur la protection des données (RGPD) et de la loi française Informatique et Libertés. Cette politique décrit les données collectées, leurs finalités, et les droits dont vous disposez.",
   sections: [
@@ -275,7 +279,7 @@ const politiqueConfidentialite: LegalPage = {
           type: "list",
           items: [
             "Données de compte : nom, prénom, adresse électronique, numéro de téléphone (facultatif), type d'activité, structure professionnelle éventuelle, mot de passe (conservé sous forme hachée par le prestataire d'authentification, jamais en clair).",
-            "Données de dossier : informations renseignées par vous dans le cadre de la constitution d'un dossier juridique (typologie, contexte, dates, pièces jointes).",
+            "Données de dossier : informations renseignées par vous dans le cadre de la constitution d'un dossier juridique (typologie, contexte, dates, pièces jointes) et, si vous avez accepté l'analyse automatique, les documents de travail produits à partir de vos pièces (résumé, chronologie, dates, échéances, projets de relances).",
             "Données de paiement : traitées par notre prestataire Stripe (les coordonnées bancaires ne transitent jamais par nos serveurs).",
             "Données techniques : adresse IP, type de navigateur, journaux de connexion, conservés à des fins de sécurité.",
             "Mesure d'audience sans cookie (Plausible Analytics) : pages publiques consultées, provenance (site référent, paramètres de campagne UTM), type d'appareil, navigateur et pays, sous forme de statistiques agrégées et anonymes ; ni cookie, ni identifiant persistant, ni adresse IP conservée. Les espaces privés (compte, dossiers, administration) sont exclus de la mesure. Le lien court de campagne clair-dossier.com/v alimente en outre un compteur de clics journalier agrégé, sans aucune donnée personnelle en base.",
@@ -294,6 +298,7 @@ const politiqueConfidentialite: LegalPage = {
             "Assurer la facturation et la gestion du contrat.",
             "Mettre vos pièces à votre disposition (consultation, téléchargement), afin que vous puissiez transmettre vous-même votre dossier au destinataire de votre choix.",
             "Informer l'équipe ClairDossier d'une nouvelle inscription ou d'un nouveau dossier, par une notification interne qui ne contient ni pièce ni contenu de dossier.",
+            "Si vous l'avez acceptée : lire et analyser automatiquement les pièces déposées pour produire vos documents de travail, et répondre à vos questions sur vos dossiers (assistant). Sans acceptation, aucune pièce n'est lue ; vous pouvez désactiver l'analyse à tout moment dans « Mon compte ».",
             "Répondre aux demandes de contact et d'assistance.",
             "Garantir la sécurité du service et prévenir les fraudes.",
           ],
@@ -321,9 +326,10 @@ const politiqueConfidentialite: LegalPage = {
         {
           type: "list",
           items: [
-            "Supabase, sous-traitant technique : base de données, authentification, stockage des pièces et fonctions serveur (région d'hébergement en cours de confirmation).",
+            "Supabase, sous-traitant technique : base de données, authentification, stockage des pièces et fonctions serveur (hébergement dans l'Union européenne, à Francfort).",
             "Stripe Payments Europe Ltd. (gestion des paiements) — Irlande.",
             "Resend, pour l'envoi des e-mails (confirmation de compte, notifications internes à l'équipe).",
+            "Anthropic, sous-traitant d'intelligence artificielle, uniquement si vous avez accepté l'analyse automatique : contenu des pièces analysées et extraits utiles à vos questions. Traitement aux États-Unis.",
             "GitHub (GitHub Pages), pour la diffusion du site public : journaux techniques de connexion, dont l'adresse IP.",
             "Plausible Insights OÜ (Estonie, Union européenne), pour la mesure d'audience sans cookie du site public.",
             "WhatsApp (Meta), uniquement si vous choisissez de contacter l'équipe par ce canal.",
@@ -332,7 +338,7 @@ const politiqueConfidentialite: LegalPage = {
         },
         {
           type: "p",
-          text: "Resend et GitHub sont des sociétés établies aux États-Unis : l'encadrement de ces transferts hors de l'Union européenne est en cours de confirmation et sera précisé ici. La liste détaillée des sous-traitants (finalité, données, localisation, conservation) est publiée sur la page Sécurité du site.",
+          text: "Resend et GitHub sont des sociétés établies aux États-Unis : l'encadrement de ces transferts hors de l'Union européenne est en cours de confirmation et sera précisé ici. Pour Anthropic, le transfert vers les États-Unis est encadré par les clauses contractuelles types de la Commission européenne, intégrées à l'accord de traitement des données d'Anthropic ; d'après ses engagements publics, Anthropic n'utilise pas ces données pour entraîner ses modèles et les supprime sous 30 jours, sauf exceptions prévues par ses conditions (obligations légales, lutte contre les abus). Les pièces peuvent mentionner des tiers : il vous appartient de ne déposer que les documents que vous êtes en droit de nous confier. La liste détaillée des sous-traitants (finalité, données, localisation, conservation) est publiée sur la page Sécurité du site.",
         },
         {
           type: "p",
@@ -349,6 +355,7 @@ const politiqueConfidentialite: LegalPage = {
           items: [
             "Données de compte : pendant toute la durée du contrat, puis 12 mois après résiliation.",
             "Données de dossier : pendant la durée du contrat ; à la résiliation, une copie peut vous être transmise sur demande dans un délai de 30 jours, puis les données sont anonymisées ou supprimées.",
+            "Analyses et documents de travail produits automatiquement : conservés avec le dossier et supprimés avec lui ; journaux techniques de l'analyse, sans contenu : 90 jours.",
             "Données de facturation : conservées 10 ans à des fins légales (Code de commerce, article L. 123-22).",
             "Journaux de connexion : 12 mois (loi pour la confiance dans l'économie numérique).",
           ],
@@ -371,7 +378,7 @@ const politiqueConfidentialite: LegalPage = {
             "Droit à la portabilité de vos données (copie transmise sur demande).",
             "Droit d'opposition au traitement.",
             "Droit de limitation du traitement.",
-            "Droit de retirer votre consentement.",
+            "Droit de retirer votre consentement, notamment en désactivant l'analyse automatique dans « Mon compte ».",
           ],
         },
         {
