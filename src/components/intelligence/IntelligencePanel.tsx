@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import symbole from "../../assets/brand/logo-symbole-clair-94.webp";
 import type { PendingAction, Reply } from "../../../supabase/functions/_shared/intelligence/core.ts";
 import type { DeliverableKey } from "../../../supabase/functions/_shared/analysis-model.ts";
+import { boldSegments } from "../../lib/rich-text";
 
 /** Transport de l'assistant : exécution locale (démonstration) ou appel serveur (service réel). */
 export type IntelligenceTransport = (message: string) => Promise<Reply & { notice?: string }>;
@@ -145,7 +146,7 @@ function IntelligencePanel({ transport, suggestions, onFile, onConfirm, note, in
             ) : (
               <div key={i} className="mr-4 rounded-2xl rounded-bl-sm border hairline bg-white px-3.5 py-3 text-sm leading-relaxed text-navy-900">
                 {t.reply && t.reply.steps.length > 0 && <p className="mb-1.5 text-[0.7rem] text-slate-500">{t.reply.steps.map((s) => s.label).join(" · ")}</p>}
-                <p className="whitespace-pre-line break-words">{t.text}</p>
+                <p className="whitespace-pre-line break-words">{boldSegments(t.text).map((seg, k) => (seg.bold ? <strong key={k}>{seg.text}</strong> : seg.text))}</p>
                 {t.reply?.notice && <p className="mt-1.5 text-[0.7rem] text-slate-500">{t.reply.notice}</p>}
                 {t.reply && t.reply.files.length > 0 && (
                   <p className="mt-2.5 flex flex-wrap gap-2">
