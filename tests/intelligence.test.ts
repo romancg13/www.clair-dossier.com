@@ -112,6 +112,17 @@ test('limites : nombre d’actions borné, planificateur défaillant sans effet,
   assert.ok(runAssistant('   ', ctx()).ask);
 });
 
+test('sans analyse ni traitement : la réponse tient compte des pièces et ne promet aucun traitement', () => {
+  const sansAnalyse = { analysis: null, attention: null, available: [] as Context['available'], processing: null };
+  const avec = runAssistant('Où en est mon dossier ?', ctx({ ...sansAnalyse, pieces: DEMO_PIECES.slice(0, 1) }));
+  assert.match(avec.text, /1 pièce déposée/);
+  assert.match(avec.text, /analyse automatique n’est pas activée/);
+  assert.doesNotMatch(avec.text, /je m’occupe du reste|déposez vos pièces/);
+  const vide = runAssistant('Résume ce dossier.', ctx({ ...sansAnalyse, pieces: [] }));
+  assert.match(vide.text, /aucune pièce/);
+  assert.doesNotMatch(vide.text, /je m’occupe du reste/);
+});
+
 test('sans analyse : aucune réponse inventée ; documents absents non proposés', () => {
   const r = runAssistant('Résume ce dossier.', ctx({ analysis: null, attention: null, available: [], processing: { done: 84, total: 250 } }));
   assert.match(r.text, /84\/250/);
