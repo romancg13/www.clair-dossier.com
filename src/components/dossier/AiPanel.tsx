@@ -3,6 +3,7 @@ import { supabase } from "../../lib/supabase";
 import { applyOverrides, type AnalysisData, type CoverageInfo, type EventOverride } from "../../../supabase/functions/_shared/analysis-model.ts";
 import { AnalysisView } from "./AnalysisView";
 import { ChronologyEditor } from "./ChronologyEditor";
+import { firstResults, unreadPieces, type ExtractionRow } from "../../lib/ai-first-results";
 
 /**
  * Traitement automatique d'un dossier (moteur documentaire IA, migration
@@ -37,6 +38,9 @@ type JobRow = { id: string; kind: "extract" | "consolidate" | "render"; status: 
 type AnalysisRow = { revision: number; created_at: string; cost_cents: number | string; coverage: CoverageInfo; data: AnalysisData };
 type OverrideRow = Omit<EventOverride, "author"> & { author_role: "titulaire" | "equipe" };
 
+/** Suivi en direct : assez court pour que la première pièce lue paraisse aussitôt. */
+const POLL_MS = 3_000;
+
 const ERRORS: Record<string, string> = {
   SUBSCRIPTION_REQUIRED: "Un abonnement actif est nécessaire pour activer le traitement automatique.",
   FORBIDDEN: "Seul le titulaire du dossier peut activer ce traitement.",
@@ -50,6 +54,9 @@ export function AiPanel({ dossierId, ownerId, canManage, isAdmin, closed, pieceC
   const [settings, setSettings] = useState<Settings | null>(null);
   const [jobs, setJobs] = useState<JobRow[]>([]);
   const [extracted, setExtracted] = useState(0);
+  // Lectures pièce par pièce (premiers résultats) ; affichées seulement en publication automatique.
+  const [extractions, setExtractions] = useState<ExtractionRow[]>([]);
+  const [autoReview, setAutoReview] = useState(false);
   const [analysis, setAnalysis] = useState<AnalysisRow | null>(null);
   const [overrides, setOverrides] = useState<OverrideRow[]>([]);
   const [busy, setBusy] = useState(false);
@@ -67,12 +74,16 @@ export function AiPanel({ dossierId, ownerId, canManage, isAdmin, closed, pieceC
     }
     setAvailable(true);
     setSettings((s.data as Settings | null) ?? { enabled_at: null, terms_version: null });
-    const [j, x, a, o] = await Promise.all([
+    const [j, x, a, o, xr, rm] = await Promise.all([
       supabase.from("ai_jobs").select("id,kind,status,last_error").eq("dossier_id", dossierId).order("created_at", { ascending: false }).limit(400),
       supabase.from("ai_extractions").select("id", { count: "exact", head: true }).eq("dossier_id", dossierId).in("status", ["ok", "unsupported"]),
       supabase.from("ai_analyses").select("revision,created_at,cost_cents,coverage,data").eq("dossier_id", dossierId).order("revision", { ascending: false }).limit(1).maybeSingle(),
       supabase.from("ai_event_overrides").select("event_key,retained_date,label,hidden,reason,author_role,created_at").eq("dossier_id", dossierId).order("created_at"),
+      supabase.from("ai_extractions").select("document_id,status,error,created_at,doc_type:data->>document_type,summary:data->>summary,dates:data->dates").eq("dossier_id", dossierId).order("created_at", { ascending: false }).limit(60),
+      supabase.from("dossier_ai_settings").select("review_mode").eq("dossier_id", dossierId).maybeSingle(),
     ]);
+    setExtractions(xr.error ? [] : ((xr.data as unknown as ExtractionRow[] | null) ?? []));
+    setAutoReview(!rm.error && (rm.data as { review_mode?: string } | null)?.review_mode === "auto");
     setJobs((j.data as JobRow[] | null) ?? []);
     setExtracted(x.count ?? 0);
     setAnalysis((a.data as AnalysisRow | null) ?? null);
@@ -99,7 +110,7 @@ export function AiPanel({ dossierId, ownerId, canManage, isAdmin, closed, pieceC
   // Suivi en direct tant que des travaux sont ouverts ; l'état vit en base (reprise après fermeture du navigateur).
   useEffect(() => {
     if (!hasOpen) return;
-    const id = setInterval(() => void load(), 5_000);
+    const id = setInterval(() => void load(), POLL_MS);
     return () => clearInterval(id);
   }, [hasOpen, load]);
 
@@ -136,6 +147,13 @@ export function AiPanel({ dossierId, ownerId, canManage, isAdmin, closed, pieceC
     [overrides],
   );
   const events = useMemo(() => applyOverrides(analysis?.data?.events ?? [], history), [analysis, history]);
+
+  // Premiers résultats : seulement pendant le traitement, et jamais avant une relecture manuelle.
+  const first = useMemo(
+    () => (hasOpen && autoReview ? firstResults(extractions, documentNames, analysis?.created_at ?? null) : []),
+    [hasOpen, autoReview, extractions, documentNames, analysis],
+  );
+  const unread = useMemo(() => (settings?.enabled_at ? unreadPieces(extractions, documentNames) : []), [settings, extractions, documentNames]);
 
   const toggle = async (enable: boolean) => {
     setBusy(true);
@@ -222,6 +240,20 @@ export function AiPanel({ dossierId, ownerId, canManage, isAdmin, closed, pieceC
             reprend automatiquement.
           </p>
         )}
+        {unread.length > 0 && analysis?.data?.summary_short && (
+          <div className="mt-3 text-sm text-amber-800">
+            <p>
+              {unread.length} pièce{unread.length > 1 ? "s" : ""} n'{unread.length > 1 ? "ont" : "a"} pas pu être lue{unread.length > 1 ? "s" : ""} ; le reste du dossier est analysé normalement.
+            </p>
+            <ul className="mt-1 list-disc pl-5">
+              {unread.map((u) => (
+                <li key={u.id}>
+                  {u.name} — {u.reason}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
         {failed.length > 0 && !hasOpen && (
           <p className="mt-3 text-sm text-amber-800">
             {failed.length} étape{failed.length > 1 ? "s" : ""} n'{failed.length > 1 ? "ont" : "a"} pas pu aboutir après plusieurs tentatives ; les résultats déjà fiables restent disponibles et l'équipe ClairDossier est informée.
@@ -240,6 +272,33 @@ export function AiPanel({ dossierId, ownerId, canManage, isAdmin, closed, pieceC
           </details>
         )}
       </section>
+
+      {first.length > 0 && (
+        <section aria-labelledby="ai-first-title" aria-live="polite" className="rounded-2xl border hairline-gold bg-white p-5 shadow-card sm:p-6">
+          <h3 id="ai-first-title" className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-gold-700">
+            Premiers résultats
+          </h3>
+          <p className="mt-2 text-xs leading-relaxed text-slate-500">
+            Lecture pièce par pièce, à vérifier. La synthèse du dossier et vos documents suivent dans quelques instants.
+          </p>
+          <ul className="mt-4 space-y-4">
+            {first.map((r) => (
+              <li key={r.id} className="border-l-2 border-gold-500/50 pl-4">
+                <p className="text-sm font-medium text-navy-900">
+                  {r.name}
+                  {r.type && <span className="ml-2 font-normal text-slate-500">· {r.type}</span>}
+                </p>
+                {r.summary && <p className="mt-1 text-sm leading-relaxed text-slate-700">{r.summary}</p>}
+                {r.deadlines.map((d) => (
+                  <p key={`${d.date}-${d.label}`} className="mt-1 text-xs text-navy-900">
+                    <span className="font-mono text-gold-700">{d.date}</span> — {d.label}
+                  </p>
+                ))}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {analysis?.data?.summary_short && (
         <section className="rounded-2xl border hairline bg-white p-5 shadow-card sm:p-6">

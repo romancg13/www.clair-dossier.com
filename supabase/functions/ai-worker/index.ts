@@ -29,6 +29,7 @@
 // Configuration serveur (jamais côté client) :
 //   ANTHROPIC_API_KEY                — obligatoire (sans elle : 503, rien n'est réclamé)
 //   AI_MODEL_EXTRACT / AI_MODEL_CONSOLIDATE — défaut claude-opus-5-5
+//   AI_MODEL_EXTRACT_FAST — optionnel : modèle des lectures simples (texte court, PDF ≤ 2 pages) ; absent = désactivé
 //   AI_BUDGET_CENTS_PER_USER_MONTH   — OBLIGATOIRE, fixé par le propriétaire (aucune valeur par défaut :
 //   AI_BUDGET_CENTS_GLOBAL_MONTH       un plafond codé n'est pas une autorisation de dépense) ; atteint ⇒ pause (BUDGET)
 //   AI_ENGINE_PAUSED                 — « 1 » : arrêt d'urgence serveur (rien n'est réclamé ni envoyé)
@@ -41,7 +42,7 @@ import Anthropic from 'npm:@anthropic-ai/sdk@1.1.0';
 import { zodOutputFormat } from 'npm:@anthropic-ai/sdk@1.1.0/helpers/zod';
 import { z } from 'npm:zod@4.6.7';
 import { PDFDocument } from 'pdf-lib';
-import { checkEvidence, collectEvidence, coverage, deadlineKey, detectInputKind, estimateCostCents, safeFileName, type Evidence } from '../_shared/ai-pipeline.ts';
+import { checkEvidence, collectEvidence, coverage, deadlineKey, detectInputKind, estimateCostCents, isSimpleRead, safeFileName, type Evidence } from '../_shared/ai-pipeline.ts';
 import { docxToText, xlsxToText } from '../_shared/office.ts';
 import { buildChronology, buildDeliverables, type AnalysisData, type CoverageInfo, type DeadlineRow, type EventOverride, type OutFile, type PieceRef } from '../_shared/deliverables.ts';
 
@@ -50,6 +51,8 @@ const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY') ?? '';
 const MODEL_EXTRACT = Deno.env.get('AI_MODEL_EXTRACT') || 'claude-opus-5-5';
 const MODEL_CONSOLIDATE = Deno.env.get('AI_MODEL_CONSOLIDATE') || 'claude-opus-5-5';
+// Modèle rapide des lectures simples (isSimpleRead) ; vide = désactivé, tout passe par MODEL_EXTRACT.
+const MODEL_EXTRACT_FAST = Deno.env.get('AI_MODEL_EXTRACT_FAST') || '';
 // Budgets : entiers > 0 exigés, sinon le moteur reste à l'arrêt (aucune dépense implicite).
 const positiveInt = (v: string | undefined): number => (v && /^\d+$/.test(v) && Number(v) > 0 ? Number(v) : 0);
 const BUDGET_CENTS = positiveInt(Deno.env.get('AI_BUDGET_CENTS_PER_USER_MONTH'));
@@ -240,7 +243,7 @@ async function runExtract(job: Job): Promise<void> {
   if (quota.data === false) return finish(job, false, 'BUDGET: pages IA incluses dans l’offre épuisées pour ce mois — traitement suspendu, documents et résultats conservés');
   if (await stoppedByTrial(job, prepared.pages ?? 1)) return;
   const res = await anthropic.messages.parse({
-    model: MODEL_EXTRACT,
+    model: MODEL_EXTRACT_FAST && isSimpleRead(detectInputKind(doc.file_name, dl.data.type || null), prepared.pages, bytes.length) ? MODEL_EXTRACT_FAST : MODEL_EXTRACT,
     max_tokens: 16000,
     output_config: { effort: 'medium', format: zodOutputFormat(ExtractionSchema) },
     system: `Tu es le moteur d'extraction documentaire de ClairDossier (organisation de dossiers administratifs et juridiques, français). ${UNTRUSTED} Les dates sont au format ISO (AAAA-MM-JJ ; AAAA-MM ou AAAA si imprécises, précision indiquée). « document_date » = date d'émission de la pièce ; « event_date » = date d'un fait relaté ; « deadline » = date limite ou échéance. Les pages sont numérotées à partir de 1 ; null si inconnue.`,
