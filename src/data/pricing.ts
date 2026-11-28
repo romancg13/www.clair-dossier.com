@@ -21,6 +21,13 @@ export type Plan = {
   features: Record<string, FeatureStatus>;
 };
 
+/**
+ * Grille comparative de /tarifs. Les identifiants sont historiques (anciennes
+ * fonctions IA) : seuls les libellés font foi. Chaque fonction listée est
+ * opérationnelle pour tout compte (src/data/product-status.ts) ; le code ne
+ * restreint par formule que le nombre de dossiers (checkDossierQuota) :
+ * tests/pricing-grid.test.ts.
+ */
 export const COMPARISON_FEATURES: { id: string; label: string }[] = [
   { id: "messagerie", label: "Transmission décidée et effectuée par vous" },
   { id: "calendrier", label: "Échéances affichées sur le dossier" },
@@ -51,13 +58,13 @@ export const plans: Plan[] = [
     },
     features: {
       messagerie: "yes",
-      calendrier: "limited",
-      "resume-ia": "limited",
-      "redaction-ia": "no",
-      "reponse-auto": "no",
-      "ia-avancee": "no",
-      modeles: "no",
-      recurrents: "no",
+      calendrier: "yes",
+      "resume-ia": "yes",
+      "redaction-ia": "yes",
+      "reponse-auto": "yes",
+      "ia-avancee": "yes",
+      modeles: "yes",
+      recurrents: "yes",
     },
   },
   {
@@ -80,11 +87,11 @@ export const plans: Plan[] = [
       messagerie: "yes",
       calendrier: "yes",
       "resume-ia": "yes",
-      "redaction-ia": "limited",
-      "reponse-auto": "no",
-      "ia-avancee": "no",
+      "redaction-ia": "yes",
+      "reponse-auto": "yes",
+      "ia-avancee": "yes",
       modeles: "yes",
-      recurrents: "no",
+      recurrents: "yes",
     },
   },
   {
@@ -109,8 +116,8 @@ export const plans: Plan[] = [
       calendrier: "yes",
       "resume-ia": "yes",
       "redaction-ia": "yes",
-      "reponse-auto": "limited",
-      "ia-avancee": "no",
+      "reponse-auto": "yes",
+      "ia-avancee": "yes",
       modeles: "yes",
       recurrents: "yes",
     },
@@ -136,7 +143,7 @@ export const plans: Plan[] = [
       "resume-ia": "yes",
       "redaction-ia": "yes",
       "reponse-auto": "yes",
-      "ia-avancee": "no",
+      "ia-avancee": "yes",
       modeles: "yes",
       recurrents: "yes",
     },
