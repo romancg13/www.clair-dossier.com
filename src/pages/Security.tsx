@@ -107,7 +107,7 @@ const CARDS: Card[] = [
     title: "Protection des documents",
     lead: [
       "Vos pièces sont conservées dans un stockage privé, chiffré au repos par l'hébergeur, et ne s'ouvrent que par des liens signés et temporaires.",
-      "Le service ne lit, n'extrait ni n'analyse automatiquement leur contenu.",
+      "Le service ne lit et n'analyse automatiquement leur contenu que si vous l'avez expressément accepté pour votre compte ; vous pouvez désactiver l'analyse à tout moment.",
     ],
     details: (
       <>
@@ -117,7 +117,7 @@ const CARDS: Card[] = [
             "Un espace privé par dossier : vos pièces restent consultables et téléchargeables depuis la liste de vos dossiers et la page d'avancement.",
             "Liens de téléchargement signés et temporaires.",
             <>
-              Aucune lecture, extraction ou analyse automatique des documents déposés — engagement
+              Aucune lecture, extraction ou analyse automatique des documents déposés sans votre acceptation expresse — engagement
               contractuel (<Link to="/cgv" className={linkClass}>CGV</Link>, article 6).
             </>,
             "Valider un dossier l'enregistre dans votre compte : rien n'est envoyé à un tiers par e-mail ou WhatsApp. Vous transmettez vous-même vos pièces, au destinataire de votre choix.",
@@ -128,7 +128,10 @@ const CARDS: Card[] = [
           <p className="mt-2">
             Rien ne sort de votre espace sans votre action : vous choisissez le destinataire et le
             canal. Pour des échanges couverts par le secret professionnel, le professionnel
-            destinataire, choisi par vous, reste responsable de son propre cadre déontologique.
+            destinataire, choisi par vous, reste responsable de son propre cadre déontologique. L'analyse
+            automatique, si vous l'acceptez, est confiée à un sous-traitant d'intelligence artificielle
+            (Anthropic, États-Unis) : si vos pièces sont couvertes par un secret professionnel, il vous
+            appartient d'apprécier si vous pouvez l'activer.
           </p>
         </div>
       </>
@@ -261,7 +264,7 @@ const CARDS: Card[] = [
 
 const ENGAGEMENTS: { text: string; source: ReactNode }[] = [
   {
-    text: "Aucune lecture, extraction ou analyse automatique de vos pièces.",
+    text: "Aucune lecture, extraction ou analyse automatique de vos pièces sans votre acceptation expresse.",
     source: <><Link to="/cgv" className={linkClass}>CGV</Link>, article 6</>,
   },
   {
@@ -296,7 +299,7 @@ const SUMMARY = [
   {
     href: "#protection-documents",
     label: "Documents",
-    text: "stockage privé, liens signés temporaires ; aucune lecture automatique de vos pièces aujourd'hui (CGV, art. 6).",
+    text: "stockage privé, liens signés temporaires ; aucune lecture automatique de vos pièces sans votre acceptation expresse (CGV, art. 6).",
   },
   { href: "#sous-traitants", label: "Données", text: `ni vendues ni cédées ; ${subprocessors.length} prestataires techniques nommés.` },
   { href: "#exercice-droits", label: "Vos droits", text: "accès, export et suppression sur demande, sous 30 jours." },

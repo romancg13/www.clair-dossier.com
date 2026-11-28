@@ -79,7 +79,7 @@ export const rgpdLegaltech: BlogPostInput = {
     {
       type: 'p',
       text:
-        "Ce que nous affirmons est détaillé et daté sur notre page Sécurité : pièces stockées dans un espace privé et accessibles par liens temporaires, isolation des comptes appliquée en base, échanges en HTTPS et chiffrement au repos côté hébergeur. Notre registre des sous-traitants y est publié, et les points encore à confirmer, comme la région d'hébergement de la base de données, y sont signalés comme tels. La plateforme ne lit pas vos documents.",
+        "Ce que nous affirmons est détaillé et daté sur notre page Sécurité : pièces stockées dans un espace privé et accessibles par liens temporaires, isolation des comptes appliquée en base, échanges en HTTPS et chiffrement au repos côté hébergeur. Notre registre des sous-traitants y est publié, et les points encore à confirmer y sont signalés comme tels. La plateforme ne lit vos documents que si vous avez accepté l'analyse automatique.",
     },
   ],
   takeaways: [

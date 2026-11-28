@@ -28,11 +28,18 @@ export const subprocessors: Subprocessor[] = [
     name: 'Supabase',
     finalite: 'Base de données, authentification, stockage privé des pièces, fonctions serveur (dont la notification interne de l’équipe).',
     donnees: 'Comptes et profils, dossiers, pièces déposées, notifications internes.',
-    localisation: 'Région cloud du projet : en cours de confirmation — sera affichée ici.',
-    localisationTodo: true,
+    localisation: 'Union européenne — Francfort, Allemagne (région eu-central-1), vérifiée le 28/11/2026.',
     retention: 'Durée du contrat, puis délais de la politique de confidentialité (comptes : 12 mois après résiliation).',
     dpa: 'Cadre de sous-traitance Supabase : référence à publier ici.',
     dpaTodo: true,
+  },
+  {
+    name: 'Anthropic',
+    finalite: 'Analyse automatique des pièces et assistant, uniquement pour les comptes qui l’ont acceptée (CGV, art. 6).',
+    donnees: 'Contenu des pièces analysées et extraits utiles aux questions posées à l’assistant. Aucune donnée de compte ni de paiement.',
+    localisation: 'États-Unis ; transfert encadré par les clauses contractuelles types de la Commission européenne.',
+    retention: 'Suppression sous 30 jours par Anthropic, sauf exceptions prévues par ses conditions ; pas d’entraînement de modèles sur ces données (engagements publics d’Anthropic, consultés le 28/11/2026).',
+    dpa: 'Accord de traitement des données Anthropic (public, anthropic.com/legal/data-processing-addendum).',
   },
   {
     name: 'Stripe Payments Europe Ltd',
@@ -122,9 +129,8 @@ export const securityChangelog: Array<{ date: string; entry: string }> = [
 
 /** Éléments non vérifiables à ce jour — affichés comme TODO, jamais comblés par du flou. */
 export const openTodos: string[] = [
-  'Localisation exacte (région cloud) du projet de base de données : à confirmer puis afficher.',
   'DPA ClairDossier téléchargeable directement depuis cette page (aujourd’hui : envoyé par e-mail sur simple demande).',
-  'Analyse d’impact (AIPD) : évaluation de la nécessité à documenter.',
+  'Analyse d’impact (AIPD) de l’analyse automatique : projet rédigé, conclusion à signer.',
   'Procédure d’incident rédigée et publiée (l’engagement réglementaire s’applique déjà — voir Continuité).',
   'Test de restauration des sauvegardes : à réaliser puis dater ici.',
   'Encadrement des transferts hors Union européenne (Resend, GitHub) : mécanisme à confirmer puis afficher.',

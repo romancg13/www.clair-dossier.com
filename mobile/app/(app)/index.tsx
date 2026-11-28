@@ -162,7 +162,7 @@ export default function Accueil() {
             <Icon name="shield" size={18} color={colors.accentStrong} />
             <Text variant="caption" tone="secondary" style={styles.flex}>
               Vos pièces restent dans un espace privé, isolé par compte. ClairDossier ne procède à aucune lecture
-              ni exploitation automatique de vos documents.
+              ni exploitation automatique de vos documents sans votre acceptation expresse.
             </Text>
           </View>
         </Card>

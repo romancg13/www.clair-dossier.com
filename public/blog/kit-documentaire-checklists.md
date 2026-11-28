@@ -69,7 +69,7 @@ Une liste de contrôle n'est utile que si l'on retrouve les pièces qu'elle cite
 
 ## Suivre ces listes dans ClairDossier
 
-Chaque situation ci-dessus correspond à une catégorie de dossier dans ClairDossier : impayé, dossier administratif, documents comptables, dossier client. Vous y déposez les pièces au fil de l'eau, l'échéance s'affiche sur le dossier, et la transmission reste toujours décidée et effectuée par vous. Le service ne lit pas vos documents : il les organise à partir de ce que vous saisissez.
+Chaque situation ci-dessus correspond à une catégorie de dossier dans ClairDossier : impayé, dossier administratif, documents comptables, dossier client. Vous y déposez les pièces au fil de l'eau, l'échéance s'affiche sur le dossier, et la transmission reste toujours décidée et effectuée par vous. Le service organise vos documents à partir de ce que vous saisissez ; il ne les lit et ne les analyse automatiquement que si vous l'avez accepté.
 
 ## À retenir
 

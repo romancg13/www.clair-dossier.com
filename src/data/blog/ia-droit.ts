@@ -98,7 +98,7 @@ export const iaDroit: BlogPostInput = {
     },
     {
       type: 'p',
-      text: "Concrètement, aujourd'hui, ClairDossier rassemble les pièces, les informations et les échéances que l'utilisateur renseigne, présente un récapitulatif relu avant validation, et ne transmet rien sans son accord explicite. Aucune lecture ni exploitation automatique des pièces n'est effectuée.",
+      text: "Concrètement, aujourd'hui, ClairDossier rassemble les pièces, les informations et les échéances que l'utilisateur renseigne, présente un récapitulatif relu avant validation, et ne transmet rien sans son accord explicite. Les pièces ne sont lues et analysées automatiquement que si l'utilisateur l'a expressément accepté ; les documents produits sont signalés comme générés par une IA et restent à vérifier.",
     },
     {
       type: 'quote',

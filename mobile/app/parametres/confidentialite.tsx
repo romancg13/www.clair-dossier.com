@@ -17,7 +17,7 @@ const FACTS = [
   "Vos pièces sont stockées dans un espace privé ; l'isolation par compte est appliquée en base de données.",
   "L'application ne conserve sur l'appareil que votre session (dans le magasin sécurisé du système) et vos préférences.",
   'Aucune pièce téléchargée pour être consultée ou partagée ne reste sur votre appareil : la copie est effacée après usage.',
-  "Aucune lecture ni exploitation automatique de vos documents n'est effectuée (engagement contractuel).",
+  "Aucune lecture ni exploitation automatique de vos documents n'est effectuée sans votre acceptation expresse (engagement contractuel).",
   "Aucun traceur publicitaire, aucune mesure d'audience tierce dans l'application.",
 ];
 

@@ -55,7 +55,7 @@ Entre le 3 janvier et le 12 mars, plus de deux mois se sont écoulés : la quest
 
 ## Outil ou méthode
 
-Construire une chronologie est une discipline avant d'être un outil. ClairDossier rassemble les pièces déposées et les dates renseignées par le client sur la page d'avancement du dossier. La plateforme ne lit pas les pièces et ne construit pas la chronologie à la place de quiconque : la méthode et l'analyse restent celles du professionnel.
+Construire une chronologie est une discipline avant d'être un outil. ClairDossier rassemble les pièces déposées et les dates renseignées par le client sur la page d'avancement du dossier. Si l'utilisateur a accepté l'analyse automatique, la plateforme propose une chronologie de travail à partir des pièces, à vérifier ; elle ne remplace ni la méthode ni l'analyse du professionnel.
 
 > **Note —** Une frise claire en tête du dossier aide chacun à y entrer : c'est souvent la première pièce à préparer.
 
