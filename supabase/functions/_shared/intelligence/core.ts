@@ -124,10 +124,17 @@ interface Tool {
   run: (ctx: Context, arg: string, names: Map<string, string>) => ToolResult;
 }
 
+/** État honnête d'un dossier sans analyse : aucune promesse de traitement qui n'a pas lieu. */
+const noAnalysisText = (ctx: Context): string => {
+  const n = ctx.pieces.length;
+  if (n === 0) return 'Ce dossier ne contient encore aucune pièce : déposez vos documents dans l’onglet Pièces.';
+  return `${n} pièce${n > 1 ? 's' : ''} déposée${n > 1 ? 's' : ''}. L’analyse automatique n’est pas activée pour ce dossier : je ne peux pas encore en tirer de résumé ni d’échéances.`;
+};
+
 const needsAnalysis = (ctx: Context): ToolResult | null =>
   ctx.analysis
     ? null
-    : { text: ctx.processing ? `L’analyse est en cours (${ctx.processing.done}/${ctx.processing.total} pièces). Je pourrai répondre dès qu’elle sera terminée.` : 'Ce dossier n’a pas encore été analysé : déposez vos pièces, je m’occupe du reste.' };
+    : { text: ctx.processing ? `L’analyse est en cours (${ctx.processing.done}/${ctx.processing.total} pièces). Je pourrai répondre dès qu’elle sera terminée.` : noAnalysisText(ctx) };
 
 export const TOOLS: Tool[] = [
   {
@@ -314,7 +321,7 @@ export const TOOLS: Tool[] = [
     run: (ctx) => {
       const p = ctx.processing;
       if (p && p.done < p.total) return { text: `Analyse en cours — ${p.done}/${p.total} pièces lues.` };
-      if (!ctx.analysis) return { text: 'Aucune analyse n’est encore disponible pour ce dossier.' };
+      if (!ctx.analysis) return { text: noAnalysisText(ctx) };
       return { text: `Analyse terminée : ${ctx.pieces.length} pièce${ctx.pieces.length > 1 ? 's' : ''}, ${ctx.available.length} document${ctx.available.length > 1 ? 's' : ''} disponible${ctx.available.length > 1 ? 's' : ''}.` };
     },
   },
