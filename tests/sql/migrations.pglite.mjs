@@ -2664,7 +2664,9 @@ await test('intelligence : retour arrière propre puis réinstallation', async (
 console.log('\nAnalyse automatique par compte (20261128120000)');
 {
   const setGate = async (mode) => { await asSuperuser(); await q(`update public.ai_auto_gate set mode = $1 where id = 1`, [mode]); };
+  const adminGate = async (mode) => { await asUser(ADMIN, 'aal2'); return (await q(`select public.ai_admin_set_auto_gate($1) as m`, [mode]))[0].m; };
   const settings = async (d) => { await asSuperuser(); return (await q(`select enabled_at, consent_reference, review_mode from public.dossier_ai_settings where dossier_id = $1`, [d]))[0] ?? null; };
+  const extractJobs = async (d) => { await asSuperuser(); return (await q(`select document_id from public.ai_jobs where dossier_id = $1 and kind = 'extract' and status in ('queued','running')`, [d])).map((r) => r.document_id); };
   // Le test « retour arrière niveau 1 » a retiré le déclencheur de mise en file et le droit
   // d'activation : on rétablit l'état de production (moteur installé) pour ces tests.
   await asSuperuser();
@@ -2677,26 +2679,30 @@ console.log('\nAnalyse automatique par compte (20261128120000)');
   const CS = await newUser('compte.sans.abonnement@test.fr');
   await subscribe(CA, 'essentiel', { status: 'active' });
   await subscribe(CB, 'essentiel', { status: 'active' });
+  // Plus de 5 dossiers de test pour A : dérogation illimitée (ne change rien à l'éligibilité, déjà acquise).
+  await asSuperuser();
+  await q(`insert into public.entitlement_overrides (user_id, mode, reason, active) values ($1, 'unlimited', 'tests compte', true)`, [CA]);
   const vieux = await insertDossier(CA, { title: 'Dossier antérieur' });
   const ancienne = await addPiece(CA, vieux, 'ancienne.pdf');
 
-  await test('compte : interrupteur fermé par défaut → acceptation refusée, aucune activation', async () => {
+  await test('compte : interrupteur fermé par défaut → acceptation refusée, aucune activation, lecture réservée à l’admin', async () => {
     await setGate('ferme');
     await asUser(CA);
     await rejects(q(`select public.accept_ai_account('ia-2026-11')`), /ANALYSE_FERMEE/);
     await rejects(q(`select public.enable_ai_processing($1, 'ia-2026-11')`, [vieux]), /ANALYSE_FERMEE/);
+    assert.equal((await q(`select count(*)::int as n from public.ai_auto_gate`))[0].n, 0, 'un client ne lit pas l’interrupteur');
     await addPiece(CA, vieux, 'pendant-fermeture.pdf');
     assert.equal(await settings(vieux), null);
   });
 
-  await test('compte : pilote → réservé aux administrateurs', async () => {
+  await test('compte : pilote → réservé aux administrateurs ; version de conditions en liste blanche', async () => {
     await setGate('pilote');
     await asUser(CA);
     await rejects(q(`select public.accept_ai_account('ia-2026-11')`), /ANALYSE_FERMEE/);
     await asUser(ADMIN);
+    await rejects(q(`select public.accept_ai_account('nimporte-quoi')`), /TERMS_VERSION_INVALIDE/);
     const [st] = await q(`select * from public.my_ai_account()`);
-    assert.equal(st.gate_allows, true);
-    assert.equal(st.enabled, false);
+    assert.deepEqual([st.gate_allows, st.enabled], [true, false]);
   });
 
   await test('compte : ouvert → acceptation horodatée, versionnée, lisible par le seul titulaire', async () => {
@@ -2712,21 +2718,32 @@ console.log('\nAnalyse automatique par compte (20261128120000)');
   });
 
   await test('compte : nouvelle pièce → dossier activé et mis en file, sans relire les anciennes pièces', async () => {
-    await setGate('ouvert');
     const nouvelle = await addPiece(CA, vieux, 'nouvelle.pdf');
     const s = await settings(vieux);
     assert.ok(s?.enabled_at);
     assert.match(s.consent_reference, /^compte:ia-2026-11:/);
     assert.equal(s.review_mode, 'auto');
-    await asSuperuser();
-    const jobs = (await q(`select document_id from public.ai_jobs where dossier_id = $1 and kind = 'extract' and status in ('queued','running')`, [vieux])).map((r) => r.document_id);
-    assert.deepEqual(jobs, [nouvelle], 'seule la nouvelle pièce est lue');
-    assert.ok(!jobs.includes(ancienne));
+    assert.deepEqual(await extractJobs(vieux), [nouvelle], 'seule la nouvelle pièce est lue');
     assert.equal(await openJobs(vieux, 'consolidate'), 1);
+    await asSuperuser();
+    assert.equal((await q(`select count(*)::int as n from public.dossier_events where dossier_id = $1 and type = 'ia_activee'`, [vieux]))[0].n, 1, 'un seul événement');
+  });
+
+  await test('compte : réouverture d’un dossier activé par le compte → anciennes pièces toujours non lues', async () => {
+    await asSuperuser();
+    await q(`update public.ai_jobs set status = 'done', finished_at = now() where dossier_id = $1`, [vieux]);
+    await q(`insert into public.dossier_events (dossier_id, user_id, type, label) values ($1, $2, 'dossier_rouvert', 'test')`, [vieux, CA]);
+    assert.ok(!(await extractJobs(vieux)).includes(ancienne), 'la pièce antérieure n’est pas relue');
+  });
+
+  await test('compte : pièce de B dans le dossier de A refusée, sans aucun effet', async () => {
+    const d = await insertDossier(CA, { title: 'Dossier de A' });
+    await asUser(CB);
+    await rejects(q(`insert into public.dossier_documents (dossier_id, user_id, file_path, file_name, kind) values ($1, $2, 'x', 'intrus.pdf', 'piece')`, [d, CB]), /row-level security|permission denied/);
+    assert.equal(await settings(d), null);
   });
 
   await test('compte : nouveau dossier, isolement entre comptes, sans abonnement ignoré', async () => {
-    await setGate('ouvert');
     const d = await insertDossier(CA, { title: 'Nouveau dossier' });
     await addPiece(CA, d, 'contrat.pdf');
     assert.ok((await settings(d))?.enabled_at);
@@ -2738,6 +2755,31 @@ console.log('\nAnalyse automatique par compte (20261128120000)');
     const dS = await insertDossier(CS, { title: 'Sans abonnement' });
     await addPiece(CS, dS, 's.pdf');
     assert.equal(await settings(dS), null, 'pas d’abonnement : pas d’analyse');
+  });
+
+  await test('compte : coupe-circuit — fermeture par l’admin annule les travaux et bloque toute nouvelle mise en file', async () => {
+    await setGate('ouvert');
+    const d = await insertDossier(CA, { title: 'Coupe-circuit' });
+    await addPiece(CA, d, 'avant.pdf');
+    assert.equal((await extractJobs(d)).length, 1);
+    assert.equal(await adminGate('ferme'), 'ferme');
+    assert.equal((await extractJobs(d)).length, 0, 'travaux en file annulés');
+    await addPiece(CA, d, 'apres.pdf');
+    assert.equal((await extractJobs(d)).length, 0, 'aucune nouvelle mise en file');
+    await setGate('ouvert');
+  });
+
+  await test('compte : fin d’abonnement → plus aucune mise en file pour les dossiers du compte', async () => {
+    const CF = await newUser('compte.fin.abonnement@test.fr');
+    await subscribe(CF, 'essentiel', { status: 'active' });
+    await asUser(CF);
+    await q(`select public.accept_ai_account('ia-2026-11')`);
+    const d = await insertDossier(CF, { title: 'Abonnement' });
+    await addPiece(CF, d, 'un.pdf');
+    await asSuperuser();
+    await q(`update public.subscriptions set status = 'canceled' where user_id = $1`, [CF]);
+    await addPiece(CF, d, 'deux.pdf');
+    assert.equal((await extractJobs(d)).length, 1, 'seule la pièce déposée sous abonnement');
   });
 
   await test('compte : pilote → relecture manuelle ; désactivation explicite d’un dossier respectée', async () => {
@@ -2753,23 +2795,37 @@ console.log('\nAnalyse automatique par compte (20261128120000)');
     await q(`select public.disable_ai_processing($1)`, [d]);
     await addPiece(ADMIN, d, 'p2.pdf');
     assert.equal((await settings(d)).enabled_at, null, 'un dossier désactivé ne se réactive pas seul');
+    await setGate('ouvert');
   });
 
-  await test('compte : désactivation → travaux annulés, plus aucune activation, résultats conservés', async () => {
-    await setGate('ouvert');
+  await test('compte : désactivation → tous les dossiers coupés (par compte ET par dossier), travaux annulés, journalisé', async () => {
+    const parDossier = await insertDossier(CA, { title: 'Activé à la main' });
+    await addPiece(CA, parDossier, 'ancien.pdf');
+    await asUser(CA);
+    await q(`select public.enable_ai_processing($1, 'ia-2026-11')`, [parDossier]);
+    assert.equal((await settings(parDossier)).consent_reference, null, 'demande expresse : pièces antérieures incluses');
     await asUser(CA);
     await q(`select public.disable_ai_account()`);
     assert.equal((await settings(vieux)).enabled_at, null);
-    assert.equal(await openJobs(vieux, 'extract'), 0);
+    assert.equal((await settings(parDossier)).enabled_at, null, 'le dossier activé à la main est coupé aussi');
+    assert.equal(await openJobs(parDossier, 'extract'), 0);
+    await asSuperuser();
+    assert.ok((await q(`select count(*)::int as n from public.dossier_events where dossier_id = $1 and type = 'ia_desactivee'`, [vieux]))[0].n >= 1);
     const d = await insertDossier(CA, { title: 'Après désactivation' });
     await addPiece(CA, d, 'x.pdf');
     assert.equal(await settings(d), null);
     await asUser(CA);
-    const [st] = await q(`select * from public.my_ai_account()`);
-    assert.equal(st.enabled, false);
+    assert.equal((await q(`select * from public.my_ai_account()`))[0].enabled, false);
   });
 
-  await test('compte : interrupteur réservé à l’administration ; client et visiteur refusés', async () => {
+  await test('compte : nouvelle acceptation → les dossiers coupés depuis Mon compte reprennent à la pièce suivante', async () => {
+    await asUser(CA);
+    await q(`select public.accept_ai_account('ia-2026-11')`);
+    await addPiece(CA, vieux, 'reprise.pdf');
+    assert.ok((await settings(vieux)).enabled_at, 'dossier « par compte » réactivé');
+  });
+
+  await test('compte : interrupteur réservé à l’administration ; écriture directe sans effet ; visiteur refusé', async () => {
     await asUser(CA);
     await rejects(q(`select public.ai_admin_set_auto_gate('ouvert')`), /FORBIDDEN/);
     await setGate('ferme');
@@ -2779,16 +2835,71 @@ console.log('\nAnalyse automatique par compte (20261128120000)');
     assert.equal((await q(`select mode from public.ai_auto_gate`))[0].mode, 'ferme', 'écriture directe sans effet');
     await asAnon();
     await rejects(q(`select public.accept_ai_account('ia-2026-11')`), /permission denied|AUTH_REQUIRED/);
-    await asUser(ADMIN, 'aal2');
-    assert.equal((await q(`select public.ai_admin_set_auto_gate('ferme') as m`))[0].m, 'ferme');
   });
 
-  await test('compte : retour arrière propre puis réinstallation', async () => {
+  await test('compte : retour arrière → dossiers « par compte » coupés, preuve archivée, puis réinstallation', async () => {
+    await setGate('ouvert');
     await asSuperuser();
+    const avant = (await q(`select count(*)::int as n from public.ai_account_settings`))[0].n;
     await db.exec(readFileSync(join(root, 'supabase', 'rollback', '20261128120000_ia_activation_compte.down.sql'), 'utf8'));
     assert.equal((await q(`select to_regclass('public.ai_account_settings') as t`))[0].t, null);
+    assert.equal((await q(`select count(*)::int as n from public.ai_account_settings_archive`))[0].n, avant, 'acceptations archivées');
+    assert.equal((await q(`select count(*)::int as n from public.dossier_ai_settings where consent_reference like 'compte%' and enabled_at is not null`))[0].n, 0);
     await db.exec(readFileSync(join(root, 'supabase', 'migrations', '20261128120000_ia_activation_compte.sql'), 'utf8'));
     assert.equal((await q(`select mode from public.ai_auto_gate`))[0].mode, 'ferme');
+  });
+}
+
+console.log('\nAssistant avec modèle : comptabilité (20261128130000)');
+{
+  const UA = await newUser('assistant.a@test.fr');
+  const UB = await newUser('assistant.b@test.fr');
+  const pot = async (u) => {
+    await asSuperuser();
+    return (await q(`select reserved_micro::int as r, spent_micro::int as s from public.assistant_pots where month = to_char(now() at time zone 'UTC', 'YYYY-MM') and user_id is not distinct from $1`, [u]))[0] ?? { r: 0, s: 0 };
+  };
+  const reserve = async (u, micro, g = 1_000_000, perUser = 400_000) => { await asSuperuser(); return (await q(`select public.assistant_reserve($1, $2, $3, $4) as ok`, [u, micro, g, perUser]))[0].ok; };
+  const settle = async (u, r, a) => { await asSuperuser(); await q(`select public.assistant_settle($1, $2, $3)`, [u, r, a]); };
+
+  await test('assistant : réservation dans les plafonds, refus au-delà (compte puis global), rien réservé en cas de refus', async () => {
+    assert.equal(await reserve(UA, 300_000), true);
+    assert.equal(await reserve(UA, 200_000), false, 'plafond du compte (400 000)');
+    assert.deepEqual(await pot(UA), { r: 300_000, s: 0 }, 'le refus ne réserve rien');
+    assert.equal(await reserve(UB, 400_000), true);
+    assert.equal(await reserve(UB, 1), false, 'plafond du compte B atteint');
+    assert.equal(await reserve(UA, 100_000), true);
+    assert.equal(await reserve(UA, 1, 800_000), false, 'plafond global atteint (800 000 réservés)');
+  });
+
+  await test('assistant : réconciliation au coût réel (réservation libérée, dépense comptée)', async () => {
+    await settle(UA, 300_000, 12_345);
+    assert.deepEqual(await pot(UA), { r: 100_000, s: 12_345 });
+    const g = await pot(null);
+    assert.equal(g.r, 500_000);
+    assert.equal(g.s, 12_345);
+    await settle(UA, 999_999_999, 0);
+    assert.equal((await pot(UA)).r, 0, 'jamais négatif');
+  });
+
+  await test('assistant : fonctions réservées au serveur ; journal lisible par le seul titulaire', async () => {
+    await asUser(UA);
+    await rejects(q(`select public.assistant_reserve($1, 1, 1000000, 1000000)`, [UA]), /permission denied/);
+    await rejects(q(`select public.assistant_settle($1, 0, 1)`, [UA]), /permission denied/);
+    await asSuperuser();
+    await q(`insert into public.assistant_usage (user_id, model, status, actual_micro) values ($1, 'claude-haiku-5-5', 'ok', 42), ($2, 'claude-haiku-5-5', 'ok', 7)`, [UA, UB]);
+    await asUser(UA);
+    const rows = await q(`select user_id from public.assistant_usage`);
+    assert.deepEqual(rows.map((r) => r.user_id), [UA], 'A ne voit que ses appels');
+    await rejects(q(`insert into public.assistant_usage (user_id, model, status) values ($1, 'x', 'ok')`, [UA]), /row-level security|permission denied/);
+    assert.equal((await q(`select count(*)::int as n from public.assistant_pots where user_id is null`))[0].n, 0, 'le pot global n’est visible que de l’administration');
+  });
+
+  await test('assistant : retour arrière propre puis réinstallation', async () => {
+    await asSuperuser();
+    await db.exec(readFileSync(join(root, 'supabase', 'rollback', '20261128130000_assistant_budget.down.sql'), 'utf8'));
+    assert.equal((await q(`select to_regclass('public.assistant_pots') as t`))[0].t, null);
+    await db.exec(readFileSync(join(root, 'supabase', 'migrations', '20261128130000_assistant_budget.sql'), 'utf8'));
+    assert.equal((await q(`select to_regclass('public.assistant_usage') as t`))[0].t, 'assistant_usage');
   });
 }
 
