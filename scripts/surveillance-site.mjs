@@ -82,8 +82,9 @@ const worker = await get(`${SUPABASE}/functions/v1/ai-worker`, { method: 'OPTION
 const installe = table && table.status !== 404;
 const deploye = worker && worker.status !== 404;
 info(`moteur IA : migrations ${installe ? 'présentes' : 'absentes'}, ai-worker ${deploye ? 'déployé' : 'non déployé'} — ${installe && deploye ? 'infrastructure en place (état détaillé : console admin « IA privée »)' : 'inactif, aucun dossier traité'}`);
-const panneau = readFileSync(new URL('../.github/workflows/deploy.yml', import.meta.url), 'utf8').includes("VITE_AI_ENGINE: '1'");
-info(`panneau IA client : ${panneau ? 'ACTIVÉ dans le build' : 'désactivé (VITE_AI_ENGINE absent)'}`);
+const deployYml = readFileSync(new URL('../.github/workflows/deploy.yml', import.meta.url), 'utf8');
+const panneau = deployYml.includes("VITE_AI_ENGINE: '1'") ? 'ACTIVÉ dans le build' : deployYml.includes('vars.VITE_AI_ENGINE') ? 'piloté par la variable de dépôt VITE_AI_ENGINE (et, côté clients, par l’interrupteur serveur ai_auto_gate)' : 'désactivé (VITE_AI_ENGINE absent)';
+info(`panneau IA client : ${panneau}`);
 
 const rapport = `## Surveillance ClairDossier — ${new Date().toISOString().slice(0, 10)}\n\n${lignes.join('\n')}\n\n${echecs ? `**${echecs} problème(s) à traiter.**` : 'Aucune action requise.'}\n`;
 console.log(rapport);

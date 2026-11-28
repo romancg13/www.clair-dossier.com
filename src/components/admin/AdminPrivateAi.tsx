@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { AI_TERMS_VERSION } from "../dossier/AiPanel";
+import { AiAutoGateControl } from "./AiAutoGateControl";
 import {
   AI_STATE_LABELS,
   adminErrorMessage,
@@ -159,6 +160,7 @@ export function AdminPrivateAi({ emails, onError }: Props) {
 
   return (
     <div className="mt-8 space-y-6">
+      <AiAutoGateControl />
       {health && (
         <div className={`rounded-2xl border px-5 py-4 text-sm ${health.needs_action ? "border-red-200 bg-red-50 text-red-800" : "hairline bg-white text-slate-600"}`}>
           <p className="font-mono text-[0.68rem] uppercase tracking-[0.16em]">

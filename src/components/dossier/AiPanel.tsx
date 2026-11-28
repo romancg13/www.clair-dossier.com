@@ -14,7 +14,7 @@ import { ChronologyEditor } from "./ChronologyEditor";
  */
 
 /** Version des conditions acceptées à l'activation (journalisée en base). */
-export const AI_TERMS_VERSION = "ia-2026-10";
+export const AI_TERMS_VERSION = "ia-2026-11";
 
 export type AiProgress = { processing: boolean; detail: string | null; enabled: boolean };
 
@@ -42,6 +42,7 @@ const ERRORS: Record<string, string> = {
   FORBIDDEN: "Seul le titulaire du dossier peut activer ce traitement.",
   DOSSIER_CLOTURE: "Le dossier est clôturé : rouvrez-le pour activer le traitement.",
   AUTH_REQUIRED: "Connectez-vous pour continuer.",
+  ANALYSE_FERMEE: "L'analyse automatique n'est pas encore ouverte pour votre compte.",
 };
 
 export function AiPanel({ dossierId, ownerId, canManage, isAdmin, closed, pieceCount, documentNames, onProgress, onPublished }: Props) {
@@ -56,6 +57,8 @@ export function AiPanel({ dossierId, ownerId, canManage, isAdmin, closed, pieceC
   const [consent, setConsent] = useState(false);
   const [seenRevision, setSeenRevision] = useState<number | null>(null);
   const [quota, setQuota] = useState<QuotaRow | null>(null);
+  // Interrupteur serveur (20261128120000) et acceptation par compte ; null si la migration est absente.
+  const [account, setAccount] = useState<{ gateAllows: boolean; enabled: boolean } | null>(null);
 
   const load = useCallback(async () => {
     const s = await supabase.from("dossier_ai_settings").select("enabled_at,terms_version").eq("dossier_id", dossierId).maybeSingle();
@@ -75,6 +78,9 @@ export function AiPanel({ dossierId, ownerId, canManage, isAdmin, closed, pieceC
     setExtracted(x.count ?? 0);
     setAnalysis((a.data as AnalysisRow | null) ?? null);
     setOverrides((o.data as OverrideRow[] | null) ?? []);
+    const acc = await supabase.rpc("my_ai_account");
+    const accRow = Array.isArray(acc.data) ? acc.data[0] : acc.data;
+    setAccount(acc.error || !accRow ? null : { gateAllows: accRow.gate_allows === true, enabled: accRow.enabled === true });
     // Usage restant de l'offre : lecture du TITULAIRE uniquement (la RPC renvoie
     // le quota du compte connecté). Migration 20261118 absente → rien d'affiché.
     if (!isAdmin) {
@@ -147,6 +153,9 @@ export function AiPanel({ dossierId, ownerId, canManage, isAdmin, closed, pieceC
   };
 
   if (available !== true) return null;
+  // Tant que l'analyse n'est pas ouverte pour ce compte, rien n'est proposé au client (aucun bouton inutilisable).
+  const gateAllows = account?.gateAllows === true;
+  if (!isAdmin && !gateAllows && !settings?.enabled_at && !analysis) return null;
 
   return (
     <div className="space-y-5">
@@ -178,19 +187,19 @@ export function AiPanel({ dossierId, ownerId, canManage, isAdmin, closed, pieceC
           )}
         </div>
 
-        {!settings?.enabled_at && canManage && !closed && (
+        {!settings?.enabled_at && canManage && !closed && gateAllows && (
           <div className="mt-4 space-y-3">
             <label className="flex items-start gap-3 text-sm leading-relaxed text-slate-700">
               <input type="checkbox" className="mt-1" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
               <span>
-                Je demande le traitement automatique de ce dossier : le contenu des pièces déposées est transmis à notre prestataire
+                {account?.enabled ? "Je demande aussi l'analyse des pièces déjà déposées dans ce dossier : leur contenu est transmis" : "Je demande le traitement automatique de ce dossier : le contenu des pièces déposées est transmis"} à notre prestataire
                 d'intelligence artificielle (sous-traitant) pour produire des documents de travail. Ces documents sont générés
                 automatiquement, doivent être vérifiés et ne constituent pas un conseil juridique. Je peux désactiver ce traitement à
                 tout moment ; les pièces ajoutées ensuite ne seront plus lues.
               </span>
             </label>
             <button type="button" onClick={() => void toggle(true)} disabled={!consent || busy} className="rounded-full bg-navy-900 px-5 py-2.5 text-sm font-semibold text-cream-50 transition-colors hover:bg-navy-800 disabled:opacity-50">
-              {busy ? "Activation…" : "Activer le traitement automatique"}
+              {busy ? "Activation…" : account?.enabled ? "Analyser les pièces déjà déposées" : "Activer le traitement automatique"}
             </button>
           </div>
         )}

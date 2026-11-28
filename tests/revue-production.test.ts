@@ -38,7 +38,7 @@ function expression(pattern: RegExp, ...params: string[]) {
 }
 
 test('C04 — moteur éteint : un document déposé par l’équipe mène à « Documents disponibles »', () => {
-  const hasDeliverables = expression(/hasDeliverables:\s*([^,\n]+),/, 'AI_ENGINE', 'aiDeliverables', 'deliverables');
+  const hasDeliverables = expression(/hasDeliverables:\s*([^,\n]+),/, 'aiActive', 'aiDeliverables', 'deliverables');
   // handleDeliver garde le nom d'origine du fichier : jamais au format du catalogue.
   const deliverables = [{ file_name: 'Synthese-dossier-Martin.pdf' }];
   const { catalog } = splitDeliverables(deliverables, deliverableKeyOf);
@@ -57,7 +57,7 @@ test('C04 — moteur éteint : un document déposé par l’équipe mène à « 
 });
 
 test('C04 — moteur éteint : la liste garde son intitulé « Documents déposés par l’équipe ClairDossier »', () => {
-  const heading = expression(/\{\s*(AI_ENGINE\s*\?\s*"[^"]*"\s*:\s*"[^"]*")\s*\}/, 'AI_ENGINE');
+  const heading = expression(/\{\s*(aiActive\s*\?\s*"[^"]*"\s*:\s*"[^"]*")\s*\}/, 'aiActive');
   assert.equal(heading(false), "Documents déposés par l'équipe ClairDossier");
   assert.equal(heading(true), 'Autres documents');
 });

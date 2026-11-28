@@ -171,6 +171,10 @@ for (const f of files) {
 const last = files[files.length - 1];
 await db.exec(readFileSync(join(root, 'supabase', 'migrations', last), 'utf8').replace(/create extension if not exists pg_net;/gi, ''));
 console.log(`Migrations appliquées : ${files.length} (+ rejeu de ${last})\n`);
+// 20261128120000 : l'interrupteur général est fermé par défaut. Les tests historiques du
+// moteur (activation par dossier) supposent l'analyse ouverte ; les tests de l'activation
+// par compte (fin de fichier) règlent l'interrupteur explicitement.
+await db.exec(`update public.ai_auto_gate set mode = 'ouvert' where id = 1`);
 
 const A = await newUser('a@test.fr', { meta: { first_name: 'Alice', last_name: 'Martin', company_type: 'pme', company_name: 'Martin SAS', phone: '+33 6 12 34 56 78' } });
 const B = await newUser('b@test.fr', { meta: { first_name: 'Bruno', last_name: 'Durand', company_type: 'particulier', phone: 'pas-un-numero' } });
@@ -2656,6 +2660,137 @@ await test('intelligence : retour arrière propre puis réinstallation', async (
   await db.exec(readFileSync(join(root, 'supabase', 'migrations', '20261126120000_intelligence_espace_client.sql'), 'utf8'));
   assert.equal((await q(`select to_regclass('public.client_automations') as t`))[0].t, 'client_automations');
 });
+
+console.log('\nAnalyse automatique par compte (20261128120000)');
+{
+  const setGate = async (mode) => { await asSuperuser(); await q(`update public.ai_auto_gate set mode = $1 where id = 1`, [mode]); };
+  const settings = async (d) => { await asSuperuser(); return (await q(`select enabled_at, consent_reference, review_mode from public.dossier_ai_settings where dossier_id = $1`, [d]))[0] ?? null; };
+  // Le test « retour arrière niveau 1 » a retiré le déclencheur de mise en file et le droit
+  // d'activation : on rétablit l'état de production (moteur installé) pour ces tests.
+  await asSuperuser();
+  await q('grant execute on function public.enable_ai_processing(uuid, text) to authenticated');
+  await db.exec(`drop trigger if exists documents_ai_enqueue on public.dossier_documents;
+    create trigger documents_ai_enqueue after insert or update of deleted_at on public.dossier_documents
+    for each row execute function public.documents_ai_enqueue();`);
+  const CA = await newUser('compte.a@test.fr');
+  const CB = await newUser('compte.b@test.fr');
+  const CS = await newUser('compte.sans.abonnement@test.fr');
+  await subscribe(CA, 'essentiel', { status: 'active' });
+  await subscribe(CB, 'essentiel', { status: 'active' });
+  const vieux = await insertDossier(CA, { title: 'Dossier antérieur' });
+  const ancienne = await addPiece(CA, vieux, 'ancienne.pdf');
+
+  await test('compte : interrupteur fermé par défaut → acceptation refusée, aucune activation', async () => {
+    await setGate('ferme');
+    await asUser(CA);
+    await rejects(q(`select public.accept_ai_account('ia-2026-11')`), /ANALYSE_FERMEE/);
+    await rejects(q(`select public.enable_ai_processing($1, 'ia-2026-11')`, [vieux]), /ANALYSE_FERMEE/);
+    await addPiece(CA, vieux, 'pendant-fermeture.pdf');
+    assert.equal(await settings(vieux), null);
+  });
+
+  await test('compte : pilote → réservé aux administrateurs', async () => {
+    await setGate('pilote');
+    await asUser(CA);
+    await rejects(q(`select public.accept_ai_account('ia-2026-11')`), /ANALYSE_FERMEE/);
+    await asUser(ADMIN);
+    const [st] = await q(`select * from public.my_ai_account()`);
+    assert.equal(st.gate_allows, true);
+    assert.equal(st.enabled, false);
+  });
+
+  await test('compte : ouvert → acceptation horodatée, versionnée, lisible par le seul titulaire', async () => {
+    await setGate('ouvert');
+    await asUser(CA);
+    await q(`select public.accept_ai_account('ia-2026-11')`);
+    const [st] = await q(`select * from public.my_ai_account()`);
+    assert.deepEqual([st.enabled, st.terms_version, st.eligible], [true, 'ia-2026-11', true]);
+    assert.ok(st.accepted_at);
+    await asUser(CB);
+    assert.equal((await q(`select count(*)::int as n from public.ai_account_settings`))[0].n, 0, 'B ne voit pas le réglage de A');
+    await rejects(q(`insert into public.ai_account_settings (user_id, enabled_at, terms_version) values ($1, now(), 'x')`, [CB]), /row-level security|permission denied/);
+  });
+
+  await test('compte : nouvelle pièce → dossier activé et mis en file, sans relire les anciennes pièces', async () => {
+    await setGate('ouvert');
+    const nouvelle = await addPiece(CA, vieux, 'nouvelle.pdf');
+    const s = await settings(vieux);
+    assert.ok(s?.enabled_at);
+    assert.match(s.consent_reference, /^compte:ia-2026-11:/);
+    assert.equal(s.review_mode, 'auto');
+    await asSuperuser();
+    const jobs = (await q(`select document_id from public.ai_jobs where dossier_id = $1 and kind = 'extract' and status in ('queued','running')`, [vieux])).map((r) => r.document_id);
+    assert.deepEqual(jobs, [nouvelle], 'seule la nouvelle pièce est lue');
+    assert.ok(!jobs.includes(ancienne));
+    assert.equal(await openJobs(vieux, 'consolidate'), 1);
+  });
+
+  await test('compte : nouveau dossier, isolement entre comptes, sans abonnement ignoré', async () => {
+    await setGate('ouvert');
+    const d = await insertDossier(CA, { title: 'Nouveau dossier' });
+    await addPiece(CA, d, 'contrat.pdf');
+    assert.ok((await settings(d))?.enabled_at);
+    const dB = await insertDossier(CB, { title: 'Dossier de B' });
+    await addPiece(CB, dB, 'b.pdf');
+    assert.equal(await settings(dB), null, 'B n’a rien accepté');
+    await asUser(CS);
+    await q(`select public.accept_ai_account('ia-2026-11')`);
+    const dS = await insertDossier(CS, { title: 'Sans abonnement' });
+    await addPiece(CS, dS, 's.pdf');
+    assert.equal(await settings(dS), null, 'pas d’abonnement : pas d’analyse');
+  });
+
+  await test('compte : pilote → relecture manuelle ; désactivation explicite d’un dossier respectée', async () => {
+    await setGate('pilote');
+    await asUser(ADMIN);
+    await q(`select public.accept_ai_account('ia-2026-11')`);
+    await asSuperuser();
+    await q(`insert into public.entitlement_overrides (user_id, mode, reason, active) values ($1, 'unlimited', 'test pilote', true)`, [ADMIN]);
+    const d = await insertDossier(ADMIN, { title: 'Pilote' });
+    await addPiece(ADMIN, d, 'p.pdf');
+    assert.equal((await settings(d))?.review_mode, 'manual');
+    await asUser(ADMIN);
+    await q(`select public.disable_ai_processing($1)`, [d]);
+    await addPiece(ADMIN, d, 'p2.pdf');
+    assert.equal((await settings(d)).enabled_at, null, 'un dossier désactivé ne se réactive pas seul');
+  });
+
+  await test('compte : désactivation → travaux annulés, plus aucune activation, résultats conservés', async () => {
+    await setGate('ouvert');
+    await asUser(CA);
+    await q(`select public.disable_ai_account()`);
+    assert.equal((await settings(vieux)).enabled_at, null);
+    assert.equal(await openJobs(vieux, 'extract'), 0);
+    const d = await insertDossier(CA, { title: 'Après désactivation' });
+    await addPiece(CA, d, 'x.pdf');
+    assert.equal(await settings(d), null);
+    await asUser(CA);
+    const [st] = await q(`select * from public.my_ai_account()`);
+    assert.equal(st.enabled, false);
+  });
+
+  await test('compte : interrupteur réservé à l’administration ; client et visiteur refusés', async () => {
+    await asUser(CA);
+    await rejects(q(`select public.ai_admin_set_auto_gate('ouvert')`), /FORBIDDEN/);
+    await setGate('ferme');
+    await asUser(CA);
+    await q(`update public.ai_auto_gate set mode = 'ouvert'`).catch(() => {});
+    await asSuperuser();
+    assert.equal((await q(`select mode from public.ai_auto_gate`))[0].mode, 'ferme', 'écriture directe sans effet');
+    await asAnon();
+    await rejects(q(`select public.accept_ai_account('ia-2026-11')`), /permission denied|AUTH_REQUIRED/);
+    await asUser(ADMIN, 'aal2');
+    assert.equal((await q(`select public.ai_admin_set_auto_gate('ferme') as m`))[0].m, 'ferme');
+  });
+
+  await test('compte : retour arrière propre puis réinstallation', async () => {
+    await asSuperuser();
+    await db.exec(readFileSync(join(root, 'supabase', 'rollback', '20261128120000_ia_activation_compte.down.sql'), 'utf8'));
+    assert.equal((await q(`select to_regclass('public.ai_account_settings') as t`))[0].t, null);
+    await db.exec(readFileSync(join(root, 'supabase', 'migrations', '20261128120000_ia_activation_compte.sql'), 'utf8'));
+    assert.equal((await q(`select mode from public.ai_auto_gate`))[0].mode, 'ferme');
+  });
+}
 
 console.log(`\n${passed} réussis, ${failed} échoués`);
 process.exit(failed ? 1 : 0);
