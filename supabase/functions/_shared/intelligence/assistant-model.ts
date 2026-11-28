@@ -6,7 +6,7 @@
 //  - sans modèle, erreur ou budget atteint : repli annoncé sur les règles.
 // Aucune dépendance : le client du modèle est décrit structurellement (SDK Anthropic compatible).
 import { MODEL_PRICES_USD_PER_MTOK } from '../ai-pipeline.ts';
-import { MAX_ACTIONS, executeTool, isForbiddenRequest, planDeterministic, runAssistant, toolSpecs, type Context, type Reply } from './core.ts';
+import { MAX_ACTIONS, TOOLS, executeTool, isForbiddenRequest, planDeterministic, runAssistant, toolSpecs, type Context, type Reply } from './core.ts';
 
 export type Tier = 'simple' | 'courant' | 'avance';
 export interface ModelMap {
@@ -146,7 +146,8 @@ export async function answer(deps: AssistantDeps, userId: string, message: strin
           output_config: { effort: tier === 'avance' ? 'medium' : 'low' },
           messages,
         },
-        { timeout: 45_000, maxRetries: 1 },
+        // Au plus 4 tours de 30 s sans nouvelle tentative : sous la limite d'exécution d'une fonction Edge.
+        { timeout: 30_000, maxRetries: 0 },
       )) as ModelMessage;
     } catch {
       await deps.finops.settle(userId, reserve, 0);
@@ -169,7 +170,11 @@ export async function answer(deps: AssistantDeps, userId: string, message: strin
     const results: Record<string, unknown>[] = [];
     for (const use of uses) {
       const input = use.input as { requete?: unknown };
-      const done = calls < MAX_ACTIONS ? executeTool(ctx, use.name, typeof input?.requete === 'string' ? input.requete : message) : null;
+      // Actions à confirmer (niveau 2) : l'argument est la DEMANDE DU TITULAIRE, jamais un texte proposé par le modèle
+      // (qui pourrait provenir d'une pièce piégée : date ou libellé imposés).
+      const level = TOOLS.find((t) => t.name === use.name)?.level;
+      const arg = level === 2 || typeof input?.requete !== 'string' ? message : input.requete;
+      const done = calls < MAX_ACTIONS ? executeTool(ctx, use.name, arg) : null;
       calls++;
       if (!done) {
         results.push({ type: 'tool_result', tool_use_id: use.id, is_error: true, content: 'Action non disponible.' });

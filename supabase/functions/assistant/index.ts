@@ -74,18 +74,22 @@ Deno.serve(async (req: Request): Promise<Response> => {
   if (sub !== true) return indisponible('abonnement');
 
   // 5. Limite de débit par compte.
-  const { count } = await admin.from('assistant_usage').select('id', { count: 'exact', head: true }).eq('user_id', user.id).gte('created_at', new Date(Date.now() - 3600_000).toISOString());
+  // Compte les appels au modèle de l'heure (jusqu'à 4 par message). Erreur de lecture = refus (jamais ouvert par défaut).
+  const { count, error: ce } = await admin.from('assistant_usage').select('id', { count: 'exact', head: true }).eq('user_id', user.id).gte('created_at', new Date(Date.now() - 3600_000).toISOString());
+  if (ce) return indisponible('debit');
   if ((count ?? 0) >= ASSISTANT_MESSAGES_PER_HOUR) return reply(429, { error: 'trop_de_demandes' });
 
   // 6. Contexte depuis la base, sous l'identité du titulaire.
-  const [a, pieces, deadlines, turns, prefs] = await Promise.all([
+  const [s, a, pieces, deadlines, turns, prefs] = await Promise.all([
+    caller.from('dossier_ai_settings').select('enabled_at').eq('dossier_id', dossier.id).maybeSingle(),
     caller.from('ai_analyses').select('coverage,data').eq('dossier_id', dossier.id).order('revision', { ascending: false }).limit(1).maybeSingle(),
     caller.from('dossier_documents').select('id,file_name').eq('dossier_id', dossier.id).eq('kind', 'piece').is('deleted_at', null).order('created_at').limit(500),
     caller.from('dossier_deadlines').select('title,due_date,priority,done,ai_key').eq('dossier_id', dossier.id).limit(200),
     caller.from('assistant_turns').select('author,body').eq('dossier_id', dossier.id).order('created_at', { ascending: false }).limit(6),
     caller.from('assistant_preferences').select('body').limit(12),
   ]);
-  const analysis = (a.data as { coverage: CoverageInfo; data: AnalysisData } | null) ?? null;
+  // L'analyse n'est transmise au modèle que si l'analyse est activée sur CE dossier.
+  const analysis = s.data?.enabled_at ? ((a.data as { coverage: CoverageInfo; data: AnalysisData } | null) ?? null) : null;
   const pieceList = ((pieces.data ?? []) as { id: string; file_name: string }[]);
   const t = today();
   const ctx: Context = {
@@ -130,5 +134,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
     { user_id: user.id, dossier_id: dossier.id, author: 'vous', body: parsed.message.slice(0, 4000) },
     { user_id: user.id, dossier_id: dossier.id, author: 'ia', body: (r.text || '…').slice(0, 4000) },
   ]);
-  return reply(200, r);
+  // L'identifiant du modèle reste côté serveur (journal assistant_usage).
+  const { model: _modele, ...publique } = r;
+  return reply(200, publique);
 });
