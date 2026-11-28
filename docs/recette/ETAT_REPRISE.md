@@ -148,6 +148,17 @@ Constats en lecture seule, à traiter avant les étapes suivantes :
   Reste pour la synchronisation Stripe : une clé restreinte en lecture seule (Customers, Subscriptions, Products, Prices), le point de terminaison du webhook dans Stripe, les 2 secrets, puis le reflet (simulation, puis `--apply`).
 - Décision du fondateur sur le moteur IA (26/11) : activation **après validation juridique**, avec un suivi automatique des coûts par client, des plafonds de sécurité ajustables et une consommation qui suit l'usage réel (quotas par offre). Mécanismes déjà en place : registre des coûts par appel, économie IA par client (V13), plafonds global et par compte, alerte de budget réglable (`ai_admin_set_budget_alert`, installée en production), `plan_entitlements`.
 
+## Mise en production — 26/11/2026 (accord écrit du fondateur)
+
+- PR #71 fusionnée (`3518a69`), déployée par GitHub Pages. Contrôlé en ligne : 8 pages publiques × ordinateur et
+  mobile, statut 200, 0 erreur JavaScript ; `/demo` = 404 ; 12 liens Stripe servis = liste gelée ; manifeste,
+  `sw.js` et `pwa.json` (`actif: true`) servis, service worker enregistré → application installable depuis
+  www.clair-dossier.com. IA et automatisations éteintes côté site.
+- Activation de l'espace client enrichi (accord du fondateur, « après la mise en ligne ») : 1) migration
+  `20261126120000` par la session locale qui a accès à la base, après sauvegarde ; 2) variable de dépôt GitHub
+  `VITE_INTELLIGENCE=1` (Settings → Secrets and variables → Actions → Variables) puis relance du déploiement.
+  Le workflow lit déjà cette variable (absente = inerte).
+
 ## Blocages — action minimale du propriétaire
 
 1. **Supabase isolé hébergé** — BLOQUÉ : organisation à la limite gratuite (2 projets actifs, tous deux étrangers à ClairDossier ; les 2 projets ClairDossier sont en pause). Une action : autoriser la reprise de « ClairDossier's Projet » à la place d'un projet actif, ou un projet payant.

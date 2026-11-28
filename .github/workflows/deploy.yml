@@ -65,6 +65,9 @@ jobs:
           # Étiquette "data-domain" : doit être IDENTIQUE au nom du site dans le
           # compte Plausible. Aligné sur le domaine canonique servi (www).
           VITE_PLAUSIBLE_DOMAIN: www.clair-dossier.com
+          # Espace client enrichi (rappels, bilans, préférences ; aucune IA) — variable de dépôt.
+          # Absente ou ≠ "1" : composants inertes. Ne la passer à "1" qu'APRÈS la migration 20261126120000.
+          VITE_INTELLIGENCE: ${{ vars.VITE_INTELLIGENCE }}
 
       # Repère de version public (aucun secret) : prouve quel commit est servi
       # par le domaine — https://www.clair-dossier.com/version.json
