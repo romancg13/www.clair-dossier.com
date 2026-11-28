@@ -4,7 +4,7 @@ import { supabase } from "../../lib/supabase";
 type Mode = "ferme" | "pilote" | "ouvert";
 
 const MODES: { mode: Mode; label: string; detail: string }[] = [
-  { mode: "ferme", label: "Fermé", detail: "Aucune activation par les clients (seule l'activation par l'équipe sur accord écrit reste possible)." },
+  { mode: "ferme", label: "Fermé", detail: "Coupe-circuit : aucune activation par les clients, travaux « par compte » en file annulés et plus aucune mise en file (l'activation par l'équipe sur accord écrit reste possible)." },
   { mode: "pilote", label: "Pilote", detail: "Seuls les comptes administrateurs peuvent accepter l'analyse automatique ; relecture manuelle." },
   { mode: "ouvert", label: "Ouvert", detail: "Tous les comptes éligibles se voient proposer l'acceptation unique ; publication directe des résultats." },
 ];

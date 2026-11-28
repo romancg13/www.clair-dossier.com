@@ -74,8 +74,8 @@ export function AiAccountConsent({ userId }: { userId: string }) {
             documents de travail (résumé, chronologie, dates, échéances, projets de relances).
           </p>
           <p>
-            Les pièces déjà déposées ne sont pas relues : vous pourrez le demander dossier par dossier. Rien n'est envoyé à un tiers ; les
-            relances restent des brouillons. Vous pouvez désactiver l'analyse à tout moment dans Mon compte.
+            Les pièces déjà déposées ne sont pas relues : vous pourrez le demander dossier par dossier. Aucun message n'est envoyé à vos
+            interlocuteurs : les relances restent des brouillons. Vous pouvez désactiver l'analyse à tout moment dans Mon compte.
           </p>
         </div>
         <label className="mt-5 flex items-start gap-3 text-sm leading-relaxed text-slate-700">
