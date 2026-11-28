@@ -163,3 +163,53 @@ Seuls les comptes à abonnement actif peuvent programmer une automatisation (rè
 Ce qui reste HORS de ce dossier (accords distincts) : moteur IA (`20261023` → `20261118`, CGV art. 6),
 messagerie Gmail/Outlook (`20261125130000`, applications OAuth à créer), e-mail entrant (`20261118130000`,
 domaine Resend `mail.clair-dossier.com` et enregistrements DNS à valider).
+
+---
+
+# Volet 3 — transfert du projet vers l'organisation du fondateur (V14, 28/11/2026)
+
+Décision du fondateur (28/11) : le projet `buzgokfmxpmyceppvjpp` rejoint une **organisation dédiée**,
+« ClairDossier Production », dont il est propriétaire, sur l'offre **Pro**. Ensuite, Gérard n'a plus aucune
+intervention opérationnelle à faire. Source : doc officielle Supabase « Project Transfers »
+(https://supabase.com/docs/guides/platform/project-transfer), relue le 28/11.
+
+## Ce que le transfert conserve
+
+Seule l'organisation change, pas l'infrastructure : même identifiant `buzgokfmxpmyceppvjpp`, même URL d'API,
+mêmes clés, même région, mêmes comptes, dossiers, pièces du bucket `documents`, fonctions Edge et leurs
+secrets, règles RLS et tâches `pg_cron`. Le site n'a pas besoin d'être redéployé.
+
+## Conditions vérifiées dans la doc
+
+| Condition | Qui la remplit |
+|---|---|
+| Être **propriétaire** de l'organisation d'origine | Gérard |
+| Être **au moins membre** de l'organisation d'arrivée | Gérard accepte l'invitation du fondateur (rôle **Developer**, retiré après le transfert) |
+| Aucune intégration GitHub active sur le projet | Gérard vérifie : Project Settings → Integrations |
+| Aucune redirection de journaux (log drain) | Gérard vérifie : Project Settings → Log Drains |
+| Aucun rôle limité au projet (offres Team/Enterprise) | Gérard vérifie : Organization → Team |
+| Pas de passage d'une offre payante à l'offre gratuite | rempli : l'organisation d'arrivée est en Pro (pas de coupure de 1–2 min, pas de perte de fonction) |
+
+Facturation : l'organisation de Gérard paie l'usage du projet jusqu'au transfert, celle du fondateur ensuite.
+
+## Message prêt à envoyer à Gérard (par le fondateur)
+
+> Bonjour Gérard,
+> Je reprends la gestion technique de ClairDossier pour ne plus te solliciter. Je t'ai invité dans mon
+> organisation Supabase « ClairDossier Production » (rôle Developer, temporaire). Il te reste une seule
+> manipulation, environ 5 minutes :
+> 1. Accepte l'invitation (e-mail de Supabase).
+> 2. Dans le projet `buzgokfmxpmyceppvjpp` uniquement : vérifie qu'il n'a ni intégration GitHub (Settings →
+>    Integrations), ni log drain (Settings → Log Drains).
+> 3. Project Settings → General → **Transfer project** → organisation « ClairDossier Production » → confirmer.
+> Aucun autre de tes projets n'est concerné, et je ne te demande aucun identifiant. Je te retire de mon
+> organisation dès que le transfert est vérifié. Merci !
+
+## Contrôles après transfert (Claude Code, compte du fondateur)
+
+1. Le projet apparaît dans « ClairDossier Production », statut `ACTIVE_HEALTHY` ; le fondateur est **Owner**.
+2. Le site répond (accueil, connexion), l'API répond avec la même clé publique, `notify-lead` répond.
+3. Comptages identiques à la dernière sauvegarde (comptes, dossiers, pièces) ; RLS active sur toutes les tables ;
+   correctif `20261125150000` : 3 × `true` ; `cron.job` `clairdossier-automatisations` présent.
+4. Gérard retiré de l'organisation ; jetons et intégrations relus, ceux devenus inutiles révoqués après accord.
+5. Reprise du volet 2 sans Gérard : étapes 6 à 9 exécutées par Claude Code (sauvegarde d'abord).

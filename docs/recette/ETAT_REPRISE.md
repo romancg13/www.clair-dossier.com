@@ -1,4 +1,4 @@
-# État de reprise — recette ClairDossier (V6)
+# État de reprise — recette ClairDossier (V6 → V14)
 
 Mis à jour : 2026-11-25 · PR #70 **fusionnée** (production `85bbb4e`) · travaux V6 : branche `claude/clairdossier-optimization-85z7y5`, PR brouillon #71, NON fusionnée · commit déployé : voir `ETAT_FONCTIONNALITES.md`.
 Source unique de l'état de chaque fonctionnalité : `ETAT_FONCTIONNALITES.md` (122 lignes, synthèse calculée). Sécurité de la production : `SECURITE_ISOLATION.md`.
@@ -6,6 +6,49 @@ Production : site inchangé depuis la fusion ; base : correctif `20261125150000`
 Décisions du propriétaire (25/11, V12) : budget IA +0,60 USD accordé ; Supabase de recette : rester en local ; correctif de production 20261125150000 : PRÉ-AUTORISÉ s'il manque, après sauvegarde (accès à l'organisation toujours absent) ; Stripe bac à sable : différé.
 
 Légende : VÉRIFIÉ EN LOCAL · VÉRIFIÉ SUR RECETTE HÉBERGÉE · IMPLÉMENTÉ NON TESTÉ · SIMULÉ · BLOQUÉ · DIFFÉRÉ.
+
+## V17 — 28/11/2026 (après transfert, exécuté par Claude Code via Chrome)
+
+| Étape | Statut | Preuve |
+|---|---|---|
+| Transfert | **FAIT** : projet `clair-dossier` (`buzgokfmxpmyceppvjpp`, eu-central-1) dans « ClairDossier Production » (Pro), fondateur Owner, Gérard membre | tableau de bord |
+| Sauvegarde avant écriture | sauvegardes physiques quotidiennes Pro, dernière 28/11 05:29 UTC (base ; Storage non inclus, non touché) | Database → Backups |
+| État base | 27 comptes, 15 dossiers, 353 pièces ; correctif 3/3 ; `clairdossier-automatisations` `7 * * * *`, 24 passages réussis / 0 échec sur 24 h ; `20261126120000` dans l'historique | SQL (lecture) |
+| `dossier_is_closed` | **INSTALLÉE** (`20261126100000`, transaction, ligne d'historique) ; anon/authenticated sans droit d'exécution | SQL |
+| Reflet Stripe | **FAIT** : 1 ligne `subscriptions` (sub_1UGi6X…, `business-pme-20`, active, échéance 17/12/2026), rattachement par e-mail unique (simulation puis écriture, garde-fou d'ambiguïté) ; 3 `incomplete_expired` ignorés ; le compte abonné avait déjà une dérogation illimitée → `client_subscription_active` : 1/27, inchangé | SQL, MCP Stripe lecture |
+| Clé Stripe | **CRÉÉE** « ClairDossier synchro lecture seule » (Customers, Subscriptions, Products, Prices : Lecture ; reste Aucune) → secret Supabase `STRIPE_SECRET_KEY` posé par copier-coller navigateur (valeur jamais affichée) | Stripe, Supabase Secrets |
+| Webhook Stripe | **CRÉÉ** `we_1UgoUmEpkxd8UInh4Z7QHTaT` « clairdossier-abonnements », instantané, API 2026-04-22.dahlia, 6 événements, URL `…/functions/v1/stripe-webhook` | Stripe Workbench |
+| `STRIPE_WEBHOOK_SECRET` | **POSÉ** par le fondateur (28/11) ; fonction : sans signature → 400 `missing_signature`, signature fausse → 400 `invalid_signature` ; première livraison réelle de Stripe : à lire au prochain événement (aucune transaction de test) | sonde HTTP |
+| PR #73 + `VITE_INTELLIGENCE=1` | **DÉPLOYÉ** sur accord du fondateur (28/11) : variable de dépôt posée, PR fusionnée (`4f45991`), workflow Pages réussi ; `version.json` = `4f45991` ; `surveillance-site.mjs` : aucune action requise (12 routes, routes app 200 + noindex, liens de paiement conformes) ; parcours connecté en production : NON TESTÉ (pas de connexion par mot de passe côté Claude) | GitHub Actions, domaine |
+| Moteur IA, messagerie | non activés ; **dossier unique de validation : `docs/ia/DOSSIER_ACTIVATION_IA.md`** (juridique A1–A7, Anthropic, budget proposé 20 €/mois global · 12 €/compte · 25 USD chez le fournisseur, hébergement GitHub Pages à revoir) ; assistant à modèle en production : non développé ; `RESEND_API_KEY` déjà présent en secret (17/06) | — |
+| PR #74 | **DÉPLOYÉE** sur autorisation explicite (28/11, `56087ea`) : l'assistant sans analyse compte les pièces et dit que l'analyse automatique n'est pas activée (plus de « je m'occupe du reste ») ; surveillance : aucune action requise | GitHub Actions, domaine |
+| PR #75 — pilote IA | **DÉPLOYÉE** sur autorisation explicite (28/11, `11a7137`) : variable `VITE_AI_ENGINE=1` ; migrations `20261118120000`, `20261128120000`, `20261128130000` appliquées (transactions + historique) ; fonction `assistant` déployée (401 anonyme), plafonds 5 USD global / 1 USD par compte ; dérogation pilote du compte admin (30 j, 200 pages, 50 actions, journalisée) ; interrupteur **pilote** (1 seul compte autorisé) ; surveillance : aucune action requise. Test réel sur pièces fictives : en attente du fondateur. Jeton Supabase limité au projet (24 h) conservé pour la vérification, à révoquer ensuite | Supabase, GitHub Actions |
+| PR #76 — autopilote (V18) | **DÉPLOYÉE** (28/11, `d33f5ba`, mandat V18 : accords juridique, financier et de mise en production du fondateur consignés, plafonds existants conservés). Incident du pilote : archive ZIP renommée en .pdf → analyse vide (`data = {}`) → l'assistant plantait au rendu (page « erreur inattendue »). Corrigé : `usableAnalysis`, `SectionBoundary`, dépôt d'archive ZIP ouvert dans le navigateur, suivi monté sur tous les onglets (5 s), rafraîchissement dès la première publication. Migration `20261129120000` appliquée : réveil du worker par pg_net (60 ms constatés), synthèse dès la dernière lecture, publication automatique par défaut. **Test réel en production (3 pièces fictives, dossier pilote, sans clic)** : lectures 11,3 s, analyse + 13 fichiers des six rendus publiés à 35,2 s, 1 échéance créée, coût 8,21 c€ (Sonnet 5.5) ; titulaire : 13 livrables visibles ; autre compte : 0 document, 0 analyse, 0 fichier (rôles simulés, transaction annulée). Avant : 24 s de file + 90 s de différé + cron (≈ 2 min 30 sans résultat). NON TESTÉ : écran authentifié (dépôt par le site, ZIP, assistant avec modèle) — à faire par le fondateur. Jetons Supabase révoqués | Supabase, GitHub Actions |
+| PR #77 — ouverture à tous | **FAIT** (28/11, instruction du fondateur « Oui, ouvre à tous »). Textes publiés (`ee5f306`) : CGV art. 6 (acceptation unique par compte, désactivable), confidentialité (Anthropic, États-Unis, clauses contractuelles types de son accord de traitement, pas d'entraînement, suppression sous 30 j — pages officielles consultées le 28/11), registre des sous-traitants, 22 passages alignés (site, articles, llms.txt, mobile), Supabase à Francfort. Interrupteur `ai_auto_gate` = **ouvert** (journal d'audit). État : 27 comptes, 2 éligibles (fondateur + 1 abonné), 1 acceptation (fondateur), 0 analyse lancée sans acceptation. Rien n'est lu tant qu'un client n'a pas accepté dans la fenêtre proposée à sa connexion. À FAIRE (fondateur) : moyen de paiement et crédits Anthropic avant le 23/12 ; AIPD à signer ; relecture d'avocat recommandée (secret professionnel) ; informer le client abonné. Retour arrière : interrupteur → fermé (console « IA privée »), coupe-circuit immédiat | Supabase, GitHub Actions |
+| PR #78 + essais réels (V18, finalisation) | **DÉPLOYÉE** (28/11, `b643969`) : premiers résultats pièce par pièce à l'écran, pièces non lues nommées, bloc « Autres documents » vide masqué au client, suivi toutes les 3 s ; `ai-worker` redéployé (routage rapide `AI_MODEL_EXTRACT_FAST` présent mais **désactivé** : essai Haiku 5.5 sur 15 pièces fictives = dates et montants identiques, 19 références perdues sur 24, pas plus rapide → secret retiré). **Parcours réel authentifié** (comptes de test fictifs A/B, lien de connexion à usage unique, RLS) : 4 pièces dont 1 corrompue → premier résultat 7,5 s, 13 documents publiés à 41 s, 9,4 c€ ; 1 pièce 15 s (2,5 c€) ; 10 pièces 30 s (15 c€) ; 50 pièces 87 s (73 c€) ; assistant avec modèle : 200 en 6,9 s, vu à l'écran ; isolation : 0 ligne, 400, 403, 404 ; compte sans abonnement : aucun travail créé. Coût total des essais du jour ≈ 1,3 €. **Interrupteur remis en « pilote »** (clause de protection du mandat de finalisation) : réouverture en un clic dans la console « IA privée ». Défaut vu à l'écran et corrigé dans la PR suivante : astérisques du gras affichés dans les réponses de l'assistant. Restent : AIPD à signer (`docs/ia/AIPD.md`), avis d'avocat (secret professionnel), moyen de paiement Anthropic avant le 23/12, plafond par compte (12 €) inférieur au coût d'un quota plein dès l'offre PME 50, réponses progressives de l'assistant (non développées), 250 pièces et ZIP à l'écran non testés, messagerie entrante non installée. Comptes de test conservés (exception de 3 jours), jeton Supabase révoqué | Supabase, GitHub Actions, navigateur intégré |
+
+## V14 — reprise du 28/11/2026 (état réel relu, lecture seule)
+
+| Point | Constat du 28/11 | Source |
+|---|---|---|
+| Site | `main` = `3518a69` (PR #71 fusionnée) ; bundle servi sans `VITE_INTELLIGENCE` | git, bundle www.clair-dossier.com |
+| PR #73 | ouverte, brouillon, `mergeable_state: clean`, contrôle « verifier » réussi ; 2 fichiers | GitHub |
+| `20261126120000` | **installée en production** : `assistant_preferences`, `assistant_turns`, `client_automations`, `client_automation_runs`, `client_notifications` répondent 200 (clé publique, aucune ligne lue) | sonde REST anonyme |
+| `dossier_is_closed` | À CONFIRMER : PGRST202 en anonyme, compatible avec l'absence OU avec le retrait des droits publics (`20261126100000`) | sonde REST |
+| `stripe-webhook` | déployée, 500 `WORKER_ERROR` (secrets absents, inerte) | sonde |
+| Stripe LIVE | 0 webhook ; 1 abonnement actif (PME 20, 49 €/mois), 3 `incomplete_expired` — inchangé | MCP Stripe, lecture seule |
+| Supabase du fondateur | org « ClairDossier » (`rdbjcxaeacuphpzujann`, Free) : 2 projets actifs (gojuris-cabinet, roman-gomes-console), 2 en pause ; production absente | MCP Supabase |
+| Transfert | décision du fondateur : nouvelle org **« ClairDossier Production », offre Pro** (25 USD/mois) ; procédure et message pour Gérard : `DOSSIER_GERARD.md`, volet 3 | — |
+| Chrome | connecté ; **non authentifié** sur supabase.com | Claude in Chrome |
+
+| Organisation d'arrivée | **créée le 28/11** : « ClairDossier Production » (`sfdbmfppcoysqftycoav`), offre **Pro**, plafond de dépense activé, 1 membre (fondateur, Owner), 0 projet ; MFA du compte non activée (recommandée) ; invisible du MCP Supabase de la session (réautorisation à prévoir) | tableau de bord Supabase, Chrome |
+| Accès du fondateur à la production | **aucun** : son compte Chrome reçoit « You do not have access to this project » ; les travaux du 26/11 ont été faits depuis le poste de Gérard (auteur `fouzi`). Sans transfert, aucune voie ne conserve les données | Chrome, `git log` |
+| Bloquant unique | invitation de Gérard (son e-mail Supabase, confirmé par le fondateur) + son clic « Transfer project ». Tout le reste suit sans lui. Pas de déploiement de la PR #73 avant le reflet Stripe : l'unique abonné payant perdrait l'accès à l'espace enrichi (régression) | — |
+| Gérard | invitation Supabase **envoyée le 28/11** sur instruction du fondateur (rôle Developer, statut INVITED) ; reste : acceptation + « Transfer project » (message : `DOSSIER_GERARD.md` volet 3, à envoyer par le fondateur) ; décision du fondateur (28/11) : Gérard **reste membre** (Developer) après le transfert ; ne pas le retirer | tableau de bord Supabase |
+
+Tout le reste du mandat V14 (reflet Stripe, secrets du webhook, `dossier_is_closed`, moteur IA, Resend) dépend
+d'un accès au projet de production : il suit le transfert. Prochaine action : connexion du fondateur à
+Supabase dans Chrome → création de l'organisation (carte saisie par le fondateur) → invitation de Gérard.
 
 ## Travaux V6 (2026-11-25)
 
@@ -147,17 +190,6 @@ Constats en lecture seule, à traiter avant les étapes suivantes :
   - conseillers Supabase : 0 erreur.
   Reste pour la synchronisation Stripe : une clé restreinte en lecture seule (Customers, Subscriptions, Products, Prices), le point de terminaison du webhook dans Stripe, les 2 secrets, puis le reflet (simulation, puis `--apply`).
 - Décision du fondateur sur le moteur IA (26/11) : activation **après validation juridique**, avec un suivi automatique des coûts par client, des plafonds de sécurité ajustables et une consommation qui suit l'usage réel (quotas par offre). Mécanismes déjà en place : registre des coûts par appel, économie IA par client (V13), plafonds global et par compte, alerte de budget réglable (`ai_admin_set_budget_alert`, installée en production), `plan_entitlements`.
-
-## Mise en production — 26/11/2026 (accord écrit du fondateur)
-
-- PR #71 fusionnée (`3518a69`), déployée par GitHub Pages. Contrôlé en ligne : 8 pages publiques × ordinateur et
-  mobile, statut 200, 0 erreur JavaScript ; `/demo` = 404 ; 12 liens Stripe servis = liste gelée ; manifeste,
-  `sw.js` et `pwa.json` (`actif: true`) servis, service worker enregistré → application installable depuis
-  www.clair-dossier.com. IA et automatisations éteintes côté site.
-- Activation de l'espace client enrichi (accord du fondateur, « après la mise en ligne ») : 1) migration
-  `20261126120000` par la session locale qui a accès à la base, après sauvegarde ; 2) variable de dépôt GitHub
-  `VITE_INTELLIGENCE=1` (Settings → Secrets and variables → Actions → Variables) puis relance du déploiement.
-  Le workflow lit déjà cette variable (absente = inerte).
 
 ## Blocages — action minimale du propriétaire
 

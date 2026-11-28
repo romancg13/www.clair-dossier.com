@@ -1,8 +1,10 @@
 # État des fonctionnalités — source unique de vérité
 
-Mis à jour : 2026-11-25 · commit de recette déployé : voir `version.json` de la recette (V12, analyse progressive) ; PWA `1f278f2` ; recette finale V8 jouée sur `5035ff5` (463 unitaires et 118 SQL verts sur ce code ; recette finale hébergée jouée en session neuve le 25/11 : premier résultat 12,9 s, six rendus 20 s, archive de 14 fichiers contrôlée, isolation A/B 404, 0 erreur JS) (branche `claude/clairdossier-optimization-85z7y5`, PR brouillon #71) · production : `85bbb4e`.
+Mis à jour : 2026-11-28 (voir le paragraphe V18 ci-dessous) ; état antérieur du 2026-11-25 · commit de recette déployé : voir `version.json` de la recette (V12, analyse progressive) ; PWA `1f278f2` ; recette finale V8 jouée sur `5035ff5` (463 unitaires et 118 SQL verts sur ce code ; recette finale hébergée jouée en session neuve le 25/11 : premier résultat 12,9 s, six rendus 20 s, archive de 14 fichiers contrôlée, isolation A/B 404, 0 erreur JS) (branche `claude/clairdossier-optimization-85z7y5`, PR brouillon #71) · production : `85bbb4e`.
 
 Mise à jour 2026-11-25 (soir) : clé API Claude et `RECETTE_AI=direct` actifs sur `clairdossier-recette-20b5a2` (Production Vercel) ; lignes E-01, E-03, E-04, F-03 réévaluées d'après un essai réel sur la recette (comptes fictifs, pièces fictives). Coût réel NON mesuré (page `/admin` : `RECETTE_ADMIN_PASSWORD` absent).
+
+Mise à jour 2026-11-28 (V18, production `b643969`) : colonne **Production** réévaluée pour les lignes rejouées ce jour sur www.clair-dossier.com et la base de production, avec deux comptes de test fictifs (`essai-technique-a/b@example.org`), des pièces fictives et de vrais jetons de session. Les autres lignes de la colonne n'ont pas été retestées. Analyse automatique : interrupteur `ai_auto_gate` en « pilote » depuis le 28/11 au soir (aucun dossier client réel lu). Non testé en production : 250 pièces dans un dossier, dépôt d'une archive ZIP par l'écran, correction d'une date, automatisations, messagerie entrante. Tests du dépôt : 501 unitaires, 147 SQL.
 
 Statuts : **OK** = OPÉRATIONNEL ET VÉRIFIÉ · **PART** = PARTIELLEMENT OPÉRATIONNEL · **DNT** = DÉVELOPPÉ MAIS NON TESTÉ · **ÉMU** = VÉRIFIÉ PAR ÉMULATION (navigateur automatisé, aucun appareil physique) · **SIM** = SIMULÉ · **BLQ** = BLOQUÉ · **ND** = NON DÉVELOPPÉ · **DV** = VOLONTAIREMENT DIFFÉRÉ OU DÉSACTIVÉ · **—** = sans objet dans cet environnement.
 
@@ -14,9 +16,9 @@ Le détail fin de la vitrine historique (219 lignes F-001…) reste dans `FEATUR
 
 | ID | Fonction | Offres | Local | Recette | Production | Preuve | Reste à faire |
 |---|---|---|---|---|---|---|---|
-| A-01 | Inscription, connexion, déconnexion | toutes | OK | OK | DNT | `tests/recette-api.test.ts`, `securite-session.test.ts` ; parcours recette | retester en production avec un compte de test |
+| A-01 | Inscription, connexion, déconnexion | toutes | OK | OK | PART | `tests/recette-api.test.ts`, `securite-session.test.ts` ; parcours recette ; prod. 28/11 (compte de test fictif, jetons réels) : connexion par lien à usage unique ; inscription et mot de passe non retestés | retester en production avec un compte de test |
 | A-02 | Réinitialisation du mot de passe | toutes | OK | OK | DNT | `recette-api.test.ts` | idem |
-| A-03 | Isolation des comptes (lecture, écriture, IDOR) | toutes | OK | OK | BLQ | `tests/sql/migrations.pglite.mjs` (A/B), `recette-assistant.test.ts` | appliquer et vérifier le correctif 20261125150000 (N-01) |
+| A-03 | Isolation des comptes (lecture, écriture, IDOR) | toutes | OK | OK | OK | `tests/sql/migrations.pglite.mjs` (A/B), `recette-assistant.test.ts` ; prod. 28/11 (compte de test fictif, jetons réels) : compte témoin, 0 ligne visible sur 6 tables, téléchargement 400, écriture 403, assistant 404 | appliquer et vérifier le correctif 20261125150000 (N-01) |
 | A-04 | Administrateur global, double facteur, suppression exclusive | interne | OK | — | DNT | tests SQL (admin, aal2) | — |
 | A-05 | Suspension d'un compte | interne | OK | — | DNT | tests SQL | — |
 | A-06 | Collaborateurs / plusieurs utilisateurs par compte | Entrepreneur → Premium | ND | ND | ND | aucune table d'équipe | concevoir (invitations, rôles) |
@@ -39,30 +41,30 @@ Le détail fin de la vitrine historique (219 lignes F-001…) reste dans `FEATUR
 
 | ID | Fonction | Offres | Local | Recette | Production | Preuve | Reste à faire |
 |---|---|---|---|---|---|---|---|
-| C-01 | Dépôt multi-fichiers dans un dossier | toutes | OK | OK | DNT | parcours recette | — |
+| C-01 | Dépôt multi-fichiers dans un dossier | toutes | OK | OK | OK | parcours recette ; prod. 28/11 (compte de test fictif, jetons réels) : dépôts de 1, 4, 10, 15 et 50 pièces sous RLS | — |
 | C-02 | Dépôt direct vers stockage privé, 25 Mo par fichier | toutes | OK | OK | ND | 9 + 12 Mo en 11,6 s (25/11) ; `recette-depot-direct.test.ts` | équivalent Supabase Storage en production |
 | C-03 | Transfert reprenable (TUS / multipart) après coupure réseau | toutes | ND | ND | ND | — | à développer |
 | C-04 | Détection de doublons | toutes | OK | OK | DV | `engine-runner.test.ts`, événement « piece_doublon » | — |
-| C-05 | Contrôle des formats, pièce illisible signalée | toutes | OK | OK | DV | `ai-pipeline.test.ts` | antivirus : ND |
+| C-05 | Contrôle des formats, pièce illisible signalée | toutes | OK | OK | OK | `ai-pipeline.test.ts` ; prod. 28/11 (compte de test fictif, jetons réels) : PDF corrompu → pièce nommée « non lue », reste du dossier analysé (vu à l’écran) | antivirus : ND |
 | C-06 | Relecture automatique d'une pièce échouée (1 h, 6 h, 24 h) | toutes | OK | DNT | DV | `moteur-relecture.test.ts` | observer en recette |
-| C-07 | Téléchargement des pièces et des rendus, liens privés | toutes | OK | OK | DNT | parcours recette | — |
-| C-08 | ZIP complet des rendus | toutes | OK | OK | DV | `deliverables-zip.test.ts` | — |
+| C-07 | Téléchargement des pièces et des rendus, liens privés | toutes | OK | OK | OK | parcours recette ; prod. 28/11 (compte de test fictif, jetons réels) : lien signé 200, PDF valide téléchargé | — |
+| C-08 | ZIP complet des rendus | toutes | OK | OK | DNT | `deliverables-zip.test.ts` ; bouton présent en production le 28/11, archive non rouverte | — |
 | C-09 | 250 fichiers par dossier | toutes | OK | ND | ND | `CAPACITE.md` : 10 → 250 fichiers mesurés en local le 25/11 ; à 250 : six rendus en 21,7 s après correctif du rendu « Résumé » (288 s avant) | mesure sur stockage hébergé : non faite (quota gratuit d'opérations) |
 | C-10 | Capacité logique 20 × 250 fichiers | Business → Premium | OK | ND | ND | `CAPACITE.md` : 5 000 pièces déposées et listées sur 20 dossiers, 0 analyse lancée | idem C-09 |
-| C-11 | Premier résultat rapide après dépôt | toutes | OK | PART | DV | `recette-performance.test.ts` ; recette hébergée le 25/11 : premier résultat 15 s, six rendus 23 s (37–39 s avant) | viser quelques secondes : passage horaire et moins d'accès au stockage |
+| C-11 | Premier résultat rapide après dépôt | toutes | OK | PART | OK | `recette-performance.test.ts` ; recette hébergée le 25/11 : premier résultat 15 s, six rendus 23 s (37–39 s avant) ; prod. 28/11 (compte de test fictif, jetons réels) : premier résultat 7,0 s (1 pièce) ; 2,0 s après la fin du dépôt (10 et 50 pièces) ; affiché à l’écran pendant le traitement (PR 78) | viser quelques secondes : passage horaire et moins d'accès au stockage |
 | C-12 | Corbeille client, suppression, audit | toutes | OK | — | DNT | tests SQL corbeille | — |
 
 ## D — Six rendus, corrections, exports
 
 | ID | Fonction | Offres | Local | Recette | Production | Preuve | Reste à faire |
 |---|---|---|---|---|---|---|---|
-| D-01 | Résumé (PDF, DOCX) | toutes | OK | OK | DV | `deliverables.test.ts`, `revue-rendus.test.ts`, `docs/recette/rendus/` | — |
-| D-02 | Tableau de bord (PDF) | toutes | OK | OK | DV | idem | — |
-| D-03 | Chronologie (PDF, CSV, XLSX) | toutes | OK | OK | DV | idem | — |
-| D-04 | Dates modifiables : correction persistante, motif, historique | toutes | OK | OK | DV | `recette-api.test.ts` | PDF à champs éditables : PART |
-| D-05 | Échéances et calendrier (PDF, XLSX, ICS) | toutes | OK | OK | DV | idem | — |
-| D-06 | Projets de relance (PDF, DOCX), jamais envoyés | toutes | OK | OK | DV | idem | — |
-| D-07 | Citations vérifiées (passage, valeur typée, pièce) | toutes | OK | OK | DV | `moteur-citations.test.ts`, `evaluation-moteur.test.ts` (100 %) | — |
+| D-01 | Résumé (PDF, DOCX) | toutes | OK | OK | PART | `deliverables.test.ts`, `revue-rendus.test.ts`, `docs/recette/rendus/` ; publié et visible du client le 28/11 (13 fichiers par dossier) ; contenu non rouvert ce jour | — |
+| D-02 | Tableau de bord (PDF) | toutes | OK | OK | PART | idem ; publié et visible du client le 28/11 ; contenu non rouvert ce jour | — |
+| D-03 | Chronologie (PDF, CSV, XLSX) | toutes | OK | OK | OK | idem ; prod. 28/11 (compte de test fictif, jetons réels) : CSV et PDF téléchargés par lien signé, en-têtes valides | — |
+| D-04 | Dates modifiables : correction persistante, motif, historique | toutes | OK | OK | DNT | `recette-api.test.ts` ; en service ; correction d’une date non rejouée en production | PDF à champs éditables : PART |
+| D-05 | Échéances et calendrier (PDF, XLSX, ICS) | toutes | OK | OK | PART | idem ; publié et visible du client le 28/11 ; 2 puis 3 échéances créées ; fichiers non rouverts | — |
+| D-06 | Projets de relance (PDF, DOCX), jamais envoyés | toutes | OK | OK | PART | idem ; publié et visible du client le 28/11 ; contenu non rouvert ce jour | — |
+| D-07 | Citations vérifiées (passage, valeur typée, pièce) | toutes | OK | OK | OK | `moteur-citations.test.ts`, `evaluation-moteur.test.ts` (100 %) ; prod. 28/11 : 0 citation introuvable sur 15 pièces fictives (contrôle serveur `evidence_problems`) | — |
 | D-08 | Écrans dossier simplifiés (suivi en une ligne, 3 priorités) | toutes | OK | OK | OK | `suivi-libelles.test.ts`, captures V3, production vue le 25/11 | — |
 | D-09 | Livrables déposés à la main par l'équipe (mode actuel de production) | toutes | OK | — | DNT | tests SQL livrables | — |
 
@@ -70,26 +72,26 @@ Le détail fin de la vitrine historique (219 lignes F-001…) reste dans `FEATUR
 
 | ID | Fonction | Offres | Local | Recette | Production | Preuve | Reste à faire |
 |---|---|---|---|---|---|---|---|
-| E-01 | Clé API dans le coffre serveur | — | — | OK | DV | `ANTHROPIC_API_KEY` (sensible, Production) ajoutée le 25/11 à ~18 h 30 ; redéploiement ; l'assistant passe en mode `modele` | solde et limite de dépense du workspace à lire dans la Console (propriétaire) |
+| E-01 | Clé API dans le coffre serveur | — | — | OK | OK | `ANTHROPIC_API_KEY` (sensible, Production) ajoutée le 25/11 à ~18 h 30 ; redéploiement ; l'assistant passe en mode `modele` ; prod. 28/11 : clé au coffre des fonctions, 92 lectures et 8 synthèses réelles sur pièces fictives | solde et limite de dépense du workspace à lire dans la Console (propriétaire) |
 | E-02 | Liste des modèles réellement accessibles (`GET /v1/models`) | — | SIM | BLQ | DV | code `runtime.ts`, page /admin | dépend de E-01 |
-| E-03 | Sélection automatique du modèle (simple / courant / avancé) | toutes | SIM | OK | DV | recette 25/11 (session V11, API réelle) : question simple → claude-haiku-5-5, courante → claude-sonnet-5-5, analyse avancée → claude-opus-5-5, tous observés | — |
-| E-04 | Lecture des pièces par modèle (extraction, consolidation) | toutes | SIM | OK | DV | recette 25/11 (session V11, API réelle) : 3 pièces lues par le modèle ET synthèse par le modèle (fournisseur « anthropic », plus de mention simulation) après 2 correctifs : grammaire refusée par l'API (400 « compiled grammar is too large ») → sortie par outil non strict validée strictement ; tableaux rendus en texte → relus. Analyse juste (3 480 € réclamés / 3 210 € au relevé, réponse avant le 15/01/2027, loyer T4 « paiement à vérifier ») | délai complet encore long (86 s pour 2 pièces) : dominé par les appels au modèle |
+| E-03 | Sélection automatique du modèle (simple / courant / avancé) | toutes | SIM | OK | PART | recette 25/11 (session V11, API réelle) : question simple → claude-haiku-5-5, courante → claude-sonnet-5-5, analyse avancée → claude-opus-5-5, tous observés ; prod. 28/11 : lectures et synthèses Sonnet 5.5 ; modèle rapide (Haiku 5.5) essayé sur 15 pièces puis écarté : dates et montants identiques mais 19 références perdues sur 24 ; `AI_MODEL_EXTRACT_FAST` retiré | — |
+| E-04 | Lecture des pièces par modèle (extraction, consolidation) | toutes | SIM | OK | OK | recette 25/11 (session V11, API réelle) : 3 pièces lues par le modèle ET synthèse par le modèle (fournisseur « anthropic », plus de mention simulation) après 2 correctifs : grammaire refusée par l'API (400 « compiled grammar is too large ») → sortie par outil non strict validée strictement ; tableaux rendus en texte → relus. Analyse juste (3 480 € réclamés / 3 210 € au relevé, réponse avant le 15/01/2027, loyer T4 « paiement à vérifier ») ; prod. 28/11 (compte de test fictif, jetons réels) : 1 pièce 15 s, 10 pièces 30 s, 50 pièces 87 s jusqu’à publication | délai complet encore long (86 s pour 2 pièces) : dominé par les appels au modèle |
 | E-05 | Lecture par règles déterministes (sans modèle) | toutes | OK | OK | DV | `evaluation-moteur.test.ts` : exactitude 100 %, 0 partie inventée | — |
 | E-06 | OCR / lecture de scans et photos | toutes | SIM | BLQ | DV | pièce marquée « lecture reportée » | dépend de E-01 |
 | E-07 | Fournisseur de secours | — | ND | ND | ND | — | à décider (licences, confidentialité) |
 | E-08 | Traitement différé (Batch), cache des consignes | — | PART | BLQ | DV | cache des consignes codé ; Batch ND | après E-01 |
 | E-09 | Évaluation continue (corpus de référence, anti-régression) | interne | OK | — | — | `npm run ia:evaluation`, `evaluation-moteur.test.ts` | lancer avec un modèle après E-01 |
 | E-10 | Sources juridiques officielles (Légifrance/PISTE, Judilibre, EUR-Lex) | — | ND | ND | ND | — | comptes PISTE à créer |
-| E-11 | Analyse progressive : « Premiers résultats — analyse en cours » puis analyse IA | toutes | OK | OK | DV | `tests/moteur-progressif.test.ts` (4) ; recette 25/11, IA réelle, 2 pièces : premiers résultats 10 s, analyse IA 86 s, une seule notification ; captures `v12-premiers-resultats.png`, `v12-analyse-complete.png` | mesurer sur un lot plus grand (budget) ; pièces numérisées : pas de premiers résultats |
+| E-11 | Analyse progressive : « Premiers résultats — analyse en cours » puis analyse IA | toutes | OK | OK | OK | `tests/moteur-progressif.test.ts` (4) ; recette 25/11, IA réelle, 2 pièces : premiers résultats 10 s, analyse IA 86 s, une seule notification ; captures `v12-premiers-resultats.png`, `v12-analyse-complete.png` ; prod. 28/11, écran : « Premiers résultats » pièce par pièce pendant le traitement, remplacés sans rechargement par la révision 2 | mesurer sur un lot plus grand (budget) ; pièces numérisées : pas de premiers résultats |
 
 ## F — Assistant ClairDossier IA et outils
 
 | ID | Fonction | Offres | Local | Recette | Production | Preuve | Reste à faire |
 |---|---|---|---|---|---|---|---|
-| F-01 | Panneau latéral à droite de « Vos résultats », mobile adapté | toutes | OK | OK | DV | captures V3/V5 | — |
+| F-01 | Panneau latéral à droite de « Vos résultats », mobile adapté | toutes | OK | OK | OK | captures V3/V5 ; prod. 28/11 : panneau ouvert à l’écran avec le compte de test | — |
 | F-02 | Réponses par règles sur le dossier (résumé, démarches, échéances, recherche, comparaison) | toutes | OK | OK | DV | `intelligence.test.ts` ; 2,3 s en recette | — |
-| F-03 | Conversation par modèle avec outils côté serveur | toutes | SIM | OK | DV | recette 25/11 (session V11, API réelle) : 3 réponses en mode modèle, outils serveur (echeances, resumer, prochaines_demarches, comparer, preparer_relance), 2-3 sources citées, 9 à 20 s | latence à réduire |
-| F-04 | Registre fermé d'outils, droits vérifiés par le serveur | toutes | OK | OK | DV | `intelligence.test.ts` | — |
+| F-03 | Conversation par modèle avec outils côté serveur | toutes | SIM | OK | OK | recette 25/11 (session V11, API réelle) : 3 réponses en mode modèle, outils serveur (echeances, resumer, prochaines_demarches, comparer, preparer_relance), 2-3 sources citées, 9 à 20 s ; prod. 28/11 : fonction `assistant`, 6 appels réels, 3,1 s en moyenne côté serveur (6,9 s de bout en bout), réponse sourcée, vue à l’écran | latence à réduire |
+| F-04 | Registre fermé d'outils, droits vérifiés par le serveur | toutes | OK | OK | OK | `intelligence.test.ts` ; prod. 28/11 : dossier d’un autre compte → 404 `dossier_not_found` | — |
 | F-05 | Refus des actions sensibles, résistance aux consignes cachées | toutes | OK | OK | DV | idem + pièce piégée du corpus | — |
 | F-06 | Création réelle d'un rappel (échéance) après confirmation | toutes | OK | OK | DV | `recette-assistant.test.ts` ; fait en recette le 25/11 | — |
 | F-07 | Historique privé par dossier, effaçable | toutes | OK | OK | DV | idem | — |
@@ -99,7 +101,7 @@ Le détail fin de la vitrine historique (219 lignes F-001…) reste dans `FEATUR
 | F-11 | Pièces jointes dans la conversation, lecture Word/Excel/image par l'assistant | toutes | PART | PART | DV | dépôt depuis le panneau ; lecture par le moteur, pas par l'assistant | — |
 | F-12 | Commandes rapides depuis une pièce, un rendu, une échéance | toutes | ND | ND | ND | — | à développer |
 | F-13 | Réponses progressives (affichage au fil de l'eau) | toutes | ND | ND | ND | — | à développer |
-| F-14 | Assistant dans l'espace client de production | toutes | — | — | DV | CGV art. 6 | accord écrit + mise à jour des CGV |
+| F-14 | Assistant dans l'espace client de production | toutes | — | — | PART | CGV art. 6 ; en service depuis le 28/11 ; interrupteur `ai_auto_gate` en « pilote » (administrateurs seulement) le 28/11 au soir, clause de protection du fondateur | accord écrit + mise à jour des CGV |
 
 ## G — Automatisations et planificateur
 
@@ -124,7 +126,7 @@ Le détail fin de la vitrine historique (219 lignes F-001…) reste dans `FEATUR
 | H-02 | Connexion Outlook / Microsoft 365 (Graph, delta) | Entrepreneur → | DNT | BLQ | DV | idem | créer l'application Microsoft Entra |
 | H-03 | E-mail entrant de secours (Resend Inbound) | toutes | OK | BLQ | DV | `email-inbound.test.ts` ; pas de compte Resend | compte + domaine |
 | H-04 | Proposition « Connecter / Plus tard / Non » | Entrepreneur → | OK | DV | DV | composant inerte sans configuration | dépend de H-01/H-02 |
-| H-05 | Notification de fin de traitement | toutes | OK | SIM | DV | boîte de recette interne, aucun envoi | Resend |
+| H-05 | Notification de fin de traitement | toutes | OK | SIM | PART | boîte de recette interne, aucun envoi ; prod. 28/11 : 7 envois acceptés par Resend vers l’adresse du compte de test (domaine réservé, aucune boîte réelle) ; réception non constatée | Resend |
 | H-06 | Notification de contact (`notify-lead`) | — | OK | — | DNT | fonction historique | — |
 
 ## I — Options et Stripe bac à sable
@@ -140,14 +142,14 @@ Le détail fin de la vitrine historique (219 lignes F-001…) reste dans `FEATUR
 
 | ID | Fonction | Offres | Local | Recette | Production | Preuve | Reste à faire |
 |---|---|---|---|---|---|---|---|
-| J-01 | Réservation du coût maximal avant chaque appel, règlement après | — | OK | OK | DV | recette 25/11 (session V11, API réelle) : réservation puis règlement, réservations à 0 après chaque appel (`/api/moi/consommation`) | — |
-| J-02 | Plafonds global et par compte, concurrence | — | OK | OK | DV | recette 25/11 (session V11, API réelle) : plafond global de lecture (1 €/mois) atteint et respecté | — |
-| J-03 | Registre par appel (compte, fonction, modèle, jetons, cache, durée, coût) | — | OK | OK | DV | recette 25/11 (session V11, API réelle) : registre par appel lisible par le titulaire (modèle, jetons, cache, durée, coût) | — |
+| J-01 | Réservation du coût maximal avant chaque appel, règlement après | — | OK | OK | OK | recette 25/11 (session V11, API réelle) : réservation puis règlement, réservations à 0 après chaque appel (`/api/moi/consommation`) ; prod. 28/11 : `assistant_usage`, estimation réservée puis coût réel réglé sur 6 appels | — |
+| J-02 | Plafonds global et par compte, concurrence | — | OK | OK | PART | recette 25/11 (session V11, API réelle) : plafond global de lecture (1 €/mois) atteint et respecté ; prod. : plafonds posés (20 € global, 12 € par compte, 25 USD côté fournisseur) ; jamais atteints, donc pause non observée | — |
+| J-03 | Registre par appel (compte, fonction, modèle, jetons, cache, durée, coût) | — | OK | OK | OK | recette 25/11 (session V11, API réelle) : registre par appel lisible par le titulaire (modèle, jetons, cache, durée, coût) ; prod. 28/11 : coût par lecture, par synthèse et par appel d’assistant enregistré | — |
 | J-04 | Alertes 70 / 90 / 100 %, une par palier et par mois | interne | OK | DNT | — | `recette-pilotage.test.ts` | E-01 |
 | J-05 | Repli sur les règles au plafond, résultat annoncé partiel | toutes | OK | PART | DV | recette 25/11 (session V11, API réelle) : plafond global atteint → alerte BUDGET, synthèse par règles, six rendus publiés | affichage du motif « résultat partiel » au client : non relu |
 | J-06 | Coupe-circuit des appels de modèle | interne | OK | DNT | — | `recette-assistant.test.ts` | — |
 | J-07 | Calculateur de rentabilité (offres, options, gros consommateur, seuil, croissance, avec/sans crédits) | interne | OK | — | — | `RENTABILITE.md`, `rentabilite.test.ts` ; toutes les consommations sont ESTIMÉES | remplacer par des mesures réelles |
-| J-08 | Coût réel mesuré par document, dossier, conversation | interne | BLQ | PART | — | MESURÉ 25/11 (petit échantillon) : ≈ 2,5 c€/pièce, ≈ 8 c€/synthèse, ≈ 1,5 c€/question ; `RENTABILITE.md` recalculé | mesurer sur un corpus plus large (accord de budget) |
+| J-08 | Coût réel mesuré par document, dossier, conversation | interne | BLQ | PART | OK | MESURÉ 25/11 (petit échantillon) : ≈ 2,5 c€/pièce, ≈ 8 c€/synthèse, ≈ 1,5 c€/question ; `RENTABILITE.md` recalculé ; prod. 28/11 (pièces fictives d’une page) : ≈ 1,2 c€ par pièce lue, synthèse 1,3 à 9,3 c€ ; dossier de 10 pièces 15 c€, de 50 pièces 73 c€ ; assistant ≈ 0,6 c USD par question | mesurer sur un corpus plus large (accord de budget) |
 | J-09 | Économie de l'IA (console fondateur) : marge directe par client, projection du mois, anomalies, recommandations | interne | OK | — | BLQ | `tests/economie-ia.test.ts` (4) ; onglet Supervision → « Économie de l'IA » (`src/components/admin/AdminEconomieIa.tsx`) ; coûts mesurés + montants Stripe, frais Stripe ESTIMÉS | production : migration 20261125140000 (Gérard) puis moteur IA ; aucune action automatique (décision du fondateur) |
 
 ## K — Supervision et MCP
@@ -192,7 +194,7 @@ Le détail fin de la vitrine historique (219 lignes F-001…) reste dans `FEATUR
 
 | ID | Fonction | Offres | Local | Recette | Production | Preuve | Reste à faire |
 |---|---|---|---|---|---|---|---|
-| N-01 | Correctif d'isolation pièces / échéances (20261125150000) | toutes | OK | — | BLQ | 118 tests SQL ; base de production inaccessible | **manipulation propriétaire : `SECURITE_ISOLATION.md`** |
+| N-01 | Correctif d'isolation pièces / échéances (20261125150000) | toutes | OK | — | OK | 118 tests SQL ; base de production inaccessible ; migration au registre de production ; isolation vérifiée le 28/11 (voir A-03) | **manipulation propriétaire : `SECURITE_ISOLATION.md`** |
 | N-02 | Diagnostic d'isolation en lecture seule | interne | OK | — | BLQ | joué avant/après correctif | à exécuter par le propriétaire |
 | N-03 | Chemin de fichier contrôlé par le worker | toutes | OK | — | DV | `ai-worker` (non installé) | — |
 | N-04 | Recette neutralisée : aucun lien Stripe LIVE, non indexée | — | OK | OK | — | build en échec sinon | — |
@@ -200,7 +202,7 @@ Le détail fin de la vitrine historique (219 lignes F-001…) reste dans `FEATUR
 | N-06 | Stockage privé de la recette, liens non publics | — | OK | OK | — | Vercel Blob privé | architecture de recette, pas de production |
 | N-07 | Dépendances sans vulnérabilité connue | — | OK | OK | OK | `npm audit` : 0 (25/11) | — |
 | N-08 | Sauvegardes et restauration testées | — | ND | ND | BLQ | non vérifiable sans accès Supabase | vérifier dans Supabase → Backups |
-| N-09 | CGV art. 6, confidentialité, DPA, AIPD à jour pour l'analyse automatique | — | PART | — | BLQ | projets dans `MOTEUR_ET_CONFORMITE.md` | validation juridique du propriétaire |
+| N-09 | CGV art. 6, confidentialité, DPA, AIPD à jour pour l'analyse automatique | — | PART | — | PART | projets dans `MOTEUR_ET_CONFORMITE.md` ; CGV art. 6 et confidentialité publiées (`ee5f306`) ; `docs/ia/AIPD.md` mise à jour le 28/11, NON signée ; accord de traitement du fournisseur à archiver ; avis d’avocat sur le secret professionnel à obtenir | validation juridique du propriétaire |
 | N-10 | Analyse de sécurité dynamique (HawkScan ou équivalent) | — | ND | ND | ND | non exécutée | — |
 | N-11 | Supabase de recette hébergé et isolé | — | OK | BLQ | — | recette locale 63 cas ; organisation à la limite gratuite | décision propriétaire |
 
@@ -272,10 +274,10 @@ Fonctionnalités recensées : **151**.
 
 | OK | ÉMU | PART | DNT | SIM | BLQ | ND | DV | — |
 |---|---|---|---|---|---|---|---|---|
-| 11 | 0 | 5 | 14 | 0 | 8 | 41 | 56 | 16 |
+| 28 | 0 | 15 | 13 | 0 | 5 | 41 | 34 | 15 |
 
-- Couverture de vérification : 137/151 = **91 %** (état établi par une preuve ; exclus : les 14 « développé mais non testé »).
-- Taux d'opérationnalité : 11/79 = **14 %** vérifié réellement, plus 0 vérifié par émulation (périmètre actif = recensées − sans objet − désactivées volontairement ; simulé, bloqué et non développé restent au dénominateur).
+- Couverture de vérification : 138/151 = **91 %** (état établi par une preuve ; exclus : les 13 « développé mais non testé »).
+- Taux d'opérationnalité : 28/102 = **27 %** vérifié réellement, plus 0 vérifié par émulation (périmètre actif = recensées − sans objet − désactivées volontairement ; simulé, bloqué et non développé restent au dénominateur).
 
 ### Par catégorie (colonne Recette)
 
